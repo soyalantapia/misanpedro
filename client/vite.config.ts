@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
 
 export default defineConfig({
-  base: '/bartender-app/',
+  base: '/misanpedro/',
   plugins: [
     react(),
     tailwindcss(),
@@ -14,18 +14,18 @@ export default defineConfig({
       injectRegister: false,
       devOptions: { enabled: false },
       manifest: {
-        name: 'Bartender App — Deenex',
-        short_name: 'Bartender',
-        description: 'Retiro de productos por QR — Deenex',
+        name: 'Mi San Pedro — Descuentos vecinales',
+        short_name: 'Mi San Pedro',
+        description: 'Descuentos en comercios adheridos de San Pedro',
         theme_color: '#695ede',
         background_color: '#f9f9f9',
         display: 'standalone',
         orientation: 'any',
-        start_url: '/bartender-app/',
+        start_url: '/misanpedro/',
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/misanpedro/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/misanpedro/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/misanpedro/icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
