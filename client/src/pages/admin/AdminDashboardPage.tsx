@@ -1,16 +1,17 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, ScanLine, Tag, Users, Store, Sparkles } from 'lucide-react'
+import { ArrowRight, ScanLine, Tag, Users, Store, Sparkles, MessageCircle } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useRedemptionsForMerchant } from '@/lib/merchantQueries'
-import { COUPONS, getMerchant } from '@/data/mockData'
+import { useCouponsByMerchant } from '@/lib/couponsStore'
+import { useMerchant } from '@/lib/merchantsStore'
 import { formatMoney } from '@/lib/format'
 import { cn } from '@/lib/cn'
 
 export function AdminDashboardPage() {
   const { session } = useMerchantSession()
   const merchantId = session?.merchantId ?? ''
-  const merchant = getMerchant(merchantId)
+  const merchant = useMerchant(merchantId)
   const redemptions = useRedemptionsForMerchant(merchantId)
 
   const kpis = useMemo(() => {
@@ -28,9 +29,8 @@ export function AdminDashboardPage() {
     }
   }, [redemptions])
 
-  const cuponesActivos = COUPONS.filter(
-    (c) => c.merchantId === merchantId && c.estado === 'activo',
-  )
+  const merchantCoupons = useCouponsByMerchant(merchantId)
+  const cuponesActivos = merchantCoupons.filter((c) => c.estado === 'activo')
   const clientesUnicos = new Set(redemptions.map((r) => r.id)).size
   const hasRedemptions = redemptions.length > 0
 
@@ -94,6 +94,13 @@ export function AdminDashboardPage() {
               : 'Se desbloquea con el primer canje'
           }
           icon={Users}
+          locked={!hasRedemptions}
+        />
+        <SecondaryAction
+          to="/admin/whatsapp"
+          title="Promociones por WhatsApp"
+          description={hasRedemptions ? 'Hasta 4 envíos masivos por mes' : 'Disponible cuando tengas clientes'}
+          icon={MessageCircle}
           locked={!hasRedemptions}
         />
         <SecondaryAction

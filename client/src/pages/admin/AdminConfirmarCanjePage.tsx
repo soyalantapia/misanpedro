@@ -4,14 +4,14 @@ import { ChevronLeft, CheckCircle2, X } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { confirmRedemption } from '@/lib/merchantQueries'
 import { useActivation, useUser } from '@/lib/stores'
-import { getCoupon } from '@/data/mockData'
+import { useCoupon } from '@/lib/couponsStore'
 import { useToast } from '@/components/Toast'
 import { formatMoney } from '@/lib/format'
 
 export function AdminConfirmarCanjePage() {
   const { activationId } = useParams<{ activationId: string }>()
   const activation = useActivation(activationId)
-  const coupon = activation ? getCoupon(activation.couponId) : undefined
+  const coupon = useCoupon(activation?.couponId)
   const user = useUser()
   const { session } = useMerchantSession()
   const navigate = useNavigate()

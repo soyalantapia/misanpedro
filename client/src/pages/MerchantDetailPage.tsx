@@ -2,17 +2,19 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { ChevronLeft, MapPin, Phone, Clock, ExternalLink } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
 import { CouponCard } from '@/components/CouponCard'
-import { couponsByMerchant, getMerchant } from '@/data/mockData'
+import { useCouponsByMerchant } from '@/lib/couponsStore'
+import { useMerchant } from '@/lib/merchantsStore'
 import { CATEGORIAS } from '@/lib/types'
 
 export function MerchantDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const merchant = id ? getMerchant(id) : undefined
+  const merchant = useMerchant(id)
+  const allCoupons = useCouponsByMerchant(id ?? '')
 
   if (!merchant) return <Navigate to="/" replace />
 
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
-  const coupons = couponsByMerchant(merchant.id)
+  const coupons = allCoupons.filter((c) => c.estado === 'activo')
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${merchant.nombre}, ${merchant.direccion}`)}`
 
   return (

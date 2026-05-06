@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Search, MapPin, Sparkles, X } from 'lucide-react'
-import { COUPONS, MERCHANTS, getMerchant } from '@/data/mockData'
+import { MERCHANTS, getMerchant } from '@/data/mockData'
+import { useCoupons } from '@/lib/couponsStore'
 import { ViewToggle, type View } from '@/components/ViewToggle'
 import { CategoryChips } from '@/components/CategoryChips'
 import { CouponCard } from '@/components/CouponCard'
@@ -19,6 +20,7 @@ export function DescuentosPage() {
   const [search, setSearch] = useState('')
   const [categoria, setCategoria] = useState<Categoria | null>(null)
   const { state: geo, request: requestGeo } = useGeolocation()
+  const COUPONS = useCoupons()
 
   useEffect(() => {
     window.localStorage.setItem(VIEW_KEY, view)

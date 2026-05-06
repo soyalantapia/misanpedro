@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { MerchantSession } from './types'
-import { findMerchantUser, MERCHANT_USERS } from '@/data/mockData'
+import { findMerchantUser, getAllMerchantUsers } from '@/data/mockData'
 
 const STORAGE_KEY = 'misanpedro.merchant.v1'
 
@@ -65,6 +65,6 @@ export const merchantAuth = {
   },
   getCurrentUser() {
     if (!state.session) return null
-    return MERCHANT_USERS.find((u) => u.id === state.session!.userId) ?? null
+    return getAllMerchantUsers().find((u) => u.id === state.session!.userId) ?? null
   },
 }

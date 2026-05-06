@@ -1,14 +1,18 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, TrendingUp, Sparkles } from 'lucide-react'
+import { CheckCircle2, TrendingUp, Sparkles, PiggyBank } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
 import { EmptyState } from '@/components/EmptyState'
 import { useActivations } from '@/lib/stores'
-import { getCoupon, getMerchant } from '@/data/mockData'
+import { getMerchant } from '@/data/mockData'
+import { useCoupons } from '@/lib/couponsStore'
 import { formatMoney, formatRedeemedDate } from '@/lib/format'
 
 export function CanjeadosPage() {
   const activations = useActivations()
+  const coupons = useCoupons()
+  const couponMap = useMemo(() => new Map(coupons.map((c) => [c.id, c])), [coupons])
+  const getCoupon = (id: string) => couponMap.get(id)
   const redemptions = useMemo(
     () =>
       activations
@@ -21,18 +25,21 @@ export function CanjeadosPage() {
 
   const summary = useMemo(() => {
     const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
+    const totalAhorro = redemptions.reduce((s, r) => s + (r.ahorroEstimado ?? 0), 0)
+    const allMerchants = new Set(
+      redemptions.map((r) => getCoupon(r.couponId)?.merchantId).filter(Boolean) as string[],
+    )
     const thisMonth = redemptions.filter(
-      (r) => new Date(r.redeemedAt!).getTime() >= startOfMonth.getTime(),
+      (r) => new Date(r.redeemedAt!).getTime() >= startOfMonth,
     )
-    const totalAhorro = thisMonth.reduce((s, r) => s + (r.ahorroEstimado ?? 0), 0)
-    const merchants = new Set(
-      thisMonth.map((r) => getCoupon(r.couponId)?.merchantId).filter(Boolean) as string[],
-    )
+    const monthAhorro = thisMonth.reduce((s, r) => s + (r.ahorroEstimado ?? 0), 0)
     return {
-      count: thisMonth.length,
-      ahorro: totalAhorro,
-      merchants: merchants.size,
+      total: totalAhorro,
+      totalCount: redemptions.length,
+      totalMerchants: allMerchants.size,
+      monthAhorro,
+      monthCount: thisMonth.length,
     }
   }, [redemptions])
 
@@ -66,17 +73,34 @@ export function CanjeadosPage() {
         />
       ) : (
         <>
-          <div className="bg-violet-mesh rounded-3xl bg-accent-700 p-5 text-white shadow-floating">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-50 backdrop-blur">
-              <TrendingUp size={12} /> Este mes
+          <div className="bg-violet-mesh relative overflow-hidden rounded-3xl bg-accent-700 p-6 text-white shadow-floating">
+            <div className="absolute -right-6 -top-6 grid h-28 w-28 place-items-center rounded-full bg-white/10">
+              <PiggyBank size={56} className="text-white/30" strokeWidth={1.4} />
             </div>
-            <p className="mt-3 text-4xl font-bold tabular-nums tracking-tight">
-              {formatMoney(summary.ahorro)}
-            </p>
-            <p className="mt-1 text-sm text-accent-100">
-              Ahorraste con {summary.count} {summary.count === 1 ? 'cupón' : 'cupones'} en{' '}
-              {summary.merchants} {summary.merchants === 1 ? 'comercio' : 'comercios'}.
-            </p>
+            <div className="relative">
+              <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-50 backdrop-blur">
+                <PiggyBank size={11} /> Dinero ahorrado
+              </div>
+              <p className="mt-3 text-5xl font-bold tabular-nums tracking-tight sm:text-6xl">
+                {formatMoney(summary.total)}
+              </p>
+              <p className="mt-1 text-sm text-accent-100">
+                Total acumulado con {summary.totalCount}{' '}
+                {summary.totalCount === 1 ? 'canje' : 'canjes'} en {summary.totalMerchants}{' '}
+                {summary.totalMerchants === 1 ? 'comercio' : 'comercios'}.
+              </p>
+              <div className="mt-4 flex items-center gap-3 border-t border-white/15 pt-3">
+                <TrendingUp size={14} className="text-accent-100" />
+                <p className="text-xs text-accent-100">
+                  Este mes:{' '}
+                  <span className="font-bold tabular-nums text-white">
+                    {formatMoney(summary.monthAhorro)}
+                  </span>{' '}
+                  · {summary.monthCount}{' '}
+                  {summary.monthCount === 1 ? 'cupón' : 'cupones'}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2.5">

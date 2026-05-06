@@ -7,27 +7,29 @@ import {
   Store,
   LogOut,
   ShieldCheck,
+  MessageCircle,
 } from 'lucide-react'
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
-import { getMerchant } from '@/data/mockData'
+import { useMerchant } from '@/lib/merchantsStore'
 import { cn } from '@/lib/cn'
 
 const links = [
   { to: '/admin', label: 'Inicio', icon: LayoutDashboard, end: true },
-  { to: '/admin/validar', label: 'Validar cupón', icon: ScanLine, end: false },
-  { to: '/admin/cupones', label: 'Mis cupones', icon: Tag, end: false },
-  { to: '/admin/clientes', label: 'Mis clientes', icon: Users, end: false },
-  { to: '/admin/comercio', label: 'Mi comercio', icon: Store, end: false },
+  { to: '/admin/validar', label: 'Validar', icon: ScanLine, end: false },
+  { to: '/admin/cupones', label: 'Cupones', icon: Tag, end: false },
+  { to: '/admin/clientes', label: 'Clientes', icon: Users, end: false },
+  { to: '/admin/whatsapp', label: 'Promos', icon: MessageCircle, end: false },
+  { to: '/admin/comercio', label: 'Comercio', icon: Store, end: false },
 ]
 
 export function MerchantShell() {
   const { session } = useMerchantSession()
   const navigate = useNavigate()
+  const merchant = useMerchant(session?.merchantId)
 
   if (!session) return <Navigate to="/admin/login" replace />
 
   const user = merchantAuth.getCurrentUser()
-  const merchant = getMerchant(session.merchantId)
   if (!user || !merchant) return <Navigate to="/admin/login" replace />
 
   function handleLogout() {

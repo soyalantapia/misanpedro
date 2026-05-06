@@ -6,13 +6,14 @@ import { CountdownTimer } from '@/components/CountdownTimer'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/Toast'
 import { activationActions, useActivation } from '@/lib/stores'
-import { getCoupon, getMerchant } from '@/data/mockData'
+import { getMerchant } from '@/data/mockData'
+import { useCoupon } from '@/lib/couponsStore'
 import { calcAhorro } from '@/lib/format'
 
 export function CuponActivoPage() {
   const { id } = useParams<{ id: string }>()
   const activation = useActivation(id)
-  const coupon = activation ? getCoupon(activation.couponId) : undefined
+  const coupon = useCoupon(activation?.couponId)
   const merchant = coupon ? getMerchant(coupon.merchantId) : undefined
   const navigate = useNavigate()
   const toast = useToast()

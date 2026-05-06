@@ -1,5 +1,6 @@
 import { useStore, activationActions } from './stores'
-import { getCoupon, getMerchant } from '@/data/mockData'
+import { getMerchant } from '@/data/mockData'
+import { getCouponSync as getCoupon } from './couponsStore'
 import type { Activation } from './types'
 
 export type ValidationOk = {

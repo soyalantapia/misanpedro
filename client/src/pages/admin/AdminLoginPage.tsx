@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
-import { Store, ShieldCheck, KeyRound, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Store, ShieldCheck, KeyRound, ArrowRight, Eye, EyeOff, Sparkles } from 'lucide-react'
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
 import { MERCHANT_USERS } from '@/data/mockData'
 
@@ -57,6 +57,12 @@ export function AdminLoginPage() {
               .
             </p>
           </div>
+          <Link
+            to="/admin/registro"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-bold text-accent-700 shadow-card ring-1 ring-accent-100 transition-all hover:-translate-y-0.5 hover:bg-accent-50"
+          >
+            <Sparkles size={12} /> Crear mi comercio · 25k/mes
+          </Link>
         </div>
 
         <form

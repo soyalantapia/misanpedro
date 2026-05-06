@@ -3,7 +3,7 @@ import { Lock, Users, Download, ScanLine } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useRedemptionsForMerchant } from '@/lib/merchantQueries'
 import { useUser } from '@/lib/stores'
-import { getCoupon } from '@/data/mockData'
+import { getCouponSync as getCoupon } from '@/lib/couponsStore'
 import { formatRedeemedDate, formatMoney } from '@/lib/format'
 
 export function AdminClientesPage() {
@@ -77,7 +77,7 @@ export function AdminClientesPage() {
 
       {user && (
         <Link
-          to="#"
+          to={`/admin/clientes/${user.id}`}
           className="flex items-center gap-3 rounded-3xl bg-white p-4 shadow-card ring-1 ring-neutral-100 transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
         >
           <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-accent-400 to-accent-600 text-white text-sm font-bold shadow-cta">

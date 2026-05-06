@@ -5,12 +5,16 @@ import { CardImage } from '@/components/CardImage'
 import { EmptyState } from '@/components/EmptyState'
 import { useToast } from '@/components/Toast'
 import { activationActions, useActivations } from '@/lib/stores'
-import { getCoupon, getMerchant } from '@/data/mockData'
+import { getMerchant } from '@/data/mockData'
+import { useCoupons } from '@/lib/couponsStore'
 import { formatTimeRemaining } from '@/lib/format'
 import { cn } from '@/lib/cn'
 
 export function MisCuponesPage() {
   const activations = useActivations()
+  const coupons = useCoupons()
+  const couponMap = useMemo(() => new Map(coupons.map((c) => [c.id, c])), [coupons])
+  const getCoupon = (id: string) => couponMap.get(id)
   const [now, setNow] = useState(() => Date.now())
   const navigate = useNavigate()
   const toast = useToast()

@@ -8,15 +8,16 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
-import { getCoupon, getMerchant } from '@/data/mockData'
+import { useCoupon } from '@/lib/couponsStore'
+import { useMerchant } from '@/lib/merchantsStore'
 import { CATEGORIAS } from '@/lib/types'
 import { activationActions, useActivationByCoupon, useUser } from '@/lib/stores'
 import { formatVigencia } from '@/lib/format'
 
 export function CuponDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const coupon = id ? getCoupon(id) : undefined
-  const merchant = coupon ? getMerchant(coupon.merchantId) : undefined
+  const coupon = useCoupon(id)
+  const merchant = useMerchant(coupon?.merchantId)
   const user = useUser()
   const existing = useActivationByCoupon(coupon?.id)
   const navigate = useNavigate()
