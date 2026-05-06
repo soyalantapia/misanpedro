@@ -58,6 +58,21 @@ export type Activation = {
   ahorroEstimado?: number
 }
 
+export type MerchantUser = {
+  id: string
+  merchantId: string
+  email: string
+  password: string
+  nombre: string
+  rol: 'admin' | 'cajero'
+}
+
+export type MerchantSession = {
+  userId: string
+  merchantId: string
+  loggedAt: string
+}
+
 export type User = {
   id: string
   nombre: string

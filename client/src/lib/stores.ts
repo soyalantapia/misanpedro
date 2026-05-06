@@ -79,6 +79,14 @@ export function useStore() {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
 
+export function getActivationsSnapshot() {
+  return state.activations
+}
+
+export function getUserSnapshot() {
+  return state.user
+}
+
 export function useUser() {
   return useStore().user
 }

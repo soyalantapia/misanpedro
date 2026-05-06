@@ -1,4 +1,4 @@
-import type { Coupon, Merchant } from '@/lib/types'
+import type { Coupon, Merchant, MerchantUser } from '@/lib/types'
 
 const SAN_PEDRO = { lat: -33.6797, lng: -59.6669 }
 
@@ -245,6 +245,38 @@ export const COUPONS: Coupon[] = [
     estado: 'activo',
   },
 ]
+
+export const MERCHANT_USERS: MerchantUser[] = [
+  {
+    id: 'mu-esquina-1',
+    merchantId: 'la-esquina',
+    email: 'cajero@laesquina.com',
+    password: 'demo123',
+    nombre: 'Mario Pizza',
+    rol: 'admin',
+  },
+  {
+    id: 'mu-carmen-1',
+    merchantId: 'carmen-vintage',
+    email: 'admin@carmenvintage.com',
+    password: 'demo123',
+    nombre: 'Carmen R.',
+    rol: 'admin',
+  },
+  {
+    id: 'mu-pampero-1',
+    merchantId: 'vivero-pampero',
+    email: 'jose@vivero-pampero.com',
+    password: 'demo123',
+    nombre: 'José',
+    rol: 'admin',
+  },
+]
+
+export function findMerchantUser(email: string, password: string): MerchantUser | undefined {
+  const e = email.trim().toLowerCase()
+  return MERCHANT_USERS.find((u) => u.email.toLowerCase() === e && u.password === password)
+}
 
 export function getMerchant(id: string): Merchant | undefined {
   return MERCHANTS.find((m) => m.id === id)

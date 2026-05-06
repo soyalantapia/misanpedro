@@ -1,0 +1,296 @@
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ScanLine, Hash, AlertCircle, Camera, Keyboard } from 'lucide-react'
+import { useMerchantSession } from '@/lib/merchantStore'
+import { useValidateByCode } from '@/lib/merchantQueries'
+import { cn } from '@/lib/cn'
+
+type Mode = 'qr' | 'code'
+
+export function AdminValidarPage() {
+  const { session } = useMerchantSession()
+  const merchantId = session?.merchantId ?? ''
+  const [mode, setMode] = useState<Mode>('code')
+
+  return (
+    <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
+      <header className="flex flex-col gap-1.5">
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+          <ScanLine size={12} /> Caja
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+          Validar cupón
+        </h1>
+        <p className="text-sm text-neutral-500">
+          El cliente abre la app, te muestra el QR o el código de 6 dígitos. Lo validás y confirmás
+          el canje.
+        </p>
+      </header>
+
+      <div className="grid grid-cols-2 rounded-full bg-primary-100 p-1 ring-1 ring-neutral-100">
+        <button
+          type="button"
+          onClick={() => setMode('qr')}
+          className={cn(
+            'inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200',
+            mode === 'qr'
+              ? 'bg-white text-neutral-900 shadow-card'
+              : 'text-neutral-500 hover:text-neutral-800',
+          )}
+        >
+          <Camera size={13} /> Escanear QR
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('code')}
+          className={cn(
+            'inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200',
+            mode === 'code'
+              ? 'bg-white text-neutral-900 shadow-card'
+              : 'text-neutral-500 hover:text-neutral-800',
+          )}
+        >
+          <Keyboard size={13} /> Código manual
+        </button>
+      </div>
+
+      {mode === 'code' ? (
+        <CodeMode merchantId={merchantId} onSwitch={() => setMode('qr')} />
+      ) : (
+        <ScanMode merchantId={merchantId} onSwitch={() => setMode('code')} />
+      )}
+    </div>
+  )
+}
+
+function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () => void }) {
+  const [code, setCode] = useState('')
+  const navigate = useNavigate()
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  const trimmed = code.replace(/\D/g, '').slice(0, 6)
+  const result = useValidateByCode(trimmed, merchantId)
+  const ready = trimmed.length === 6
+
+  function handleConfirm() {
+    if (!result || !result.ok) return
+    navigate(`/admin/canje/${result.activation.id}`)
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          Pedile el código al cliente
+        </p>
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          value={trimmed}
+          onChange={(e) => setCode(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && ready && result?.ok) handleConfirm()
+          }}
+          placeholder="000000"
+          maxLength={6}
+          className="mt-3 w-full rounded-2xl bg-primary-50 px-6 py-5 text-center font-mono text-4xl font-bold tracking-[0.4em] tabular-nums text-neutral-900 ring-2 ring-accent-300 focus:outline-none focus:ring-accent-500"
+        />
+        <div className="mt-3 grid grid-cols-6 gap-1.5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                'h-1 rounded-full',
+                i < trimmed.length ? 'bg-accent-500' : 'bg-primary-200',
+              )}
+            />
+          ))}
+        </div>
+      </div>
+
+      {ready && result && <ResultPanel result={result} onConfirm={handleConfirm} />}
+
+      {!ready && (
+        <p className="text-center text-xs text-neutral-400">
+          Ingresá los 6 dígitos para validar.{' '}
+          <button
+            type="button"
+            onClick={onSwitch}
+            className="font-bold text-accent-700 underline-offset-2 hover:underline"
+          >
+            Mejor escaneá el QR
+          </button>
+        </p>
+      )}
+    </div>
+  )
+}
+
+function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () => void }) {
+  const [scanState, setScanState] = useState<
+    'idle' | 'starting' | 'scanning' | 'denied' | 'unavailable'
+  >('idle')
+  const [scannedPayload, setScannedPayload] = useState<string | null>(null)
+  const containerId = 'qr-reader'
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (scanState !== 'starting') return
+    let scanner: { stop: () => Promise<void>; clear: () => void } | null = null
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const lib = await import('html5-qrcode')
+        if (cancelled) return
+        const instance = new lib.Html5Qrcode(containerId)
+        scanner = {
+          stop: () => instance.stop(),
+          clear: () => instance.clear(),
+        }
+        await instance.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 240, height: 240 } },
+          (decoded: string) => {
+            setScannedPayload(decoded)
+            setScanState('scanning')
+            instance.stop().catch(() => {})
+          },
+          () => {},
+        )
+      } catch {
+        if (!cancelled) setScanState('denied')
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      try {
+        scanner?.stop().catch(() => {})
+        scanner?.clear()
+      } catch {
+        /* noop */
+      }
+    }
+  }, [scanState])
+
+  // parse and validate payload
+  const codeFromPayload = (() => {
+    if (!scannedPayload) return ''
+    try {
+      const parsed = JSON.parse(scannedPayload) as { codigo?: string }
+      return parsed.codigo ?? ''
+    } catch {
+      return ''
+    }
+  })()
+  const result = useValidateByCode(codeFromPayload, merchantId)
+
+  function handleConfirm() {
+    if (!result || !result.ok) return
+    navigate(`/admin/canje/${result.activation.id}`)
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="relative aspect-square overflow-hidden rounded-3xl bg-neutral-900 shadow-card">
+        {scanState === 'starting' || scanState === 'scanning' ? (
+          <div id={containerId} className="absolute inset-0" />
+        ) : (
+          <div className="grid h-full place-items-center text-center text-sm text-white/80">
+            {scanState === 'idle' && (
+              <button
+                type="button"
+                onClick={() => setScanState('starting')}
+                className="flex flex-col items-center gap-3 px-6"
+              >
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white/10">
+                  <Camera size={26} />
+                </div>
+                <p className="font-bold">Activar cámara</p>
+                <p className="text-xs text-white/60">
+                  Vamos a pedirte permiso para usar la cámara
+                </p>
+              </button>
+            )}
+            {scanState === 'denied' && (
+              <div className="flex flex-col items-center gap-3 px-6">
+                <AlertCircle size={26} className="text-status-warning" />
+                <p className="font-bold">No pudimos acceder a la cámara</p>
+                <button
+                  type="button"
+                  onClick={onSwitch}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900"
+                >
+                  <Hash size={13} /> Usar código manual
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {scanState === 'idle' && (
+        <p className="text-center text-xs text-neutral-500">
+          ¿Problemas con la cámara?{' '}
+          <button
+            type="button"
+            onClick={onSwitch}
+            className="font-bold text-accent-700 underline-offset-2 hover:underline"
+          >
+            Ingresar código manual
+          </button>
+        </p>
+      )}
+
+      {scannedPayload && result && <ResultPanel result={result} onConfirm={handleConfirm} />}
+    </div>
+  )
+}
+
+function ResultPanel({
+  result,
+  onConfirm,
+}: {
+  result: NonNullable<ReturnType<typeof useValidateByCode>>
+  onConfirm: () => void
+}) {
+  if (!result.ok) {
+    return (
+      <div className="flex items-start gap-3 rounded-3xl bg-status-error-bg p-5 text-status-error-fg ring-1 ring-status-error/20">
+        <AlertCircle size={18} className="mt-0.5 shrink-0" />
+        <div className="flex-1">
+          <p className="text-sm font-bold">No es un cupón válido</p>
+          <p className="mt-1 text-xs">{result.message}</p>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-3 rounded-3xl bg-status-success-bg p-5 text-status-success-fg ring-1 ring-status-success/20">
+      <div className="flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-status-success text-white">
+          ✓
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-bold">Cupón válido</p>
+          <p className="text-xs">
+            {result.porcentaje}% off · {result.couponTitulo}
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onConfirm}
+        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-status-success px-6 py-3 text-sm font-bold text-white shadow-cta-success transition-all hover:-translate-y-0.5"
+      >
+        Continuar →
+      </button>
+    </div>
+  )
+}
