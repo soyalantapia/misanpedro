@@ -343,25 +343,63 @@ function PagoStep({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <div className="overflow-hidden rounded-3xl bg-white shadow-floating ring-1 ring-neutral-100">
-        <div className="bg-gradient-to-br from-accent-400 to-accent-600 p-5 text-white">
+      <div className="relative overflow-visible rounded-3xl bg-white shadow-floating ring-1 ring-neutral-100">
+        {/* Badge oferta de lanzamiento — flotante arriba */}
+        <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-amber-300 via-orange-400 to-pink-500 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-white shadow-cta whitespace-nowrap">
+          <Sparkles size={11} /> Oferta de lanzamiento
+        </div>
+        <div className="overflow-hidden rounded-t-3xl bg-gradient-to-br from-accent-400 to-accent-600 p-5 pt-6 text-white">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
             <Sparkles size={11} /> Plan estándar comercio
           </div>
-          <p className="mt-3 text-5xl font-bold tabular-nums tracking-tight">
+          <p className="mt-3 whitespace-nowrap text-5xl font-bold tabular-nums tracking-tight">
             ${PRECIO.toLocaleString('es-AR')}
             <span className="ml-1 text-base font-normal text-accent-50">/ mes</span>
           </p>
           <p className="mt-1 text-xs text-accent-50/90">
             Sin permanencia · Cancelás cuando quieras
           </p>
+          <div className="mt-3 flex items-start gap-2 rounded-xl bg-white/15 p-2.5 ring-1 ring-white/20 backdrop-blur">
+            <Sparkles size={12} className="mt-0.5 shrink-0 text-amber-200" />
+            <p className="text-[11px] font-medium leading-snug text-white">
+              <span className="font-bold">Solo para los primeros 100 comercios</span> de San Pedro.
+              Precio fijado de por vida mientras mantengas la suscripción activa.
+            </p>
+          </div>
         </div>
-        <ul className="flex flex-col gap-2 p-5 text-sm text-neutral-700">
-          <Bullet>Cupones ilimitados activos al mismo tiempo</Bullet>
-          <Bullet>Hasta 4 envíos masivos por WhatsApp / mes</Bullet>
-          <Bullet>Base de clientes exportable (CSV)</Bullet>
-          <Bullet>Validación de cupones por QR + código manual</Bullet>
-          <Bullet>Estadísticas de canjes en tiempo real</Bullet>
+        <div className="px-5 pt-4 pb-3">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-accent-700">
+            Todo ilimitado · sin letra chica
+          </p>
+        </div>
+        <ul className="flex flex-col gap-2 px-5 pb-5 text-sm text-neutral-700">
+          <Bullet>
+            <Highlight>Cupones ilimitados</Highlight> activos al mismo tiempo
+          </Bullet>
+          <Bullet>
+            <Highlight>Validaciones ilimitadas</Highlight> por QR + código manual
+          </Bullet>
+          <Bullet>
+            <Highlight>Clientes ilimitados</Highlight> en tu base, exportables a CSV
+          </Bullet>
+          <Bullet>
+            <Highlight>Mensajes WhatsApp ilimitados</Highlight> a clientes individuales
+          </Bullet>
+          <Bullet>
+            <Highlight>Campañas masivas WhatsApp</Highlight> · 4 envíos / mes vía API oficial
+          </Bullet>
+          <Bullet>
+            <Highlight>Estadísticas en tiempo real</Highlight> de canjes, ahorro generado y patrones de visita
+          </Bullet>
+          <Bullet>
+            <Highlight>Ficha de cliente individual</Highlight> con historial completo y datos de contacto
+          </Bullet>
+          <Bullet>
+            <Highlight>Edición ilimitada</Highlight> del comercio (datos, horarios, categoría)
+          </Bullet>
+          <Bullet>
+            <Highlight>Soporte prioritario</Highlight> por WhatsApp para los primeros 100 comercios
+          </Bullet>
         </ul>
       </div>
 
@@ -425,6 +463,10 @@ function ListoStep({ form }: { form: Form }) {
       </p>
     </div>
   )
+}
+
+function Highlight({ children }: { children: React.ReactNode }) {
+  return <span className="font-bold text-neutral-900">{children}</span>
 }
 
 function Bullet({ children }: { children: React.ReactNode }) {
