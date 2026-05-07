@@ -1,0 +1,23 @@
+{
+  "name": "misanpedro",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:web": "pnpm --filter @misanpedro/web dev",
+    "dev:api": "pnpm --filter @misanpedro/api dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "deploy:web": "pnpm --filter @misanpedro/web build && pnpm --filter @misanpedro/web deploy:gh-pages"
+  },
+  "devDependencies": {
+    "turbo": "^2.6.0",
+    "typescript": "~6.0.2"
+  }
+}

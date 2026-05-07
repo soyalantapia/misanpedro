@@ -1,54 +1,83 @@
 # Mi San Pedro
 
-PWA del programa de descuentos vecinales **Mi San Pedro**. Los vecinos descubren descuentos en comercios adheridos, activan un cupón con QR y lo canjean en el local.
+Programa de descuentos vecinales con app PWA para el vecino y panel para el comercio.
+Live: https://soyalantapia.github.io/misanpedro/
 
-## Estructura
+## Estructura del monorepo
 
-- `client/` — Frontend React 19 + Vite 7 + TypeScript + Tailwind 4 + React Router 7 + html5-qrcode (PWA)
+```
+misanpedro/
+├── apps/
+│   ├── web/          ← Frontend (Vite + React 19 + Tailwind 4)
+│   └── api/          ← Backend (Hono + MongoDB + Mongoose)
+└── packages/
+    └── shared/       ← Types + Zod schemas compartidos
+```
 
-Ver `Mi_San_Pedro_MVP_Specs.docx` para la especificación funcional completa (pantallas, modelo de datos, endpoints, flujo de canje end-to-end).
+## Setup local
+
+Requiere Node ≥22 LTS y pnpm ≥10.
+
+```bash
+# Una sola vez
+pnpm install
+
+# Configurar variables de entorno del backend
+cp apps/api/.env.example apps/api/.env
+# Editar apps/api/.env con tus credenciales (MONGODB_URI, JWT_SECRET, etc.)
+
+# Arrancar todo (front + back en paralelo)
+pnpm dev
+
+# O por separado
+pnpm dev:web    # → http://127.0.0.1:5180
+pnpm dev:api    # → http://localhost:3001/api/v1/health
+```
+
+## Comandos
+
+```bash
+pnpm dev              # arranca web + api en paralelo (turbo)
+pnpm build            # build de toda la app
+pnpm typecheck        # tsc en todos los workspaces
+pnpm lint             # eslint
+pnpm deploy:web       # build + deploy a gh-pages
+```
 
 ## Stack
 
-- Vite 7 · React 19 · TypeScript ~6.0 (strict)
-- Tailwind 4 (`@theme inline`)
-- React Router 7 (HashRouter)
-- lucide-react · html5-qrcode · vite-plugin-pwa
-- Tipografía Satoshi (Fontshare)
-- Light theme (`color-scheme: light` forzado)
+**Frontend** (`apps/web`)
+- Vite 7 · React 19 · TypeScript ~6.0 (strict) · Tailwind 4
+- React Router 7 (HashRouter) · TanStack Query (Fase 2+)
+- lucide-react · html5-qrcode · qrcode · vite-plugin-pwa
+- Light theme · Tipografía Satoshi
 
-## Desarrollo
+**Backend** (`apps/api`)
+- Hono · @hono/node-server · TypeScript
+- Mongoose (MongoDB Atlas) · Zod (validación compartida)
+- jsonwebtoken · bcryptjs (auth comercio)
+- Mercado Pago Preapproval API (Fase 5)
+- whatsapp-web.js + Puppeteer (Fase 6)
 
-```bash
-cd client
-npm install
-npm run dev          # http://127.0.0.1:5180
-```
+**Hosting**
+- Frontend → GitHub Pages (gh-pages branch)
+- Backend → Railway (planeado, Fase 1)
 
-> Requiere Node ≥22 LTS (no v25+). Si tenés Node 25, usá `nvm use 22` o `PATH="/opt/homebrew/opt/node@22/bin:$PATH"`.
+## Roadmap (ver plan completo en docs)
 
-## Estado actual
+- ✅ **MVP frontend-only** — todo funcionando con `localStorage` + datos demo
+- 🚧 **Fase 0** — Monorepo + backend boilerplate + conexión MongoDB
+- ⏭ Fase 1 — Auth real (vecino con OTP, comercio con email+password)
+- ⏭ Fase 2 — App vecino conectada a la API
+- ⏭ Fase 3 — Validación + canje real con verificación de firma
+- ⏭ Fase 4 — CRUD cupones + edit comercio con persistencia
+- ⏭ Fase 5 — Mercado Pago suscripciones (paywall real)
+- ⏭ Fase 6 — WhatsApp con whatsapp-web.js (sesiones del comercio)
+- ⏭ Fase 7 — Eventos + notifs en vivo via SSE
+- ⏭ Fase 8 — QA, hardening, lanzamiento beta
 
-**Fase 0 — Scaffold**
+## Demo flow (mientras no hay backend real)
 
-- AppShell vecino con 3 pestañas (Descuentos / Mis cupones / Canjeados)
-- Design system Deenex aplicado (tokens, sombras, tipografía Satoshi)
-- HashRouter para deploy estático en GitHub Pages
-- Placeholders de las 3 pantallas principales
-
-## Próximas fases
-
-1. **App vecino** — listado de descuentos, detalle, registro al primer canje, cupón activo con QR + código numérico, mis cupones, canjeados
-2. **Panel comercio** — login, dashboard, validar cupón (scan QR + código manual), mis cupones, mis clientes con bloqueo
-3. **Polish** — PWA install, animaciones, empty states, dialogs, export CSV
-
-## Deploy
-
-GitHub Pages desde rama `gh-pages`:
-
-```bash
-cd client && npm run build
-# luego copiar client/dist a la rama gh-pages
-```
-
-URL pública: https://soyalantapia.github.io/misanpedro/
+1. Abrí https://soyalantapia.github.io/misanpedro/ → datos demo cargan automáticamente
+2. Login admin: `cajero@laesquina.com` / `demo123`
+3. En Validar, tipeá `123 456` → confirmar canje → ver impacto en Mis clientes

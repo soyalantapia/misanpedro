@@ -1,5 +1,5 @@
 {
-  "name": "misanpedro-client",
+  "name": "@misanpedro/web",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "typecheck": "tsc -b",
+    "preview": "vite preview",
+    "deploy:gh-pages": "node ../../scripts/deploy-gh-pages.mjs"
   },
   "dependencies": {
     "html5-qrcode": "^2.3.8",

@@ -1,11 +1,36 @@
-node_modules
-dist
-dev-dist
-.DS_Store
-*.local
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+dev-dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Environment
 .env
-.env.*
+.env.local
+.env.*.local
+*.local
 !.env.example
+
+# Editor / OS
+.DS_Store
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
+
+# Coverage
+coverage/
+
+# WhatsApp sessions (Fase 6)
+.wwebjs_auth/
+wa-sessions/

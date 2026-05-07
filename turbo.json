@@ -1,0 +1,26 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "env": [
+        "VITE_API_URL",
+        "MONGODB_URI",
+        "JWT_SECRET",
+        "JWT_REFRESH_SECRET",
+        "MP_ACCESS_TOKEN",
+        "RESEND_API_KEY"
+      ]
+    },
+    "lint": {},
+    "typecheck": {
+      "dependsOn": ["^build"]
+    }
+  }
+}
