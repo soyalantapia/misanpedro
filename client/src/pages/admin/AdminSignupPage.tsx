@@ -7,7 +7,6 @@ import {
   CreditCard,
   CheckCircle2,
   Sparkles,
-  ShieldCheck,
   Clock,
 } from 'lucide-react'
 import { CATEGORIAS, type Categoria } from '@/lib/types'
@@ -18,7 +17,6 @@ import {
   findMerchantUserByEmail,
 } from '@/data/mockData'
 import { useToast } from '@/components/Toast'
-import { CardImage } from '@/components/CardImage'
 import { cn } from '@/lib/cn'
 
 const PRECIO = 25_000
@@ -359,13 +357,6 @@ function PagoStep({
           <p className="mt-1 text-xs text-accent-50/90">
             Sin permanencia · Cancelás cuando quieras
           </p>
-          <div className="mt-3 flex items-start gap-2 rounded-xl bg-white/15 p-2.5 ring-1 ring-white/20 backdrop-blur">
-            <Sparkles size={12} className="mt-0.5 shrink-0 text-amber-200" />
-            <p className="text-[11px] font-medium leading-snug text-white">
-              <span className="font-bold">Solo para los primeros 100 comercios</span> de San Pedro.
-              Precio fijado de por vida mientras mantengas la suscripción activa.
-            </p>
-          </div>
         </div>
         <div className="px-5 pt-4 pb-3">
           <p className="text-[11px] font-bold uppercase tracking-widest text-accent-700">
@@ -403,25 +394,7 @@ function PagoStep({
         </ul>
       </div>
 
-      <CardImage
-        categoria={form.categoria}
-        className="h-24 rounded-2xl shadow-card"
-        size="md"
-      />
-      <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100 text-sm">
-        <p className="font-bold text-neutral-900">{form.nombreComercio || 'Tu comercio'}</p>
-        <p className="text-xs text-neutral-500">
-          {form.direccion} · {form.horarios}
-        </p>
-      </div>
-
-      <div className="flex items-start gap-2.5 rounded-2xl bg-status-info-bg p-4 text-status-info-fg">
-        <ShieldCheck size={14} className="mt-0.5 shrink-0" />
-        <p className="text-xs font-medium">
-          Demo: el cobro está mockeado. En producción se integra Mercado Pago / Stripe / billetera
-          local. Sin tarjeta real.
-        </p>
-      </div>
+      <SlotsCounter slotsLeft={73} totalSlots={100} />
 
       <button
         type="button"
@@ -467,6 +440,59 @@ function ListoStep({ form }: { form: Form }) {
 
 function Highlight({ children }: { children: React.ReactNode }) {
   return <span className="font-bold text-neutral-900">{children}</span>
+}
+
+function SlotsCounter({
+  slotsLeft,
+  totalSlots,
+}: {
+  slotsLeft: number
+  totalSlots: number
+}) {
+  const taken = totalSlots - slotsLeft
+  const pctTaken = (taken / totalSlots) * 100
+  return (
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50 via-orange-50 to-pink-50 p-5 ring-2 ring-amber-300/60 shadow-card">
+      <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gradient-to-br from-amber-300/30 to-pink-400/20 blur-2xl" />
+      <div className="relative flex flex-col gap-3">
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-300 via-orange-400 to-pink-500 px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-white shadow-cta">
+          <Sparkles size={11} /> Oferta de lanzamiento
+        </div>
+
+        <div className="flex items-baseline gap-2">
+          <p className="text-6xl font-bold tabular-nums leading-none tracking-tight text-neutral-900 sm:text-7xl">
+            {slotsLeft}
+          </p>
+          <p className="text-2xl font-bold leading-none text-neutral-400 tabular-nums">
+            /{totalSlots}
+          </p>
+        </div>
+
+        <p className="text-base font-bold text-neutral-900">
+          lugares disponibles al precio de lanzamiento
+        </p>
+
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between text-[11px] font-semibold">
+            <span className="text-amber-700">{taken} comercios ya están adentro</span>
+            <span className="tabular-nums text-neutral-500">{Math.round(pctTaken)}%</span>
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-white/80 ring-1 ring-amber-200/60">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-amber-300 via-orange-400 to-pink-500 shadow-cta transition-all duration-500"
+              style={{ width: `${Math.max(4, pctTaken)}%` }}
+            />
+          </div>
+        </div>
+
+        <p className="rounded-xl bg-white/70 p-3 text-xs leading-snug text-neutral-700 ring-1 ring-amber-200/40">
+          <span className="font-bold text-neutral-900">Precio fijado de por vida.</span>{' '}
+          Si te sumás antes de los 100 comercios, mantenés esta tarifa mientras la suscripción
+          esté activa — aunque el plan suba después.
+        </p>
+      </div>
+    </div>
+  )
 }
 
 function Bullet({ children }: { children: React.ReactNode }) {
