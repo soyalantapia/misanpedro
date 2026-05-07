@@ -120,22 +120,23 @@ export function AdminConfirmarCanjePage() {
         className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex w-full max-w-2xl items-stretch gap-2 px-4 py-3 sm:px-6">
+          <Link
+            to="/admin/validar"
+            aria-label="Cancelar"
+            className="flex shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-status-error-bg px-4 py-3.5 text-sm font-bold text-status-error-fg ring-1 ring-status-error/20 transition-all hover:-translate-y-0.5 hover:bg-status-error/10"
+          >
+            <X size={16} /> Cancelar
+          </Link>
           <button
             type="button"
             onClick={handleConfirm}
             disabled={submitting}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-status-success px-6 py-4 text-base font-bold text-white shadow-cta-success transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-status-success px-6 py-3.5 text-base font-bold text-white shadow-cta-success transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
           >
             <CheckCircle2 size={18} />
             {submitting ? 'Confirmando…' : 'Confirmar canje'}
           </button>
-          <Link
-            to="/admin/validar"
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-100 px-6 py-3 text-sm font-bold text-neutral-700 transition-all hover:bg-primary-200"
-          >
-            <X size={14} /> Cancelar
-          </Link>
         </div>
       </div>
     </div>

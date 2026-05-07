@@ -84,10 +84,16 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   const result = useValidateByCode(trimmed, merchantId)
   const ready = trimmed.length === 6
 
-  function handleConfirm() {
-    if (!result || !result.ok) return
-    navigate(`/admin/canje/${result.activation.id}`)
-  }
+  // Auto-navega al confirmar canje cuando el cupón es válido (con un toque
+  // de delay para que el cajero alcance a ver el feedback verde).
+  const okActivationId = result && result.ok ? result.activation.id : null
+  useEffect(() => {
+    if (!okActivationId) return
+    const t = setTimeout(() => {
+      navigate(`/admin/canje/${okActivationId}`)
+    }, 500)
+    return () => clearTimeout(t)
+  }, [okActivationId, navigate])
 
   return (
     <div className="flex flex-col gap-4">
@@ -101,9 +107,6 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
           inputMode="numeric"
           value={trimmed}
           onChange={(e) => setCode(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && ready && result?.ok) handleConfirm()
-          }}
           placeholder="000000"
           maxLength={6}
           className="mt-3 w-full rounded-2xl bg-primary-50 px-6 py-5 text-center font-mono text-4xl font-bold tracking-[0.4em] tabular-nums text-neutral-900 ring-2 ring-accent-300 focus:outline-none focus:ring-accent-500"
@@ -121,7 +124,7 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
         </div>
       </div>
 
-      {ready && result && <ResultPanel result={result} onConfirm={handleConfirm} />}
+      {ready && result && <ResultPanel result={result} />}
 
       {!ready && (
         <>
@@ -233,10 +236,13 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   })()
   const result = useValidateByCode(codeFromPayload, merchantId)
 
-  function handleConfirm() {
-    if (!result || !result.ok) return
-    navigate(`/admin/canje/${result.activation.id}`)
-  }
+  // Auto-navega cuando el QR es válido
+  const okActivationId = result && result.ok ? result.activation.id : null
+  useEffect(() => {
+    if (!okActivationId) return
+    const t = setTimeout(() => navigate(`/admin/canje/${okActivationId}`), 500)
+    return () => clearTimeout(t)
+  }, [okActivationId, navigate])
 
   return (
     <div className="flex flex-col gap-4">
@@ -290,17 +296,15 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
         </p>
       )}
 
-      {scannedPayload && result && <ResultPanel result={result} onConfirm={handleConfirm} />}
+      {scannedPayload && result && <ResultPanel result={result} />}
     </div>
   )
 }
 
 function ResultPanel({
   result,
-  onConfirm,
 }: {
   result: NonNullable<ReturnType<typeof useValidateByCode>>
-  onConfirm: () => void
 }) {
   if (!result.ok) {
     return (
@@ -314,25 +318,16 @@ function ResultPanel({
     )
   }
   return (
-    <div className="flex flex-col gap-3 rounded-3xl bg-status-success-bg p-5 text-status-success-fg ring-1 ring-status-success/20">
-      <div className="flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-status-success text-white">
-          ✓
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-bold">Cupón válido</p>
-          <p className="text-xs">
-            {result.porcentaje}% off · {result.couponTitulo}
-          </p>
-        </div>
+    <div className="flex items-center gap-3 rounded-3xl bg-status-success-bg p-5 text-status-success-fg ring-1 ring-status-success/20">
+      <div className="grid h-10 w-10 place-items-center rounded-full bg-status-success text-white animate-pulse-soft">
+        ✓
       </div>
-      <button
-        type="button"
-        onClick={onConfirm}
-        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-status-success px-6 py-3 text-sm font-bold text-white shadow-cta-success transition-all hover:-translate-y-0.5"
-      >
-        Continuar →
-      </button>
+      <div className="flex-1">
+        <p className="text-sm font-bold">Cupón válido</p>
+        <p className="text-xs">
+          {result.porcentaje}% off · {result.couponTitulo}
+        </p>
+      </div>
     </div>
   )
 }
