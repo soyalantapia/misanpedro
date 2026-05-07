@@ -27,31 +27,29 @@ export function AdminLoginPage() {
 
   if (session) return <Navigate to="/admin" replace />
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
-    setTimeout(() => {
-      const result = merchantAuth.login(email, password)
-      setSubmitting(false)
-      if (!result.ok) {
-        setError(result.error)
-        return
-      }
-      navigate('/admin', { replace: true })
-    }, 280)
+    const result = await merchantAuth.login(email, password)
+    setSubmitting(false)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    navigate('/admin', { replace: true })
   }
 
-  function loginAsDemo() {
+  async function loginAsDemo() {
     const u = MERCHANT_USERS[0]
     if (!u) return
     setEmail(u.email)
     setPassword(u.password)
     setSubmitting(true)
-    setTimeout(() => {
-      merchantAuth.login(u.email, u.password)
-      navigate('/admin', { replace: true })
-    }, 200)
+    const result = await merchantAuth.login(u.email, u.password)
+    setSubmitting(false)
+    if (result.ok) navigate('/admin', { replace: true })
+    else setError(result.error)
   }
 
   return (

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ShieldCheck, Sparkles } from 'lucide-react'
 import { activationActions, userActions } from '@/lib/stores'
 import { useToast } from '@/components/Toast'
+import { userApi, ApiError } from '@/lib/api'
 
 type Errors = Partial<Record<keyof FormState, string>>
 
@@ -64,30 +65,43 @@ export function RegistroPage() {
     return errs
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const errs = validate()
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
 
     setSubmitting(true)
-    setTimeout(() => {
-      userActions.register({
-        nombre: form.nombre.trim(),
-        dni: form.dni.replace(/\D/g, ''),
-        email: form.email.trim().toLowerCase(),
-        whatsapp: form.whatsapp.trim(),
-        fechaNacimiento: form.fechaNacimiento,
-      })
-      toast.success('¡Cuenta creada!', 'Ya podés canjear descuentos.')
-      const activarMatch = next.match(/^\/cupon\/([^/]+)\/activar$/)
-      if (activarMatch) {
-        const a = activationActions.activate(activarMatch[1])
-        navigate(`/activacion/${a.id}`, { replace: true })
-      } else {
-        navigate(next, { replace: true })
+    const payload = {
+      nombre: form.nombre.trim(),
+      dni: form.dni.replace(/\D/g, ''),
+      email: form.email.trim().toLowerCase(),
+      whatsapp: form.whatsapp.trim(),
+      fechaNacimiento: form.fechaNacimiento,
+    }
+
+    // Intentamos registrar contra el API; si falla (offline / backend caído)
+    // caemos al store local para no romper la demo.
+    try {
+      await userApi.register({ ...payload, acceptedTc: true })
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setErrors({ email: err.payload?.error ?? 'Email ya registrado' })
+        setSubmitting(false)
+        return
       }
-    }, 280)
+      // fallback offline: seguimos con userActions.register local
+    }
+    userActions.register(payload)
+    toast.success('¡Cuenta creada!', 'Ya podés canjear descuentos.')
+    const activarMatch = next.match(/^\/cupon\/([^/]+)\/activar$/)
+    if (activarMatch) {
+      const a = activationActions.activate(activarMatch[1])
+      navigate(`/activacion/${a.id}`, { replace: true })
+    } else {
+      navigate(next, { replace: true })
+    }
+    setSubmitting(false)
   }
 
   return (

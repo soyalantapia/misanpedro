@@ -5,6 +5,15 @@ import { logger } from 'hono/logger'
 import mongoose from 'mongoose'
 import { env } from '@/env'
 import { connectDB } from '@/db/connection'
+import { merchantAuthRoutes } from '@/routes/merchant-auth'
+import { userAuthRoutes } from '@/routes/user-auth'
+import { merchantsRoutes } from '@/routes/merchants'
+import { couponsRoutes } from '@/routes/coupons'
+import { activationsRoutes } from '@/routes/activations'
+import { redemptionsRoutes } from '@/routes/redemptions'
+import { billingRoutes } from '@/routes/billing'
+import { whatsappRoutes } from '@/routes/whatsapp'
+import { seedIfEmpty } from '@/services/seed.service'
 
 const app = new Hono()
 
@@ -32,6 +41,15 @@ app.get('/api/v1/health', (c) => {
   })
 })
 
+app.route('/api/v1/merchant/auth', merchantAuthRoutes)
+app.route('/api/v1/auth', userAuthRoutes)
+app.route('/api/v1/merchants', merchantsRoutes)
+app.route('/api/v1/coupons', couponsRoutes)
+app.route('/api/v1/activations', activationsRoutes)
+app.route('/api/v1/redemptions', redemptionsRoutes)
+app.route('/api/v1/billing', billingRoutes)
+app.route('/api/v1/wa', whatsappRoutes)
+
 app.notFound((c) => c.json({ ok: false, error: 'not found' }, 404))
 
 app.onError((err, c) => {
@@ -48,6 +66,7 @@ app.onError((err, c) => {
 async function bootstrap() {
   try {
     await connectDB()
+    await seedIfEmpty()
   } catch (err) {
     console.error('[bootstrap] failed to connect DB; starting anyway:', err)
   }
