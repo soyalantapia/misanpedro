@@ -208,26 +208,29 @@ export function ensureDemoDataLoaded() {
 
 /**
  * Asegura que SIEMPRE haya un cupón activo con código `123456` listo para
- * que el cajero lo valide en el panel del comercio. Renueva el expiresAt
- * si está vencido o si fue canjeado en una sesión previa.
+ * que el cajero lo valide. Si una activación previa con ese código ya fue
+ * canjeada, la conserva en el historial y crea una nueva fresca.
  */
 export function refreshDemoActiveCoupon() {
   if (typeof window === 'undefined') return
 
   const now = new Date()
-  const existing = getActivationsSnapshot().find(
-    (a) => a.id === DEMO_ACTIVE_ACTIVATION_ID,
+  const all = getActivationsSnapshot()
+
+  // ¿Hay alguna activación con código demo en estado 'activo' y vigente?
+  const activeFresh = all.find(
+    (a) =>
+      a.codigoNumerico === DEMO_ACTIVE_CODE &&
+      a.status === 'activo' &&
+      new Date(a.expiresAt).getTime() > now.getTime() + 5 * 60 * 1000,
   )
+  if (activeFresh) return
 
-  // Si está activa y le quedan al menos 5 min, no la toco
-  if (existing && existing.status === 'activo') {
-    const remainingMs = new Date(existing.expiresAt).getTime() - now.getTime()
-    if (remainingMs > 5 * 60 * 1000) return
-  }
-
+  // Crear nueva con id único timestamp para no pisar canjes históricos
   const expiresAt = new Date(now.getTime() + 30 * 60 * 1000)
+  const id = `${DEMO_ACTIVE_ACTIVATION_ID}-${now.getTime()}`
   const activation: Activation = {
-    id: DEMO_ACTIVE_ACTIVATION_ID,
+    id,
     couponId: DEMO_ACTIVE_COUPON_ID,
     userId: DEMO_ACTIVE_USER_ID,
     codigoNumerico: DEMO_ACTIVE_CODE,

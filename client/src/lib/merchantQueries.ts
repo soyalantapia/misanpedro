@@ -85,7 +85,11 @@ export function useValidateByCode(code: string, merchantId: string): ValidationR
   const { activations, user, demoUsers } = useStore()
   const trimmed = code.replace(/\s+/g, '')
   if (trimmed.length < 6) return null
-  const activation = activations.find((a) => a.codigoNumerico === trimmed)
+  // Prioriza una activación activa sobre históricas canjeadas/expiradas
+  const activation =
+    activations.find(
+      (a) => a.codigoNumerico === trimmed && a.status === 'activo',
+    ) ?? activations.find((a) => a.codigoNumerico === trimmed)
   if (!activation) {
     return { ok: false, reason: 'not-found', message: 'Código no reconocido. Revisá los dígitos.' }
   }
