@@ -22,6 +22,7 @@ import { AdminComercioPage } from '@/pages/admin/AdminComercioPage'
 import { AdminWhatsappPage } from '@/pages/admin/AdminWhatsappPage'
 import { ToastProvider } from '@/components/Toast'
 import { InstallPrompt } from '@/components/InstallPrompt'
+import { DemoBar } from '@/components/DemoBar'
 
 export default function App() {
   return (
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </HashRouter>
+      <DemoBar />
       <InstallPrompt />
     </ToastProvider>
   )

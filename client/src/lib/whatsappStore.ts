@@ -12,19 +12,29 @@ export type WhatsappCampaign = {
   readCount: number
 }
 
+export type WhatsappConnection = {
+  connectedAt: string
+}
+
 const STORAGE_KEY = 'misanpedro.whatsapp.v1'
 
-type State = { campaigns: WhatsappCampaign[] }
+type State = {
+  campaigns: WhatsappCampaign[]
+  connections: Record<string, WhatsappConnection | undefined>
+}
 
-const empty: State = { campaigns: [] }
+const empty: State = { campaigns: [], connections: {} }
 
 function load(): State {
   if (typeof window === 'undefined') return empty
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return empty
-    const parsed = JSON.parse(raw) as State
-    return { campaigns: Array.isArray(parsed.campaigns) ? parsed.campaigns : [] }
+    const parsed = JSON.parse(raw) as Partial<State>
+    return {
+      campaigns: Array.isArray(parsed.campaigns) ? parsed.campaigns : [],
+      connections: parsed.connections ?? {},
+    }
   } catch {
     return empty
   }
@@ -39,6 +49,13 @@ let state: State = load()
 const listeners = new Set<() => void>()
 const notify = () => listeners.forEach((fn) => fn())
 
+function subscribe(fn: () => void) {
+  listeners.add(fn)
+  return () => {
+    listeners.delete(fn)
+  }
+}
+
 function update(updater: (s: State) => State) {
   state = updater(state)
   persist(state)
@@ -46,15 +63,14 @@ function update(updater: (s: State) => State) {
 }
 
 export function useWhatsappCampaigns() {
+  return useSyncExternalStore(subscribe, () => state.campaigns, () => state.campaigns)
+}
+
+export function useWhatsappConnection(merchantId: string): WhatsappConnection | null {
   return useSyncExternalStore(
-    (fn) => {
-      listeners.add(fn)
-      return () => {
-        listeners.delete(fn)
-      }
-    },
-    () => state.campaigns,
-    () => state.campaigns,
+    subscribe,
+    () => state.connections[merchantId] ?? null,
+    () => state.connections[merchantId] ?? null,
   )
 }
 
@@ -68,8 +84,24 @@ export const whatsappActions = {
       deliveredCount: Math.floor(input.sentCount * 0.95),
       readCount: Math.floor(input.sentCount * 0.62),
     }
-    update((s) => ({ campaigns: [campaign, ...s.campaigns] }))
+    update((s) => ({ ...s, campaigns: [campaign, ...s.campaigns] }))
     return campaign
+  },
+  connect(merchantId: string) {
+    update((s) => ({
+      ...s,
+      connections: {
+        ...s.connections,
+        [merchantId]: { connectedAt: new Date().toISOString() },
+      },
+    }))
+  },
+  disconnect(merchantId: string) {
+    update((s) => {
+      const next = { ...s.connections }
+      delete next[merchantId]
+      return { ...s, connections: next }
+    })
   },
 }
 

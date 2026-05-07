@@ -1,7 +1,7 @@
 import { useStore, activationActions } from './stores'
 import { getMerchant } from '@/data/mockData'
 import { getCouponSync as getCoupon } from './couponsStore'
-import type { Activation } from './types'
+import type { Activation, User } from './types'
 
 export type ValidationOk = {
   ok: true
@@ -82,17 +82,19 @@ function buildResult(
 }
 
 export function useValidateByCode(code: string, merchantId: string): ValidationResult | null {
-  const { activations, user } = useStore()
+  const { activations, user, demoUsers } = useStore()
   const trimmed = code.replace(/\s+/g, '')
   if (trimmed.length < 6) return null
   const activation = activations.find((a) => a.codigoNumerico === trimmed)
   if (!activation) {
     return { ok: false, reason: 'not-found', message: 'Código no reconocido. Revisá los dígitos.' }
   }
-  const customerName = user?.nombre ?? 'Vecino registrado'
+  const allUsers: User[] = [user, ...demoUsers].filter(Boolean) as User[]
+  const owner = allUsers.find((u) => u.id === activation.userId)
+  const customerName = owner?.nombre ?? 'Vecino registrado'
   const redemptionsByMerchant = activations.filter((a) => {
     const c = getCoupon(a.couponId)
-    return c?.merchantId === merchantId && a.status === 'canjeado'
+    return c?.merchantId === merchantId && a.status === 'canjeado' && a.userId === activation.userId
   })
   return buildResult(merchantId, activation, customerName, redemptionsByMerchant)
 }
@@ -124,6 +126,58 @@ export function useActivationsForMerchant(merchantId: string) {
 
 export function useRedemptionsForMerchant(merchantId: string) {
   return useActivationsForMerchant(merchantId).filter((a) => a.status === 'canjeado')
+}
+
+export type MerchantClient = {
+  user: User
+  redemptions: Activation[]
+  totalAhorro: number
+  firstRedeemedAt: string
+  lastRedeemedAt: string
+  count: number
+}
+
+export function useClientsForMerchant(merchantId: string): MerchantClient[] {
+  const { activations, user, demoUsers } = useStore()
+  const allUsers: User[] = [user, ...demoUsers].filter(Boolean) as User[]
+  const redemptions = activations.filter((a) => {
+    const c = getCoupon(a.couponId)
+    return c?.merchantId === merchantId && a.status === 'canjeado' && a.redeemedAt
+  })
+  const byUser = new Map<string, Activation[]>()
+  redemptions.forEach((a) => {
+    const list = byUser.get(a.userId) ?? []
+    list.push(a)
+    byUser.set(a.userId, list)
+  })
+  const clients: MerchantClient[] = []
+  byUser.forEach((rs, userId) => {
+    const u = allUsers.find((x) => x.id === userId)
+    if (!u) return
+    const sorted = [...rs].sort(
+      (a, b) => new Date(a.redeemedAt!).getTime() - new Date(b.redeemedAt!).getTime(),
+    )
+    clients.push({
+      user: u,
+      redemptions: sorted,
+      totalAhorro: rs.reduce((s, r) => s + (r.ahorroEstimado ?? 0), 0),
+      firstRedeemedAt: sorted[0].redeemedAt!,
+      lastRedeemedAt: sorted[sorted.length - 1].redeemedAt!,
+      count: rs.length,
+    })
+  })
+  // Más recientes primero
+  return clients.sort(
+    (a, b) =>
+      new Date(b.lastRedeemedAt).getTime() - new Date(a.lastRedeemedAt).getTime(),
+  )
+}
+
+export function useClientForMerchant(
+  merchantId: string,
+  userId: string | undefined,
+): MerchantClient | undefined {
+  return useClientsForMerchant(merchantId).find((c) => c.user.id === userId)
 }
 
 export function confirmRedemption(

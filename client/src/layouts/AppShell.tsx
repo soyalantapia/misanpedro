@@ -2,6 +2,7 @@ import { Outlet, NavLink } from 'react-router-dom'
 import { Tag, Ticket, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { OfflineBanner } from '@/components/OfflineBanner'
+import { RedemptionWatcher } from '@/components/RedemptionWatcher'
 
 const links = [
   { to: '/', label: 'Descuentos', icon: Tag, end: true },
@@ -73,6 +74,7 @@ export function AppShell() {
 
       <main className="flex-1 overflow-x-hidden pb-32 md:pb-0">
         <OfflineBanner />
+        <RedemptionWatcher />
         <Outlet />
       </main>
 

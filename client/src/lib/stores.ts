@@ -2,13 +2,17 @@ import { useSyncExternalStore } from 'react'
 import type { Activation, ActivationStatus, User } from './types'
 
 type StorageShape = {
+  /** Vecino que está navegando la app actualmente. */
   user: User | null
+  /** Vecinos demo (no son la sesión actual, son referencias para mostrar
+   *  múltiples clientes en el panel del comercio). */
+  demoUsers: User[]
   activations: Activation[]
 }
 
 const STORAGE_KEY = 'misanpedro.v1'
 
-const empty: StorageShape = { user: null, activations: [] }
+const empty: StorageShape = { user: null, demoUsers: [], activations: [] }
 
 function load(): StorageShape {
   if (typeof window === 'undefined') return empty
@@ -18,6 +22,7 @@ function load(): StorageShape {
     const parsed = JSON.parse(raw) as Partial<StorageShape>
     return {
       user: parsed.user ?? null,
+      demoUsers: Array.isArray(parsed.demoUsers) ? parsed.demoUsers : [],
       activations: Array.isArray(parsed.activations) ? parsed.activations : [],
     }
   } catch {
@@ -75,6 +80,16 @@ function startExpirationLoop() {
 
 startExpirationLoop()
 
+// Storage events: sincroniza cambios entre tabs del mismo browser
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== STORAGE_KEY) return
+    const next = load()
+    state = next
+    notify()
+  })
+}
+
 export function useStore() {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
@@ -100,9 +115,23 @@ export function useActivation(id: string | undefined) {
 }
 
 export function useActivationByCoupon(couponId: string | undefined) {
+  const userId = useStore().user?.id
+  if (!userId) return undefined
   return useStore().activations.find(
-    (a) => a.couponId === couponId && a.status === 'activo',
+    (a) => a.couponId === couponId && a.userId === userId && a.status === 'activo',
   )
+}
+
+/** Devuelve un User por id buscando entre el current y los demoUsers. */
+export function useUserById(id: string | undefined) {
+  const s = useStore()
+  if (!id) return undefined
+  if (s.user?.id === id) return s.user
+  return s.demoUsers.find((u) => u.id === id)
+}
+
+export function getAllUsers(): User[] {
+  return [state.user, ...state.demoUsers].filter(Boolean) as User[]
 }
 
 export const userActions = {
@@ -118,14 +147,32 @@ export const userActions = {
     return user
   },
   signOut() {
+    update((s) => ({ ...s, user: null }))
+  },
+}
+
+export const demoStoreActions = {
+  /** Reemplaza activaciones + users demo de una. Usado por el seeder. */
+  bulkSeed(input: { user?: User | null; demoUsers: User[]; activations: Activation[] }) {
+    update(() => ({
+      user: input.user ?? null,
+      demoUsers: input.demoUsers,
+      activations: input.activations,
+    }))
+  },
+  /** Elimina TODOS los datos demo dejando el storage vacío. */
+  resetAll() {
     update(() => empty)
   },
 }
 
 export const activationActions = {
   activate(couponId: string): Activation {
+    const userId = state.user?.id
+    if (!userId) throw new Error('No hay usuario logueado')
     const existing = state.activations.find(
-      (a) => a.couponId === couponId && a.status === 'activo',
+      (a) =>
+        a.couponId === couponId && a.userId === userId && a.status === 'activo',
     )
     if (existing) return existing
 
@@ -135,10 +182,11 @@ export const activationActions = {
     const activation: Activation = {
       id: `a-${randomToken(10)}`,
       couponId,
+      userId,
       codigoNumerico,
       qrPayload: JSON.stringify({
         couponId,
-        userId: state.user?.id,
+        userId,
         activationId: `a-${randomToken(10)}`,
         codigo: codigoNumerico,
         exp: expiresAt.getTime(),
@@ -163,6 +211,7 @@ export const activationActions = {
       codigoNumerico,
       qrPayload: JSON.stringify({
         couponId: target.couponId,
+        userId: target.userId,
         codigo: codigoNumerico,
         exp: expiresAt.getTime(),
       }),

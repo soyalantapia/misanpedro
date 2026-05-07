@@ -49,6 +49,8 @@ export type ActivationStatus = 'activo' | 'canjeado' | 'expirado' | 'cancelado'
 export type Activation = {
   id: string
   couponId: string
+  /** ID del User vecino que activó este cupón. */
+  userId: string
   codigoNumerico: string
   qrPayload: string
   activatedAt: string

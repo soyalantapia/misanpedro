@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import {
   ChevronLeft,
   Mail,
@@ -14,34 +14,33 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
-import { useRedemptionsForMerchant } from '@/lib/merchantQueries'
-import { useUser } from '@/lib/stores'
+import { useClientForMerchant } from '@/lib/merchantQueries'
 import { useCoupons } from '@/lib/couponsStore'
 import { formatMoney, formatRedeemedDate } from '@/lib/format'
 
 export function AdminClienteDetailPage() {
+  const { userId } = useParams<{ userId: string }>()
   const { session } = useMerchantSession()
   const merchantId = session?.merchantId ?? ''
-  const redemptions = useRedemptionsForMerchant(merchantId)
-  const user = useUser()
+  const client = useClientForMerchant(merchantId, userId)
   const coupons = useCoupons()
 
   const couponMap = useMemo(() => new Map(coupons.map((c) => [c.id, c])), [coupons])
 
-  if (redemptions.length === 0 || !user) {
+  if (!client) {
     return <Navigate to="/admin/clientes" replace />
   }
 
-  const ahorroTotal = redemptions.reduce((s, r) => s + (r.ahorroEstimado ?? 0), 0)
-  const sortedDesc = [...redemptions].sort((a, b) =>
-    new Date(b.redeemedAt!).getTime() - new Date(a.redeemedAt!).getTime(),
+  const { user, redemptions, totalAhorro, firstRedeemedAt, lastRedeemedAt, count } = client
+  const sortedDesc = [...redemptions].sort(
+    (a, b) =>
+      new Date(b.redeemedAt!).getTime() - new Date(a.redeemedAt!).getTime(),
   )
-  const firstAt = sortedDesc[sortedDesc.length - 1]?.redeemedAt
-  const lastAt = sortedDesc[0]?.redeemedAt
-  const monthsActive = monthsSince(firstAt)
-  const avgPerMonth = monthsActive > 0 ? Math.round((redemptions.length / monthsActive) * 10) / 10 : redemptions.length
 
-  // Patrón: día de la semana más frecuente
+  const monthsActive = monthsSince(firstRedeemedAt)
+  const avgPerMonth =
+    monthsActive > 0 ? Math.round((count / monthsActive) * 10) / 10 : count
+
   const dayCount = new Map<number, number>()
   redemptions.forEach((r) => {
     if (!r.redeemedAt) return
@@ -51,7 +50,6 @@ export function AdminClienteDetailPage() {
   const topDay = [...dayCount.entries()].sort((a, b) => b[1] - a[1])[0]
   const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
-  // Cupón más usado
   const couponCount = new Map<string, number>()
   redemptions.forEach((r) => {
     couponCount.set(r.couponId, (couponCount.get(r.couponId) ?? 0) + 1)
@@ -86,7 +84,7 @@ export function AdminClienteDetailPage() {
             {user.nombre}
           </h1>
           <p className="text-xs text-neutral-500">
-            Cliente Mi San Pedro · desde {firstAt ? formatRedeemedDate(firstAt) : '—'}
+            Cliente Mi San Pedro · desde {formatRedeemedDate(firstRedeemedAt)}
           </p>
         </div>
       </header>
@@ -94,15 +92,11 @@ export function AdminClienteDetailPage() {
       <section className="grid grid-cols-2 gap-2.5">
         <BigStat
           label="Dinero ahorrado"
-          value={formatMoney(ahorroTotal)}
+          value={formatMoney(totalAhorro)}
           icon={TrendingUp}
           accent
         />
-        <BigStat
-          label="Total de canjes"
-          value={String(redemptions.length)}
-          icon={Calendar}
-        />
+        <BigStat label="Total de canjes" value={String(count)} icon={Calendar} />
       </section>
 
       <section className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
@@ -165,15 +159,14 @@ export function AdminClienteDetailPage() {
           <PatternCard
             icon={Clock}
             label="Última visita"
-            value={lastAt ? formatRedeemedDate(lastAt) : '—'}
+            value={formatRedeemedDate(lastRedeemedAt)}
           />
         </div>
       </section>
 
       <section>
         <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
-          Historial completo · {redemptions.length}{' '}
-          {redemptions.length === 1 ? 'canje' : 'canjes'}
+          Historial completo · {count} {count === 1 ? 'canje' : 'canjes'}
         </p>
         <div className="flex flex-col gap-2">
           {sortedDesc.map((r, i) => {

@@ -1,38 +1,59 @@
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Lock, Users, Download, ScanLine } from 'lucide-react'
+import { Lock, Users, Download, ScanLine, Search } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
-import { useRedemptionsForMerchant } from '@/lib/merchantQueries'
-import { useUser } from '@/lib/stores'
-import { getCouponSync as getCoupon } from '@/lib/couponsStore'
+import { useClientsForMerchant } from '@/lib/merchantQueries'
 import { formatRedeemedDate, formatMoney } from '@/lib/format'
+import { useToast } from '@/components/Toast'
 
 export function AdminClientesPage() {
   const { session } = useMerchantSession()
   const merchantId = session?.merchantId ?? ''
-  const redemptions = useRedemptionsForMerchant(merchantId)
-  const user = useUser()
+  const clients = useClientsForMerchant(merchantId)
+  const [search, setSearch] = useState('')
+  const toast = useToast()
 
-  if (redemptions.length === 0) {
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return clients
+    return clients.filter(
+      (c) =>
+        c.user.nombre.toLowerCase().includes(q) ||
+        c.user.email.toLowerCase().includes(q) ||
+        c.user.dni.includes(q),
+    )
+  }, [clients, search])
+
+  if (clients.length === 0) {
     return <LockedState />
   }
 
-  // En el MVP demo solo hay un user (el vecino del browser actual)
-  const totalAhorro = redemptions.reduce((s, r) => s + (r.ahorroEstimado ?? 0), 0)
-  const firstAt = redemptions[redemptions.length - 1]?.redeemedAt
-  const lastAt = redemptions[0]?.redeemedAt
+  const totalUnique = clients.length
+  const totalCanjes = clients.reduce((s, c) => s + c.count, 0)
+  const totalAhorro = clients.reduce((s, c) => s + c.totalAhorro, 0)
 
   function handleExport() {
     const rows = [
-      ['Nombre', 'DNI', 'Email', 'WhatsApp', 'Primer canje', 'Último canje', 'Cantidad de canjes'],
       [
-        user?.nombre ?? 'Sin datos',
-        user?.dni ?? '',
-        user?.email ?? '',
-        user?.whatsapp ?? '',
-        firstAt ?? '',
-        lastAt ?? '',
-        String(redemptions.length),
+        'Nombre',
+        'DNI',
+        'Email',
+        'WhatsApp',
+        'Primer canje',
+        'Último canje',
+        'Cantidad de canjes',
+        'Ahorro generado',
       ],
+      ...clients.map((c) => [
+        c.user.nombre,
+        c.user.dni,
+        c.user.email,
+        c.user.whatsapp,
+        c.firstRedeemedAt,
+        c.lastRedeemedAt,
+        String(c.count),
+        String(c.totalAhorro),
+      ]),
     ]
     const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -42,6 +63,7 @@ export function AdminClientesPage() {
     a.download = `clientes-${merchantId}-${Date.now()}.csv`
     a.click()
     URL.revokeObjectURL(url)
+    toast.success('CSV descargado', `${clients.length} clientes exportados.`)
   }
 
   return (
@@ -54,55 +76,82 @@ export function AdminClientesPage() {
           Vecinos que canjearon en tu comercio
         </h1>
         <p className="text-sm text-neutral-500">
-          Esta base es exclusiva de los vecinos que ya pasaron por tu local. La base general de Mi
+          Esta base es exclusiva de los vecinos que pasaron por tu local. La base general de Mi
           San Pedro nunca se entrega.
         </p>
       </header>
 
       <div className="flex items-center justify-between gap-3 rounded-2xl bg-neutral-900 p-4 text-white">
-        <div>
-          <p className="text-2xl font-bold tabular-nums">1</p>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">
-            Cliente único
-          </p>
+        <div className="grid grid-cols-3 gap-3">
+          <Stat label="Únicos" value={totalUnique} />
+          <Stat label="Canjes" value={totalCanjes} />
+          <Stat label="Ahorrado" value={formatMoney(totalAhorro)} small />
         </div>
         <button
           type="button"
           onClick={handleExport}
-          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-2 text-xs font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-2 text-xs font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
         >
-          <Download size={13} /> Exportar CSV
+          <Download size={13} /> CSV
         </button>
       </div>
 
-      {user && (
-        <Link
-          to={`/admin/clientes/${user.id}`}
-          className="flex items-center gap-3 rounded-3xl bg-white p-4 shadow-card ring-1 ring-neutral-100 transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
-        >
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-accent-400 to-accent-600 text-white text-sm font-bold shadow-cta">
-            {user.nombre
-              .split(' ')
-              .map((p) => p[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-sm font-bold text-neutral-900">{user.nombre}</p>
-            <p className="truncate text-xs text-neutral-500">
-              Último canje · {lastAt ? formatRedeemedDate(lastAt) : '—'}
-            </p>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="text-base font-bold text-status-success-fg tabular-nums">
-              {formatMoney(totalAhorro)}
-            </p>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-              {redemptions.length} {redemptions.length === 1 ? 'canje' : 'canjes'}
-            </p>
-          </div>
-        </Link>
+      <div className="relative">
+        <Search
+          size={16}
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
+        />
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por nombre, email o DNI…"
+          className="w-full rounded-2xl bg-white py-3 pl-10 pr-4 text-sm shadow-card ring-1 ring-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400"
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {filtered.map((c, i) => {
+          const initials = c.user.nombre
+            .split(' ')
+            .map((p) => p[0])
+            .slice(0, 2)
+            .join('')
+            .toUpperCase()
+          return (
+            <Link
+              key={c.user.id}
+              to={`/admin/clientes/${c.user.id}`}
+              style={{ animationDelay: `${i * 40}ms` }}
+              className="animate-fade-up flex items-center gap-3 rounded-3xl bg-white p-4 shadow-card ring-1 ring-neutral-100 transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
+            >
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-accent-400 to-accent-600 text-white text-sm font-bold shadow-cta">
+                {initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="truncate text-sm font-bold text-neutral-900">{c.user.nombre}</p>
+                <p className="truncate text-xs text-neutral-500">
+                  {formatRedeemedDate(c.lastRedeemedAt)}{' '}
+                  {c.count > 1 ? `· ${c.count} canjes en total` : '· 1ra visita'}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-base font-bold text-status-success-fg tabular-nums">
+                  {formatMoney(c.totalAhorro)}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                  ahorrado
+                </p>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+
+      {filtered.length === 0 && (
+        <p className="text-center text-sm text-neutral-400">
+          No hay clientes que coincidan con "{search}".
+        </p>
       )}
 
       <div className="rounded-2xl bg-accent-50 p-4 text-accent-800 ring-1 ring-accent-100">
@@ -110,37 +159,33 @@ export function AdminClientesPage() {
           Próximo paso
         </p>
         <p className="mt-1 text-xs font-medium">
-          La campaña masiva por WhatsApp Business llega en la próxima fase. Vas a poder mandar hasta
-          4 mensajes por mes a tu base.
+          Mandá un mensaje masivo a tu base via WhatsApp Business.{' '}
+          <Link to="/admin/whatsapp" className="font-bold underline-offset-2 hover:underline">
+            Ir al composer
+          </Link>
         </p>
       </div>
+    </div>
+  )
+}
 
-      <h3 className="mt-4 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
-        Historial de canjes
-      </h3>
-      <div className="flex flex-col gap-2">
-        {redemptions.map((r) => {
-          const c = getCoupon(r.couponId)
-          if (!c || !r.redeemedAt) return null
-          return (
-            <div
-              key={r.id}
-              className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-card ring-1 ring-neutral-100"
-            >
-              <div className="grid h-9 w-9 place-items-center rounded-xl bg-accent-50 text-accent-700 text-xs font-bold tabular-nums">
-                {c.porcentaje}%
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="truncate text-sm font-bold text-neutral-900">{c.titulo}</p>
-                <p className="text-xs text-neutral-500">{formatRedeemedDate(r.redeemedAt)}</p>
-              </div>
-              <p className="shrink-0 text-xs font-bold text-status-success-fg tabular-nums">
-                {formatMoney(r.ahorroEstimado ?? 0)}
-              </p>
-            </div>
-          )
-        })}
-      </div>
+function Stat({
+  label,
+  value,
+  small,
+}: {
+  label: string
+  value: string | number
+  small?: boolean
+}) {
+  return (
+    <div>
+      <p
+        className={`font-bold tabular-nums leading-tight ${small ? 'text-base' : 'text-2xl'}`}
+      >
+        {value}
+      </p>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{label}</p>
     </div>
   )
 }
