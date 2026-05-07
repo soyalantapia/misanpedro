@@ -1,9 +1,21 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, ScanLine, Tag, Users, Store, Sparkles, MessageCircle } from 'lucide-react'
+import {
+  ArrowRight,
+  ScanLine,
+  Tag,
+  Users,
+  Store,
+  Sparkles,
+  MessageCircle,
+  TrendingUp,
+  HandCoins,
+  Receipt,
+  UserPlus,
+} from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useRedemptionsForMerchant } from '@/lib/merchantQueries'
-import { useCouponsByMerchant } from '@/lib/couponsStore'
+import { useCouponsByMerchant, useCoupons } from '@/lib/couponsStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { formatMoney } from '@/lib/format'
 import { cn } from '@/lib/cn'
@@ -31,9 +43,21 @@ export function AdminDashboardPage() {
 
   const merchantCoupons = useCouponsByMerchant(merchantId)
   const cuponesActivos = merchantCoupons.filter((c) => c.estado === 'activo')
+  const allCoupons = useCoupons()
+  const couponMap = useMemo(() => new Map(allCoupons.map((c) => [c.id, c])), [allCoupons])
   const clientesUnicos = new Set(redemptions.map((r) => r.userId)).size
   const hasRedemptions = redemptions.length > 0
+
+  // Métricas de por vida
   const ahorroTotal = redemptions.reduce((s, r) => s + (r.ahorroEstimado ?? 0), 0)
+  // Ingresos = sumatoria de tickets estimados de cada canje
+  // (ticket = ahorro / (porcentaje/100))
+  const ingresosTotal = redemptions.reduce((s, r) => {
+    const c = couponMap.get(r.couponId)
+    if (!c || !r.ahorroEstimado || c.porcentaje === 0) return s
+    return s + (r.ahorroEstimado * 100) / c.porcentaje
+  }, 0)
+  const ventasTotal = redemptions.length
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
@@ -56,23 +80,43 @@ export function AdminDashboardPage() {
       </section>
 
       {hasRedemptions && (
-        <div className="rounded-2xl bg-accent-50 p-4 text-accent-800 ring-1 ring-accent-100">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-accent-700">
-            Ahorro generado a tus clientes
-          </p>
-          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-accent-700">
-            {formatMoney(ahorroTotal)}
-          </p>
-          <p className="mt-0.5 text-[11px] font-medium text-accent-700/80">
-            {redemptions.length} {redemptions.length === 1 ? 'canje total' : 'canjes totales'}
-            {kpis.ahorroMes > 0 && (
-              <>
-                {' · '}
-                <span className="font-bold">{formatMoney(kpis.ahorroMes)}</span> este mes
-              </>
-            )}
-          </p>
-        </div>
+        <section className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+              <TrendingUp size={11} /> Generado por la app · de por vida
+            </p>
+            <span className="text-[10px] font-medium text-neutral-400">
+              desde que sumaste tu comercio
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <LifetimeStat
+              icon={Receipt}
+              label="Ingresos generados"
+              value={formatMoney(ingresosTotal)}
+              hint="Suma estimada de los tickets pagados con cupón"
+              accent
+            />
+            <LifetimeStat
+              icon={HandCoins}
+              label="Ahorro a clientes"
+              value={formatMoney(ahorroTotal)}
+              hint="Lo que tus clientes ahorraron gracias a tus descuentos"
+            />
+            <LifetimeStat
+              icon={ScanLine}
+              label="Ventas con la app"
+              value={String(ventasTotal)}
+              hint={`${ventasTotal === 1 ? 'transacción' : 'transacciones'} canjeadas`}
+            />
+            <LifetimeStat
+              icon={UserPlus}
+              label="Clientes nuevos"
+              value={String(clientesUnicos)}
+              hint={`${clientesUnicos === 1 ? 'vecino' : 'vecinos'} llegaron por Mi San Pedro`}
+            />
+          </div>
+        </section>
       )}
 
       <section className="flex flex-col gap-3">
@@ -120,6 +164,52 @@ export function AdminDashboardPage() {
           icon={Store}
         />
       </section>
+    </div>
+  )
+}
+
+function LifetimeStat({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  accent,
+}: {
+  icon: typeof TrendingUp
+  label: string
+  value: string
+  hint?: string
+  accent?: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        'flex flex-col gap-2 rounded-2xl p-4 shadow-card ring-1 ring-neutral-100',
+        accent
+          ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white'
+          : 'bg-white text-neutral-900',
+      )}
+    >
+      <div
+        className={cn(
+          'inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest',
+          accent ? 'bg-white/15 text-accent-50' : 'bg-accent-50 text-accent-700',
+        )}
+      >
+        <Icon size={10} />
+        {label}
+      </div>
+      <p className="text-2xl font-bold tabular-nums leading-tight tracking-tight">{value}</p>
+      {hint && (
+        <p
+          className={cn(
+            'text-[11px] leading-snug',
+            accent ? 'text-accent-50/80' : 'text-neutral-500',
+          )}
+        >
+          {hint}
+        </p>
+      )}
     </div>
   )
 }
