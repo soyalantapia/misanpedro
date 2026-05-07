@@ -54,3 +54,57 @@ export function calcAhorro(porcentaje: number, ticketEstimado = 4000) {
 export function pad(n: number): string {
   return String(n).padStart(2, '0')
 }
+
+import type { HorariosSemana, DiaSemana } from './types'
+import { DIAS_SEMANA } from './types'
+
+/**
+ * Convierte HorariosSemana a un string legible agrupando días con el mismo
+ * horario. Ej: "Lun a Vie · 9 a 18 hs · Sáb 10 a 14 · Dom cerrado"
+ */
+export function formatHorariosSemana(detalle: HorariosSemana): string {
+  type Group = { from: number; to: number; key: string; label: string }
+  const groups: Group[] = []
+  let current: Group | null = null
+
+  DIAS_SEMANA.forEach((d, i) => {
+    const horario = detalle[d.id]
+    const key = horario.abierto
+      ? `abierto:${horario.desde}-${horario.hasta}`
+      : 'cerrado'
+    const label = horario.abierto
+      ? `${horario.desde} a ${horario.hasta}`
+      : 'cerrado'
+    if (current && current.key === key) {
+      current.to = i
+    } else {
+      if (current) groups.push(current)
+      current = { from: i, to: i, key, label }
+    }
+  })
+  if (current) groups.push(current)
+
+  return groups
+    .map((g) => {
+      const fromCorto = DIAS_SEMANA[g.from].corto
+      const toCorto = DIAS_SEMANA[g.to].corto
+      const range =
+        g.from === g.to ? fromCorto : `${fromCorto} a ${toCorto}`
+      return g.label === 'cerrado' ? `${range} cerrado` : `${range} · ${g.label}`
+    })
+    .join(' · ')
+}
+
+/** Convierte string viejo a un HorariosSemana sensato (todos abiertos 9-18) */
+export function defaultHorariosSemana(): HorariosSemana {
+  const dias: DiaSemana[] = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom']
+  const result: Partial<HorariosSemana> = {}
+  dias.forEach((d) => {
+    if (d === 'dom') {
+      result[d] = { abierto: false }
+    } else {
+      result[d] = { abierto: true, desde: '09:00', hasta: '20:00' }
+    }
+  })
+  return result as HorariosSemana
+}

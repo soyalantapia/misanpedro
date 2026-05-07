@@ -23,7 +23,11 @@ export function CouponCard({
       className="animate-fade-up group flex flex-col overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-neutral-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2"
     >
       <div className="relative">
-        <CardImage categoria={merchant.categoria} className="h-36 w-full" />
+        <CardImage
+          categoria={merchant.categoria}
+          coverImageUrl={merchant.coverImageUrl}
+          className="h-36 w-full"
+        />
         <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/95 px-3 py-1 font-bold text-accent-700 shadow-card backdrop-blur-md">
           <span className="text-base tabular-nums">{coupon.porcentaje}%</span>
           <span className="ml-1 text-[10px] font-extrabold tracking-widest">OFF</span>

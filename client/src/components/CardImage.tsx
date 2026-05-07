@@ -46,13 +46,30 @@ export function CardImage({
   categoria,
   className,
   size = 'md',
+  coverImageUrl,
 }: {
   categoria: Categoria
   className?: string
   size?: 'sm' | 'md' | 'lg'
+  /** URL o dataURL — si está, reemplaza el gradiente categórico */
+  coverImageUrl?: string
 }) {
   const v = variants[categoria]
   const iconSize = size === 'lg' ? 64 : size === 'sm' ? 28 : 44
+
+  if (coverImageUrl) {
+    return (
+      <div className={cn('relative overflow-hidden', className)}>
+        <img
+          src={coverImageUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+        />
+      </div>
+    )
+  }
+
   return (
     <div
       className={cn(

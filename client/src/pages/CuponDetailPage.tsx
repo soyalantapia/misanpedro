@@ -12,7 +12,7 @@ import { useCoupon } from '@/lib/couponsStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { CATEGORIAS } from '@/lib/types'
 import { activationActions, useActivationByCoupon, useUser } from '@/lib/stores'
-import { formatVigencia } from '@/lib/format'
+import { formatHorariosSemana, formatVigencia } from '@/lib/format'
 
 export function CuponDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -42,12 +42,22 @@ export function CuponDetailPage() {
     navigate(`/activacion/${a.id}`)
   }
 
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${merchant.nombre}, ${merchant.direccion}`)}`
+  const mapsUrl =
+    merchant.mapsUrl ||
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${merchant.nombre}, ${merchant.direccion}`)}`
+  const horariosDisplay = merchant.horariosDetalle
+    ? formatHorariosSemana(merchant.horariosDetalle)
+    : merchant.horarios
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col">
       <div className="relative">
-        <CardImage categoria={merchant.categoria} className="h-56 w-full sm:h-64" size="lg" />
+        <CardImage
+          categoria={merchant.categoria}
+          coverImageUrl={merchant.coverImageUrl}
+          className="h-56 w-full sm:h-64"
+          size="lg"
+        />
         <Link
           to="/"
           aria-label="Volver"
@@ -94,7 +104,7 @@ export function CuponDetailPage() {
           <div className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100 text-sm text-neutral-700">
             <Row icon={MapPin}>{merchant.direccion}</Row>
             <Row icon={Phone}>{merchant.telefono}</Row>
-            <Row icon={Clock}>{merchant.horarios}</Row>
+            <Row icon={Clock}>{horariosDisplay}</Row>
             <a
               href={mapsUrl}
               target="_blank"

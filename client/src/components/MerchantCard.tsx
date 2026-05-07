@@ -23,7 +23,12 @@ export function MerchantCard({
       style={{ animationDelay: `${index * 60}ms` }}
       className="animate-fade-up group flex overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-neutral-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2"
     >
-      <CardImage categoria={merchant.categoria} className="h-auto w-28 shrink-0" size="sm" />
+      <CardImage
+        categoria={merchant.categoria}
+        coverImageUrl={merchant.coverImageUrl}
+        className="h-auto w-28 shrink-0"
+        size="sm"
+      />
       <div className="flex flex-1 flex-col gap-1 p-3.5">
         <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{cat}</p>
         <h3 className="text-base font-bold leading-tight text-neutral-900">{merchant.nombre}</h3>

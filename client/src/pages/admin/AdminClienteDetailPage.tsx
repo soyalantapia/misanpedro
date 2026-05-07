@@ -41,6 +41,17 @@ export function AdminClienteDetailPage() {
   const avgPerMonth =
     monthsActive > 0 ? Math.round((count / monthsActive) * 10) / 10 : count
 
+  // LTV (Lifetime Value): suma estimada de los tickets que el cliente gastó
+  // en este comercio. Para cada canje:
+  //   ticket_estimado = ahorro / (porcentaje / 100)
+  // Es una estimación porque solo registramos el ahorro, no el ticket exacto.
+  const ltv = redemptions.reduce((s, r) => {
+    const c = couponMap.get(r.couponId)
+    if (!c || !r.ahorroEstimado || c.porcentaje === 0) return s
+    return s + (r.ahorroEstimado * 100) / c.porcentaje
+  }, 0)
+  const avgTicket = count > 0 ? Math.round(ltv / count) : 0
+
   const dayCount = new Map<number, number>()
   redemptions.forEach((r) => {
     if (!r.redeemedAt) return
@@ -97,6 +108,31 @@ export function AdminClienteDetailPage() {
           accent
         />
         <BigStat label="Total de canjes" value={String(count)} icon={Calendar} />
+      </section>
+
+      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50 via-emerald-50 to-accent-50 p-5 ring-1 ring-emerald-100">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-700 ring-1 ring-emerald-200">
+              <TrendingUp size={11} /> LTV · valor del cliente
+            </div>
+            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-neutral-900 sm:text-4xl">
+              {formatMoney(ltv)}
+            </p>
+            <p className="mt-0.5 text-[11px] font-semibold text-neutral-500">
+              Ticket promedio:{' '}
+              <span className="font-bold text-neutral-900 tabular-nums">
+                {formatMoney(avgTicket)}
+              </span>
+            </p>
+          </div>
+        </div>
+        <p className="mt-3 rounded-xl bg-white/70 p-3 text-[11px] leading-snug text-neutral-700 ring-1 ring-emerald-100/60">
+          <span className="font-bold text-neutral-900">¿Qué significa?</span> El LTV (Lifetime
+          Value) es la suma estimada de todo lo que este cliente gastó en tu comercio. Lo
+          calculamos a partir del ahorro generado y el porcentaje de cada cupón canjeado. Cuanto
+          más alto, más valioso es el cliente para tu negocio.
+        </p>
       </section>
 
       <section className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">

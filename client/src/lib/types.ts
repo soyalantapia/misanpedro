@@ -15,6 +15,24 @@ export const CATEGORIAS: { id: Categoria; label: string }[] = [
   { id: 'hogar', label: 'Hogar' },
 ]
 
+export type DiaSemana = 'lun' | 'mar' | 'mie' | 'jue' | 'vie' | 'sab' | 'dom'
+
+export const DIAS_SEMANA: { id: DiaSemana; label: string; corto: string }[] = [
+  { id: 'lun', label: 'Lunes', corto: 'Lun' },
+  { id: 'mar', label: 'Martes', corto: 'Mar' },
+  { id: 'mie', label: 'Miércoles', corto: 'Mié' },
+  { id: 'jue', label: 'Jueves', corto: 'Jue' },
+  { id: 'vie', label: 'Viernes', corto: 'Vie' },
+  { id: 'sab', label: 'Sábado', corto: 'Sáb' },
+  { id: 'dom', label: 'Domingo', corto: 'Dom' },
+]
+
+export type HorarioDia =
+  | { abierto: false }
+  | { abierto: true; desde: string; hasta: string }
+
+export type HorariosSemana = Record<DiaSemana, HorarioDia>
+
 export type Merchant = {
   id: string
   nombre: string
@@ -24,7 +42,13 @@ export type Merchant = {
   lng: number
   telefono: string
   horarios: string
+  /** Horarios detallados por día (si está, reemplaza al string `horarios`) */
+  horariosDetalle?: HorariosSemana
   cover: string
+  /** URL o dataURL de imagen de portada custom (si está, reemplaza el gradient) */
+  coverImageUrl?: string
+  /** Link directo a Google Maps (si está, reemplaza la búsqueda generada) */
+  mapsUrl?: string
   logoSeed: string
   destacado?: boolean
 }
