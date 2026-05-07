@@ -81,19 +81,38 @@ export function AdminClientesPage() {
         </p>
       </header>
 
-      <div className="flex items-center justify-between gap-3 rounded-2xl bg-neutral-900 p-4 text-white">
-        <div className="grid grid-cols-3 gap-3">
-          <Stat label="Únicos" value={totalUnique} />
-          <Stat label="Canjes" value={totalCanjes} />
-          <Stat label="Ahorrado" value={formatMoney(totalAhorro)} small />
+      <div className="overflow-hidden rounded-3xl bg-neutral-900 text-white shadow-card">
+        <div className="flex items-start justify-between gap-3 p-5">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              Ahorro generado a clientes
+            </p>
+            <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight">
+              {formatMoney(totalAhorro)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleExport}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-3.5 py-2 text-xs font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+          >
+            <Download size={13} /> CSV
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleExport}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-2 text-xs font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
-        >
-          <Download size={13} /> CSV
-        </button>
+        <div className="grid grid-cols-2 border-t border-white/10">
+          <div className="border-r border-white/10 px-5 py-3.5">
+            <p className="text-xl font-bold tabular-nums leading-tight">{totalUnique}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              {totalUnique === 1 ? 'Cliente único' : 'Clientes únicos'}
+            </p>
+          </div>
+          <div className="px-5 py-3.5">
+            <p className="text-xl font-bold tabular-nums leading-tight">{totalCanjes}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              {totalCanjes === 1 ? 'Canje total' : 'Canjes totales'}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="relative">
@@ -169,26 +188,6 @@ export function AdminClientesPage() {
   )
 }
 
-function Stat({
-  label,
-  value,
-  small,
-}: {
-  label: string
-  value: string | number
-  small?: boolean
-}) {
-  return (
-    <div>
-      <p
-        className={`font-bold tabular-nums leading-tight ${small ? 'text-base' : 'text-2xl'}`}
-      >
-        {value}
-      </p>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{label}</p>
-    </div>
-  )
-}
 
 function LockedState() {
   return (
