@@ -117,24 +117,26 @@ export function AdminConfirmarCanjePage() {
       </label>
 
       <div
-        className="fixed inset-x-3 bottom-3 z-30 flex flex-col gap-2 rounded-3xl bg-white p-3 shadow-floating ring-1 ring-neutral-100 sm:inset-x-auto sm:right-6 sm:left-auto sm:max-w-md md:bottom-6"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <button
-          type="button"
-          onClick={handleConfirm}
-          disabled={submitting}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-status-success px-6 py-4 text-base font-bold text-white shadow-cta-success transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
-        >
-          <CheckCircle2 size={18} />
-          {submitting ? 'Confirmando…' : 'Confirmar canje'}
-        </button>
-        <Link
-          to="/admin/validar"
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-100 px-6 py-3 text-sm font-bold text-neutral-700 transition-all hover:bg-primary-200"
-        >
-          <X size={14} /> Cancelar
-        </Link>
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={submitting}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-status-success px-6 py-4 text-base font-bold text-white shadow-cta-success transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
+          >
+            <CheckCircle2 size={18} />
+            {submitting ? 'Confirmando…' : 'Confirmar canje'}
+          </button>
+          <Link
+            to="/admin/validar"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-100 px-6 py-3 text-sm font-bold text-neutral-700 transition-all hover:bg-primary-200"
+          >
+            <X size={14} /> Cancelar
+          </Link>
+        </div>
       </div>
     </div>
   )

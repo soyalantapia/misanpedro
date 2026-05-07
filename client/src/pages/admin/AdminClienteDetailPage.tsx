@@ -203,17 +203,19 @@ export function AdminClienteDetailPage() {
       </div>
 
       <div
-        className="fixed inset-x-3 bottom-3 z-30 flex flex-col gap-2 rounded-3xl bg-white p-3 shadow-floating ring-1 ring-neutral-100 sm:inset-x-auto sm:right-6 sm:left-auto sm:max-w-md md:bottom-6"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <a
-          href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}`}
-          target="_blank"
-          rel="noreferrer"
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
-        >
-          <MessageCircle size={16} /> Escribir por WhatsApp
-        </a>
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">
+          <a
+            href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+          >
+            <MessageCircle size={16} /> Escribir por WhatsApp
+          </a>
+        </div>
       </div>
     </div>
   )

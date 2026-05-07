@@ -108,22 +108,24 @@ export function CuponDetailPage() {
       </div>
 
       <div
-        className="fixed inset-x-3 bottom-3 z-30 flex flex-col gap-2 rounded-3xl bg-white p-3 shadow-floating ring-1 ring-neutral-100 sm:inset-x-auto sm:right-6 sm:left-auto sm:max-w-md md:bottom-6"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <button
-          type="button"
-          onClick={handleActivate}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-4 text-base font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5 hover:from-accent-500 hover:to-accent-700 hover:shadow-floating active:translate-y-0 active:scale-[0.98]"
-        >
-          {existing ? 'Ver mi cupón activo' : 'Canjear descuento'}
-          <ArrowRight size={18} />
-        </button>
-        {!user && (
-          <p className="px-2 text-center text-[11px] text-neutral-500">
-            Te vamos a pedir tus datos una sola vez. Solo al primer canje.
-          </p>
-        )}
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">
+          <button
+            type="button"
+            onClick={handleActivate}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-4 text-base font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5 hover:from-accent-500 hover:to-accent-700 hover:shadow-floating active:translate-y-0 active:scale-[0.98]"
+          >
+            {existing ? 'Ver mi cupón activo' : 'Canjear descuento'}
+            <ArrowRight size={18} />
+          </button>
+          {!user && (
+            <p className="px-2 text-center text-[11px] text-neutral-500">
+              Te vamos a pedir tus datos una sola vez. Solo al primer canje.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )

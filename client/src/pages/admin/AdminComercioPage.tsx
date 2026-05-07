@@ -230,23 +230,25 @@ export function AdminComercioPage() {
 
       {editing && (
         <div
-          className="fixed inset-x-3 bottom-3 z-30 flex flex-col gap-2 rounded-3xl bg-white p-3 shadow-floating ring-1 ring-neutral-100 sm:inset-x-auto sm:right-6 sm:left-auto sm:max-w-md md:bottom-6"
-          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <button
-            type="button"
-            onClick={save}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
-          >
-            <Save size={16} /> Guardar cambios
-          </button>
-          <button
-            type="button"
-            onClick={cancelEdit}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-100 px-6 py-3 text-sm font-bold text-neutral-700 hover:bg-primary-200"
-          >
-            <X size={14} /> Cancelar
-          </button>
+          <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">
+            <button
+              type="button"
+              onClick={save}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+            >
+              <Save size={16} /> Guardar cambios
+            </button>
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-100 px-6 py-3 text-sm font-bold text-neutral-700 hover:bg-primary-200"
+            >
+              <X size={14} /> Cancelar
+            </button>
+          </div>
         </div>
       )}
     </div>
