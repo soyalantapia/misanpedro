@@ -67,6 +67,7 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   const [code, setCode] = useState('')
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
+  const isLaEsquina = merchantId === 'la-esquina'
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -116,16 +117,41 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
       {ready && result && <ResultPanel result={result} onConfirm={handleConfirm} />}
 
       {!ready && (
-        <p className="text-center text-xs text-neutral-400">
-          Ingresá los 6 dígitos para validar.{' '}
-          <button
-            type="button"
-            onClick={onSwitch}
-            className="font-bold text-accent-700 underline-offset-2 hover:underline"
-          >
-            Mejor escaneá el QR
-          </button>
-        </p>
+        <>
+          <p className="text-center text-xs text-neutral-400">
+            Ingresá los 6 dígitos para validar.{' '}
+            <button
+              type="button"
+              onClick={onSwitch}
+              className="font-bold text-accent-700 underline-offset-2 hover:underline"
+            >
+              Mejor escaneá el QR
+            </button>
+          </p>
+
+          {isLaEsquina && (
+            <button
+              type="button"
+              onClick={() => setCode('123456')}
+              className="flex items-start gap-3 rounded-2xl bg-amber-50 p-3 text-left ring-1 ring-amber-200 transition-all hover:-translate-y-0.5 hover:bg-amber-100"
+            >
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-300 to-orange-400 text-white text-xs font-bold">
+                💡
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[11px] font-bold uppercase tracking-widest text-amber-700">
+                  Código demo · tap para autocompletar
+                </span>
+                <span className="mt-0.5 block font-mono text-base font-bold text-neutral-900">
+                  123 456
+                </span>
+                <span className="mt-0.5 block text-[11px] text-neutral-500">
+                  Marta Domínguez · 20% OFF en pizzas martes y miércoles
+                </span>
+              </span>
+            </button>
+          )}
+        </>
       )}
     </div>
   )

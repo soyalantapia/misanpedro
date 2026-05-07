@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, CheckCircle2, X } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { confirmRedemption } from '@/lib/merchantQueries'
-import { useActivation, useUser } from '@/lib/stores'
+import { useActivation, useUserById } from '@/lib/stores'
 import { useCoupon } from '@/lib/couponsStore'
 import { useToast } from '@/components/Toast'
 import { formatMoney } from '@/lib/format'
@@ -12,7 +12,7 @@ export function AdminConfirmarCanjePage() {
   const { activationId } = useParams<{ activationId: string }>()
   const activation = useActivation(activationId)
   const coupon = useCoupon(activation?.couponId)
-  const user = useUser()
+  const user = useUserById(activation?.userId)
   const { session } = useMerchantSession()
   const navigate = useNavigate()
   const toast = useToast()

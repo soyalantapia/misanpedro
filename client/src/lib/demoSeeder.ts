@@ -2,9 +2,15 @@ import type { Activation, Categoria, User } from './types'
 import { SEED_DEMO_USERS } from '@/data/seedDemoUsers'
 import { SEED_COUPONS } from '@/data/seedCoupons'
 import { SEED_MERCHANTS } from '@/data/seedMerchants'
-import { demoStoreActions } from './stores'
+import { demoStoreActions, getActivationsSnapshot } from './stores'
 import { couponsActions } from './couponsStore'
 import { whatsappActions } from './whatsappStore'
+
+/** Código fijo para que el cajero pueda probar la validación. */
+export const DEMO_ACTIVE_CODE = '123456'
+const DEMO_ACTIVE_ACTIVATION_ID = 'a-demo-active-123456'
+const DEMO_ACTIVE_USER_ID = 'u-demo-marta'
+const DEMO_ACTIVE_COUPON_ID = 'c-esquina-pizza'
 
 const TICKETS_BY_CATEGORIA: Record<Categoria, number> = {
   gastronomia: 4500,
@@ -198,4 +204,42 @@ export function ensureDemoDataLoaded() {
   }
 
   loadDemoData(currentUser)
+}
+
+/**
+ * Asegura que SIEMPRE haya un cupón activo con código `123456` listo para
+ * que el cajero lo valide en el panel del comercio. Renueva el expiresAt
+ * si está vencido o si fue canjeado en una sesión previa.
+ */
+export function refreshDemoActiveCoupon() {
+  if (typeof window === 'undefined') return
+
+  const now = new Date()
+  const existing = getActivationsSnapshot().find(
+    (a) => a.id === DEMO_ACTIVE_ACTIVATION_ID,
+  )
+
+  // Si está activa y le quedan al menos 5 min, no la toco
+  if (existing && existing.status === 'activo') {
+    const remainingMs = new Date(existing.expiresAt).getTime() - now.getTime()
+    if (remainingMs > 5 * 60 * 1000) return
+  }
+
+  const expiresAt = new Date(now.getTime() + 30 * 60 * 1000)
+  const activation: Activation = {
+    id: DEMO_ACTIVE_ACTIVATION_ID,
+    couponId: DEMO_ACTIVE_COUPON_ID,
+    userId: DEMO_ACTIVE_USER_ID,
+    codigoNumerico: DEMO_ACTIVE_CODE,
+    qrPayload: JSON.stringify({
+      couponId: DEMO_ACTIVE_COUPON_ID,
+      userId: DEMO_ACTIVE_USER_ID,
+      codigo: DEMO_ACTIVE_CODE,
+      exp: expiresAt.getTime(),
+    }),
+    activatedAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    status: 'activo',
+  }
+  demoStoreActions.upsertActivation(activation)
 }

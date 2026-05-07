@@ -160,6 +160,16 @@ export const demoStoreActions = {
       activations: input.activations,
     }))
   },
+  /** Inserta o reemplaza una activación por id. */
+  upsertActivation(activation: Activation) {
+    update((s) => {
+      const idx = s.activations.findIndex((a) => a.id === activation.id)
+      if (idx === -1) return { ...s, activations: [activation, ...s.activations] }
+      const next = [...s.activations]
+      next[idx] = activation
+      return { ...s, activations: next }
+    })
+  },
   /** Elimina TODOS los datos demo dejando el storage vacío. */
   resetAll() {
     update(() => empty)
