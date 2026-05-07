@@ -80,9 +80,25 @@ function generateHistoricalRedemptions(
 
   const activations: Activation[] = []
   const now = Date.now()
-  const sixtyDays = 60 * 24 * 60 * 60 * 1000
+  const day = 24 * 60 * 60 * 1000
 
-  for (let i = 0; i < 28; i++) {
+  // Distribución ponderada: 5 canjes hoy / 8 esta semana / 10 últimos 30
+  // días / 5 últimos 60 días
+  const buckets = [
+    { count: 5, maxAgoMs: day },
+    { count: 8, maxAgoMs: 7 * day },
+    { count: 10, maxAgoMs: 30 * day },
+    { count: 5, maxAgoMs: 60 * day },
+  ]
+  const totalCount = buckets.reduce((s, b) => s + b.count, 0)
+  const ages: number[] = []
+  buckets.forEach((b) => {
+    for (let i = 0; i < b.count; i++) {
+      ages.push(random() * b.maxAgoMs)
+    }
+  })
+
+  for (let i = 0; i < totalCount; i++) {
     // 70% pop coupons, 30% otros
     const couponId =
       random() < 0.7 ? pickRandom(popularCouponIds) : pickRandom(otherCouponIds)
@@ -100,7 +116,7 @@ function generateHistoricalRedemptions(
       }
     }
 
-    const offsetMs = Math.floor(random() * sixtyDays)
+    const offsetMs = Math.floor(ages[i])
     const redeemedAt = new Date(now - offsetMs)
     const activatedAt = new Date(redeemedAt.getTime() - 5 * 60 * 1000)
     const expiresAt = new Date(activatedAt.getTime() + 30 * 60 * 1000)

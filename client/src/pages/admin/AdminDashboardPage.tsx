@@ -31,8 +31,9 @@ export function AdminDashboardPage() {
 
   const merchantCoupons = useCouponsByMerchant(merchantId)
   const cuponesActivos = merchantCoupons.filter((c) => c.estado === 'activo')
-  const clientesUnicos = new Set(redemptions.map((r) => r.id)).size
+  const clientesUnicos = new Set(redemptions.map((r) => r.userId)).size
   const hasRedemptions = redemptions.length > 0
+  const ahorroTotal = redemptions.reduce((s, r) => s + (r.ahorroEstimado ?? 0), 0)
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
@@ -57,10 +58,19 @@ export function AdminDashboardPage() {
       {hasRedemptions && (
         <div className="rounded-2xl bg-accent-50 p-4 text-accent-800 ring-1 ring-accent-100">
           <p className="text-[11px] font-bold uppercase tracking-widest text-accent-700">
-            Ahorro generado a tus clientes este mes
+            Ahorro generado a tus clientes
           </p>
           <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-accent-700">
-            {formatMoney(kpis.ahorroMes)}
+            {formatMoney(ahorroTotal)}
+          </p>
+          <p className="mt-0.5 text-[11px] font-medium text-accent-700/80">
+            {redemptions.length} {redemptions.length === 1 ? 'canje total' : 'canjes totales'}
+            {kpis.ahorroMes > 0 && (
+              <>
+                {' · '}
+                <span className="font-bold">{formatMoney(kpis.ahorroMes)}</span> este mes
+              </>
+            )}
           </p>
         </div>
       )}

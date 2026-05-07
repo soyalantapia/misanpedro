@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ScanLine, Hash, AlertCircle, Camera, Keyboard } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useValidateByCode } from '@/lib/merchantQueries'
+import { refreshDemoActiveCoupon } from '@/lib/demoSeeder'
 import { cn } from '@/lib/cn'
 
 type Mode = 'qr' | 'code'
@@ -11,6 +12,12 @@ export function AdminValidarPage() {
   const { session } = useMerchantSession()
   const merchantId = session?.merchantId ?? ''
   const [mode, setMode] = useState<Mode>('code')
+
+  // Garantiza que siempre haya un cupón demo activo con código 123456 para
+  // probar la validación, incluso después de canjearlo varias veces.
+  useEffect(() => {
+    refreshDemoActiveCoupon()
+  }, [])
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
@@ -129,7 +136,7 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
             </button>
           </p>
 
-          {isLaEsquina && (
+          {isLaEsquina ? (
             <button
               type="button"
               onClick={() => setCode('123456')}
@@ -150,6 +157,15 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
                 </span>
               </span>
             </button>
+          ) : (
+            <div className="flex items-start gap-2.5 rounded-2xl bg-status-info-bg p-3 text-status-info-fg ring-1 ring-status-info/20">
+              <span className="text-base leading-none">💡</span>
+              <p className="text-xs leading-snug">
+                El código demo <span className="font-mono font-bold">123 456</span> solo
+                funciona si entrás como cajero de <span className="font-bold">La Esquina</span>.
+                Para validar un cupón real, pedile el código al cliente.
+              </p>
+            </div>
           )}
         </>
       )}
