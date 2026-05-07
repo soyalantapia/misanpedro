@@ -277,7 +277,6 @@ export function AdminSignupPage() {
 
         {step === 'pago' && (
           <PagoStep
-            form={form}
             submitting={submitting}
             onPay={handlePay}
             onBack={() => setStep('datos')}
@@ -329,12 +328,10 @@ function Stepper({ step }: { step: Step }) {
 }
 
 function PagoStep({
-  form,
   submitting,
   onPay,
   onBack,
 }: {
-  form: Form
   submitting: boolean
   onPay: () => void
   onBack: () => void
