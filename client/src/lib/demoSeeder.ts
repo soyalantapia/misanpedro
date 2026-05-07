@@ -176,3 +176,26 @@ export function isDemoLoaded(): boolean {
     return false
   }
 }
+
+/**
+ * Carga datos demo automáticamente la primera vez que se abre la app
+ * (o tras un localStorage clear). Preserva el user actual si existe.
+ * Idempotente: si ya hay demoUsers cargados, no hace nada.
+ */
+export function ensureDemoDataLoaded() {
+  if (typeof window === 'undefined') return
+  if (isDemoLoaded()) return
+
+  let currentUser: User | null = null
+  try {
+    const raw = window.localStorage.getItem('misanpedro.v1')
+    if (raw) {
+      const parsed = JSON.parse(raw) as { user?: User | null }
+      currentUser = parsed.user ?? null
+    }
+  } catch {
+    /* noop */
+  }
+
+  loadDemoData(currentUser)
+}
