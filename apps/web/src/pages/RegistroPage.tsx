@@ -82,8 +82,21 @@ export function RegistroPage() {
 
     // Intentamos registrar contra el API; si falla (offline / backend caído)
     // caemos al store local para no romper la demo.
+    let registeredFromApi = false
     try {
-      await userApi.register({ ...payload, acceptedTc: true })
+      const data = await userApi.register({ ...payload, acceptedTc: true })
+      // Espejar al store con el id Mongo (en vez de generar id local)
+      userActions.replace({
+        id: data.user.id,
+        nombre: data.user.nombre,
+        dni: data.user.dni,
+        email: data.user.email,
+        whatsapp: data.user.whatsapp,
+        fechaNacimiento: data.user.fechaNacimiento,
+        acceptedTcAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      })
+      registeredFromApi = true
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setErrors({ email: err.payload?.error ?? 'Email ya registrado' })
@@ -92,7 +105,9 @@ export function RegistroPage() {
       }
       // fallback offline: seguimos con userActions.register local
     }
-    userActions.register(payload)
+    if (!registeredFromApi) {
+      userActions.register(payload)
+    }
     toast.success('¡Cuenta creada!', 'Ya podés canjear descuentos.')
     const activarMatch = next.match(/^\/cupon\/([^/]+)\/activar$/)
     if (activarMatch) {

@@ -84,12 +84,20 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   const trimmed = code.replace(/\D/g, '').slice(0, 6)
   const localResult = useValidateByCode(trimmed, merchantId)
   const { result: apiResult } = useApiValidateByCode(trimmed)
-  // Preferimos el resultado del API; si el API devolvió error de red (no
-  // reachable), caemos al store local que mantiene la demo viva.
-  const result =
-    apiResult && (apiResult.ok || apiResult.reason !== 'network')
-      ? toLegacyResult(apiResult)
-      : localResult
+  // Estrategia para no romper la demo:
+  //   1) Si el API responde ok → usar API (datos reales).
+  //   2) Si el API responde error de red → fallback al local.
+  //   3) Si el API responde 404 (no encontrado) PERO el local tiene un
+  //      hit válido (ej. código demo 123456 que no existe en backend) →
+  //      preferir local. Para errores 403/409 (cupón de otro comercio,
+  //      ya canjeado, expirado) preferimos el del API porque es más fiel.
+  const result = (() => {
+    if (!apiResult) return localResult
+    if (apiResult.ok) return toLegacyResult(apiResult)
+    if (apiResult.reason === 'network') return localResult
+    if (apiResult.reason === '404' && localResult?.ok) return localResult
+    return toLegacyResult(apiResult)
+  })()
   const ready = trimmed.length === 6
 
   // Auto-navega al confirmar canje cuando el cupón es válido (con un toque
@@ -249,10 +257,13 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   })()
   const localResult = useValidateByCode(codeFromPayload, merchantId)
   const { result: apiResult } = useApiValidateByCode(codeFromPayload)
-  const result =
-    apiResult && (apiResult.ok || apiResult.reason !== 'network')
-      ? toLegacyResult(apiResult)
-      : localResult
+  const result = (() => {
+    if (!apiResult) return localResult
+    if (apiResult.ok) return toLegacyResult(apiResult)
+    if (apiResult.reason === 'network') return localResult
+    if (apiResult.reason === '404' && localResult?.ok) return localResult
+    return toLegacyResult(apiResult)
+  })()
 
   // Auto-navega cuando el QR es válido
   const okActivationId = result && result.ok ? result.activation.id : null

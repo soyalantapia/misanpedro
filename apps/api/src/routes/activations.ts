@@ -14,9 +14,11 @@ function generateNumeric(): string {
 }
 
 async function generateUniqueCode(): Promise<string> {
-  for (let i = 0; i < 8; i++) {
+  // Verifica contra TODAS las activaciones (no sólo activas) porque el index
+  // unique en codigoNumerico aplica al collection completo.
+  for (let i = 0; i < 12; i++) {
     const code = generateNumeric()
-    const exists = await Activation.exists({ codigoNumerico: code, status: 'activo' })
+    const exists = await Activation.exists({ codigoNumerico: code })
     if (!exists) return code
   }
   throw new Error('could not generate unique code')
@@ -89,17 +91,32 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
     return c.json({ ok: true, activation: serializeActivation(existing, coupon, merchant) })
   }
 
-  const codigoNumerico = await generateUniqueCode()
-  const qrPayload = `msp:act:${codigoNumerico}:${coupon._id.toString()}`
-  const activation = await Activation.create({
-    couponId: coupon._id,
-    userId: auth.sub,
-    codigoNumerico,
-    qrPayload,
-    activatedAt: new Date(),
-    expiresAt: new Date(Date.now() + ACTIVATION_TTL_MS),
-    status: 'activo',
-  })
+  // Intentamos crear con retry por si hay race en codigoNumerico
+  let activation: any = null
+  let lastErr: any = null
+  for (let attempt = 0; attempt < 3 && !activation; attempt++) {
+    try {
+      const codigoNumerico = await generateUniqueCode()
+      const qrPayload = `msp:act:${codigoNumerico}:${coupon._id.toString()}`
+      activation = await Activation.create({
+        couponId: coupon._id,
+        userId: auth.sub,
+        codigoNumerico,
+        qrPayload,
+        activatedAt: new Date(),
+        expiresAt: new Date(Date.now() + ACTIVATION_TTL_MS),
+        status: 'activo',
+      })
+    } catch (err: any) {
+      lastErr = err
+      // E11000 duplicate key → reintentamos con otro código
+      if (err?.code !== 11000) throw err
+    }
+  }
+  if (!activation) {
+    console.error('[activations] no se pudo generar código único', lastErr)
+    return c.json({ ok: false, error: 'no se pudo generar código único, intentá de nuevo' }, 500)
+  }
 
   const merchant = await Merchant.findById(coupon.merchantId)
   return c.json({ ok: true, activation: serializeActivation(activation, coupon, merchant) }, 201)

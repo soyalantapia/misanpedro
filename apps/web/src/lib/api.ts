@@ -73,11 +73,20 @@ async function request<T>(
         tokens.set(subject, data.accessToken)
         finalHeaders.Authorization = `Bearer ${data.accessToken}`
         const retry = await fetch(`${BASE}${path}`, { ...rest, headers: finalHeaders })
+        if (retry.status === 401) {
+          // Si el retry sigue 401, los tokens están rotos; limpiamos.
+          tokens.clear(subject)
+          throw new ApiError(401, await retry.json().catch(() => ({})))
+        }
         if (!retry.ok) throw new ApiError(retry.status, await retry.json().catch(() => ({})))
         return retry.json() as Promise<T>
       } else {
+        // refresh falló → tokens inválidos, limpiamos
         tokens.clear(subject)
       }
+    } else {
+      // 401 sin refresh disponible → limpiamos también
+      tokens.clear(subject)
     }
   }
   if (!res.ok) {

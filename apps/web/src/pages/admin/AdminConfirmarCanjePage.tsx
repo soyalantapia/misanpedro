@@ -22,14 +22,15 @@ export function AdminConfirmarCanjePage() {
   const [monto, setMonto] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Combinamos: si vino del API, usamos el cache; si no, el store local.
-  const view = apiCached
+  // Combinamos: si vino del API y la validación fue OK, usamos el cache.
+  // Si no, caemos al store local.
+  const view = apiCached?.ok
     ? {
-        id: apiCached.ok ? apiCached.activationId : '',
-        codigoNumerico: apiCached.ok ? apiCached.codigo : '',
-        porcentaje: apiCached.ok ? apiCached.porcentaje : 0,
-        couponTitulo: apiCached.ok ? apiCached.couponTitulo : '',
-        customerName: apiCached.ok ? apiCached.customerName : 'Vecino registrado',
+        id: apiCached.activationId,
+        codigoNumerico: apiCached.codigo,
+        porcentaje: apiCached.porcentaje,
+        couponTitulo: apiCached.couponTitulo,
+        customerName: apiCached.customerName,
         activatedAt: new Date().toISOString(),
         source: 'api' as const,
       }

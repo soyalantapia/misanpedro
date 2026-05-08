@@ -155,11 +155,12 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, async (c) => {
 redemptionsRoutes.get('/recent', requireMerchantAuth, async (c) => {
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
-  const limit = parseInt(c.req.query('limit') ?? '50', 10)
+  const limitRaw = parseInt(c.req.query('limit') ?? '50', 10)
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 200) : 50
 
   const redemptions = await Redemption.find({ merchantId: auth.merchantId })
     .sort({ redeemedAt: -1 })
-    .limit(Math.min(limit, 200))
+    .limit(limit)
 
   const couponIds = [...new Set(redemptions.map((r) => r.couponId.toString()))]
   const userIds = [...new Set(redemptions.map((r) => r.userId.toString()))]
