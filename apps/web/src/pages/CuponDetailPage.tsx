@@ -10,22 +10,69 @@ import {
 import { CardImage } from '@/components/CardImage'
 import { useCoupon } from '@/lib/couponsStore'
 import { useMerchant } from '@/lib/merchantsStore'
-import { CATEGORIAS } from '@/lib/types'
+import { CATEGORIAS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
 import { activationActions, useActivationByCoupon, useUser } from '@/lib/stores'
 import { formatHorariosSemana, formatVigencia } from '@/lib/format'
 import { api, ApiError, tokens } from '@/lib/api'
+import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 
 export function CuponDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const coupon = useCoupon(id)
-  const merchant = useMerchant(coupon?.merchantId)
+  const localCoupon = useCoupon(id)
+  const localMerchant = useMerchant(localCoupon?.merchantId)
   const user = useUser()
-  const existing = useActivationByCoupon(coupon?.id)
   const navigate = useNavigate()
 
-  if (!coupon || !merchant) {
+  // Fallback al API si no encontramos en el store local
+  const apiCouponsRes = useApiCoupons()
+  const apiMerchantsRes = useApiMerchants()
+  const apiCoupon = apiCouponsRes.data?.find((c) => c.id === id) ?? null
+  const apiMerchantRaw =
+    apiCoupon && apiMerchantsRes.data
+      ? apiMerchantsRes.data.find((m) => m.id === apiCoupon.merchantId)
+      : null
+
+  const coupon: Coupon | undefined = apiCoupon
+    ? {
+        id: apiCoupon.id,
+        merchantId: apiMerchantRaw?.slug ?? apiCoupon.merchantId,
+        titulo: apiCoupon.titulo,
+        descripcion: apiCoupon.descripcion,
+        condiciones: apiCoupon.condiciones ?? '',
+        porcentaje: apiCoupon.porcentaje,
+        vigenciaHasta: apiCoupon.vigenciaHasta,
+        imagenSeed: 'custom',
+        estado: apiCoupon.estado as Coupon['estado'],
+        diasAplica: apiCoupon.diasAplica,
+      }
+    : localCoupon
+
+  const merchant: Merchant | undefined = apiMerchantRaw
+    ? {
+        id: apiMerchantRaw.slug,
+        nombre: apiMerchantRaw.nombre,
+        categoria: apiMerchantRaw.categoria as Categoria,
+        direccion: apiMerchantRaw.direccion,
+        lat: apiMerchantRaw.lat ?? 0,
+        lng: apiMerchantRaw.lng ?? 0,
+        telefono: apiMerchantRaw.telefono,
+        horarios: apiMerchantRaw.horarios,
+        horariosDetalle: apiMerchantRaw.horariosDetalle,
+        cover: apiMerchantRaw.cover,
+        coverImageUrl: apiMerchantRaw.coverImageUrl,
+        mapsUrl: apiMerchantRaw.mapsUrl,
+        logoSeed: apiMerchantRaw.logoSeed,
+      }
+    : localMerchant
+
+  // Activación existente (siempre busca en local — el ApiSync ya espejó las
+  // activaciones del API al store local).
+  const existing = useActivationByCoupon(coupon?.id)
+
+  if ((!coupon || !merchant) && !apiCouponsRes.loading && !apiMerchantsRes.loading) {
     return <Navigate to="/" replace />
   }
+  if (!coupon || !merchant) return null
 
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
 

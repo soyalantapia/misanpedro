@@ -9,12 +9,40 @@ import { activationActions, useActivation } from '@/lib/stores'
 import { getMerchant } from '@/data/mockData'
 import { useCoupon } from '@/lib/couponsStore'
 import { calcAhorro } from '@/lib/format'
+import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
+import { api, ApiError, tokens } from '@/lib/api'
 
 export function CuponActivoPage() {
   const { id } = useParams<{ id: string }>()
   const activation = useActivation(id)
-  const coupon = useCoupon(activation?.couponId)
-  const merchant = coupon ? getMerchant(coupon.merchantId) : undefined
+  const localCoupon = useCoupon(activation?.couponId)
+  const apiCouponsRes = useApiCoupons()
+  const apiMerchantsRes = useApiMerchants()
+  const apiCoupon =
+    !localCoupon && activation ? apiCouponsRes.data?.find((c) => c.id === activation.couponId) : null
+  const coupon = localCoupon ?? (apiCoupon ? {
+    id: apiCoupon.id,
+    titulo: apiCoupon.titulo,
+    porcentaje: apiCoupon.porcentaje,
+    merchantId: apiCoupon.merchantId,
+  } : undefined)
+
+  const apiMerchant =
+    apiCoupon && apiMerchantsRes.data
+      ? apiMerchantsRes.data.find((m) => m.id === apiCoupon.merchantId)
+      : null
+
+  const merchant = (() => {
+    if (localCoupon) return getMerchant(localCoupon.merchantId)
+    if (apiMerchant) {
+      return {
+        nombre: apiMerchant.nombre,
+        categoria: apiMerchant.categoria,
+      } as any
+    }
+    return undefined
+  })()
+
   const navigate = useNavigate()
   const toast = useToast()
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -25,8 +53,19 @@ export function CuponActivoPage() {
 
   const isExpired = activation.status !== 'activo'
 
-  function handleCancel() {
+  async function handleCancel() {
     if (!activation) return
+    // Si hay token vecino y la activación parece de Mongo, cancelamos también en API
+    const userToken = tokens.get('user').access
+    const looksLikeMongoId = /^[0-9a-f]{24}$/i.test(activation.id)
+    if (userToken && looksLikeMongoId) {
+      try {
+        await api.activations.cancel(activation.id)
+      } catch (err) {
+        // si falla, igual cancelamos local para no dejar al user atascado
+        if (!(err instanceof ApiError)) console.warn('[cancel] api error', err)
+      }
+    }
     activationActions.cancel(activation.id)
     toast.info('Cupón cancelado', 'Lo podés volver a activar desde Mis cupones.')
     navigate('/mis-cupones', { replace: true })

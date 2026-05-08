@@ -146,6 +146,10 @@ export const userActions = {
     update((s) => ({ ...s, user }))
     return user
   },
+  /** Reemplaza el user actual con datos del API (mantiene demoUsers + activations). */
+  replace(user: User) {
+    update((s) => ({ ...s, user }))
+  },
   signOut() {
     update((s) => ({ ...s, user: null }))
   },

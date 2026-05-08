@@ -4,18 +4,59 @@ import { CardImage } from '@/components/CardImage'
 import { CouponCard } from '@/components/CouponCard'
 import { useCouponsByMerchant } from '@/lib/couponsStore'
 import { useMerchant } from '@/lib/merchantsStore'
-import { CATEGORIAS } from '@/lib/types'
+import { CATEGORIAS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
 import { formatHorariosSemana } from '@/lib/format'
+import { useApiMerchant } from '@/lib/apiQueries'
 
 export function MerchantDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const merchant = useMerchant(id)
-  const allCoupons = useCouponsByMerchant(id ?? '')
+  const localMerchant = useMerchant(id)
+  const localCoupons = useCouponsByMerchant(id ?? '')
+  // El id en la URL es el slug del merchant; el endpoint público acepta slug.
+  const apiRes = useApiMerchant(id)
+  const apiMerchant = apiRes.data?.merchant ?? null
+  const apiCoupons = apiRes.data?.coupons ?? null
 
-  if (!merchant) return <Navigate to="/" replace />
+  const merchant: Merchant | undefined = apiMerchant
+    ? {
+        id: apiMerchant.slug,
+        nombre: apiMerchant.nombre,
+        categoria: apiMerchant.categoria as Categoria,
+        direccion: apiMerchant.direccion,
+        lat: apiMerchant.lat ?? 0,
+        lng: apiMerchant.lng ?? 0,
+        telefono: apiMerchant.telefono,
+        horarios: apiMerchant.horarios,
+        horariosDetalle: apiMerchant.horariosDetalle,
+        cover: apiMerchant.cover,
+        coverImageUrl: apiMerchant.coverImageUrl,
+        mapsUrl: apiMerchant.mapsUrl,
+        logoSeed: apiMerchant.logoSeed,
+        destacado: apiMerchant.destacado,
+      }
+    : localMerchant
+
+  const coupons: Coupon[] = apiCoupons
+    ? apiCoupons.map((c) => ({
+        id: c.id,
+        merchantId: apiMerchant?.slug ?? id ?? '',
+        titulo: c.titulo,
+        descripcion: c.descripcion,
+        condiciones: c.condiciones ?? '',
+        porcentaje: c.porcentaje,
+        vigenciaHasta: c.vigenciaHasta,
+        imagenSeed: 'custom',
+        estado: c.estado as Coupon['estado'],
+        diasAplica: c.diasAplica,
+      }))
+    : localCoupons.filter((c) => c.estado === 'activo')
+
+  // Si la consulta del API terminó (no loading) y no hay merchant local ni del API,
+  // redirigimos al home.
+  if (!merchant && !apiRes.loading) return <Navigate to="/" replace />
+  if (!merchant) return null
 
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
-  const coupons = allCoupons.filter((c) => c.estado === 'activo')
   const mapsUrl =
     merchant.mapsUrl ||
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${merchant.nombre}, ${merchant.direccion}`)}`

@@ -7,6 +7,7 @@ import { CanjeadosPage } from '@/pages/CanjeadosPage'
 import { CuponDetailPage } from '@/pages/CuponDetailPage'
 import { MerchantDetailPage } from '@/pages/MerchantDetailPage'
 import { RegistroPage } from '@/pages/RegistroPage'
+import { LoginPage } from '@/pages/LoginPage'
 import { CuponActivoPage } from '@/pages/CuponActivoPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { AdminLoginPage } from '@/pages/admin/AdminLoginPage'
@@ -22,14 +23,17 @@ import { AdminComercioPage } from '@/pages/admin/AdminComercioPage'
 import { AdminWhatsappPage } from '@/pages/admin/AdminWhatsappPage'
 import { ToastProvider } from '@/components/Toast'
 import { InstallPrompt } from '@/components/InstallPrompt'
+import { ApiSync } from '@/components/ApiSync'
 
 export default function App() {
   return (
     <ToastProvider>
+      <ApiSync />
       <HashRouter>
         <Routes>
           {/* App vecino */}
           <Route path="registro" element={<RegistroPage />} />
+          <Route path="login" element={<LoginPage />} />
           <Route path="cupon/:id" element={<CuponDetailPage />} />
           <Route path="comercio/:id" element={<MerchantDetailPage />} />
           <Route path="activacion/:id" element={<CuponActivoPage />} />

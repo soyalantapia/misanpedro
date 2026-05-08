@@ -9,12 +9,50 @@ import { getMerchant } from '@/data/mockData'
 import { useCoupons } from '@/lib/couponsStore'
 import { formatTimeRemaining } from '@/lib/format'
 import { cn } from '@/lib/cn'
+import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 
 export function MisCuponesPage() {
   const activations = useActivations()
-  const coupons = useCoupons()
-  const couponMap = useMemo(() => new Map(coupons.map((c) => [c.id, c])), [coupons])
+  const localCoupons = useCoupons()
+  const apiCouponsRes = useApiCoupons()
+  const apiMerchantsRes = useApiMerchants()
+
+  const couponMap = useMemo(() => {
+    const map = new Map<string, { titulo: string; porcentaje: number; merchantId: string }>()
+    localCoupons.forEach((c) => map.set(c.id, c))
+    if (apiCouponsRes.data && apiMerchantsRes.data) {
+      const idToSlug = new Map(apiMerchantsRes.data.map((m) => [m.id, m.slug]))
+      apiCouponsRes.data.forEach((c) => {
+        map.set(c.id, {
+          titulo: c.titulo,
+          porcentaje: c.porcentaje,
+          merchantId: idToSlug.get(c.merchantId) ?? c.merchant?.slug ?? c.merchantId,
+        })
+      })
+    }
+    return map
+  }, [localCoupons, apiCouponsRes.data, apiMerchantsRes.data])
   const getCoupon = (id: string) => couponMap.get(id)
+  const getMerchantBySlug = (slug: string | undefined) => {
+    if (!slug) return undefined
+    const local = getMerchant(slug)
+    if (local) return local
+    const apiM = apiMerchantsRes.data?.find((m) => m.slug === slug)
+    if (!apiM) return undefined
+    return {
+      id: apiM.slug,
+      nombre: apiM.nombre,
+      categoria: apiM.categoria as any,
+      direccion: apiM.direccion,
+      lat: apiM.lat ?? 0,
+      lng: apiM.lng ?? 0,
+      telefono: apiM.telefono,
+      horarios: apiM.horarios,
+      cover: apiM.cover,
+      coverImageUrl: apiM.coverImageUrl,
+      logoSeed: apiM.logoSeed,
+    }
+  }
   const [now, setNow] = useState(() => Date.now())
   const navigate = useNavigate()
   const toast = useToast()
@@ -73,7 +111,7 @@ export function MisCuponesPage() {
         <div className="flex flex-col gap-3">
           {visible.map((a, i) => {
             const c = getCoupon(a.couponId)
-            const m = c ? getMerchant(c.merchantId) : undefined
+            const m = c ? getMerchantBySlug(c.merchantId) : undefined
             if (!c || !m) return null
 
             const isActive = a.status === 'activo'

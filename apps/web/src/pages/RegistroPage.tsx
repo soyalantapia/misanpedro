@@ -123,6 +123,15 @@ export function RegistroPage() {
         <p className="text-sm text-neutral-500">
           Solo te lo pedimos esta vez. Después usás todos los descuentos sin volver a registrarte.
         </p>
+        <p className="mt-1 text-xs text-neutral-500">
+          ¿Ya tenés cuenta?{' '}
+          <Link
+            to={`/login?next=${encodeURIComponent(next)}`}
+            className="font-bold text-accent-700 underline-offset-2 hover:underline"
+          >
+            Iniciar sesión con código
+          </Link>
+        </p>
       </header>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">

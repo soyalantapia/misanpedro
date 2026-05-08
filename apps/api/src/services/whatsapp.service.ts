@@ -34,10 +34,10 @@ async function loadWA() {
   waLoadAttempted = true
   try {
     // Dependencia opcional: si no está instalada, corremos en modo stub.
-    // Usamos un import dinámico evaluado en runtime (no tiene tipos).
+    // Usamos un import dinámico con specifier indirecto para que tsc no
+    // intente resolver el módulo en compile-time.
     const moduleName = 'whatsapp-web.js'
-    // @ts-expect-error -- dep opcional sin types declarados
-    const wa = await import(/* @vite-ignore */ moduleName)
+    const wa: any = await import(/* @vite-ignore */ moduleName)
     WAClient = wa.Client
     LocalAuth = wa.LocalAuth
   } catch {

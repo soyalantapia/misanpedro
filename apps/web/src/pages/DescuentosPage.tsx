@@ -8,9 +8,45 @@ import { CouponCard } from '@/components/CouponCard'
 import { MerchantCard } from '@/components/MerchantCard'
 import { EmptyState } from '@/components/EmptyState'
 import { useGeolocation, distanceKm } from '@/lib/geo'
-import { CATEGORIAS, type Categoria } from '@/lib/types'
+import { CATEGORIAS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
+import { useApiMerchants, useApiCoupons } from '@/lib/apiQueries'
+import type { ApiMerchant, ApiCoupon } from '@/lib/api'
 
 const VIEW_KEY = 'misanpedro.view'
+
+function apiMerchantToLocal(m: ApiMerchant): Merchant {
+  return {
+    id: m.slug,
+    nombre: m.nombre,
+    categoria: m.categoria as Categoria,
+    direccion: m.direccion,
+    lat: m.lat ?? 0,
+    lng: m.lng ?? 0,
+    telefono: m.telefono,
+    horarios: m.horarios,
+    horariosDetalle: m.horariosDetalle,
+    cover: m.cover,
+    coverImageUrl: m.coverImageUrl,
+    mapsUrl: m.mapsUrl,
+    logoSeed: m.logoSeed,
+    destacado: m.destacado,
+  }
+}
+
+function apiCouponToLocal(c: ApiCoupon, merchantSlug: string): Coupon {
+  return {
+    id: c.id,
+    merchantId: merchantSlug,
+    titulo: c.titulo,
+    descripcion: c.descripcion,
+    condiciones: c.condiciones ?? '',
+    porcentaje: c.porcentaje,
+    vigenciaHasta: c.vigenciaHasta,
+    imagenSeed: 'custom',
+    estado: c.estado as Coupon['estado'],
+    diasAplica: c.diasAplica,
+  }
+}
 
 export function DescuentosPage() {
   const [view, setView] = useState<View>(() => {
@@ -20,7 +56,36 @@ export function DescuentosPage() {
   const [search, setSearch] = useState('')
   const [categoria, setCategoria] = useState<Categoria | null>(null)
   const { state: geo, request: requestGeo } = useGeolocation()
-  const COUPONS = useCoupons()
+  const localCoupons = useCoupons()
+  const apiMerchantsRes = useApiMerchants()
+  const apiCouponsRes = useApiCoupons()
+
+  // Si el API responde, usamos sus datos; si está caído, fallback al store local.
+  const { merchants, COUPONS, getMerchantById } = useMemo(() => {
+    if (apiMerchantsRes.data && apiCouponsRes.data) {
+      const apiMerchants = apiMerchantsRes.data.map(apiMerchantToLocal)
+      // construye un map id (Mongo) → slug para mapear couponId.merchantId al slug
+      const idToSlug = new Map(apiMerchantsRes.data.map((m) => [m.id, m.slug]))
+      const apiCouponsLocal = apiCouponsRes.data
+        .map((c) => {
+          const slug = idToSlug.get(c.merchantId) ?? c.merchant?.slug
+          if (!slug) return null
+          return apiCouponToLocal(c, slug)
+        })
+        .filter((c): c is Coupon => c !== null)
+      const map = new Map(apiMerchants.map((m) => [m.id, m]))
+      return {
+        merchants: apiMerchants,
+        COUPONS: apiCouponsLocal,
+        getMerchantById: (id: string) => map.get(id),
+      }
+    }
+    return {
+      merchants: MERCHANTS,
+      COUPONS: localCoupons,
+      getMerchantById: getMerchant,
+    }
+  }, [apiMerchantsRes.data, apiCouponsRes.data, localCoupons])
 
   useEffect(() => {
     window.localStorage.setItem(VIEW_KEY, view)
@@ -32,7 +97,7 @@ export function DescuentosPage() {
     const q = search.trim().toLowerCase()
     return COUPONS.filter((c) => {
       if (c.estado !== 'activo') return false
-      const m = getMerchant(c.merchantId)
+      const m = getMerchantById(c.merchantId)
       if (!m) return false
       if (categoria && m.categoria !== categoria) return false
       if (!q) return true
@@ -42,11 +107,11 @@ export function DescuentosPage() {
         (CATEGORIAS.find((cat) => cat.id === m.categoria)?.label.toLowerCase().includes(q) ?? false)
       )
     })
-  }, [search, categoria])
+  }, [search, categoria, COUPONS, getMerchantById])
 
   const filteredMerchants = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return MERCHANTS.filter((m) => {
+    return merchants.filter((m) => {
       if (categoria && m.categoria !== categoria) return false
       if (!q) return true
       return (
@@ -54,7 +119,7 @@ export function DescuentosPage() {
         (CATEGORIAS.find((cat) => cat.id === m.categoria)?.label.toLowerCase().includes(q) ?? false)
       )
     })
-  }, [search, categoria])
+  }, [search, categoria, merchants])
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
@@ -66,7 +131,7 @@ export function DescuentosPage() {
           Descubrí descuentos en San&nbsp;Pedro
         </h1>
         <p className="text-base text-neutral-500">
-          {MERCHANTS.length} comercios adheridos · {COUPONS.length} cupones activos.
+          {merchants.length} comercios adheridos · {COUPONS.length} cupones activos.
         </p>
       </div>
 
@@ -93,10 +158,12 @@ export function DescuentosPage() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {filteredCoupons.map((c, i) => {
-              const m = getMerchant(c.merchantId)!
-              const dist = userCoords
-                ? distanceKm(userCoords, { lat: m.lat, lng: m.lng })
-                : undefined
+              const m = getMerchantById(c.merchantId)
+              if (!m) return null
+              const dist =
+                userCoords && m.lat && m.lng
+                  ? distanceKm(userCoords, { lat: m.lat, lng: m.lng })
+                  : undefined
               return (
                 <CouponCard
                   key={c.id}
@@ -126,9 +193,10 @@ export function DescuentosPage() {
               (c) => c.merchantId === m.id && c.estado === 'activo',
             )
             if (coupons.length === 0) return null
-            const dist = userCoords
-              ? distanceKm(userCoords, { lat: m.lat, lng: m.lng })
-              : undefined
+            const dist =
+              userCoords && m.lat && m.lng
+                ? distanceKm(userCoords, { lat: m.lat, lng: m.lng })
+                : undefined
             return (
               <MerchantCard
                 key={m.id}
