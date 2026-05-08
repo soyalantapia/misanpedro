@@ -93,6 +93,27 @@ export const merchantAuth = {
       return { ok: true }
     }
   },
+  async signup(payload: {
+    comercio: { nombre: string; categoria: any; direccion: string; telefono: string; horarios: string }
+    admin: { nombre: string; email: string; password: string }
+  }): Promise<{ ok: true } | { ok: false; error: string }> {
+    try {
+      const data = await merchantApi.signup(payload)
+      const session: MerchantSession = {
+        userId: data.user.id,
+        merchantId: data.merchant.id,
+        loggedAt: new Date().toISOString(),
+      }
+      update(() => ({
+        session,
+        apiUser: data.user,
+        apiMerchant: { ...data.merchant },
+      }))
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: (err as Error)?.message ?? 'no se pudo crear el comercio' }
+    }
+  },
   async logout() {
     try {
       await merchantApi.logout()
@@ -107,5 +128,8 @@ export const merchantAuth = {
     if (!state.session) return null
     const localUser = getAllMerchantUsers().find((u) => u.id === state.session!.userId)
     return localUser ?? null
+  },
+  getCurrentMerchant() {
+    return state.apiMerchant ?? null
   },
 }

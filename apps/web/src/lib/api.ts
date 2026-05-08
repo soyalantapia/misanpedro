@@ -184,6 +184,25 @@ export const merchantApi = {
     tokens.set('merchant', data.accessToken, data.refreshToken)
     return data
   },
+  async signup(payload: {
+    comercio: {
+      nombre: string
+      categoria: string
+      direccion: string
+      telefono: string
+      horarios: string
+    }
+    admin: { nombre: string; email: string; password: string }
+  }) {
+    const data = await request<{
+      accessToken: string
+      refreshToken: string
+      user: ApiMerchantSession['user']
+      merchant: ApiMerchantSession['merchant']
+    }>('/merchant/auth/signup', json(payload))
+    tokens.set('merchant', data.accessToken, data.refreshToken)
+    return data
+  },
   async logout() {
     const refresh = localStorage.getItem(STORAGE.merchant.refresh)
     try {
@@ -434,6 +453,25 @@ export const whatsapp = {
       '/wa/send',
       { ...json({ to, text }), subject: 'merchant' },
     )
+  },
+  async campaign(recipients: string[], text: string) {
+    return request<{
+      ok: boolean
+      campaign: { id: string; sentCount: number; failedCount: number }
+      quota: { used: number; max: number; remaining: number }
+    }>('/wa/campaign', { ...json({ recipients, text }), subject: 'merchant' })
+  },
+  async campaigns() {
+    return request<{
+      ok: boolean
+      campaigns: Array<{
+        id: string
+        sentAt: string
+        sentCount: number
+        failedCount: number
+        text: string
+      }>
+    }>('/wa/campaigns', { subject: 'merchant' })
   },
 }
 

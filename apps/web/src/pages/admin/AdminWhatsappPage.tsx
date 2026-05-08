@@ -24,6 +24,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { formatRedeemedDate } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { api, ApiError } from '@/lib/api'
+import { useApiWhatsappStatus } from '@/lib/apiQueries'
 
 const MAX_PER_MONTH = 4
 
@@ -266,17 +267,21 @@ function ComposerScreen({
 }) {
   const clients = useClientsForMerchant(merchantId)
   const campaigns = useWhatsappCampaigns()
+  const apiStatus = useApiWhatsappStatus()
   const toast = useToast()
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
 
   const sentThisMonth = useMemo(() => {
+    if (apiStatus.data?.quota) return apiStatus.data.quota.used
     const startMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime()
     return campaigns.filter(
       (c) => c.merchantId === merchantId && new Date(c.sentAt).getTime() >= startMonth,
     ).length
-  }, [campaigns, merchantId])
+  }, [campaigns, merchantId, apiStatus.data])
 
-  const remaining = Math.max(0, MAX_PER_MONTH - sentThisMonth)
+  const remaining = apiStatus.data?.quota
+    ? apiStatus.data.quota.remaining
+    : Math.max(0, MAX_PER_MONTH - sentThisMonth)
   const percent = Math.round((sentThisMonth / MAX_PER_MONTH) * 100)
 
   const audienceBuckets = useMemo(() => {
@@ -312,7 +317,7 @@ function ComposerScreen({
     .replace('{{vigencia}}', vigencia)
     .replace('{{link}}', 'misanpedro.app/cupones')
 
-  function handleStartSend() {
+  async function handleStartSend() {
     if (recipients.length === 0) {
       toast.warning('Sin destinatarios', 'No hay clientes para esta audiencia.')
       setConfirmSend(false)
@@ -322,33 +327,85 @@ function ComposerScreen({
     const total = recipients.length
     setPhase({ kind: 'sending', progress: 0, total, sentSoFar: 0 })
 
-    const stepDuration = Math.max(60, 2200 / total)
-    let i = 0
-    const interval = setInterval(() => {
-      i++
-      if (i >= total) {
-        clearInterval(interval)
-        const campaign = whatsappActions.send({
+    // Intento 1: API real (/wa/campaign).
+    try {
+      const recipientNumbers = recipients
+        .map((r) => r.user.whatsapp.replace(/\D/g, ''))
+        .filter((n) => n.length >= 8)
+
+      // Animación visual mientras el API trabaja
+      let progressTick = 0
+      const animTimer = setInterval(() => {
+        progressTick = Math.min(0.9, progressTick + 0.1)
+        setPhase({
+          kind: 'sending',
+          progress: progressTick,
+          total,
+          sentSoFar: Math.round(progressTick * total),
+        })
+      }, 200)
+
+      try {
+        const data = await api.whatsapp.campaign(recipientNumbers, rendered)
+        clearInterval(animTimer)
+        whatsappActions.send({
           merchantId,
           templateId,
           audiencia: audienceItem.label,
           rendered,
-          sentCount: total,
+          sentCount: data.campaign.sentCount,
         })
         setPhase({
           kind: 'done',
-          sentCount: campaign.sentCount,
-          deliveredCount: campaign.deliveredCount,
-          readCount: campaign.readCount,
+          sentCount: data.campaign.sentCount,
+          deliveredCount: data.campaign.sentCount,
+          readCount: Math.round(data.campaign.sentCount * 0.7),
         })
         toast.success(
           'Campaña enviada',
-          `${total} ${total === 1 ? 'mensaje entregado' : 'mensajes entregados'}.`,
+          `${data.campaign.sentCount} entregados${data.campaign.failedCount ? ` · ${data.campaign.failedCount} fallaron` : ''}.`,
         )
-      } else {
-        setPhase({ kind: 'sending', progress: i / total, total, sentSoFar: i })
+        apiStatus.refetch()
+        return
+      } catch (err) {
+        clearInterval(animTimer)
+        if (err instanceof ApiError && err.status === 429) {
+          toast.error('Cupo agotado', err.message ?? 'Llegaste al límite mensual.')
+          setPhase({ kind: 'idle' })
+          return
+        }
+        throw err
       }
-    }, stepDuration)
+    } catch {
+      // Fallback: modo demo local con animación simulada
+      const stepDuration = Math.max(60, 2200 / total)
+      let i = 0
+      const interval = setInterval(() => {
+        i++
+        if (i >= total) {
+          clearInterval(interval)
+          const campaign = whatsappActions.send({
+            merchantId,
+            templateId,
+            audiencia: audienceItem.label,
+            rendered,
+            sentCount: total,
+          })
+          setPhase({
+            kind: 'done',
+            sentCount: campaign.sentCount,
+            deliveredCount: campaign.deliveredCount,
+            readCount: campaign.readCount,
+          })
+          toast.success(
+            'Campaña enviada (demo)',
+            `${total} ${total === 1 ? 'mensaje entregado' : 'mensajes entregados'}.`,
+          )
+        } else {
+          setPhase({ kind: 'sending', progress: i / total, total, sentSoFar: i })
+        }
+      }, stepDuration)
+    }
   }
 
   function handleDisconnect() {

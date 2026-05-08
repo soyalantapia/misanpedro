@@ -23,13 +23,23 @@ const links = [
 ]
 
 export function MerchantShell() {
-  const { session } = useMerchantSession()
+  const sessionState = useMerchantSession()
+  const { session } = sessionState
   const navigate = useNavigate()
-  const merchant = useMerchant(session?.merchantId)
+  const localMerchant = useMerchant(session?.merchantId)
 
   if (!session) return <Navigate to="/admin/login" replace />
 
   const user = merchantAuth.getCurrentUser()
+  // Preferimos el merchant del API (cuando la sesión vino de login real);
+  // fallback al store local con merchants seed para la demo gh-pages.
+  const merchant = sessionState.apiMerchant
+    ? {
+        id: sessionState.apiMerchant.id,
+        nombre: sessionState.apiMerchant.nombre,
+        categoria: sessionState.apiMerchant.categoria,
+      }
+    : localMerchant
   if (!user || !merchant) return <Navigate to="/admin/login" replace />
 
   function handleLogout() {

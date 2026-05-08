@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import bcrypt from 'bcryptjs'
-import { merchantLoginSchema } from '@misanpedro/shared'
+import { merchantLoginSchema, merchantSignupSchema } from '@misanpedro/shared'
 import { Merchant, MerchantUser } from '@/models'
 import {
   issueRefreshToken,
@@ -16,6 +16,113 @@ export const merchantAuthRoutes = new Hono()
 
 // Login: 8 intentos por minuto por IP/UA (anti-brute force)
 const loginLimiter = rateLimit({ prefix: 'merchant-login', max: 8, windowMs: 60_000 })
+// Signup: 3 nuevos comercios por hora por cliente
+const signupLimiter = rateLimit({ prefix: 'merchant-signup', max: 3, windowMs: 60 * 60_000 })
+
+/** Genera un slug a partir del nombre, con un sufijo único si choca. */
+async function generateUniqueSlug(nombre: string): Promise<string> {
+  const base = nombre
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // remove diacritics
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'comercio'
+  // Intentamos el slug base primero
+  if (!(await Merchant.exists({ slug: base }))) return base
+  // Sufijo numérico hasta 1000
+  for (let i = 2; i < 1000; i++) {
+    const candidate = `${base}-${i}`
+    if (!(await Merchant.exists({ slug: candidate }))) return candidate
+  }
+  // Fallback con timestamp
+  return `${base}-${Date.now()}`
+}
+
+merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const parsed = merchantSignupSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json({ ok: false, error: 'invalid input', issues: parsed.error.format() }, 400)
+  }
+  const { comercio, admin } = parsed.data
+
+  // Verificar email único antes de crear nada
+  const emailTaken = await MerchantUser.exists({ email: admin.email })
+  if (emailTaken) {
+    return c.json({ ok: false, error: 'email ya registrado' }, 409)
+  }
+
+  // 1) Crear merchant en estado pending_payment
+  const slug = await generateUniqueSlug(comercio.nombre)
+  // Coordenadas placeholder — San Pedro centro. Se actualizan via PATCH /me
+  // cuando el comercio configura su ubicación exacta.
+  const SAN_PEDRO = { lat: -33.6797, lng: -59.6669 }
+  const merchant = await Merchant.create({
+    slug,
+    nombre: comercio.nombre,
+    categoria: comercio.categoria,
+    direccion: comercio.direccion,
+    location: { type: 'Point', coordinates: [SAN_PEDRO.lng, SAN_PEDRO.lat] },
+    telefono: comercio.telefono,
+    horarios: comercio.horarios,
+    logoSeed: comercio.nombre
+      .split(/\s+/)
+      .map((p) => p[0])
+      .filter(Boolean)
+      .slice(0, 3)
+      .join('')
+      .toUpperCase(),
+    nivel: 'standard',
+    estado: 'pending_payment',
+  })
+
+  // 2) Crear merchant user admin con bcrypt
+  const passwordHash = await bcrypt.hash(admin.password, 10)
+  const user = await MerchantUser.create({
+    merchantId: merchant._id,
+    email: admin.email,
+    passwordHash,
+    nombre: admin.nombre,
+    rol: 'admin',
+    lastLoginAt: new Date(),
+  })
+
+  // 3) Auto-login con tokens
+  const accessToken = signAccessToken({
+    sub: user._id.toString(),
+    type: 'merchant_user',
+    merchantId: merchant._id.toString(),
+  })
+  const { token: refreshToken } = await issueRefreshToken({
+    subjectType: 'merchant_user',
+    subjectId: user._id.toString(),
+    userAgent: c.req.header('user-agent'),
+  })
+
+  return c.json(
+    {
+      ok: true,
+      accessToken,
+      refreshToken,
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        nombre: user.nombre,
+        rol: user.rol,
+        merchantId: merchant._id.toString(),
+      },
+      merchant: {
+        id: merchant._id.toString(),
+        slug: merchant.slug,
+        nombre: merchant.nombre,
+        categoria: merchant.categoria,
+        estado: merchant.estado,
+      },
+    },
+    201,
+  )
+})
 
 merchantAuthRoutes.post('/login', loginLimiter, async (c) => {
   const body = await c.req.json().catch(() => ({}))

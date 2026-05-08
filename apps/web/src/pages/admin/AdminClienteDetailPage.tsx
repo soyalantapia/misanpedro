@@ -17,19 +17,94 @@ import { useMerchantSession } from '@/lib/merchantStore'
 import { useClientForMerchant } from '@/lib/merchantQueries'
 import { useCoupons } from '@/lib/couponsStore'
 import { formatMoney, formatRedeemedDate } from '@/lib/format'
+import {
+  useApiMerchantClientes,
+  useApiRecentRedemptions,
+  useApiMyCoupons,
+} from '@/lib/apiQueries'
+import type { Activation } from '@/lib/types'
 
 export function AdminClienteDetailPage() {
   const { userId } = useParams<{ userId: string }>()
   const { session } = useMerchantSession()
   const merchantId = session?.merchantId ?? ''
-  const client = useClientForMerchant(merchantId, userId)
-  const coupons = useCoupons()
+  const localClient = useClientForMerchant(merchantId, userId)
+  const localCoupons = useCoupons()
+  const apiClientes = useApiMerchantClientes()
+  const apiRedemptions = useApiRecentRedemptions(500)
+  const apiCoupons = useApiMyCoupons()
 
-  const couponMap = useMemo(() => new Map(coupons.map((c) => [c.id, c])), [coupons])
+  // Si tenemos data del API, construimos el cliente desde la API
+  const apiClient = useMemo(() => {
+    if (!apiClientes.data || !apiRedemptions.data) return null
+    const c: any = apiClientes.data.find((cl: any) => cl.userId === userId)
+    if (!c) return null
+    const userRedemptions = apiRedemptions.data.filter(
+      (r: any) => r.userId === userId,
+    )
+    return {
+      user: {
+        id: c.userId,
+        nombre: c.nombre ?? 'Vecino',
+        dni: c.dni ?? '',
+        email: c.email ?? '',
+        whatsapp: c.whatsapp ?? '',
+        fechaNacimiento: '',
+        acceptedTcAt: '',
+        createdAt: '',
+      },
+      redemptions: userRedemptions.map(
+        (r: any): Activation => ({
+          id: r.id,
+          couponId: String(r.couponId),
+          userId: String(r.userId),
+          codigoNumerico: '',
+          qrPayload: '',
+          activatedAt: r.redeemedAt,
+          expiresAt: r.redeemedAt,
+          status: 'canjeado' as const,
+          redeemedAt: r.redeemedAt,
+          ahorroEstimado: r.ahorroEstimado,
+          montoTicket: r.montoTicket,
+        }),
+      ),
+      totalAhorro: c.ahorroTotal,
+      firstRedeemedAt: c.primerCanjeAt,
+      lastRedeemedAt: c.ultimoCanjeAt,
+      count: c.canjes,
+    }
+  }, [apiClientes.data, apiRedemptions.data, userId])
 
-  if (!client) {
+  // Mergeamos cupones para que los couponId de Mongo se resuelvan
+  const couponMap = useMemo(() => {
+    const m = new Map<string, { id: string; titulo: string; porcentaje: number; merchantId: string }>()
+    localCoupons.forEach((c) =>
+      m.set(c.id, {
+        id: c.id,
+        titulo: c.titulo,
+        porcentaje: c.porcentaje,
+        merchantId: c.merchantId,
+      }),
+    )
+    apiCoupons.data?.forEach((c) =>
+      m.set(c.id, {
+        id: c.id,
+        titulo: c.titulo,
+        porcentaje: c.porcentaje,
+        merchantId: c.merchantId,
+      }),
+    )
+    return m
+  }, [localCoupons, apiCoupons.data])
+
+  const client = apiClient ?? localClient
+
+  // Si todavía está cargando del API, no redirigir
+  const stillLoading = apiClientes.loading || apiRedemptions.loading
+  if (!client && !stillLoading && !localClient) {
     return <Navigate to="/admin/clientes" replace />
   }
+  if (!client) return null
 
   const { user, redemptions, totalAhorro, firstRedeemedAt, lastRedeemedAt, count } = client
   const sortedDesc = [...redemptions].sort(

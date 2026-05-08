@@ -18,6 +18,7 @@ import {
 } from '@/data/mockData'
 import { useToast } from '@/components/Toast'
 import { cn } from '@/lib/cn'
+import { merchantApi, ApiError } from '@/lib/api'
 
 const PRECIO = 25_000
 
@@ -79,40 +80,78 @@ export function AdminSignupPage() {
     setStep('pago')
   }
 
-  function handlePay() {
+  async function handlePay() {
     setSubmitting(true)
-    setTimeout(() => {
-      // Mock: crear comercio, crear usuario, login
-      const merchant = merchantsActions.create({
-        nombre: form.nombreComercio.trim(),
-        categoria: form.categoria,
-        direccion: form.direccion.trim(),
-        lat: -33.6797,
-        lng: -59.6669,
-        telefono: form.telefono.trim(),
-        horarios: form.horarios.trim(),
-        cover: 'custom',
-        logoSeed: form.nombreComercio
-          .split(' ')
-          .map((p) => p[0])
-          .slice(0, 2)
-          .join('')
-          .toUpperCase(),
+    setError(null)
+
+    // Intentamos primero contra el API real. Si falla con 5xx/network,
+    // caemos al store local (mantener demo gh-pages funcional).
+    try {
+      await merchantApi.signup({
+        comercio: {
+          nombre: form.nombreComercio.trim(),
+          categoria: form.categoria,
+          direccion: form.direccion.trim(),
+          telefono: form.telefono.trim(),
+          horarios: form.horarios.trim(),
+        },
+        admin: {
+          nombre: form.nombreAdmin.trim(),
+          email: form.emailAdmin.trim().toLowerCase(),
+          password: form.password,
+        },
       })
-      addMerchantUser({
-        id: `mu-${Math.random().toString(36).slice(2, 10)}`,
-        merchantId: merchant.id,
-        email: form.emailAdmin.trim().toLowerCase(),
-        password: form.password,
-        nombre: form.nombreAdmin.trim(),
-        rol: 'admin',
-      })
-      merchantAuth.login(form.emailAdmin, form.password)
       setSubmitting(false)
       setStep('listo')
       toast.success('¡Comercio creado!', 'Bienvenido a Mi San Pedro.')
       setTimeout(() => navigate('/admin', { replace: true }), 1500)
-    }, 1200)
+      return
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setSubmitting(false)
+        setError(err.payload?.error ?? 'email ya registrado')
+        setStep('datos')
+        return
+      }
+      if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+        setSubmitting(false)
+        setError(err.message)
+        setStep('datos')
+        return
+      }
+      // 5xx / network → fallback local
+    }
+
+    // Fallback offline (modo demo gh-pages)
+    const merchant = merchantsActions.create({
+      nombre: form.nombreComercio.trim(),
+      categoria: form.categoria,
+      direccion: form.direccion.trim(),
+      lat: -33.6797,
+      lng: -59.6669,
+      telefono: form.telefono.trim(),
+      horarios: form.horarios.trim(),
+      cover: 'custom',
+      logoSeed: form.nombreComercio
+        .split(' ')
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase(),
+    })
+    addMerchantUser({
+      id: `mu-${Math.random().toString(36).slice(2, 10)}`,
+      merchantId: merchant.id,
+      email: form.emailAdmin.trim().toLowerCase(),
+      password: form.password,
+      nombre: form.nombreAdmin.trim(),
+      rol: 'admin',
+    })
+    await merchantAuth.login(form.emailAdmin, form.password)
+    setSubmitting(false)
+    setStep('listo')
+    toast.success('¡Comercio creado! (modo offline)', 'Demostrado localmente.')
+    setTimeout(() => navigate('/admin', { replace: true }), 1500)
   }
 
   return (
