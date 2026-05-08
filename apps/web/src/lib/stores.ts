@@ -177,7 +177,10 @@ export const demoStoreActions = {
 }
 
 export const activationActions = {
-  activate(couponId: string): Activation {
+  activate(
+    couponId: string,
+    overrides?: { id?: string; codigoNumerico?: string; qrPayload?: string },
+  ): Activation {
     const userId = state.user?.id
     if (!userId) throw new Error('No hay usuario logueado')
     const existing = state.activations.find(
@@ -188,19 +191,22 @@ export const activationActions = {
 
     const now = new Date()
     const expiresAt = new Date(now.getTime() + 30 * 60 * 1000)
-    const codigoNumerico = generateNumericCode()
+    const codigoNumerico = overrides?.codigoNumerico ?? generateNumericCode()
+    const id = overrides?.id ?? `a-${randomToken(10)}`
     const activation: Activation = {
-      id: `a-${randomToken(10)}`,
+      id,
       couponId,
       userId,
       codigoNumerico,
-      qrPayload: JSON.stringify({
-        couponId,
-        userId,
-        activationId: `a-${randomToken(10)}`,
-        codigo: codigoNumerico,
-        exp: expiresAt.getTime(),
-      }),
+      qrPayload:
+        overrides?.qrPayload ??
+        JSON.stringify({
+          couponId,
+          userId,
+          activationId: id,
+          codigo: codigoNumerico,
+          exp: expiresAt.getTime(),
+        }),
       activatedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
       status: 'activo',

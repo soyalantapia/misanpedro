@@ -19,12 +19,31 @@ import { useCouponsByMerchant, useCoupons } from '@/lib/couponsStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { formatMoney } from '@/lib/format'
 import { cn } from '@/lib/cn'
+import { useApiMerchantStats, useApiRecentRedemptions, useApiMyCoupons } from '@/lib/apiQueries'
 
 export function AdminDashboardPage() {
   const { session } = useMerchantSession()
   const merchantId = session?.merchantId ?? ''
   const merchant = useMerchant(merchantId)
-  const redemptions = useRedemptionsForMerchant(merchantId)
+  const localRedemptions = useRedemptionsForMerchant(merchantId)
+  const apiStats = useApiMerchantStats()
+  const apiRecent = useApiRecentRedemptions(200)
+
+  const redemptions = apiRecent.data
+    ? apiRecent.data.map((r: any) => ({
+        id: r.id,
+        couponId: String(r.couponId),
+        userId: String(r.userId),
+        codigoNumerico: '',
+        qrPayload: '',
+        activatedAt: r.redeemedAt,
+        expiresAt: r.redeemedAt,
+        status: 'canjeado' as const,
+        redeemedAt: r.redeemedAt,
+        ahorroEstimado: r.ahorroEstimado,
+        montoTicket: r.montoTicket,
+      }))
+    : localRedemptions
 
   const kpis = useMemo(() => {
     const now = new Date()
@@ -41,23 +60,34 @@ export function AdminDashboardPage() {
     }
   }, [redemptions])
 
-  const merchantCoupons = useCouponsByMerchant(merchantId)
+  const localMerchantCoupons = useCouponsByMerchant(merchantId)
+  const apiCupones = useApiMyCoupons()
+  const merchantCoupons: any[] = apiCupones.data ?? localMerchantCoupons
   const cuponesActivos = merchantCoupons.filter((c) => c.estado === 'activo')
   const allCoupons = useCoupons()
-  const couponMap = useMemo(() => new Map(allCoupons.map((c) => [c.id, c])), [allCoupons])
-  const clientesUnicos = new Set(redemptions.map((r) => r.userId)).size
-  const hasRedemptions = redemptions.length > 0
+  const couponMap = useMemo(() => {
+    const m = new Map<string, any>()
+    allCoupons.forEach((c) => m.set(c.id, c))
+    merchantCoupons.forEach((c) => m.set(c.id, c))
+    return m
+  }, [allCoupons, merchantCoupons])
 
-  // Métricas de por vida
-  const ahorroTotal = redemptions.reduce((s, r) => s + (r.ahorroEstimado ?? 0), 0)
-  // Ingresos = sumatoria de tickets estimados de cada canje
-  // (ticket = ahorro / (porcentaje/100))
-  const ingresosTotal = redemptions.reduce((s, r) => {
-    const c = couponMap.get(r.couponId)
-    if (!c || !r.ahorroEstimado || c.porcentaje === 0) return s
-    return s + (r.ahorroEstimado * 100) / c.porcentaje
-  }, 0)
-  const ventasTotal = redemptions.length
+  // Si tenemos stats del API, usamos esos números (más precisos);
+  // si no, calculamos desde los redemptions locales.
+  const clientesUnicos =
+    apiStats.data?.clientesUnicos ?? new Set(redemptions.map((r) => r.userId)).size
+  const hasRedemptions = redemptions.length > 0
+  const ahorroTotal =
+    apiStats.data?.ahorroTotal ?? redemptions.reduce((s, r) => s + (r.ahorroEstimado ?? 0), 0)
+  const ingresosTotal =
+    apiStats.data?.ingresosTotal ??
+    redemptions.reduce((s, r) => {
+      if (r.montoTicket) return s + r.montoTicket
+      const c = couponMap.get(r.couponId)
+      if (!c || !r.ahorroEstimado || c.porcentaje === 0) return s
+      return s + (r.ahorroEstimado * 100) / c.porcentaje
+    }, 0)
+  const ventasTotal = apiStats.data?.canjes ?? redemptions.length
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useMerchantSession, merchantAuth } from '@/lib/merchantStore'
 import { useMerchant, merchantsActions } from '@/lib/merchantsStore'
+import { api, ApiError } from '@/lib/api'
 import { CardImage } from '@/components/CardImage'
 import {
   CATEGORIAS,
@@ -83,12 +84,33 @@ export function AdminComercioPage() {
     setEditing(false)
   }
 
-  function save() {
+  async function save() {
     if (!draft || !merchant) return
     if (draft.nombre.trim().length < 3) {
       toast.error('Nombre muy corto', 'Mínimo 3 caracteres.')
       return
     }
+
+    const apiPayload = {
+      nombre: draft.nombre.trim(),
+      categoria: draft.categoria,
+      direccion: draft.direccion.trim(),
+      telefono: draft.telefono.trim(),
+      horarios: formatHorariosSemana(draft.horariosDetalle),
+      horariosDetalle: draft.horariosDetalle,
+      coverImageUrl: draft.coverImageUrl ?? null,
+      mapsUrl: draft.mapsUrl.trim() || null,
+    }
+    try {
+      await api.merchantAdmin.updateMe(apiPayload)
+    } catch (err) {
+      if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+        toast.error('No se pudo guardar', err.message)
+        return
+      }
+      // 5xx o sin red → fallback local
+    }
+
     merchantsActions.patch(merchant.id, {
       nombre: draft.nombre.trim(),
       categoria: draft.categoria,

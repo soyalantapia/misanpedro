@@ -23,6 +23,7 @@ import { useToast } from '@/components/Toast'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { formatRedeemedDate } from '@/lib/format'
 import { cn } from '@/lib/cn'
+import { api, ApiError } from '@/lib/api'
 
 const MAX_PER_MONTH = 4
 
@@ -67,31 +68,95 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const toast = useToast()
   const [connecting, setConnecting] = useState(false)
+  const [apiQr, setApiQr] = useState<string | null>(null)
+  const [apiStatus, setApiStatus] = useState<string>('disconnected')
+  const [apiAvailable, setApiAvailable] = useState<boolean>(true)
 
-  // Genera un QR fake con un token (similar al QR de WhatsApp Web)
-  const qrToken = useMemo(
+  // Pedimos el QR real al backend. Si no responde o devuelve STUB,
+  // mostramos uno simulado (modo demo).
+  useEffect(() => {
+    let cancelled = false
+    api.whatsapp
+      .start()
+      .then((data) => {
+        if (cancelled) return
+        if (data.qr && data.qr !== 'STUB_QR_PLACEHOLDER') setApiQr(data.qr)
+        setApiStatus(data.status)
+      })
+      .catch(() => {
+        if (!cancelled) setApiAvailable(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Polling para detectar cuando la sesión se conecta efectivamente
+  useEffect(() => {
+    if (!apiAvailable) return
+    const interval = setInterval(async () => {
+      try {
+        const data = await api.whatsapp.status()
+        setApiStatus(data.status)
+        if (data.qr && data.qr !== 'STUB_QR_PLACEHOLDER') setApiQr(data.qr)
+        if (data.status === 'ready') {
+          whatsappActions.connect(merchantId)
+          toast.success('WhatsApp conectado', 'Ya podés mandar campañas masivas.')
+          clearInterval(interval)
+        }
+      } catch {
+        /* noop */
+      }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [apiAvailable, merchantId, toast])
+
+  // QR fake como fallback
+  const fallbackQr = useMemo(
     () => `wa-mi-san-pedro:${merchantId}:${Date.now()}:${Math.random().toString(36).slice(2)}`,
     [merchantId],
   )
 
   useEffect(() => {
     if (!canvasRef.current) return
+    const text = apiQr ?? fallbackQr
     QRCode.toCanvas(
       canvasRef.current,
-      qrToken,
+      text,
       { width: 240, margin: 1, color: { dark: '#14211B', light: '#ffffff' } },
       () => {},
     )
-  }, [qrToken])
+  }, [apiQr, fallbackQr])
 
-  function handleConnect() {
+  async function handleConnect() {
     setConnecting(true)
+    if (apiAvailable) {
+      // Verificar estado real
+      try {
+        const data = await api.whatsapp.status()
+        if (data.status === 'ready') {
+          whatsappActions.connect(merchantId)
+          toast.success('WhatsApp conectado', 'Ya podés mandar campañas masivas.')
+          setConnecting(false)
+          return
+        }
+        toast.warning('Todavía no se conectó', 'Escaneá el QR primero desde tu WhatsApp.')
+        setConnecting(false)
+        return
+      } catch (err) {
+        // si el API falla, caemos al modo demo
+        if (!(err instanceof ApiError)) setApiAvailable(false)
+      }
+    }
+    // Modo demo: simulamos la conexión
     setTimeout(() => {
       whatsappActions.connect(merchantId)
-      toast.success('WhatsApp conectado', 'Ya podés mandar campañas masivas.')
+      toast.success('WhatsApp conectado (demo)', 'Ya podés mandar campañas masivas.')
       setConnecting(false)
     }, 700)
   }
+  // referenced for clarity; status visible para debugging futuro
+  void apiStatus
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">

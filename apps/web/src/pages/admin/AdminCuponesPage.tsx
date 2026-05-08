@@ -18,27 +18,48 @@ import { EmptyState } from '@/components/EmptyState'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/Toast'
 import { cn } from '@/lib/cn'
+import { useApiMyCoupons, useApiRecentRedemptions } from '@/lib/apiQueries'
+import { api, ApiError } from '@/lib/api'
 
 export function AdminCuponesPage() {
   const { session } = useMerchantSession()
   const merchantId = session?.merchantId ?? ''
-  const cupones = useCouponsByMerchant(merchantId)
-  const redemptions = useRedemptionsForMerchant(merchantId)
+  const localCupones = useCouponsByMerchant(merchantId)
+  const localRedemptions = useRedemptionsForMerchant(merchantId)
+  const apiCupones = useApiMyCoupons()
+  const apiRedemptions = useApiRecentRedemptions(200)
   const toast = useToast()
+
+  const cupones = apiCupones.data ?? localCupones
+  const redemptions = apiRedemptions.data ?? localRedemptions
+  const usingApi = apiCupones.data !== null
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   const canjesPorCupon = useMemo(() => {
     const map = new Map<string, number>()
-    redemptions.forEach((r) => {
-      map.set(r.couponId, (map.get(r.couponId) ?? 0) + 1)
+    redemptions.forEach((r: any) => {
+      const id = String(r.couponId)
+      map.set(id, (map.get(id) ?? 0) + 1)
     })
     return map
   }, [redemptions])
 
-  function togglePause(id: string, isPausado: boolean) {
-    couponsActions.setEstado(id, isPausado ? 'activo' : 'pausado')
+  async function togglePause(id: string, isPausado: boolean) {
+    if (usingApi) {
+      try {
+        await api.merchantCoupons.update(id, {
+          estado: isPausado ? 'activo' : 'pausado',
+        })
+        apiCupones.refetch()
+      } catch (err) {
+        toast.error('No se pudo actualizar', err instanceof ApiError ? err.message : 'Sin conexión')
+        return
+      }
+    } else {
+      couponsActions.setEstado(id, isPausado ? 'activo' : 'pausado')
+    }
     toast.success(
       isPausado ? 'Cupón reactivado' : 'Cupón pausado',
       isPausado ? 'Vuelve a estar visible para los vecinos.' : 'Ya no aparece en el listado.',
@@ -46,8 +67,19 @@ export function AdminCuponesPage() {
     setOpenMenuId(null)
   }
 
-  function handleDelete(id: string) {
-    couponsActions.remove(id)
+  async function handleDelete(id: string) {
+    if (usingApi) {
+      try {
+        await api.merchantCoupons.delete(id)
+        apiCupones.refetch()
+      } catch (err) {
+        toast.error('No se pudo eliminar', err instanceof ApiError ? err.message : 'Sin conexión')
+        setConfirmDelete(null)
+        return
+      }
+    } else {
+      couponsActions.remove(id)
+    }
     toast.success('Cupón eliminado', 'No se podrá reactivar.')
     setConfirmDelete(null)
     setOpenMenuId(null)

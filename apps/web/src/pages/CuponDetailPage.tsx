@@ -13,6 +13,7 @@ import { useMerchant } from '@/lib/merchantsStore'
 import { CATEGORIAS } from '@/lib/types'
 import { activationActions, useActivationByCoupon, useUser } from '@/lib/stores'
 import { formatHorariosSemana, formatVigencia } from '@/lib/format'
+import { api, ApiError, tokens } from '@/lib/api'
 
 export function CuponDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -28,7 +29,7 @@ export function CuponDetailPage() {
 
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
 
-  function handleActivate() {
+  async function handleActivate() {
     if (!coupon) return
     if (!user) {
       navigate(`/registro?next=${encodeURIComponent(`/cupon/${coupon.id}/activar`)}`)
@@ -38,6 +39,33 @@ export function CuponDetailPage() {
       navigate(`/activacion/${existing.id}`)
       return
     }
+
+    // Si tenemos token de vecino válido, intentamos activar contra el API.
+    // El couponId del API es un Mongo ObjectId (24 chars hex); el local es un slug.
+    // Sólo enviamos al API cuando parece un id de Mongo.
+    const userToken = tokens.get('user').access
+    const looksLikeMongoId = /^[0-9a-f]{24}$/i.test(coupon.id)
+    if (userToken && looksLikeMongoId) {
+      try {
+        const data = await api.activations.create(coupon.id)
+        // Espejamos la activación al store local para que las vistas existentes
+        // (CuponActivoPage, MisCuponesPage) la encuentren sin migrar.
+        const local = activationActions.activate(coupon.id, {
+          id: data.activation.id,
+          codigoNumerico: data.activation.codigoNumerico,
+          qrPayload: data.activation.qrPayload,
+        })
+        navigate(`/activacion/${local.id}`)
+        return
+      } catch (err) {
+        if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+          // 4xx: cupón inválido o expirado — no creamos en local
+          console.warn('[activate] api error:', err.message)
+        }
+      }
+    }
+
+    // Fallback: store local (modo offline / cupón seed)
     const a = activationActions.activate(coupon.id)
     navigate(`/activacion/${a.id}`)
   }

@@ -7,6 +7,8 @@ import { useToast } from '@/components/Toast'
 import { CardImage } from '@/components/CardImage'
 import { getMerchant } from '@/data/mockData'
 import type { Coupon } from '@/lib/types'
+import { api, ApiError } from '@/lib/api'
+import { useApiMyCoupons } from '@/lib/apiQueries'
 
 const PORCENTAJES = [5, 10, 15, 20, 25, 30, 40, 50] as const
 
@@ -48,7 +50,10 @@ function dateToIso(date: string): string {
 export function AdminCuponEditPage() {
   const { id } = useParams<{ id: string }>()
   const isEdit = !!id
-  const existing = useCoupon(id)
+  const localExisting = useCoupon(id)
+  const apiCupones = useApiMyCoupons()
+  const apiExisting = isEdit && id ? apiCupones.data?.find((c) => c.id === id) : undefined
+  const existing: any = apiExisting ?? localExisting
   const { session } = useMerchantSession()
   const merchant = session ? getMerchant(session.merchantId) : undefined
   const navigate = useNavigate()
@@ -62,7 +67,7 @@ export function AdminCuponEditPage() {
       setForm({
         titulo: existing.titulo,
         descripcion: existing.descripcion,
-        condiciones: existing.condiciones,
+        condiciones: existing.condiciones ?? '',
         porcentaje: existing.porcentaje,
         vigenciaHasta: isoToDate(existing.vigenciaHasta),
         diasAplica: existing.diasAplica ?? '',
@@ -73,21 +78,25 @@ export function AdminCuponEditPage() {
   }, [existing?.id])
 
   if (!session || !merchant) return <Navigate to="/admin/login" replace />
-  if (isEdit && !existing) return <Navigate to="/admin/cupones" replace />
+  // Si todavía no cargó la lista de la API y tampoco encontramos local,
+  // esperamos antes de redirigir.
+  if (isEdit && !existing && !apiCupones.loading) {
+    return <Navigate to="/admin/cupones" replace />
+  }
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }))
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!session) return
     if (form.titulo.trim().length < 3) {
       toast.error('Falta el título', 'Escribí al menos 3 caracteres.')
       return
     }
-    if (!form.descripcion.trim()) {
-      toast.error('Falta la descripción', 'Contale al vecino qué incluye el descuento.')
+    if (form.descripcion.trim().length < 10) {
+      toast.error('Falta la descripción', 'Contale al vecino qué incluye (mín. 10 caracteres).')
       return
     }
     if (!form.vigenciaHasta) {
@@ -95,27 +104,58 @@ export function AdminCuponEditPage() {
       return
     }
     setSubmitting(true)
-    setTimeout(() => {
-      const payload: Omit<Coupon, 'id'> = {
-        merchantId: session.merchantId,
-        titulo: form.titulo.trim(),
-        descripcion: form.descripcion.trim(),
-        condiciones: form.condiciones.trim(),
-        porcentaje: form.porcentaje,
-        vigenciaHasta: dateToIso(form.vigenciaHasta),
-        imagenSeed: existing?.imagenSeed ?? 'custom',
-        estado: existing?.estado ?? 'activo',
-        diasAplica: form.diasAplica.trim() || undefined,
-      }
+
+    // Intentamos primero contra el API; si está caído, caemos al store local
+    const apiPayload = {
+      titulo: form.titulo.trim(),
+      descripcion: form.descripcion.trim(),
+      condiciones: form.condiciones.trim(),
+      porcentaje: form.porcentaje,
+      vigenciaHasta: dateToIso(form.vigenciaHasta),
+      diasAplica: form.diasAplica.trim() || undefined,
+      estado: existing?.estado === 'pausado' ? 'pausado' : 'activo',
+    }
+    try {
       if (isEdit && id) {
-        couponsActions.patch(id, payload)
+        await api.merchantCoupons.update(id, apiPayload)
         toast.success('Cupón actualizado')
       } else {
-        couponsActions.create(payload)
+        await api.merchantCoupons.create(apiPayload)
         toast.success('Cupón creado', 'Ya está visible para los vecinos.')
       }
       navigate('/admin/cupones', { replace: true })
-    }, 280)
+      setSubmitting(false)
+      return
+    } catch (err) {
+      // si es validación o conflicto, mostramos el error y no seguimos
+      if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+        toast.error('No se pudo guardar', err.message)
+        setSubmitting(false)
+        return
+      }
+      // 5xx o sin red: fallback local
+    }
+
+    const payload: Omit<Coupon, 'id'> = {
+      merchantId: session.merchantId,
+      titulo: form.titulo.trim(),
+      descripcion: form.descripcion.trim(),
+      condiciones: form.condiciones.trim(),
+      porcentaje: form.porcentaje,
+      vigenciaHasta: dateToIso(form.vigenciaHasta),
+      imagenSeed: existing?.imagenSeed ?? 'custom',
+      estado: existing?.estado ?? 'activo',
+      diasAplica: form.diasAplica.trim() || undefined,
+    }
+    if (isEdit && id) {
+      couponsActions.patch(id, payload)
+      toast.success('Cupón actualizado (modo offline)')
+    } else {
+      couponsActions.create(payload)
+      toast.success('Cupón creado (modo offline)')
+    }
+    navigate('/admin/cupones', { replace: true })
+    setSubmitting(false)
   }
 
   return (

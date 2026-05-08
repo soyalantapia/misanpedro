@@ -7,29 +7,54 @@ import { useActivation, useUserById } from '@/lib/stores'
 import { useCoupon } from '@/lib/couponsStore'
 import { useToast } from '@/components/Toast'
 import { formatMoney } from '@/lib/format'
+import { api, ApiError } from '@/lib/api'
+import { readCachedValidation, clearCachedValidation } from '@/lib/apiQueries'
 
 export function AdminConfirmarCanjePage() {
   const { activationId } = useParams<{ activationId: string }>()
-  const activation = useActivation(activationId)
-  const coupon = useCoupon(activation?.couponId)
-  const user = useUserById(activation?.userId)
+  const localActivation = useActivation(activationId)
+  const localCoupon = useCoupon(localActivation?.couponId)
+  const localUser = useUserById(localActivation?.userId)
+  const apiCached = activationId ? readCachedValidation(activationId) : null
   const { session } = useMerchantSession()
   const navigate = useNavigate()
   const toast = useToast()
   const [monto, setMonto] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  if (!activation || !coupon || !session) return <Navigate to="/admin/validar" replace />
+  // Combinamos: si vino del API, usamos el cache; si no, el store local.
+  const view = apiCached
+    ? {
+        id: apiCached.ok ? apiCached.activationId : '',
+        codigoNumerico: apiCached.ok ? apiCached.codigo : '',
+        porcentaje: apiCached.ok ? apiCached.porcentaje : 0,
+        couponTitulo: apiCached.ok ? apiCached.couponTitulo : '',
+        customerName: apiCached.ok ? apiCached.customerName : 'Vecino registrado',
+        activatedAt: new Date().toISOString(),
+        source: 'api' as const,
+      }
+    : localActivation && localCoupon && localActivation.status === 'activo'
+      ? {
+          id: localActivation.id,
+          codigoNumerico: localActivation.codigoNumerico,
+          porcentaje: localCoupon.porcentaje,
+          couponTitulo: localCoupon.titulo,
+          customerName: localUser?.nombre ?? 'Vecino registrado',
+          activatedAt: localActivation.activatedAt,
+          source: 'local' as const,
+        }
+      : null
 
-  if (activation.status !== 'activo') {
+  if (!view || !session) return <Navigate to="/admin/validar" replace />
+  if (
+    view.source === 'local' &&
+    localCoupon &&
+    localCoupon.merchantId !== session.merchantId
+  ) {
     return <Navigate to="/admin/validar" replace />
   }
 
-  if (coupon.merchantId !== session.merchantId) {
-    return <Navigate to="/admin/validar" replace />
-  }
-
-  const customerName = user?.nombre ?? 'Vecino registrado'
+  const customerName = view.customerName
   const initials = customerName
     .split(' ')
     .map((p) => p[0])
@@ -37,19 +62,41 @@ export function AdminConfirmarCanjePage() {
     .join('')
     .toUpperCase()
 
-  function handleConfirm() {
-    if (!activation || !coupon) return
+  async function handleConfirm() {
     setSubmitting(true)
     const monto_n = monto ? parseInt(monto.replace(/\D/g, ''), 10) : undefined
-    setTimeout(() => {
-      confirmRedemption(activation.id, coupon.porcentaje, monto_n)
-      toast.success('Canje confirmado', `${customerName} usó su descuento del ${coupon.porcentaje}%`)
+
+    if (view.source === 'api') {
+      try {
+        await api.redemptions.confirm(view.id, monto_n)
+        toast.success(
+          'Canje confirmado',
+          `${customerName} usó su descuento del ${view.porcentaje}%`,
+        )
+        clearCachedValidation(view.id)
+        navigate('/admin', { replace: true })
+        return
+      } catch (err) {
+        toast.error(
+          'No se pudo confirmar',
+          err instanceof ApiError ? err.message : 'Sin conexión',
+        )
+        setSubmitting(false)
+        return
+      }
+    }
+
+    // Local fallback
+    if (localActivation && localCoupon) {
+      confirmRedemption(localActivation.id, localCoupon.porcentaje, monto_n)
+      toast.success('Canje confirmado', `${customerName} usó su descuento del ${localCoupon.porcentaje}%`)
       navigate('/admin', { replace: true })
-    }, 320)
+    }
+    setSubmitting(false)
   }
 
   const ahorroPreview = monto
-    ? Math.round((parseInt(monto.replace(/\D/g, ''), 10) * coupon.porcentaje) / 100)
+    ? Math.round((parseInt(monto.replace(/\D/g, ''), 10) * view.porcentaje) / 100)
     : null
 
   return (
@@ -83,10 +130,10 @@ export function AdminConfirmarCanjePage() {
       </div>
 
       <div className="flex flex-col gap-2 rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-        <Row label="Descuento" value={`${coupon.porcentaje}% OFF`} />
-        <Row label="Cupón" value={coupon.titulo} />
-        <Row label="Código" value={formatCode(activation.codigoNumerico)} mono />
-        <Row label="Activado a las" value={timeOf(activation.activatedAt)} />
+        <Row label="Descuento" value={`${view.porcentaje}% OFF`} />
+        <Row label="Cupón" value={view.couponTitulo} />
+        <Row label="Código" value={formatCode(view.codigoNumerico)} mono />
+        <Row label="Activado a las" value={timeOf(view.activatedAt)} />
       </div>
 
       <label className="flex flex-col gap-1.5">

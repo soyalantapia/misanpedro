@@ -5,13 +5,40 @@ import { useMerchantSession } from '@/lib/merchantStore'
 import { useClientsForMerchant } from '@/lib/merchantQueries'
 import { formatRedeemedDate, formatMoney } from '@/lib/format'
 import { useToast } from '@/components/Toast'
+import { useApiMerchantClientes } from '@/lib/apiQueries'
+
+type Client = {
+  user: { id: string; nombre: string; dni: string; email: string; whatsapp: string }
+  count: number
+  totalAhorro: number
+  firstRedeemedAt: string
+  lastRedeemedAt: string
+}
 
 export function AdminClientesPage() {
   const { session } = useMerchantSession()
   const merchantId = session?.merchantId ?? ''
-  const clients = useClientsForMerchant(merchantId)
+  const localClients = useClientsForMerchant(merchantId)
+  const apiClients = useApiMerchantClientes()
   const [search, setSearch] = useState('')
   const toast = useToast()
+
+  // Normalizamos: el API trae los campos planos; el local tiene `user` anidado
+  const clients: Client[] = apiClients.data
+    ? apiClients.data.map((c: any) => ({
+        user: {
+          id: c.userId,
+          nombre: c.nombre ?? 'Vecino',
+          dni: c.dni ?? '',
+          email: c.email ?? '',
+          whatsapp: c.whatsapp ?? '',
+        },
+        count: c.canjes,
+        totalAhorro: c.ahorroTotal,
+        firstRedeemedAt: c.primerCanjeAt,
+        lastRedeemedAt: c.ultimoCanjeAt,
+      }))
+    : (localClients as unknown as Client[])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()

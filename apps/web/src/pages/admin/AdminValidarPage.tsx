@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ScanLine, Hash, AlertCircle, Camera, Keyboard } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useValidateByCode } from '@/lib/merchantQueries'
+import { useApiValidateByCode } from '@/lib/apiQueries'
 import { refreshDemoActiveCoupon } from '@/lib/demoSeeder'
 import { cn } from '@/lib/cn'
 
@@ -81,7 +82,14 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   }, [])
 
   const trimmed = code.replace(/\D/g, '').slice(0, 6)
-  const result = useValidateByCode(trimmed, merchantId)
+  const localResult = useValidateByCode(trimmed, merchantId)
+  const { result: apiResult } = useApiValidateByCode(trimmed)
+  // Preferimos el resultado del API; si el API devolvió error de red (no
+  // reachable), caemos al store local que mantiene la demo viva.
+  const result =
+    apiResult && (apiResult.ok || apiResult.reason !== 'network')
+      ? toLegacyResult(apiResult)
+      : localResult
   const ready = trimmed.length === 6
 
   // Auto-navega al confirmar canje cuando el cupón es válido (con un toque
@@ -227,6 +235,11 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   // parse and validate payload
   const codeFromPayload = (() => {
     if (!scannedPayload) return ''
+    // Soporta payloads legacy JSON `{codigo:...}` y el nuevo formato `msp:act:CODE:COUPONID`
+    if (scannedPayload.startsWith('msp:act:')) {
+      const parts = scannedPayload.split(':')
+      return parts[2] ?? ''
+    }
     try {
       const parsed = JSON.parse(scannedPayload) as { codigo?: string }
       return parsed.codigo ?? ''
@@ -234,7 +247,12 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
       return ''
     }
   })()
-  const result = useValidateByCode(codeFromPayload, merchantId)
+  const localResult = useValidateByCode(codeFromPayload, merchantId)
+  const { result: apiResult } = useApiValidateByCode(codeFromPayload)
+  const result =
+    apiResult && (apiResult.ok || apiResult.reason !== 'network')
+      ? toLegacyResult(apiResult)
+      : localResult
 
   // Auto-navega cuando el QR es válido
   const okActivationId = result && result.ok ? result.activation.id : null
@@ -299,6 +317,43 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
       {scannedPayload && result && <ResultPanel result={result} />}
     </div>
   )
+}
+
+function toLegacyResult(
+  v: NonNullable<ReturnType<typeof useApiValidateByCode>['result']>,
+): NonNullable<ReturnType<typeof useValidateByCode>> {
+  if (v.ok) {
+    return {
+      ok: true,
+      // Construimos un Activation mínimo compatible con el navigate al confirmar
+      activation: {
+        id: v.activationId,
+        codigoNumerico: v.codigo,
+        couponId: v.couponId,
+        userId: '',
+        status: 'activo',
+        activatedAt: new Date().toISOString(),
+        expiresAt: v.expiresAt,
+        qrPayload: '',
+      },
+      couponTitulo: v.couponTitulo,
+      porcentaje: v.porcentaje,
+      customerName: v.customerName,
+      isFirstVisit: false,
+    }
+  }
+  return {
+    ok: false,
+    reason:
+      v.reason === '404'
+        ? 'not-found'
+        : v.reason === '403'
+          ? 'wrong-merchant'
+          : v.reason === '409'
+            ? 'already-redeemed'
+            : 'not-found',
+    message: v.message,
+  }
 }
 
 function ResultPanel({
