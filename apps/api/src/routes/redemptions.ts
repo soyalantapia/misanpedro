@@ -7,8 +7,12 @@ import {
 } from '@misanpedro/shared'
 import { Activation, Coupon, Redemption, User } from '@/models'
 import { requireMerchantAuth } from '@/middleware/auth'
+import { rateLimit } from '@/middleware/security'
 
 export const redemptionsRoutes = new Hono()
+
+// Anti-brute force de códigos: 60 validates por minuto por comercio
+const validateLimiter = rateLimit({ prefix: 'validate', max: 60, windowMs: 60_000 })
 
 function serializeForValidation(activation: any, coupon: any, user: any) {
   return {
@@ -32,7 +36,7 @@ function serializeForValidation(activation: any, coupon: any, user: any) {
 }
 
 // POST /redemptions/validate — comercio valida código o payload
-redemptionsRoutes.post('/validate', requireMerchantAuth, async (c) => {
+redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, async (c) => {
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const body = await c.req.json().catch(() => ({}))

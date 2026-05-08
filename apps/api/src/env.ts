@@ -21,6 +21,17 @@ const schema = z.object({
   SENTRY_DSN: z.string().optional(),
 
   WHATSAPP_SESSIONS_DIR: z.string().default('/tmp/wa-sessions'),
+
+  // CORS: lista coma-separada de orígenes adicionales permitidos.
+  // APP_URL_FRONT siempre se incluye automáticamente.
+  CORS_ORIGINS: z.string().default(''),
+
+  // Trust proxy (X-Forwarded-Proto / X-Forwarded-For). En Railway, Render,
+  // Heroku setear a 'true'. Local: 'false'.
+  TRUST_PROXY: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
 })
 
 const parsed = schema.safeParse(process.env)

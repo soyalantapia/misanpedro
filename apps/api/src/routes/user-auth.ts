@@ -14,8 +14,14 @@ import {
   signAccessToken,
 } from '@/services/jwt.service'
 import { requireUserAuth } from '@/middleware/auth'
+import { rateLimit } from '@/middleware/security'
 
 export const userAuthRoutes = new Hono()
+
+// Rate limits para anti-abuse
+const registerLimiter = rateLimit({ prefix: 'user-register', max: 5, windowMs: 60 * 60_000 })
+const otpRequestLimiter = rateLimit({ prefix: 'otp-request', max: 5, windowMs: 60 * 60_000 })
+const otpVerifyLimiter = rateLimit({ prefix: 'otp-verify', max: 10, windowMs: 60_000 })
 
 const OTP_TTL_MS = 5 * 60 * 1000
 const OTP_MAX_ATTEMPTS = 5
@@ -28,7 +34,7 @@ function generateOtp(): string {
   return randomInt(100_000, 1_000_000).toString()
 }
 
-userAuthRoutes.post('/register', async (c) => {
+userAuthRoutes.post('/register', registerLimiter, async (c) => {
   const body = await c.req.json().catch(() => ({}))
   const parsed = userRegisterSchema.safeParse(body)
   if (!parsed.success) {
@@ -80,7 +86,7 @@ userAuthRoutes.post('/register', async (c) => {
   })
 })
 
-userAuthRoutes.post('/request-otp', async (c) => {
+userAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
   const body = await c.req.json().catch(() => ({}))
   const parsed = otpRequestSchema.safeParse(body)
   if (!parsed.success) {
@@ -114,7 +120,7 @@ userAuthRoutes.post('/request-otp', async (c) => {
   return c.json({ ok: true, ...debugCode })
 })
 
-userAuthRoutes.post('/verify-otp', async (c) => {
+userAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
   const body = await c.req.json().catch(() => ({}))
   const parsed = otpVerifySchema.safeParse(body)
   if (!parsed.success) {

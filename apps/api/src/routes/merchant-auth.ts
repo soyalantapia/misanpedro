@@ -10,10 +10,14 @@ import {
   revokeAllForSubject,
 } from '@/services/jwt.service'
 import { requireMerchantAuth } from '@/middleware/auth'
+import { rateLimit } from '@/middleware/security'
 
 export const merchantAuthRoutes = new Hono()
 
-merchantAuthRoutes.post('/login', async (c) => {
+// Login: 8 intentos por minuto por IP/UA (anti-brute force)
+const loginLimiter = rateLimit({ prefix: 'merchant-login', max: 8, windowMs: 60_000 })
+
+merchantAuthRoutes.post('/login', loginLimiter, async (c) => {
   const body = await c.req.json().catch(() => ({}))
   const parsed = merchantLoginSchema.safeParse(body)
   if (!parsed.success) {
