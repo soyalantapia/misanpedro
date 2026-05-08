@@ -8,9 +8,9 @@ import {
 } from '@misanpedro/shared'
 import { Otp, User } from '@/models'
 import {
-  consumeRefreshToken,
   issueRefreshToken,
   revokeRefreshToken,
+  rotateRefreshToken,
   signAccessToken,
 } from '@/services/jwt.service'
 import { requireUserAuth } from '@/middleware/auth'
@@ -159,14 +159,16 @@ userAuthRoutes.post('/verify-otp', async (c) => {
 userAuthRoutes.post('/refresh', async (c) => {
   const { refreshToken } = await c.req.json().catch(() => ({}))
   if (!refreshToken) return c.json({ ok: false, error: 'refresh token required' }, 400)
-  const subject = await consumeRefreshToken(refreshToken)
-  if (!subject || subject.subjectType !== 'user') {
+  const rotated = await rotateRefreshToken(refreshToken, {
+    userAgent: c.req.header('user-agent'),
+  })
+  if (!rotated || rotated.subjectType !== 'user') {
     return c.json({ ok: false, error: 'invalid refresh token' }, 401)
   }
-  const user = await User.findById(subject.subjectId)
+  const user = await User.findById(rotated.subjectId)
   if (!user) return c.json({ ok: false, error: 'user not found' }, 401)
   const accessToken = signAccessToken({ sub: user._id.toString(), type: 'user' })
-  return c.json({ ok: true, accessToken })
+  return c.json({ ok: true, accessToken, refreshToken: rotated.token })
 })
 
 userAuthRoutes.post('/logout', async (c) => {

@@ -47,7 +47,10 @@ export async function issueRefreshToken(input: {
   return { token, expiresAt }
 }
 
-/** Valida un refresh token y devuelve el subject si está vigente. */
+/**
+ * Valida un refresh token y devuelve el subject si está vigente.
+ * NO rota — para eso usar `rotateRefreshToken`.
+ */
 export async function consumeRefreshToken(token: string): Promise<{
   subjectType: Subject
   subjectId: string
@@ -60,6 +63,53 @@ export async function consumeRefreshToken(token: string): Promise<{
   return {
     subjectType: doc.subjectType,
     subjectId: doc.subjectId.toString(),
+  }
+}
+
+/**
+ * Valida + revoca el token viejo + emite uno nuevo. Pattern de "rotation"
+ * que limita el blast radius de un token comprometido.
+ *
+ * Si detecta reuso de un token ya revocado (señal de robo), revoca toda
+ * la cadena del subject para forzar re-login.
+ */
+export async function rotateRefreshToken(
+  oldToken: string,
+  meta: { userAgent?: string; ip?: string } = {},
+): Promise<{ subjectType: Subject; subjectId: string; token: string; expiresAt: Date } | null> {
+  const tokenHash = sha256(oldToken)
+  const doc = await RefreshToken.findOne({ tokenHash })
+  if (!doc) return null
+
+  // Reuso de token ya revocado → posible robo, invalidamos todo
+  if (doc.revokedAt) {
+    await RefreshToken.updateMany(
+      { subjectId: doc.subjectId, revokedAt: { $exists: false } },
+      { revokedAt: new Date() },
+    )
+    return null
+  }
+  if (doc.expiresAt.getTime() < Date.now()) return null
+
+  // Revoca el token viejo
+  doc.revokedAt = new Date()
+  await doc.save()
+
+  // Emite uno nuevo
+  const subjectType = doc.subjectType as Subject
+  const subjectId = doc.subjectId.toString()
+  const issued = await issueRefreshToken({
+    subjectType,
+    subjectId,
+    userAgent: meta.userAgent,
+    ip: meta.ip,
+  })
+
+  return {
+    subjectType,
+    subjectId,
+    token: issued.token,
+    expiresAt: issued.expiresAt,
   }
 }
 

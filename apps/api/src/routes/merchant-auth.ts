@@ -5,7 +5,7 @@ import { Merchant, MerchantUser } from '@/models'
 import {
   issueRefreshToken,
   signAccessToken,
-  consumeRefreshToken,
+  rotateRefreshToken,
   revokeRefreshToken,
   revokeAllForSubject,
 } from '@/services/jwt.service'
@@ -27,6 +27,16 @@ merchantAuthRoutes.post('/login', async (c) => {
   const ok = await bcrypt.compare(password, user.passwordHash)
   if (!ok) return c.json({ ok: false, error: 'credenciales inválidas' }, 401)
 
+  // Bloquear login si el comercio está suspendido o cancelado
+  const merchantPre = await Merchant.findById(user.merchantId)
+  if (!merchantPre) return c.json({ ok: false, error: 'comercio no encontrado' }, 404)
+  if (merchantPre.estado === 'suspendido') {
+    return c.json({ ok: false, error: 'cuenta suspendida — contactá soporte' }, 403)
+  }
+  if (merchantPre.estado === 'cancelado') {
+    return c.json({ ok: false, error: 'cuenta cancelada' }, 403)
+  }
+
   user.lastLoginAt = new Date()
   await user.save()
 
@@ -41,8 +51,6 @@ merchantAuthRoutes.post('/login', async (c) => {
     userAgent: c.req.header('user-agent'),
   })
 
-  const merchant = await Merchant.findById(user.merchantId)
-
   return c.json({
     ok: true,
     accessToken,
@@ -54,11 +62,11 @@ merchantAuthRoutes.post('/login', async (c) => {
       rol: user.rol,
       merchantId: user.merchantId.toString(),
     },
-    merchant: merchant && {
-      id: merchant._id.toString(),
-      slug: merchant.slug,
-      nombre: merchant.nombre,
-      categoria: merchant.categoria,
+    merchant: {
+      id: merchantPre._id.toString(),
+      slug: merchantPre.slug,
+      nombre: merchantPre.nombre,
+      categoria: merchantPre.categoria,
     },
   })
 })
@@ -68,11 +76,15 @@ merchantAuthRoutes.post('/refresh', async (c) => {
   if (!refreshToken || typeof refreshToken !== 'string') {
     return c.json({ ok: false, error: 'refresh token required' }, 400)
   }
-  const subject = await consumeRefreshToken(refreshToken)
-  if (!subject || subject.subjectType !== 'merchant_user') {
+  // Rotación: revoca el viejo + emite uno nuevo. Si detectamos reuso de un
+  // token ya revocado, rotateRefreshToken invalida toda la cadena del subject.
+  const rotated = await rotateRefreshToken(refreshToken, {
+    userAgent: c.req.header('user-agent'),
+  })
+  if (!rotated || rotated.subjectType !== 'merchant_user') {
     return c.json({ ok: false, error: 'invalid refresh token' }, 401)
   }
-  const user = await MerchantUser.findById(subject.subjectId)
+  const user = await MerchantUser.findById(rotated.subjectId)
   if (!user) return c.json({ ok: false, error: 'user not found' }, 401)
 
   const accessToken = signAccessToken({
@@ -80,7 +92,7 @@ merchantAuthRoutes.post('/refresh', async (c) => {
     type: 'merchant_user',
     merchantId: user.merchantId.toString(),
   })
-  return c.json({ ok: true, accessToken })
+  return c.json({ ok: true, accessToken, refreshToken: rotated.token })
 })
 
 merchantAuthRoutes.post('/logout', async (c) => {

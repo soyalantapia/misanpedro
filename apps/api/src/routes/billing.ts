@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { randomBytes } from 'node:crypto'
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
 import { env } from '@/env'
 import { Merchant, MerchantUser, Subscription } from '@/models'
@@ -92,6 +92,52 @@ billingRoutes.get('/return', async (c) => {
   return c.json({ ok: true })
 })
 
+/**
+ * Valida la firma del webhook según la doc de Mercado Pago:
+ * https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks#editor_8
+ *
+ * Header `x-signature` con formato: `ts=<timestamp>,v1=<hmac>`
+ * Header `x-request-id` único por request
+ *
+ * El template del manifest es: `id:<dataId>;request-id:<requestId>;ts:<ts>;`
+ * (con el `dataId` del query string, en lowercase)
+ */
+function verifyMpSignature(
+  signatureHeader: string | undefined,
+  requestId: string | undefined,
+  dataId: string,
+): boolean {
+  if (!env.MP_WEBHOOK_SECRET) return true // dev: sin secret aceptamos todo
+  if (!signatureHeader || !requestId) return false
+
+  const parts = Object.fromEntries(
+    signatureHeader.split(',').map((kv) => {
+      const [k, v] = kv.split('=').map((s) => s.trim())
+      return [k, v ?? '']
+    }),
+  )
+  const ts = parts['ts']
+  const v1 = parts['v1']
+  if (!ts || !v1) return false
+
+  // Replay protection: rechazar firmas con > 5 min de antigüedad
+  const tsMs = parseInt(ts, 10)
+  if (!Number.isFinite(tsMs) || Math.abs(Date.now() - tsMs) > 5 * 60 * 1000) {
+    return false
+  }
+
+  const manifest = `id:${dataId.toLowerCase()};request-id:${requestId};ts:${ts};`
+  const expected = createHmac('sha256', env.MP_WEBHOOK_SECRET)
+    .update(manifest)
+    .digest('hex')
+
+  try {
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(v1))
+  } catch {
+    return false
+  }
+}
+
 // POST /billing/webhook — Mercado Pago manda notificaciones acá
 billingRoutes.post('/webhook', async (c) => {
   const body = await c.req.json().catch(() => ({}))
@@ -99,12 +145,34 @@ billingRoutes.post('/webhook', async (c) => {
   console.log('[mp-webhook]', JSON.stringify(body))
 
   const type = body.type ?? body.topic
-  const dataId = body.data?.id ?? body.id
+  const dataId = body.data?.id ?? body.id ?? c.req.query('data.id')
+  const externalReference = body.external_reference ?? c.req.query('external_reference')
+
+  // Validación de firma (sólo si MP_WEBHOOK_SECRET está configurado)
+  if (dataId) {
+    const ok = verifyMpSignature(
+      c.req.header('x-signature'),
+      c.req.header('x-request-id'),
+      String(dataId),
+    )
+    if (!ok) {
+      console.warn('[mp-webhook] firma inválida; rechazo')
+      return c.json({ ok: false, error: 'invalid signature' }, 401)
+    }
+  }
 
   if ((type === 'preapproval' || type === 'subscription_preapproval') && dataId) {
     const detail = await getPreapproval(String(dataId))
     if (detail) {
-      const sub = await Subscription.findOne({ preapprovalId: String(dataId) })
+      // Buscar primero por preapprovalId; si no existe (notif antes de que
+      // hayamos persistido el id MP), fallback a externalReference.
+      let sub = await Subscription.findOne({ preapprovalId: String(dataId) })
+      if (!sub && (externalReference || detail.external_reference)) {
+        sub = await Subscription.findOne({
+          externalReference: String(externalReference ?? detail.external_reference),
+        })
+        if (sub && !sub.preapprovalId) sub.preapprovalId = String(dataId)
+      }
       if (sub) {
         sub.status = mapMpStatus(detail.status)
         sub.rawLast = detail
@@ -139,13 +207,19 @@ function mapMpStatus(s: string): 'pending' | 'authorized' | 'paused' | 'cancelle
   }
 }
 
-// POST /billing/mock-confirm — sólo en development: simula que MP confirmó el pago
-billingRoutes.post('/mock-confirm', async (c) => {
+// POST /billing/mock-confirm — sólo en development; requiere auth merchant
+billingRoutes.post('/mock-confirm', requireMerchantAuth, async (c) => {
   if (env.NODE_ENV === 'production') return c.json({ ok: false, error: 'forbidden' }, 403)
+  const auth = c.get('auth')
+  if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const { externalReference } = await c.req.json().catch(() => ({}))
   if (!externalReference) return c.json({ ok: false, error: 'externalReference requerido' }, 400)
   const sub = await Subscription.findOne({ externalReference })
   if (!sub) return c.json({ ok: false, error: 'no encontrado' }, 404)
+  // Solo permitimos confirmar suscripciones del propio comercio
+  if (sub.merchantId.toString() !== auth.merchantId) {
+    return c.json({ ok: false, error: 'forbidden' }, 403)
+  }
   sub.status = 'authorized'
   sub.nextBillingAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   await sub.save()

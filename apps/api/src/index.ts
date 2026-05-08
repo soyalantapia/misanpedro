@@ -14,6 +14,7 @@ import { redemptionsRoutes } from '@/routes/redemptions'
 import { billingRoutes } from '@/routes/billing'
 import { whatsappRoutes } from '@/routes/whatsapp'
 import { seedIfEmpty } from '@/services/seed.service'
+import { startExpiryLoop } from '@/services/expiry.service'
 
 const app = new Hono()
 
@@ -67,6 +68,7 @@ async function bootstrap() {
   try {
     await connectDB()
     await seedIfEmpty()
+    startExpiryLoop()
   } catch (err) {
     console.error('[bootstrap] failed to connect DB; starting anyway:', err)
   }

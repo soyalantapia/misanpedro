@@ -69,8 +69,9 @@ async function request<T>(
         body: JSON.stringify({ refreshToken: refresh }),
       })
       if (r.ok) {
-        const data = (await r.json()) as { accessToken: string }
-        tokens.set(subject, data.accessToken)
+        const data = (await r.json()) as { accessToken: string; refreshToken?: string }
+        // Si el backend implementa rotation, persistimos también el nuevo refresh
+        tokens.set(subject, data.accessToken, data.refreshToken)
         finalHeaders.Authorization = `Bearer ${data.accessToken}`
         const retry = await fetch(`${BASE}${path}`, { ...rest, headers: finalHeaders })
         if (retry.status === 401) {
