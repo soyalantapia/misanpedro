@@ -18,7 +18,7 @@ import {
 } from '@/data/mockData'
 import { useToast } from '@/components/Toast'
 import { cn } from '@/lib/cn'
-import { merchantApi, ApiError } from '@/lib/api'
+import { ApiError } from '@/lib/api'
 
 const PRECIO = 25_000
 
@@ -84,42 +84,36 @@ export function AdminSignupPage() {
     setSubmitting(true)
     setError(null)
 
-    // Intentamos primero contra el API real. Si falla con 5xx/network,
-    // caemos al store local (mantener demo gh-pages funcional).
-    try {
-      await merchantApi.signup({
-        comercio: {
-          nombre: form.nombreComercio.trim(),
-          categoria: form.categoria,
-          direccion: form.direccion.trim(),
-          telefono: form.telefono.trim(),
-          horarios: form.horarios.trim(),
-        },
-        admin: {
-          nombre: form.nombreAdmin.trim(),
-          email: form.emailAdmin.trim().toLowerCase(),
-          password: form.password,
-        },
-      })
+    // Usamos merchantAuth.signup (no merchantApi.signup directo) para que
+    // actualice el state del store con el apiUser/apiMerchant nuevo.
+    // Si falla, hacemos fallback al store local.
+    const result = await merchantAuth.signup({
+      comercio: {
+        nombre: form.nombreComercio.trim(),
+        categoria: form.categoria,
+        direccion: form.direccion.trim(),
+        telefono: form.telefono.trim(),
+        horarios: form.horarios.trim(),
+      },
+      admin: {
+        nombre: form.nombreAdmin.trim(),
+        email: form.emailAdmin.trim().toLowerCase(),
+        password: form.password,
+      },
+    })
+    if (result.ok) {
       setSubmitting(false)
       setStep('listo')
       toast.success('¡Comercio creado!', 'Bienvenido a Mi San Pedro.')
       setTimeout(() => navigate('/admin', { replace: true }), 1500)
       return
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setSubmitting(false)
-        setError(err.payload?.error ?? 'email ya registrado')
-        setStep('datos')
-        return
-      }
-      if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
-        setSubmitting(false)
-        setError(err.message)
-        setStep('datos')
-        return
-      }
-      // 5xx / network → fallback local
+    }
+    // Si falló y el mensaje es de email duplicado, lo mostramos en el step datos
+    if (result.error.toLowerCase().includes('email') || result.error.toLowerCase().includes('ya registrado')) {
+      setSubmitting(false)
+      setError(result.error)
+      setStep('datos')
+      return
     }
 
     // Fallback offline (modo demo gh-pages)
