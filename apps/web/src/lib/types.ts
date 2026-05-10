@@ -44,12 +44,12 @@ export type Merchant = {
   horarios: string
   /** Horarios detallados por día (si está, reemplaza al string `horarios`) */
   horariosDetalle?: HorariosSemana
-  cover: string
+  cover?: string
   /** URL o dataURL de imagen de portada custom (si está, reemplaza el gradient) */
   coverImageUrl?: string
   /** Link directo a Google Maps (si está, reemplaza la búsqueda generada) */
   mapsUrl?: string
-  logoSeed: string
+  logoSeed?: string
   destacado?: boolean
 }
 
@@ -82,7 +82,11 @@ export type Activation = {
   status: ActivationStatus
   redeemedAt?: string
   ahorroEstimado?: number
+  /** Monto del ticket que registró el cajero al confirmar el canje. */
+  montoTicket?: number
 }
+
+export type Merchant_ = Merchant // re-export for type narrowing
 
 export type MerchantUser = {
   id: string

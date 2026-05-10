@@ -37,7 +37,7 @@ export function MerchantDetailPage() {
     : localMerchant
 
   const coupons: Coupon[] = apiCoupons
-    ? apiCoupons.map((c) => ({
+    ? apiCoupons.map((c: any) => ({
         id: c.id,
         merchantId: apiMerchant?.slug ?? id ?? '',
         titulo: c.titulo,

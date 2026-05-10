@@ -434,10 +434,13 @@ export const billing = {
 
 export const whatsapp = {
   async status() {
-    return request<{ ok: boolean; status: string; qr?: string; lastError?: string }>(
-      '/wa/status',
-      { subject: 'merchant' },
-    )
+    return request<{
+      ok: boolean
+      status: string
+      qr?: string
+      lastError?: string
+      quota?: { used: number; max: number; remaining: number }
+    }>('/wa/status', { subject: 'merchant' })
   },
   async start() {
     return request<{ ok: boolean; status: string; qr?: string }>('/wa/start', {

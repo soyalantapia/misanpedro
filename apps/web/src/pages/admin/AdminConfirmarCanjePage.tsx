@@ -64,6 +64,7 @@ export function AdminConfirmarCanjePage() {
     .toUpperCase()
 
   async function handleConfirm() {
+    if (!view) return
     setSubmitting(true)
     const monto_n = monto ? parseInt(monto.replace(/\D/g, ''), 10) : undefined
 

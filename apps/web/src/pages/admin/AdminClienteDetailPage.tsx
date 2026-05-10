@@ -145,7 +145,7 @@ export function AdminClienteDetailPage() {
 
   const initials = user.nombre
     .split(' ')
-    .map((p) => p[0])
+    .map((p: string) => p[0])
     .slice(0, 2)
     .join('')
     .toUpperCase()

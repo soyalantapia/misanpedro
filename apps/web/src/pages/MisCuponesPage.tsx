@@ -18,12 +18,23 @@ export function MisCuponesPage() {
   const apiMerchantsRes = useApiMerchants()
 
   const couponMap = useMemo(() => {
-    const map = new Map<string, { titulo: string; porcentaje: number; merchantId: string }>()
-    localCoupons.forEach((c) => map.set(c.id, c))
+    const map = new Map<
+      string,
+      { id: string; titulo: string; porcentaje: number; merchantId: string }
+    >()
+    localCoupons.forEach((c) =>
+      map.set(c.id, {
+        id: c.id,
+        titulo: c.titulo,
+        porcentaje: c.porcentaje,
+        merchantId: c.merchantId,
+      }),
+    )
     if (apiCouponsRes.data && apiMerchantsRes.data) {
       const idToSlug = new Map(apiMerchantsRes.data.map((m) => [m.id, m.slug]))
       apiCouponsRes.data.forEach((c) => {
         map.set(c.id, {
+          id: c.id,
           titulo: c.titulo,
           porcentaje: c.porcentaje,
           merchantId: idToSlug.get(c.merchantId) ?? c.merchant?.slug ?? c.merchantId,
