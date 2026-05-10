@@ -13,6 +13,9 @@ import { activationsRoutes } from '@/routes/activations'
 import { redemptionsRoutes } from '@/routes/redemptions'
 import { billingRoutes } from '@/routes/billing'
 import { whatsappRoutes } from '@/routes/whatsapp'
+import { templatesRoutes } from '@/routes/templates'
+import { notificationsRoutes } from '@/routes/notifications'
+import { adminRoutes } from '@/routes/admin'
 import { seedIfEmpty } from '@/services/seed.service'
 import { startExpiryLoop, stopExpiryLoop } from '@/services/expiry.service'
 import { initSentry, captureException, flushSentry } from '@/services/sentry.service'
@@ -84,6 +87,9 @@ app.route('/api/v1/activations', activationsRoutes)
 app.route('/api/v1/redemptions', redemptionsRoutes)
 app.route('/api/v1/billing', billingRoutes)
 app.route('/api/v1/wa', whatsappRoutes)
+app.route('/api/v1/templates', templatesRoutes)
+app.route('/api/v1/notifications', notificationsRoutes)
+app.route('/api/v1/admin', adminRoutes)
 
 app.notFound((c) => c.json({ ok: false, error: 'not found' }, 404))
 

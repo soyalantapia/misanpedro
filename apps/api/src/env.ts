@@ -22,6 +22,21 @@ const schema = z.object({
 
   WHATSAPP_SESSIONS_DIR: z.string().default('/tmp/wa-sessions'),
 
+  /** Plan mensual en ARS (con IVA). Default $25.000 = $30.250 con 21% IVA. */
+  PLAN_AMOUNT_ARS: z.coerce.number().default(25_000),
+
+  /** Email de soporte (visible en TyC y panel ayuda). */
+  SUPPORT_EMAIL: z.string().default('soporte@misanpedro.app'),
+  /** WhatsApp de soporte (link wa.me). */
+  SUPPORT_WHATSAPP: z.string().default('+5493329000000'),
+
+  /**
+   * Token para el panel super admin (vos como dueño). Setear con:
+   *   openssl rand -base64 48
+   * Si no está setado o tiene <16 chars, los endpoints /admin devuelven 503.
+   */
+  SUPER_ADMIN_TOKEN: z.string().default(''),
+
   // CORS: lista coma-separada de orígenes adicionales permitidos.
   // APP_URL_FRONT siempre se incluye automáticamente.
   CORS_ORIGINS: z.string().default(''),

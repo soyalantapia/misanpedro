@@ -14,11 +14,15 @@ import {
   Trash2,
   Image as ImageIcon,
   Copy,
+  CreditCard,
+  AlertTriangle,
+  FileText,
+  ShieldOff,
 } from 'lucide-react'
 import { useMerchantSession, merchantAuth } from '@/lib/merchantStore'
 import { useMerchant, merchantsActions } from '@/lib/merchantsStore'
-import { api, ApiError } from '@/lib/api'
-import { useApiMerchant } from '@/lib/apiQueries'
+import { api, ApiError, subscription } from '@/lib/api'
+import { useApiMerchantProfile } from '@/lib/apiQueries'
 import { CardImage } from '@/components/CardImage'
 import {
   CATEGORIAS,
@@ -42,6 +46,7 @@ type Draft = {
   direccion: string
   telefono: string
   coverImageUrl?: string
+  logoUrl?: string
   mapsUrl: string
   horariosDetalle: HorariosSemana
 }
@@ -58,11 +63,10 @@ export function AdminComercioPage() {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
 
-  // Si tenemos sesión API, traemos el merchant completo via slug (incluye
-  // todos los campos: direccion, telefono, horarios, etc).
-  const apiSlug = sessionState.apiMerchant?.slug
-  const apiRes = useApiMerchant(apiSlug)
-  const apiM = apiRes.data?.merchant ?? null
+  // Si tenemos sesión API, traemos el merchant completo de /me/profile
+  // (no filtra por estado, así que funciona aunque esté pending_payment).
+  const apiRes = useApiMerchantProfile()
+  const apiM = sessionState.apiMerchant ? apiRes.data ?? null : null
 
   // Construimos un merchant unificado con la data del API (si está)
   // o el local del store seed (modo demo offline).
@@ -77,8 +81,15 @@ export function AdminComercioPage() {
         horariosDetalle: apiM.horariosDetalle,
         cover: apiM.cover,
         coverImageUrl: apiM.coverImageUrl,
+        logoUrl: apiM.logoUrl,
         mapsUrl: apiM.mapsUrl,
         logoSeed: apiM.logoSeed,
+        estado: apiM.estado,
+        razonSocial: apiM.razonSocial,
+        cuit: apiM.cuit,
+        condicionFiscal: apiM.condicionFiscal,
+        direccionFiscal: apiM.direccionFiscal,
+        arrepentimientoExpiraEn: apiM.arrepentimientoExpiraEn,
       }
     : localMerchant
 
@@ -104,6 +115,7 @@ export function AdminComercioPage() {
       direccion: merchant.direccion,
       telefono: merchant.telefono,
       coverImageUrl: merchant.coverImageUrl,
+      logoUrl: merchant.logoUrl,
       mapsUrl: merchant.mapsUrl ?? '',
       horariosDetalle: merchant.horariosDetalle ?? defaultHorariosSemana(),
     })
@@ -130,6 +142,7 @@ export function AdminComercioPage() {
       horarios: formatHorariosSemana(draft.horariosDetalle),
       horariosDetalle: draft.horariosDetalle,
       coverImageUrl: draft.coverImageUrl ?? null,
+      logoUrl: draft.logoUrl ?? null,
       mapsUrl: draft.mapsUrl.trim() || null,
     }
     try {
@@ -241,6 +254,9 @@ export function AdminComercioPage() {
             </div>
           </div>
 
+          {apiM && <FiscalCard merchant={merchant} />}
+          {apiM && <SubscriptionCard merchant={merchant} onChanged={apiRes.refetch} />}
+
           <p className="text-center text-xs text-neutral-400">
             ¿Querés ver cómo te muestra la app del vecino?{' '}
             <Link to={`/comercio/${merchant.id}`} className="font-bold text-accent-700">
@@ -287,6 +303,7 @@ function EditingView({
   return (
     <>
       <CoverEditor draft={draft} setDraft={setDraft} />
+      <LogoEditor draft={draft} setDraft={setDraft} />
       <div className="flex flex-col gap-3 rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
         <Field
           label="Nombre del comercio"
@@ -421,6 +438,86 @@ function CoverEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
           JPG o PNG, máximo 2 MB. Si no subís, se usa el gradiente de tu categoría.
         </p>
       </div>
+    </div>
+  )
+}
+
+function LogoEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const toast = useToast()
+
+  function handleUpload(file: File) {
+    if (file.size > 600_000) {
+      toast.error('Logo muy pesado', 'El logo debe ser menor a 600 KB.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      setDraft({ ...draft, logoUrl: dataUrl })
+      toast.success('Logo actualizado')
+    }
+    reader.onerror = () => {
+      toast.error('No se pudo leer el archivo')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function clearLogo() {
+    setDraft({ ...draft, logoUrl: undefined })
+  }
+
+  return (
+    <div className="rounded-3xl bg-white p-4 shadow-card ring-1 ring-neutral-100">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        Logo del comercio (opcional)
+      </p>
+      <div className="mt-3 flex items-center gap-3">
+        <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-primary-100 ring-1 ring-neutral-200">
+          {draft.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={draft.logoUrl}
+              alt="Logo"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <ImageIcon size={20} className="text-neutral-400" />
+          )}
+        </div>
+        <div className="flex flex-1 flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-primary-100 px-3 py-2 text-xs font-bold text-neutral-800 hover:bg-primary-200"
+            >
+              <Upload size={13} /> Subir logo
+            </button>
+            {draft.logoUrl && (
+              <button
+                type="button"
+                onClick={clearLogo}
+                className="inline-flex shrink-0 items-center gap-1 rounded-2xl bg-status-error-bg px-3 py-2 text-xs font-bold text-status-error-fg hover:bg-status-error-bg/80"
+              >
+                <Trash2 size={13} /> Quitar
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-neutral-400">PNG cuadrado, máx 600 KB.</p>
+        </div>
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) handleUpload(f)
+          e.target.value = ''
+        }}
+      />
     </div>
   )
 }
@@ -601,6 +698,165 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between gap-3 border-b border-dashed border-neutral-100 py-1.5 last:border-b-0">
       <span className="text-neutral-500">{label}</span>
       <span className="font-bold text-neutral-900">{value}</span>
+    </div>
+  )
+}
+
+function condicionFiscalLabel(c?: string | null) {
+  if (c === 'monotributo') return 'Monotributo'
+  if (c === 'responsable_inscripto') return 'Responsable Inscripto'
+  if (c === 'consumidor_final') return 'Consumidor Final'
+  return '—'
+}
+
+function FiscalCard({ merchant }: { merchant: any }) {
+  const tieneFiscal = merchant.cuit || merchant.razonSocial || merchant.condicionFiscal
+  if (!tieneFiscal) return null
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <FileText size={11} /> Datos fiscales
+      </p>
+      <div className="mt-2 flex flex-col gap-1 text-sm">
+        <Row label="Razón social" value={merchant.razonSocial ?? '—'} />
+        <Row label="CUIT" value={merchant.cuit ?? '—'} />
+        <Row
+          label="Condición"
+          value={condicionFiscalLabel(merchant.condicionFiscal)}
+        />
+        {merchant.direccionFiscal && (
+          <Row label="Domicilio fiscal" value={merchant.direccionFiscal} />
+        )}
+      </div>
+      <p className="mt-3 text-[11px] text-neutral-400">
+        Estos datos se usan para emitir tu factura mensual. Si necesitás corregirlos, escribinos a{' '}
+        <a href="mailto:soporte@misanpedro.app" className="font-bold text-accent-700">
+          soporte@misanpedro.app
+        </a>
+        .
+      </p>
+    </div>
+  )
+}
+
+function SubscriptionCard({
+  merchant,
+  onChanged,
+}: {
+  merchant: any
+  onChanged: () => void
+}) {
+  const [confirming, setConfirming] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const toast = useToast()
+
+  const estado: string = merchant.estado ?? 'activo'
+  const arrepentimientoExpiraEn = merchant.arrepentimientoExpiraEn
+    ? new Date(merchant.arrepentimientoExpiraEn)
+    : null
+  const dentroArrepentimiento =
+    arrepentimientoExpiraEn !== null && arrepentimientoExpiraEn.getTime() > Date.now()
+
+  async function handleCancel() {
+    setSubmitting(true)
+    try {
+      const res = await subscription.cancel()
+      toast.success(
+        res.arrepentimiento ? '¡Listo! Te reembolsamos' : 'Suscripción cancelada',
+        res.mensaje,
+      )
+      setConfirming(false)
+      onChanged()
+    } catch (err) {
+      toast.error(
+        'No se pudo cancelar',
+        err instanceof ApiError ? err.message : 'Error inesperado',
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <CreditCard size={11} /> Plan y suscripción
+      </p>
+
+      <div className="mt-2 flex flex-col gap-1 text-sm">
+        <Row label="Plan" value="Estándar · $25.000 + IVA" />
+        <Row
+          label="Estado"
+          value={
+            estado === 'activo'
+              ? 'Activa'
+              : estado === 'pending_payment'
+              ? 'Esperando primer pago'
+              : estado === 'cancelado'
+              ? 'Cancelada'
+              : estado === 'suspendido'
+              ? 'Suspendida'
+              : estado
+          }
+        />
+        {dentroArrepentimiento && arrepentimientoExpiraEn && (
+          <Row
+            label="Reembolso disponible hasta"
+            value={arrepentimientoExpiraEn.toLocaleDateString('es-AR')}
+          />
+        )}
+      </div>
+
+      {dentroArrepentimiento && (
+        <div className="mt-3 flex items-start gap-2 rounded-2xl bg-status-success-bg p-3 text-xs text-status-success-fg">
+          <ShieldOff size={14} className="mt-0.5 shrink-0" />
+          <span>
+            Estás dentro de los 10 días de arrepentimiento (Ley 24.240). Si cancelás ahora te
+            devolvemos el 100% del primer pago.
+          </span>
+        </div>
+      )}
+
+      {estado === 'activo' || estado === 'pending_payment' ? (
+        confirming ? (
+          <div className="mt-4 rounded-2xl border border-status-error/20 bg-status-error-bg/50 p-3">
+            <div className="flex items-start gap-2 text-xs text-status-error-fg">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <p>
+                {dentroArrepentimiento
+                  ? '¿Cancelar y pedir reembolso completo? Tus cupones dejan de aparecer al instante.'
+                  : 'Tu plan termina al final del período pagado. Tus cupones dejan de aparecer al cierre.'}
+              </p>
+            </div>
+            <div className="mt-3 flex items-stretch gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                disabled={submitting}
+                className="flex-1 rounded-xl bg-white px-3 py-2 text-xs font-bold text-neutral-700 ring-1 ring-neutral-200 hover:bg-primary-100 disabled:opacity-60"
+              >
+                No cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={submitting}
+                className="flex-1 rounded-xl bg-status-error-fg px-3 py-2 text-xs font-bold text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {submitting ? 'Cancelando…' : 'Sí, cancelar'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl bg-primary-100 px-4 py-2.5 text-xs font-bold text-neutral-700 hover:bg-status-error-bg hover:text-status-error-fg"
+          >
+            Cancelar suscripción
+          </button>
+        )
+      ) : null}
     </div>
   )
 }

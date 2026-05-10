@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import {
   ChevronLeft,
@@ -12,6 +12,9 @@ import {
   ShieldCheck,
   Sparkles,
   MessageCircle,
+  StickyNote,
+  Trash2,
+  Plus,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useClientForMerchant } from '@/lib/merchantQueries'
@@ -22,6 +25,8 @@ import {
   useApiRecentRedemptions,
   useApiMyCoupons,
 } from '@/lib/apiQueries'
+import { customerNotes, ApiError } from '@/lib/api'
+import { useToast } from '@/components/Toast'
 import type { Activation } from '@/lib/types'
 
 export function AdminClienteDetailPage() {
@@ -240,6 +245,8 @@ export function AdminClienteDetailPage() {
         </div>
       </section>
 
+      {userId && <NotesSection userId={userId} />}
+
       <section>
         <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
           Patrones de visita
@@ -436,4 +443,124 @@ function formatBirthdate(iso: string): string {
     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
   ]
   return `${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}`
+}
+
+function NotesSection({ userId }: { userId: string }) {
+  type Note = { id: string; text: string; tags: string[]; createdAt: string }
+  const [notes, setNotes] = useState<Note[]>([])
+  const [loading, setLoading] = useState(true)
+  const [text, setText] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const toast = useToast()
+
+  async function refresh() {
+    try {
+      setLoading(true)
+      const r = await customerNotes.list(userId)
+      setNotes(r.notes)
+    } catch (err) {
+      // En modo offline o sin sesión API el endpoint no existe → silencioso
+      if (!(err instanceof ApiError)) {
+        // ignore
+      }
+      setNotes([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault()
+    if (text.trim().length < 2) return
+    setSubmitting(true)
+    try {
+      await customerNotes.create(userId, text.trim())
+      setText('')
+      toast.success('Nota guardada')
+      refresh()
+    } catch (err) {
+      toast.error(
+        'No se pudo guardar',
+        err instanceof ApiError ? err.message : 'Sin conexión',
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await customerNotes.delete(id)
+      refresh()
+    } catch {
+      toast.error('No se pudo borrar')
+    }
+  }
+
+  return (
+    <section className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <StickyNote size={11} /> Notas internas
+      </p>
+      <p className="mt-1 text-[11px] text-neutral-400">
+        Privadas para tu comercio. El cliente no las ve.
+      </p>
+
+      <form onSubmit={handleAdd} className="mt-3 flex items-stretch gap-2">
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Ej: cliente VIP, preferencia café cortado…"
+          maxLength={500}
+          className="flex-1 rounded-2xl bg-primary-50 px-4 py-2.5 text-sm ring-1 ring-neutral-200 focus:outline-none focus:ring-2 focus:ring-accent-400"
+        />
+        <button
+          type="submit"
+          disabled={submitting || text.trim().length < 2}
+          className="inline-flex shrink-0 items-center gap-1 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-3 py-2.5 text-xs font-bold text-white shadow-cta disabled:opacity-50"
+        >
+          <Plus size={13} /> Guardar
+        </button>
+      </form>
+
+      <div className="mt-4 flex flex-col gap-2">
+        {loading ? (
+          <p className="text-xs text-neutral-400">Cargando…</p>
+        ) : notes.length === 0 ? (
+          <p className="text-xs text-neutral-400">Sin notas todavía.</p>
+        ) : (
+          notes.map((n) => (
+            <div
+              key={n.id}
+              className="flex items-start gap-2 rounded-2xl bg-primary-50 p-3 ring-1 ring-neutral-100"
+            >
+              <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent-50 text-accent-600">
+                <StickyNote size={10} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-neutral-800">{n.text}</p>
+                <p className="text-[10px] text-neutral-400">
+                  {new Date(n.createdAt).toLocaleString('es-AR')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDelete(n.id)}
+                aria-label="Borrar"
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-neutral-400 hover:bg-status-error-bg hover:text-status-error-fg"
+              >
+                <Trash2 size={11} />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  )
 }

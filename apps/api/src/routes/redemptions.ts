@@ -5,9 +5,12 @@ import {
   redeemByPayloadSchema,
   confirmRedemptionSchema,
 } from '@misanpedro/shared'
-import { Activation, Coupon, Redemption, User } from '@/models'
+import { Activation, Coupon, CustomerNote, Merchant, Redemption, User } from '@/models'
+import { z } from 'zod'
 import { requireMerchantAuth } from '@/middleware/auth'
 import { rateLimit } from '@/middleware/security'
+import { sendUserRedemption } from '@/services/email.service'
+import { publish } from '@/services/notifications.service'
 
 export const redemptionsRoutes = new Hono()
 
@@ -142,6 +145,41 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, async (c) => {
   coupon.stockUsado = (coupon.stockUsado ?? 0) + 1
   await coupon.save()
 
+  // Email de confirmación al vecino + publish event para SSE
+  void (async () => {
+    try {
+      const user = await User.findById(activation.userId)
+      const merchant = await Merchant.findById(coupon.merchantId)
+      if (user?.email && merchant) {
+        await sendUserRedemption({
+          to: user.email,
+          nombre: user.nombre,
+          comercio: merchant.nombre,
+          cupon: coupon.titulo,
+          porcentaje: coupon.porcentaje,
+          ahorro: ahorroEstimado,
+          fecha: activation.redeemedAt!.toLocaleString('es-AR'),
+        })
+      }
+      if (user) {
+        publish({
+          type: 'redemption.created',
+          merchantId: coupon.merchantId.toString(),
+          payload: {
+            redemptionId: redemption._id.toString(),
+            couponTitulo: coupon.titulo,
+            userNombre: user.nombre,
+            ahorroEstimado,
+            montoTicket,
+            redeemedAt: activation.redeemedAt!.toISOString(),
+          },
+        })
+      }
+    } catch (err) {
+      console.error('[redemption-email]', err)
+    }
+  })()
+
   return c.json({
     ok: true,
     redemption: {
@@ -237,4 +275,77 @@ redemptionsRoutes.get('/clientes', requireMerchantAuth, async (c) => {
   clientes.sort((a, b) => b.canjes - a.canjes)
 
   return c.json({ ok: true, clientes })
+})
+
+// ─── Notas internas sobre clientes ─────────────────────────────────────
+
+const noteCreateSchema = z.object({
+  userId: z.string(),
+  text: z.string().min(1).max(1000),
+  tags: z.array(z.string().max(40)).max(10).optional(),
+})
+
+redemptionsRoutes.get('/clientes/:userId/notes', requireMerchantAuth, async (c) => {
+  const auth = c.get('auth')
+  if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
+  const userId = c.req.param('userId')
+  if (!Types.ObjectId.isValid(userId)) return c.json({ ok: false, error: 'invalid id' }, 400)
+  const notes = await CustomerNote.find({
+    merchantId: auth.merchantId,
+    userId,
+  }).sort({ createdAt: -1 })
+  return c.json({
+    ok: true,
+    notes: notes.map((n) => ({
+      id: n._id.toString(),
+      text: n.text,
+      tags: n.tags,
+      createdAt: (n as any).createdAt,
+      createdBy: n.createdBy.toString(),
+    })),
+  })
+})
+
+redemptionsRoutes.post('/clientes/notes', requireMerchantAuth, async (c) => {
+  const auth = c.get('auth')
+  if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
+  const body = await c.req.json().catch(() => ({}))
+  const parsed = noteCreateSchema.safeParse(body)
+  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
+  if (!Types.ObjectId.isValid(parsed.data.userId)) {
+    return c.json({ ok: false, error: 'invalid userId' }, 400)
+  }
+  const note = await CustomerNote.create({
+    merchantId: auth.merchantId,
+    userId: parsed.data.userId,
+    createdBy: auth.sub,
+    text: parsed.data.text.trim(),
+    tags: parsed.data.tags ?? [],
+  })
+  return c.json(
+    {
+      ok: true,
+      note: {
+        id: note._id.toString(),
+        text: note.text,
+        tags: note.tags,
+        createdAt: (note as any).createdAt,
+      },
+    },
+    201,
+  )
+})
+
+redemptionsRoutes.delete('/clientes/notes/:id', requireMerchantAuth, async (c) => {
+  const auth = c.get('auth')
+  if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
+  const id = c.req.param('id')
+  if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'invalid id' }, 400)
+  const note = await CustomerNote.findById(id)
+  if (!note) return c.json({ ok: false, error: 'not found' }, 404)
+  if (note.merchantId.toString() !== auth.merchantId) {
+    return c.json({ ok: false, error: 'forbidden' }, 403)
+  }
+  await note.deleteOne()
+  return c.json({ ok: true })
 })

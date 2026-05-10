@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, Save, Tag, Sparkles } from 'lucide-react'
+import { ChevronLeft, Save, Tag, Sparkles, Wand2 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { couponsActions, useCoupon } from '@/lib/couponsStore'
 import { useToast } from '@/components/Toast'
 import { CardImage } from '@/components/CardImage'
 import { getMerchant } from '@/data/mockData'
 import type { Coupon, Categoria } from '@/lib/types'
-import { api, ApiError } from '@/lib/api'
+import { api, ApiError, templates as templatesApi } from '@/lib/api'
 import { useApiMyCoupons } from '@/lib/apiQueries'
 
 const PORCENTAJES = [5, 10, 15, 20, 25, 30, 40, 50] as const
@@ -102,12 +102,15 @@ export function AdminCuponEditPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!session) return
-    if (form.titulo.trim().length < 3) {
-      toast.error('Falta el título', 'Escribí al menos 3 caracteres.')
+    if (form.titulo.trim().length < 8) {
+      toast.error('Título muy corto', 'Mínimo 8 caracteres para que se entienda el descuento.')
       return
     }
-    if (form.descripcion.trim().length < 10) {
-      toast.error('Falta la descripción', 'Contale al vecino qué incluye (mín. 10 caracteres).')
+    if (form.descripcion.trim().length < 20) {
+      toast.error(
+        'Descripción muy corta',
+        'Contale al vecino qué incluye (mínimo 20 caracteres).',
+      )
       return
     }
     if (!form.vigenciaHasta) {
@@ -192,6 +195,22 @@ export function AdminCuponEditPage() {
       </header>
 
       <Preview merchant={merchant} form={form} />
+
+      {!isEdit && (
+        <TemplatesPicker
+          categoria={merchant.categoria as Categoria}
+          onPick={(t) =>
+            setForm((f) => ({
+              ...f,
+              titulo: t.titulo,
+              descripcion: t.descripcion,
+              condiciones: t.condiciones ?? '',
+              porcentaje: t.porcentaje,
+              diasAplica: t.diasAplica ?? '',
+            }))
+          }
+        />
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field
@@ -360,5 +379,98 @@ function Field({
       </div>
       {input}
     </label>
+  )
+}
+
+type Template = {
+  titulo: string
+  descripcion: string
+  condiciones?: string
+  porcentaje: number
+  diasAplica?: string
+}
+
+function TemplatesPicker({
+  categoria,
+  onPick,
+}: {
+  categoria: Categoria
+  onPick: (t: Template) => void
+}) {
+  const [items, setItems] = useState<Template[] | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    templatesApi
+      .coupons(categoria)
+      .then((r) => {
+        if (!cancelled) setItems(r.templates)
+      })
+      .catch(() => {
+        if (!cancelled) setItems([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [categoria])
+
+  if (loading || !items || items.length === 0) return null
+
+  return (
+    <div className="rounded-3xl bg-gradient-to-br from-pink-50 via-fuchsia-50 to-accent-50 p-4 ring-1 ring-accent-100">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2">
+          <div className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-pink-400 to-accent-600 text-white shadow-cta">
+            <Wand2 size={16} />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-neutral-900">Empezá con una plantilla</p>
+            <p className="text-[11px] text-neutral-500">
+              Plantillas pensadas para tu rubro. Después podés ajustar lo que quieras.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen((s) => !s)}
+          className="shrink-0 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-accent-700 ring-1 ring-accent-200 hover:bg-accent-50"
+        >
+          {open ? 'Cerrar' : `Ver ${items.length}`}
+        </button>
+      </div>
+
+      {open && (
+        <ul className="mt-3 grid gap-2">
+          {items.map((t, i) => (
+            <li key={i}>
+              <button
+                type="button"
+                onClick={() => {
+                  onPick(t)
+                  setOpen(false)
+                }}
+                className="group flex w-full flex-col gap-1 rounded-2xl bg-white p-3 text-left ring-1 ring-neutral-100 transition-all hover:-translate-y-0.5 hover:ring-accent-200"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="line-clamp-1 text-sm font-bold text-neutral-900">
+                    {t.titulo}
+                  </p>
+                  <span className="shrink-0 rounded-full bg-accent-50 px-2 py-0.5 text-[10px] font-bold text-accent-700">
+                    {t.porcentaje}% OFF
+                  </span>
+                </div>
+                <p className="line-clamp-2 text-[11px] text-neutral-500">{t.descripcion}</p>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }

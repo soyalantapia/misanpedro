@@ -2,8 +2,9 @@ import { Hono } from 'hono'
 import { Types } from 'mongoose'
 import { randomInt } from 'node:crypto'
 import { activateCouponSchema } from '@misanpedro/shared'
-import { Activation, Coupon, Merchant } from '@/models'
+import { Activation, Coupon, Merchant, User } from '@/models'
 import { requireUserAuth } from '@/middleware/auth'
+import { publish } from '@/services/notifications.service'
 
 export const activationsRoutes = new Hono()
 
@@ -119,6 +120,26 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
   }
 
   const merchant = await Merchant.findById(coupon.merchantId)
+  // Notif al cajero (no bloqueante)
+  void (async () => {
+    try {
+      const user = await User.findById(auth.sub)
+      if (user) {
+        publish({
+          type: 'activation.created',
+          merchantId: coupon.merchantId.toString(),
+          payload: {
+            activationId: activation._id.toString(),
+            couponTitulo: coupon.titulo,
+            userNombre: user.nombre,
+            codigoNumerico: activation.codigoNumerico,
+          },
+        })
+      }
+    } catch {
+      /* noop */
+    }
+  })()
   return c.json({ ok: true, activation: serializeActivation(activation, coupon, merchant) }, 201)
 })
 

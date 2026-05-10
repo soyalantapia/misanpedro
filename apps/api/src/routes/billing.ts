@@ -5,10 +5,34 @@ import { env } from '@/env'
 import { Merchant, MerchantUser, Subscription } from '@/models'
 import { requireMerchantAuth } from '@/middleware/auth'
 import { createPreapproval, getPreapproval } from '@/services/mp.service'
+import { sendSubscriptionReceipt } from '@/services/email.service'
 
 export const billingRoutes = new Hono()
 
-const PLAN_AMOUNT_ARS = 4900 // mensual MVP
+// Plan mensual del comercio. Configurable via env (PLAN_AMOUNT_ARS).
+// Default: $25.000 (coincide con AdminSignupPage). IVA 21% se suma sobre este.
+const PLAN_AMOUNT_ARS = Number(env.PLAN_AMOUNT_ARS ?? 25_000)
+const IVA_RATE = 0.21
+
+async function sendReceiptForSubscription(sub: any) {
+  try {
+    const merchant = await Merchant.findById(sub.merchantId)
+    const user = await MerchantUser.findOne({ merchantId: sub.merchantId, rol: 'admin' })
+    if (!merchant || !user?.email) return
+    const periodFrom = new Date()
+    const periodTo = new Date(periodFrom.getTime() + 30 * 24 * 60 * 60 * 1000)
+    await sendSubscriptionReceipt({
+      to: user.email,
+      comercio: merchant.nombre,
+      amount: Math.round(sub.amountARS * (1 + IVA_RATE)),
+      periodFrom: periodFrom.toLocaleDateString('es-AR'),
+      periodTo: periodTo.toLocaleDateString('es-AR'),
+      externalReference: sub.externalReference,
+    })
+  } catch (err) {
+    console.error('[receipt-email]', err)
+  }
+}
 
 const preapprovalCreateSchema = z.object({
   plan: z.enum(['standard']).default('standard'),
@@ -177,6 +201,7 @@ billingRoutes.post('/webhook', async (c) => {
         sub.status = mapMpStatus(detail.status)
         sub.rawLast = detail
         if (detail.next_payment_date) sub.nextBillingAt = new Date(detail.next_payment_date)
+        const wasActivated = sub.status === 'authorized' && (await Merchant.exists({ _id: sub.merchantId, estado: 'pending_payment' }))
         if (sub.status === 'authorized') {
           // Activar el comercio cuando se confirma el pago
           await Merchant.updateOne(
@@ -185,6 +210,8 @@ billingRoutes.post('/webhook', async (c) => {
           )
         }
         await sub.save()
+        // Enviar recibo si recién se activó (no spamear cada renovación)
+        if (wasActivated) void sendReceiptForSubscription(sub)
       }
     }
   }
@@ -207,6 +234,50 @@ function mapMpStatus(s: string): 'pending' | 'authorized' | 'paused' | 'cancelle
   }
 }
 
+// POST /billing/cancel — comercio cancela su suscripción.
+// Defensa al consumidor (Argentina, Ley 24.240): dentro de los 10 días desde
+// el alta el comercio puede arrepentirse y solicitar reembolso completo.
+// Después de 10 días, cancela la próxima renovación pero el período actual
+// permanece activo hasta su vencimiento.
+billingRoutes.post('/cancel', requireMerchantAuth, async (c) => {
+  const auth = c.get('auth')
+  if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
+  const sub = await Subscription.findOne({ merchantId: auth.merchantId }).sort({ createdAt: -1 })
+  if (!sub) return c.json({ ok: false, error: 'no hay suscripción activa' }, 404)
+
+  const merchant = await Merchant.findById(auth.merchantId)
+  if (!merchant) return c.json({ ok: false, error: 'merchant not found' }, 404)
+
+  const ahora = new Date()
+  const expiraArrepentimientoEn = merchant.arrepentimientoExpiraEn ?? new Date(0)
+  const dentroDe10Dias = ahora.getTime() <= expiraArrepentimientoEn.getTime()
+
+  sub.status = 'cancelled'
+  sub.rawLast = { cancelledAt: ahora.toISOString(), arrepentimiento: dentroDe10Dias }
+  await sub.save()
+
+  if (dentroDe10Dias) {
+    // Arrepentimiento: el comercio queda cancelado y se le procesa reembolso
+    merchant.arrepentido = true
+    merchant.estado = 'cancelado'
+    await merchant.save()
+    // TODO: dispara reembolso real en MP (POST /preapproval/{id}/refund) cuando hay credenciales
+    return c.json({
+      ok: true,
+      arrepentimiento: true,
+      mensaje:
+        'Tu suscripción fue cancelada y vamos a procesar el reembolso completo en los próximos 10 días hábiles.',
+    })
+  }
+
+  // Cancelación normal: el comercio sigue activo hasta el fin del período
+  return c.json({
+    ok: true,
+    arrepentimiento: false,
+    mensaje: `Tu suscripción se cancela el ${sub.nextBillingAt?.toLocaleDateString('es-AR') ?? 'fin del período actual'}. Hasta entonces seguís usando todas las funciones.`,
+  })
+})
+
 // POST /billing/mock-confirm — sólo en development; requiere auth merchant
 billingRoutes.post('/mock-confirm', requireMerchantAuth, async (c) => {
   if (env.NODE_ENV === 'production') return c.json({ ok: false, error: 'forbidden' }, 403)
@@ -224,5 +295,7 @@ billingRoutes.post('/mock-confirm', requireMerchantAuth, async (c) => {
   sub.nextBillingAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   await sub.save()
   await Merchant.updateOne({ _id: sub.merchantId }, { estado: 'activo' })
+  // Recibo (en dev también — útil para testing)
+  void sendReceiptForSubscription(sub)
   return c.json({ ok: true })
 })

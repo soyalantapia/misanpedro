@@ -15,6 +15,7 @@ import {
 } from '@/services/jwt.service'
 import { requireUserAuth } from '@/middleware/auth'
 import { rateLimit } from '@/middleware/security'
+import { sendOtpCode, sendUserWelcome } from '@/services/email.service'
 
 export const userAuthRoutes = new Hono()
 
@@ -70,6 +71,11 @@ userAuthRoutes.post('/register', registerLimiter, async (c) => {
     acceptedTcAt: new Date(),
   })
 
+  // Email de bienvenida (no bloqueante)
+  sendUserWelcome(data.email, data.nombre).catch((err) =>
+    console.error('[user-welcome-email]', err),
+  )
+
   // Auto-login después del registro
   const accessToken = signAccessToken({ sub: user._id.toString(), type: 'user' })
   const { token: refreshToken } = await issueRefreshToken({
@@ -111,9 +117,11 @@ userAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
     expiresAt: new Date(Date.now() + OTP_TTL_MS),
   })
 
-  // TODO Fase 1.5: enviar por Resend / WhatsApp.
-  // Por ahora lo devolvemos en el response solo en development.
+  // Enviar por email (Resend si hay key; si no, log en consola)
   console.log(`[otp] ${email} → ${code}`)
+  sendOtpCode(email, code).catch((err) => console.error('[otp-email]', err))
+
+  // En dev devolvemos el código en la response para facilitar testing
   const debugCode =
     process.env.NODE_ENV !== 'production' ? { _debugCode: code } : {}
 
@@ -188,6 +196,84 @@ userAuthRoutes.get('/me', requireUserAuth, async (c) => {
   const user = await User.findById(auth.sub)
   if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
   return c.json({ ok: true, user: serializeUser(user) })
+})
+
+// ─── Habeas Data (Ley 25.326, Argentina) ──────────────────────────────
+
+/** GET /auth/me/data-export — exporta TODOS los datos del usuario. */
+userAuthRoutes.get('/me/data-export', requireUserAuth, async (c) => {
+  const { Activation, Redemption } = await import('@/models')
+  const auth = c.get('auth')
+  const user = await User.findById(auth.sub)
+  if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
+
+  const activations = await Activation.find({ userId: auth.sub })
+  const redemptions = await Redemption.find({ userId: auth.sub })
+
+  return c.json({
+    ok: true,
+    exportedAt: new Date().toISOString(),
+    user: {
+      id: user._id.toString(),
+      dni: user.dni,
+      nombre: user.nombre,
+      email: user.email,
+      whatsapp: user.whatsapp,
+      fechaNacimiento: user.fechaNacimiento,
+      acceptedTcAt: user.acceptedTcAt,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: (user as any).createdAt,
+    },
+    activations: activations.map((a) => ({
+      id: a._id.toString(),
+      couponId: a.couponId.toString(),
+      codigoNumerico: a.codigoNumerico,
+      activatedAt: a.activatedAt,
+      expiresAt: a.expiresAt,
+      status: a.status,
+      redeemedAt: a.redeemedAt,
+      ahorroEstimado: a.ahorroEstimado,
+      montoTicket: a.montoTicket,
+    })),
+    redemptions: redemptions.map((r) => ({
+      id: r._id.toString(),
+      couponId: r.couponId.toString(),
+      merchantId: r.merchantId.toString(),
+      montoTicket: r.montoTicket,
+      ahorroEstimado: r.ahorroEstimado,
+      redeemedAt: r.redeemedAt,
+    })),
+  })
+})
+
+/**
+ * DELETE /auth/me — borra la cuenta del usuario y todos los datos asociados.
+ * Habeas Data, Ley 25.326. Irreversible.
+ */
+userAuthRoutes.delete('/me', requireUserAuth, async (c) => {
+  const { Activation, RefreshToken, Redemption } = await import('@/models')
+  const auth = c.get('auth')
+  const user = await User.findById(auth.sub)
+  if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
+
+  // Anonimizar redemptions (mantenemos el registro para stats del comercio,
+  // pero sin datos identificables). No se borran porque son evidencia
+  // contractual de transacciones realizadas.
+  await Redemption.updateMany({ userId: auth.sub }, { $unset: { userId: 1 } })
+
+  // Borrar activaciones (no son contractuales)
+  await Activation.deleteMany({ userId: auth.sub })
+
+  // Revocar tokens
+  await RefreshToken.updateMany(
+    { subjectId: auth.sub, revokedAt: { $exists: false } },
+    { revokedAt: new Date() },
+  )
+
+  // Borrar el user
+  await user.deleteOne()
+
+  return c.json({ ok: true, mensaje: 'Tu cuenta y datos personales fueron eliminados.' })
 })
 
 void bcrypt // referenciado para evitar tree-shake en build

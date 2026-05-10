@@ -94,11 +94,21 @@ export const merchantAuth = {
     }
   },
   async signup(payload: {
-    comercio: { nombre: string; categoria: any; direccion: string; telefono: string; horarios: string }
+    comercio: {
+      nombre: string
+      categoria: any
+      direccion: string
+      telefono: string
+      horarios: string
+      cuit?: string
+      razonSocial?: string
+      condicionFiscal?: 'monotributo' | 'responsable_inscripto' | 'consumidor_final'
+      direccionFiscal?: string
+    }
     admin: { nombre: string; email: string; password: string }
   }): Promise<{ ok: true } | { ok: false; error: string }> {
     try {
-      const data = await merchantApi.signup(payload)
+      const data = await merchantApi.signup({ ...payload, acceptedTc: true })
       const session: MerchantSession = {
         userId: data.user.id,
         merchantId: data.merchant.id,

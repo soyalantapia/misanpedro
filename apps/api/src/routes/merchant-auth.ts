@@ -1,7 +1,10 @@
 import { Hono } from 'hono'
 import bcrypt from 'bcryptjs'
+import { createHash, randomBytes } from 'node:crypto'
+import { z } from 'zod'
 import { merchantLoginSchema, merchantSignupSchema } from '@misanpedro/shared'
-import { Merchant, MerchantUser } from '@/models'
+import { Merchant, MerchantUser, PasswordReset } from '@/models'
+import { env } from '@/env'
 import {
   issueRefreshToken,
   signAccessToken,
@@ -11,6 +14,7 @@ import {
 } from '@/services/jwt.service'
 import { requireMerchantAuth } from '@/middleware/auth'
 import { rateLimit } from '@/middleware/security'
+import { sendMerchantWelcome, sendPasswordResetLink } from '@/services/email.service'
 
 export const merchantAuthRoutes = new Hono()
 
@@ -58,6 +62,10 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
   // Coordenadas placeholder — San Pedro centro. Se actualizan via PATCH /me
   // cuando el comercio configura su ubicación exacta.
   const SAN_PEDRO = { lat: -33.6797, lng: -59.6669 }
+  const now = new Date()
+  // Defensa al consumidor (Argentina): el comercio puede arrepentirse hasta
+  // 10 días después del alta y reclamar reembolso completo.
+  const arrepentimientoExpiraEn = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000)
   const merchant = await Merchant.create({
     slug,
     nombre: comercio.nombre,
@@ -75,6 +83,12 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
       .toUpperCase(),
     nivel: 'standard',
     estado: 'pending_payment',
+    cuit: comercio.cuit,
+    razonSocial: comercio.razonSocial,
+    condicionFiscal: comercio.condicionFiscal,
+    direccionFiscal: comercio.direccionFiscal,
+    aceptedTcAt: now,
+    arrepentimientoExpiraEn,
   })
 
   // 2) Crear merchant user admin con bcrypt
@@ -88,7 +102,12 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
     lastLoginAt: new Date(),
   })
 
-  // 3) Auto-login con tokens
+  // 3) Email de bienvenida (no bloqueante)
+  sendMerchantWelcome(admin.email, admin.nombre, comercio.nombre).catch((err) =>
+    console.error('[merchant-welcome-email]', err),
+  )
+
+  // 4) Auto-login con tokens
   const accessToken = signAccessToken({
     sub: user._id.toString(),
     type: 'merchant_user',
@@ -215,6 +234,76 @@ merchantAuthRoutes.post('/logout', async (c) => {
 merchantAuthRoutes.post('/logout-all', requireMerchantAuth, async (c) => {
   const auth = c.get('auth')
   await revokeAllForSubject(auth.sub)
+  return c.json({ ok: true })
+})
+
+// ─── Reset de password ────────────────────────────────────────────────
+
+const RESET_TTL_MS = 30 * 60 * 1000
+const forgotPwdLimiter = rateLimit({ prefix: 'forgot-pwd', max: 5, windowMs: 60 * 60_000 })
+const forgotPwdSchema = z.object({ email: z.string().email().toLowerCase() })
+
+merchantAuthRoutes.post('/forgot-password', forgotPwdLimiter, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const parsed = forgotPwdSchema.safeParse(body)
+  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
+
+  const user = await MerchantUser.findOne({ email: parsed.data.email })
+  // Anti-enum: siempre devolvemos OK aunque el email no exista
+  if (!user) return c.json({ ok: true })
+
+  // Generar token random + hash
+  const token = randomBytes(32).toString('base64url')
+  const tokenHash = createHash('sha256').update(token).digest('hex')
+  const expiresAt = new Date(Date.now() + RESET_TTL_MS)
+
+  // Limpiar tokens previos del user
+  await PasswordReset.deleteMany({ merchantUserId: user._id })
+  await PasswordReset.create({
+    merchantUserId: user._id,
+    tokenHash,
+    expiresAt,
+    requestedFromUa: c.req.header('user-agent'),
+  })
+
+  const resetLink = `${env.APP_URL_FRONT}/#/admin/reset-password?token=${token}`
+  sendPasswordResetLink({ to: user.email, nombre: user.nombre, link: resetLink }).catch((err) =>
+    console.error('[reset-email]', err),
+  )
+
+  return c.json({ ok: true })
+})
+
+const resetPwdSchema = z.object({
+  token: z.string().min(20),
+  newPassword: z.string().min(6, 'Mínimo 6 caracteres'),
+})
+
+merchantAuthRoutes.post('/reset-password', async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const parsed = resetPwdSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json({ ok: false, error: 'invalid input', issues: parsed.error.format() }, 400)
+  }
+  const tokenHash = createHash('sha256').update(parsed.data.token).digest('hex')
+  const reset = await PasswordReset.findOne({ tokenHash })
+  if (!reset || reset.usedAt) return c.json({ ok: false, error: 'token inválido' }, 401)
+  if (reset.expiresAt.getTime() < Date.now()) {
+    return c.json({ ok: false, error: 'token expirado' }, 401)
+  }
+
+  const user = await MerchantUser.findById(reset.merchantUserId)
+  if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
+
+  user.passwordHash = await bcrypt.hash(parsed.data.newPassword, 10)
+  await user.save()
+
+  reset.usedAt = new Date()
+  await reset.save()
+
+  // Por seguridad, revoca todos los refresh tokens existentes
+  await revokeAllForSubject(user._id.toString())
+
   return c.json({ ok: true })
 })
 

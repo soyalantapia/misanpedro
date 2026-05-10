@@ -10,11 +10,9 @@ import {
   Users,
   MessageCircle,
   TrendingUp,
-  Tag,
   CreditCard,
 } from 'lucide-react'
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
-import { MERCHANT_USERS } from '@/data/mockData'
 
 export function AdminLoginPage() {
   const { session } = useMerchantSession()
@@ -38,18 +36,6 @@ export function AdminLoginPage() {
       return
     }
     navigate('/admin', { replace: true })
-  }
-
-  async function loginAsDemo() {
-    const u = MERCHANT_USERS[0]
-    if (!u) return
-    setEmail(u.email)
-    setPassword(u.password)
-    setSubmitting(true)
-    const result = await merchantAuth.login(u.email, u.password)
-    setSubmitting(false)
-    if (result.ok) navigate('/admin', { replace: true })
-    else setError(result.error)
   }
 
   return (
@@ -113,25 +99,18 @@ export function AdminLoginPage() {
 
           <div className="hidden pt-4 lg:block">
             <p className="text-[11px] font-medium uppercase tracking-widest text-white/40">
-              Comercios adheridos
+              Plan estándar
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              {[
-                'La Esquina',
-                'Carmen Vintage',
-                'Vivero El Pampero',
-                'Almendra Belleza',
-                'Estación 25',
-                'Hogar Río Paraná',
-              ].map((nombre) => (
-                <span
-                  key={nombre}
-                  className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-white/70 ring-1 ring-white/10"
-                >
-                  {nombre}
-                </span>
-              ))}
-              <span className="text-xs text-white/40">+ 18 más</span>
+              <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-white/70 ring-1 ring-white/10">
+                $25.000 + IVA · sin permanencia
+              </span>
+              <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-white/70 ring-1 ring-white/10">
+                10 días de arrepentimiento
+              </span>
+              <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-white/70 ring-1 ring-white/10">
+                Factura A o C
+              </span>
             </div>
           </div>
         </section>
@@ -141,7 +120,7 @@ export function AdminLoginPage() {
           <div className="rounded-3xl bg-white p-6 text-neutral-900 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] ring-1 ring-white/10 sm:p-7">
             <h2 className="text-2xl font-bold tracking-tight">Acceso al panel</h2>
             <p className="mt-1 text-sm text-neutral-500">
-              Ingresá con tu cuenta o probá el demo.
+              Ingresá con tu cuenta del comercio.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
@@ -204,29 +183,20 @@ export function AdminLoginPage() {
                 <ArrowRight size={16} />
               </button>
 
-              <a
-                href="#"
+              <Link
+                to="/admin/forgot-password"
                 className="text-center text-xs font-semibold text-neutral-500 hover:text-accent-700"
               >
                 Olvidé mi contraseña
-              </a>
+              </Link>
             </form>
 
             <Divider label="o" />
 
-            <button
-              type="button"
-              onClick={loginAsDemo}
-              disabled={submitting}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-100 px-6 py-3 text-sm font-bold text-neutral-800 transition-all hover:bg-primary-200 disabled:opacity-60"
-            >
-              Entrar con cuenta demo (La Esquina)
-            </button>
-
             {/* CTA registrar comercio */}
             <Link
               to="/admin/registro"
-              className="group mt-4 flex items-center gap-3 rounded-2xl bg-gradient-to-br from-pink-50 via-fuchsia-50 to-accent-50 p-4 ring-1 ring-accent-100 transition-all hover:-translate-y-0.5 hover:ring-accent-200"
+              className="group flex items-center gap-3 rounded-2xl bg-gradient-to-br from-pink-50 via-fuchsia-50 to-accent-50 p-4 ring-1 ring-accent-100 transition-all hover:-translate-y-0.5 hover:ring-accent-200"
             >
               <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-pink-400 via-fuchsia-500 to-accent-600 text-white shadow-cta">
                 <Store size={20} strokeWidth={2.2} />
@@ -235,7 +205,7 @@ export function AdminLoginPage() {
                 <p className="text-sm font-bold text-neutral-900">Registrar mi comercio</p>
                 <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-neutral-500">
                   <CreditCard size={10} className="shrink-0" />
-                  Plan estándar · $25.000/mes · sin permanencia
+                  Plan estándar · $25.000 + IVA · sin permanencia
                 </p>
               </div>
               <ArrowRight
@@ -243,29 +213,6 @@ export function AdminLoginPage() {
                 className="shrink-0 text-accent-600 transition-transform group-hover:translate-x-1"
               />
             </Link>
-
-            {/* Demos accounts compactas */}
-            <div className="mt-4 rounded-2xl bg-primary-50 p-3 ring-1 ring-neutral-100">
-              <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
-                <Tag size={10} /> Cuentas demo · password{' '}
-                <span className="font-mono">demo123</span>
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {MERCHANT_USERS.map((u) => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => {
-                      setEmail(u.email)
-                      setPassword(u.password)
-                    }}
-                    className="rounded-full bg-white px-2.5 py-1 text-[10px] font-mono text-neutral-700 ring-1 ring-neutral-200 hover:bg-accent-50 hover:text-accent-700 hover:ring-accent-200"
-                  >
-                    {u.email.split('@')[0]}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-white/60">

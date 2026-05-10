@@ -37,6 +37,8 @@ const merchantSchema = new Schema(
     },
     cover: { type: String },
     coverImageUrl: { type: String },
+    /** URL del logo subido por el comercio (PNG/JPG cuadrado). */
+    logoUrl: { type: String },
     mapsUrl: { type: String },
     logoSeed: { type: String },
     destacado: { type: Boolean, default: false },
@@ -47,6 +49,19 @@ const merchantSchema = new Schema(
       enum: ['pending_payment', 'activo', 'suspendido', 'cancelado'],
       default: 'activo',
     },
+    // ─── Datos fiscales (para facturar la suscripción) ──────────────────
+    razonSocial: { type: String },
+    cuit: { type: String, index: true },
+    /** 'monotributo' | 'responsable_inscripto' | 'consumidor_final' */
+    condicionFiscal: { type: String },
+    direccionFiscal: { type: String },
+    // ─── Notas internas + customizaciones ───────────────────────────────
+    /** Notas privadas del comercio sobre operación (no se muestran al vecino). */
+    notasInternas: { type: String },
+    aceptedTcAt: { type: Date },
+    /** Día de aceptación del derecho de arrepentimiento (defensa al consumidor). */
+    arrepentimientoExpiraEn: { type: Date },
+    arrepentido: { type: Boolean, default: false },
   },
   { timestamps: true },
 )

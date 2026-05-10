@@ -1,5 +1,5 @@
-import { Outlet, NavLink } from 'react-router-dom'
-import { Tag, Ticket, CheckCircle2 } from 'lucide-react'
+import { Outlet, NavLink, Link } from 'react-router-dom'
+import { Tag, Ticket, CheckCircle2, User } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { OfflineBanner } from '@/components/OfflineBanner'
 import { RedemptionWatcher } from '@/components/RedemptionWatcher'
@@ -8,6 +8,7 @@ const links = [
   { to: '/', label: 'Descuentos', icon: Tag, end: true },
   { to: '/mis-cupones', label: 'Mis cupones', icon: Ticket, end: false },
   { to: '/canjeados', label: 'Canjeados', icon: CheckCircle2, end: false },
+  { to: '/perfil', label: 'Perfil', icon: User, end: false },
 ]
 
 export function AppShell() {
@@ -76,6 +77,26 @@ export function AppShell() {
         <OfflineBanner />
         <RedemptionWatcher />
         <Outlet />
+        <footer className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 pb-4 text-[11px] text-neutral-400">
+          <Link to="/legal/terminos" className="hover:text-neutral-700">
+            Términos
+          </Link>
+          <span>·</span>
+          <Link to="/legal/privacidad" className="hover:text-neutral-700">
+            Privacidad
+          </Link>
+          <span>·</span>
+          <Link to="/perfil" className="hover:text-neutral-700">
+            Mi cuenta
+          </Link>
+          <span>·</span>
+          <a
+            href="mailto:soporte@misanpedro.app"
+            className="hover:text-neutral-700"
+          >
+            soporte@misanpedro.app
+          </a>
+        </footer>
       </main>
 
       {/* Mobile bottom nav */}

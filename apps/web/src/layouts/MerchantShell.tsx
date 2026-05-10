@@ -1,4 +1,4 @@
-import { Outlet, NavLink, Navigate, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, Navigate, useNavigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard,
   ScanLine,
@@ -8,10 +8,17 @@ import {
   LogOut,
   ShieldCheck,
   MessageCircle,
+  HelpCircle,
 } from 'lucide-react'
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { cn } from '@/lib/cn'
+import { NotificationsBell } from '@/components/NotificationsBell'
+
+const SUPPORT_WHATSAPP = (import.meta.env.VITE_SUPPORT_WHATSAPP as string) ?? '5493329000000'
+const SUPPORT_WA_LINK = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
+  'Hola Mi San Pedro, soy comercio adherido y necesito ayuda.',
+)}`
 
 const links = [
   { to: '/admin', label: 'Inicio', icon: LayoutDashboard, end: true },
@@ -58,10 +65,11 @@ export function MerchantShell() {
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta">
               <Store size={20} />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="truncate text-base font-bold text-neutral-900">{merchant.nombre}</p>
               <p className="truncate text-xs text-neutral-500">{user.nombre}</p>
             </div>
+            <NotificationsBell />
           </div>
         </div>
         <nav className="flex flex-col gap-1 px-3">
@@ -96,7 +104,21 @@ export function MerchantShell() {
             </NavLink>
           ))}
         </nav>
-        <div className="mt-auto p-3">
+        <div className="mt-auto flex flex-col gap-1 p-3">
+          <a
+            href={SUPPORT_WA_LINK}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold text-neutral-500 hover:bg-status-success-bg/60 hover:text-status-success-fg"
+          >
+            <HelpCircle size={14} /> Soporte por WhatsApp
+          </a>
+          <Link
+            to="/legal/terminos"
+            className="flex items-center gap-2 rounded-2xl px-4 py-2 text-[11px] font-medium text-neutral-400 hover:bg-primary-100/60 hover:text-neutral-700"
+          >
+            Términos y Privacidad
+          </Link>
           <button
             type="button"
             onClick={handleLogout}
@@ -121,14 +143,17 @@ export function MerchantShell() {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleLogout}
-          aria-label="Cerrar sesión"
-          className="grid h-9 w-9 place-items-center rounded-full bg-primary-100 text-neutral-500 hover:text-neutral-900"
-        >
-          <LogOut size={14} />
-        </button>
+        <div className="flex items-center gap-2">
+          <NotificationsBell compact />
+          <button
+            type="button"
+            onClick={handleLogout}
+            aria-label="Cerrar sesión"
+            className="grid h-9 w-9 place-items-center rounded-full bg-primary-100 text-neutral-500 hover:text-neutral-900"
+          >
+            <LogOut size={14} />
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 overflow-x-hidden pb-32 md:pb-0">

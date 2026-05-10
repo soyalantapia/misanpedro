@@ -117,12 +117,20 @@ export type ApiMerchant = {
   horariosDetalle?: any
   cover?: string
   coverImageUrl?: string
+  logoUrl?: string
   mapsUrl?: string
   logoSeed?: string
   destacado?: boolean
   foundingMember?: boolean
   nivel?: string
   estado?: string
+  razonSocial?: string
+  cuit?: string
+  condicionFiscal?: 'monotributo' | 'responsable_inscripto' | 'consumidor_final'
+  direccionFiscal?: string
+  notasInternas?: string
+  arrepentimientoExpiraEn?: string
+  arrepentido?: boolean
 }
 
 export type ApiCoupon = {
@@ -184,6 +192,18 @@ export const merchantApi = {
     tokens.set('merchant', data.accessToken, data.refreshToken)
     return data
   },
+  async forgotPassword(email: string) {
+    return request<{ ok: boolean }>(
+      '/merchant/auth/forgot-password',
+      json({ email }),
+    )
+  },
+  async resetPassword(token: string, newPassword: string) {
+    return request<{ ok: boolean }>(
+      '/merchant/auth/reset-password',
+      json({ token, newPassword }),
+    )
+  },
   async signup(payload: {
     comercio: {
       nombre: string
@@ -191,8 +211,13 @@ export const merchantApi = {
       direccion: string
       telefono: string
       horarios: string
+      cuit?: string
+      razonSocial?: string
+      condicionFiscal?: 'monotributo' | 'responsable_inscripto' | 'consumidor_final'
+      direccionFiscal?: string
     }
     admin: { nombre: string; email: string; password: string }
+    acceptedTc: true
   }) {
     const data = await request<{
       accessToken: string
@@ -216,6 +241,71 @@ export const merchantApi = {
     return request<{ ok: boolean; user: ApiMerchantSession['user']; merchant: ApiMerchantSession['merchant'] }>(
       '/merchant/auth/me',
       { subject: 'merchant' },
+    )
+  },
+}
+
+// ─── Plantillas de cupones ───────────────────────────────────────────
+
+export const templates = {
+  async coupons(categoria: string) {
+    return request<{
+      ok: boolean
+      templates: Array<{
+        titulo: string
+        descripcion: string
+        condiciones?: string
+        porcentaje: number
+        diasAplica?: string
+      }>
+    }>(`/templates/coupons/${categoria}`)
+  },
+}
+
+// ─── Habeas Data (vecino) ────────────────────────────────────────────
+
+export const habeasData = {
+  async exportMyData() {
+    return request<any>('/auth/me/data-export', { subject: 'user' })
+  },
+  async deleteMyAccount() {
+    return request<{ ok: boolean; mensaje: string }>('/auth/me', {
+      method: 'DELETE',
+      subject: 'user',
+    })
+  },
+}
+
+// ─── Notas internas (comercio) ───────────────────────────────────────
+
+export const customerNotes = {
+  async list(userId: string) {
+    return request<{
+      ok: boolean
+      notes: Array<{ id: string; text: string; tags: string[]; createdAt: string }>
+    }>(`/redemptions/clientes/${userId}/notes`, { subject: 'merchant' })
+  },
+  async create(userId: string, text: string, tags?: string[]) {
+    return request<{ ok: boolean; note: any }>(
+      '/redemptions/clientes/notes',
+      { ...json({ userId, text, tags }), subject: 'merchant' },
+    )
+  },
+  async delete(id: string) {
+    return request<{ ok: boolean }>(`/redemptions/clientes/notes/${id}`, {
+      method: 'DELETE',
+      subject: 'merchant',
+    })
+  },
+}
+
+// ─── Suscripción / arrepentimiento ───────────────────────────────────
+
+export const subscription = {
+  async cancel() {
+    return request<{ ok: boolean; arrepentimiento: boolean; mensaje: string }>(
+      '/billing/cancel',
+      { method: 'POST', subject: 'merchant' },
     )
   },
 }
@@ -392,6 +482,11 @@ export const merchantCoupons = {
 // ─── Merchant edit + stats ───────────────────────────────────────────
 
 export const merchantAdmin = {
+  async profile() {
+    return request<{ ok: boolean; merchant: ApiMerchant }>('/merchants/me/profile', {
+      subject: 'merchant',
+    })
+  },
   async updateMe(payload: any) {
     return request<{ ok: boolean; merchant: ApiMerchant }>('/merchants/me', {
       method: 'PATCH',
@@ -488,4 +583,8 @@ export const api = {
   merchantAdmin,
   billing,
   whatsapp,
+  templates,
+  habeasData,
+  customerNotes,
+  subscription,
 }

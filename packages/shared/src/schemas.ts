@@ -59,6 +59,9 @@ export const merchantLoginSchema = z.object({
   password: z.string().min(6, 'Mínimo 6 caracteres'),
 })
 
+/** Validación de CUIT: 11 dígitos sin guiones (ej: 20123456789). */
+const cuitRegex = /^\d{11}$/
+
 export const merchantSignupSchema = z.object({
   comercio: z.object({
     nombre: z.string().min(3),
@@ -66,19 +69,30 @@ export const merchantSignupSchema = z.object({
     direccion: z.string().min(5),
     telefono: z.string().min(6),
     horarios: z.string().min(3),
+    /** CUIT 11 dígitos. Opcional al signup, requerido para facturar. */
+    cuit: z.string().regex(cuitRegex, 'CUIT debe ser 11 dígitos').optional(),
+    razonSocial: z.string().min(3).optional(),
+    condicionFiscal: z
+      .enum(['monotributo', 'responsable_inscripto', 'consumidor_final'])
+      .optional(),
+    direccionFiscal: z.string().min(5).optional(),
   }),
   admin: z.object({
     nombre: z.string().min(3),
     email: z.string().email().toLowerCase(),
     password: z.string().min(6),
   }),
+  /** El comercio debe aceptar TyC + Privacidad explícitamente. */
+  acceptedTc: z.literal(true, {
+    error: 'Tenés que aceptar los términos y condiciones',
+  }),
 })
 
 // ─── Cupones ──────────────────────────────────────────────────────────
 
 export const couponCreateSchema = z.object({
-  titulo: z.string().min(3).max(60),
-  descripcion: z.string().min(10).max(280),
+  titulo: z.string().min(8, 'Mínimo 8 caracteres').max(60),
+  descripcion: z.string().min(20, 'Mínimo 20 caracteres').max(280),
   condiciones: z.string().max(280).optional().default(''),
   porcentaje: z
     .number()
@@ -122,7 +136,16 @@ export const merchantUpdateSchema = z.object({
   horarios: z.string().optional(),
   horariosDetalle: horariosSemanaSchema.optional(),
   coverImageUrl: z.string().optional().nullable(),
+  logoUrl: z.string().optional().nullable(),
   mapsUrl: z.string().url().optional().nullable(),
+  cuit: z.string().regex(cuitRegex).optional().nullable(),
+  razonSocial: z.string().min(3).optional().nullable(),
+  condicionFiscal: z
+    .enum(['monotributo', 'responsable_inscripto', 'consumidor_final'])
+    .optional()
+    .nullable(),
+  direccionFiscal: z.string().min(5).optional().nullable(),
+  notasInternas: z.string().max(2000).optional().nullable(),
 })
 
 // ─── Tipos derivados ──────────────────────────────────────────────────

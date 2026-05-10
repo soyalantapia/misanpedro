@@ -207,6 +207,10 @@ export function useApiMerchantStats() {
   return useAsync(() => api.merchantAdmin.stats().then((r) => r.stats), [])
 }
 
+export function useApiMerchantProfile() {
+  return useAsync(() => api.merchantAdmin.profile().then((r) => r.merchant), [])
+}
+
 export function useApiMerchantClientes() {
   return useAsync(() => api.redemptions.clientes().then((r) => r.clientes), [])
 }
