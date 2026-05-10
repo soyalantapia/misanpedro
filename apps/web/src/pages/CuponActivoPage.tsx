@@ -47,7 +47,10 @@ export function CuponActivoPage() {
   const toast = useToast()
   const [confirmCancel, setConfirmCancel] = useState(false)
 
-  if (!activation || !coupon || !merchant) {
+  if (!activation) return <Navigate to="/mis-cupones" replace />
+  const stillLoading = apiCouponsRes.loading || apiMerchantsRes.loading
+  if (!coupon || !merchant) {
+    if (stillLoading) return null
     return <Navigate to="/mis-cupones" replace />
   }
 
