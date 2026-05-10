@@ -18,6 +18,7 @@ import {
 import { useMerchantSession, merchantAuth } from '@/lib/merchantStore'
 import { useMerchant, merchantsActions } from '@/lib/merchantsStore'
 import { api, ApiError } from '@/lib/api'
+import { useApiMerchant } from '@/lib/apiQueries'
 import { CardImage } from '@/components/CardImage'
 import {
   CATEGORIAS,
@@ -28,6 +29,7 @@ import {
   type HorariosSemana,
 } from '@/lib/types'
 import { useCouponsByMerchant } from '@/lib/couponsStore'
+import { useApiMyCoupons } from '@/lib/apiQueries'
 import { useToast } from '@/components/Toast'
 import { defaultHorariosSemana, formatHorariosSemana } from '@/lib/format'
 import { cn } from '@/lib/cn'
@@ -45,14 +47,43 @@ type Draft = {
 }
 
 export function AdminComercioPage() {
-  const { session } = useMerchantSession()
-  const merchant = useMerchant(session?.merchantId)
+  const sessionState = useMerchantSession()
+  const { session } = sessionState
+  const localMerchant = useMerchant(session?.merchantId)
   const user = merchantAuth.getCurrentUser()
-  const allCoupons = useCouponsByMerchant(session?.merchantId ?? '')
+  const localAllCoupons = useCouponsByMerchant(session?.merchantId ?? '')
+  const apiCoupones = useApiMyCoupons()
+  const allCoupons: any[] = apiCoupones.data ?? localAllCoupons
   const toast = useToast()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
 
+  // Si tenemos sesión API, traemos el merchant completo via slug (incluye
+  // todos los campos: direccion, telefono, horarios, etc).
+  const apiSlug = sessionState.apiMerchant?.slug
+  const apiRes = useApiMerchant(apiSlug)
+  const apiM = apiRes.data?.merchant ?? null
+
+  // Construimos un merchant unificado con la data del API (si está)
+  // o el local del store seed (modo demo offline).
+  const merchant: any = apiM
+    ? {
+        id: apiM.slug,
+        nombre: apiM.nombre,
+        categoria: apiM.categoria,
+        direccion: apiM.direccion,
+        telefono: apiM.telefono,
+        horarios: apiM.horarios,
+        horariosDetalle: apiM.horariosDetalle,
+        cover: apiM.cover,
+        coverImageUrl: apiM.coverImageUrl,
+        mapsUrl: apiM.mapsUrl,
+        logoSeed: apiM.logoSeed,
+      }
+    : localMerchant
+
+  // Esperamos al API antes de redirigir (evita flash de redirect mientras carga)
+  if (!merchant && apiRes.loading) return null
   if (!merchant) return <Navigate to="/admin/login" replace />
 
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
@@ -111,16 +142,21 @@ export function AdminComercioPage() {
       // 5xx o sin red → fallback local
     }
 
-    merchantsActions.patch(merchant.id, {
-      nombre: draft.nombre.trim(),
-      categoria: draft.categoria,
-      direccion: draft.direccion.trim(),
-      telefono: draft.telefono.trim(),
-      horariosDetalle: draft.horariosDetalle,
-      horarios: formatHorariosSemana(draft.horariosDetalle),
-      coverImageUrl: draft.coverImageUrl,
-      mapsUrl: draft.mapsUrl.trim() || undefined,
-    })
+    // Local store: sólo aplicar cuando estamos en modo demo offline
+    if (localMerchant) {
+      merchantsActions.patch(merchant.id, {
+        nombre: draft.nombre.trim(),
+        categoria: draft.categoria,
+        direccion: draft.direccion.trim(),
+        telefono: draft.telefono.trim(),
+        horariosDetalle: draft.horariosDetalle,
+        horarios: formatHorariosSemana(draft.horariosDetalle),
+        coverImageUrl: draft.coverImageUrl,
+        mapsUrl: draft.mapsUrl.trim() || undefined,
+      })
+    }
+    // Refrescar datos del API
+    apiRes.refetch()
     toast.success('Comercio actualizado', 'Los cambios ya se ven en la app del vecino.')
     setEditing(false)
     setDraft(null)

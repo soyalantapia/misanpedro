@@ -6,7 +6,7 @@ import { couponsActions, useCoupon } from '@/lib/couponsStore'
 import { useToast } from '@/components/Toast'
 import { CardImage } from '@/components/CardImage'
 import { getMerchant } from '@/data/mockData'
-import type { Coupon } from '@/lib/types'
+import type { Coupon, Categoria } from '@/lib/types'
 import { api, ApiError } from '@/lib/api'
 import { useApiMyCoupons } from '@/lib/apiQueries'
 
@@ -54,8 +54,19 @@ export function AdminCuponEditPage() {
   const apiCupones = useApiMyCoupons()
   const apiExisting = isEdit && id ? apiCupones.data?.find((c) => c.id === id) : undefined
   const existing: any = apiExisting ?? localExisting
-  const { session } = useMerchantSession()
-  const merchant = session ? getMerchant(session.merchantId) : undefined
+  const sessionState = useMerchantSession()
+  const { session } = sessionState
+  // Si la sesión vino del API, usamos apiMerchant. Fallback a getMerchant
+  // local sólo en modo demo offline (donde session.merchantId es slug).
+  const merchant = sessionState.apiMerchant
+    ? {
+        id: sessionState.apiMerchant.id,
+        nombre: sessionState.apiMerchant.nombre,
+        categoria: sessionState.apiMerchant.categoria as Categoria,
+      }
+    : session
+      ? getMerchant(session.merchantId)
+      : undefined
   const navigate = useNavigate()
   const toast = useToast()
 
@@ -298,7 +309,7 @@ function Preview({
   merchant,
   form,
 }: {
-  merchant: ReturnType<typeof getMerchant>
+  merchant: { id: string; nombre: string; categoria: Categoria } | undefined
   form: FormState
 }) {
   if (!merchant) return null
