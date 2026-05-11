@@ -34,3 +34,8 @@ coverage/
 # WhatsApp sessions (Fase 6)
 .wwebjs_auth/
 wa-sessions/
+
+# WhatsApp Web cache & sessions
+apps/api/.wwebjs_cache/
+apps/api/.wwebjs_auth/
+apps/api/wa-sessions/
