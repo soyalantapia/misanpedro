@@ -114,7 +114,22 @@ export async function getStatus(merchantId: string): Promise<SessionState> {
 export async function startSession(merchantId: string): Promise<SessionState> {
   await loadWA()
   const existing = sessions.get(merchantId)
-  if (existing && existing.client) return existing
+  // Idempotencia: si ya hay una sesión viva (cualquier status excepto 'error'
+  // o 'disconnected'), devolvemos esa SIN recrear el cliente. Recrearlo
+  // mata el QR pendiente y el cliente Puppeteer abierto, lo cual rompe
+  // el escaneo si el frontend dispara /wa/start varias veces.
+  if (existing && existing.client && existing.status !== 'error') {
+    return existing
+  }
+  // Si quedó un cliente en error, lo destruimos antes de crear uno nuevo.
+  if (existing?.client) {
+    try {
+      await existing.client.destroy()
+    } catch {
+      /* noop */
+    }
+    sessions.delete(merchantId)
+  }
 
   if (!WAClient || !LocalAuth) {
     const stub: SessionState = { status: 'qr', qr: 'STUB_QR_PLACEHOLDER' }

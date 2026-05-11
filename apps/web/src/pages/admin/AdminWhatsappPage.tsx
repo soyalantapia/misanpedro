@@ -73,25 +73,28 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
   // Stream SSE: recibe eventos qr / status / campaign en tiempo real
   const wa = useWhatsappStream()
 
-  // Disparamos /wa/start una sola vez para que el backend inicialice el
-  // cliente whatsapp-web.js y empiece a emitir QR.
+  // Disparamos /wa/start una SOLA vez al montar este componente. Sin
+  // dependencias para evitar re-fires cuando `toast` cambia de referencia.
+  // Importante: el backend implementa startSession() de forma idempotente
+  // (si ya hay un client levantado, no crea uno nuevo). Pero igual evitamos
+  // disparar este request en cada render.
+  const startedRef = useRef(false)
   useEffect(() => {
-    let cancelled = false
-    api.whatsapp.start().catch((err) => {
-      if (cancelled) return
-      toast.error(
-        'No pudimos iniciar WhatsApp',
-        err instanceof ApiError ? err.message : 'Revisá tu conexión.',
-      )
+    if (startedRef.current) return
+    startedRef.current = true
+    api.whatsapp.start().catch(() => {
+      // No mostramos toast acá: el evento `status: error` del SSE ya nos
+      // avisa si algo falla. Mostrar un toast por cada intento generaba
+      // spam infinito cuando el effect se reejecutaba.
     })
-    return () => {
-      cancelled = true
-    }
-  }, [toast])
+  }, [])
 
-  // Cuando el stream pasa a 'ready', marcamos la conexión local
+  // Cuando el stream pasa a 'ready', marcamos la conexión local. Sólo
+  // disparamos el toast una vez (en el flanco de subida).
+  const wasReadyRef = useRef(false)
   useEffect(() => {
-    if (wa.status === 'ready') {
+    if (wa.status === 'ready' && !wasReadyRef.current) {
+      wasReadyRef.current = true
       whatsappActions.connect(merchantId)
       toast.success('WhatsApp conectado', 'Ya podés mandar campañas masivas.')
     }
