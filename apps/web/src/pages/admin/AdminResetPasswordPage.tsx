@@ -18,7 +18,7 @@ export function AdminResetPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (pwd.length < 6) return setError('Mínimo 6 caracteres')
+    if (pwd.length < 3) return setError('Mínimo 3 caracteres')
     if (pwd !== confirm) return setError('Las contraseñas no coinciden')
     setSubmitting(true)
     setError(null)
@@ -95,10 +95,10 @@ export function AdminResetPasswordPage() {
                     type={showPwd ? 'text' : 'password'}
                     value={pwd}
                     onChange={(e) => setPwd(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Mínimo 3 caracteres"
                     className="w-full rounded-2xl bg-white px-4 py-3 pr-12 text-sm ring-1 ring-neutral-200 focus:outline-none focus:ring-2 focus:ring-accent-400"
                     required
-                    minLength={6}
+                    minLength={3}
                   />
                   <button
                     type="button"

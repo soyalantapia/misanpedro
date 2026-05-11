@@ -56,7 +56,7 @@ export const otpVerifySchema = z.object({
 
 export const merchantLoginSchema = z.object({
   email: z.string().email().toLowerCase(),
-  password: z.string().min(6, 'Mínimo 6 caracteres'),
+  password: z.string().min(3, 'Mínimo 3 caracteres'),
 })
 
 /** Validación de CUIT: 11 dígitos sin guiones (ej: 20123456789). */
@@ -80,7 +80,7 @@ export const merchantSignupSchema = z.object({
   admin: z.object({
     nombre: z.string().min(3),
     email: z.string().email().toLowerCase(),
-    password: z.string().min(6),
+    password: z.string().min(3),
   }),
   /** El comercio debe aceptar TyC + Privacidad explícitamente. */
   acceptedTc: z.literal(true, {

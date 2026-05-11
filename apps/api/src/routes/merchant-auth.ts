@@ -276,7 +276,7 @@ merchantAuthRoutes.post('/forgot-password', forgotPwdLimiter, async (c) => {
 
 const resetPwdSchema = z.object({
   token: z.string().min(20),
-  newPassword: z.string().min(6, 'Mínimo 6 caracteres'),
+  newPassword: z.string().min(3, 'Mínimo 3 caracteres'),
 })
 
 merchantAuthRoutes.post('/reset-password', async (c) => {

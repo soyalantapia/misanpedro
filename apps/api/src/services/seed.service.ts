@@ -223,6 +223,13 @@ const SEED_MERCHANT_USERS = [
 const DEMO_PASSWORD = 'demo123'
 
 export async function seedIfEmpty(): Promise<void> {
+  // El seed automático está desactivado por default. Para reactivarlo,
+  // setear `SEED_DEMO_DATA=true` en el .env. Útil para empezar con DB
+  // limpia en producción y poblarla con comercios reales.
+  if (process.env.SEED_DEMO_DATA !== 'true') {
+    console.log('[seed] desactivado (set SEED_DEMO_DATA=true para reactivar)')
+    return
+  }
   const merchantCount = await Merchant.countDocuments()
   if (merchantCount > 0) {
     console.log(`[seed] skipped — ${merchantCount} merchants ya existen`)

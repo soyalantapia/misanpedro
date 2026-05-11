@@ -77,7 +77,7 @@ export function AdminSignupPage() {
     if (!form.horarios.trim()) return 'Indicá los horarios de atención'
     if (form.nombreAdmin.trim().length < 3) return 'Falta tu nombre completo'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAdmin)) return 'Email inválido'
-    if (form.password.length < 6) return 'La contraseña debe tener al menos 6 caracteres'
+    if (form.password.length < 3) return 'La contraseña debe tener al menos 3 caracteres'
     if (findMerchantUserByEmail(form.emailAdmin)) return 'Ya existe una cuenta con ese email'
     return null
   }
@@ -356,7 +356,7 @@ export function AdminSignupPage() {
                   type="password"
                   value={form.password}
                   onChange={(e) => update('password', e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 3 caracteres"
                   className={inputCls}
                 />
               }
