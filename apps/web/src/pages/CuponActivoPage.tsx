@@ -47,6 +47,50 @@ export function CuponActivoPage() {
   const toast = useToast()
   const [confirmCancel, setConfirmCancel] = useState(false)
 
+  // Polling: si la activación es de Mongo (API) y está activa, polleamos
+  // cada 5s para detectar cuando el comercio confirme el canje. Cuando
+  // detectamos status === 'canjeado' en el API, espejamos al store local
+  // (lo que dispara RedemptionWatcher) y redirigimos a canjeados.
+  // IMPORTANTE: este hook tiene que estar ANTES de cualquier early return
+  // para no romper las Rules of Hooks.
+  const pollIntervalRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!activation) return
+    const looksLikeMongoId = /^[0-9a-f]{24}$/i.test(activation.id)
+    const userToken = tokens.get('user').access
+    const isActiveStatus = activation.status === 'activo'
+    if (!looksLikeMongoId || !userToken || !isActiveStatus) return
+
+    let cancelled = false
+    const actId = activation.id
+    const couponPorcentaje = coupon?.porcentaje ?? 0
+    async function check() {
+      try {
+        const res = await api.activations.get(actId)
+        if (cancelled) return
+        if (res.activation.status === 'canjeado') {
+          activationActions.markRedeemed(
+            actId,
+            res.activation.ahorroEstimado ?? calcAhorro(couponPorcentaje),
+          )
+          toast.success('¡Cupón canjeado!', 'El comercio confirmó tu descuento.')
+          navigate('/canjeados', { replace: true })
+        }
+      } catch {
+        /* silencioso; volvemos a chequear en el próximo tick */
+      }
+    }
+    pollIntervalRef.current = window.setInterval(check, 5000)
+    return () => {
+      cancelled = true
+      if (pollIntervalRef.current) {
+        window.clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activation?.id, activation?.status])
+
   if (!activation) return <Navigate to="/mis-cupones" replace />
   const stillLoading = apiCouponsRes.loading || apiMerchantsRes.loading
   if (!coupon || !merchant) {
@@ -80,46 +124,6 @@ export function CuponActivoPage() {
     toast.success('¡Cupón canjeado!', 'Quedó registrado en tu historial.')
     navigate('/canjeados', { replace: true })
   }
-
-  // Polling: si la activación es de Mongo (API) y está activa, polleamos
-  // cada 5s para detectar cuando el comercio confirme el canje. Cuando
-  // detectamos status === 'canjeado' en el API, espejamos al store local
-  // (lo que dispara RedemptionWatcher) y redirigimos a canjeados.
-  const pollIntervalRef = useRef<number | null>(null)
-  useEffect(() => {
-    if (!activation) return
-    const looksLikeMongoId = /^[0-9a-f]{24}$/i.test(activation.id)
-    const userToken = tokens.get('user').access
-    const isActiveStatus = activation.status === 'activo'
-    if (!looksLikeMongoId || !userToken || !isActiveStatus) return
-
-    let cancelled = false
-    async function check() {
-      try {
-        const res = await api.activations.get(activation!.id)
-        if (cancelled) return
-        if (res.activation.status === 'canjeado') {
-          activationActions.markRedeemed(
-            activation!.id,
-            res.activation.ahorroEstimado ?? calcAhorro(coupon?.porcentaje ?? 0),
-          )
-          toast.success('¡Cupón canjeado!', 'El comercio confirmó tu descuento.')
-          navigate('/canjeados', { replace: true })
-        }
-      } catch {
-        /* silencioso; volvemos a chequear en el próximo tick */
-      }
-    }
-    pollIntervalRef.current = window.setInterval(check, 5000)
-    return () => {
-      cancelled = true
-      if (pollIntervalRef.current) {
-        window.clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activation?.id, activation?.status])
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-md flex-col gap-6 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
