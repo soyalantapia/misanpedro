@@ -13,7 +13,7 @@ const passwordResetSchema = new Schema(
       index: true,
     },
     tokenHash: { type: String, required: true, unique: true, index: true },
-    expiresAt: { type: Date, required: true, index: true },
+    expiresAt: { type: Date, required: true },
     usedAt: { type: Date },
     requestedFromIp: { type: String },
     requestedFromUa: { type: String },

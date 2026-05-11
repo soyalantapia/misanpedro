@@ -24,6 +24,12 @@ type EmailPayload = {
 export async function sendEmail(payload: EmailPayload): Promise<{ ok: boolean; id?: string; error?: string }> {
   if (!env.RESEND_API_KEY) {
     console.log('[email/stub]', payload.subject, '→', payload.to)
+    // En dev sin Resend, log links accionables (reset password, etc.)
+    // para poder testear los flujos. Match cualquier URL del body text.
+    const links = (payload.text ?? '').match(/https?:\/\/\S+/g) ?? []
+    if (links.length > 0) {
+      links.forEach((l) => console.log('[email/stub]  link:', l))
+    }
     return { ok: true, id: 'stub' }
   }
   try {

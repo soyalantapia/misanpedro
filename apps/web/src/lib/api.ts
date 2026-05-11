@@ -521,7 +521,10 @@ export const billing = {
     return request<{ ok: boolean; subscription: any }>('/billing/me', { subject: 'merchant' })
   },
   async mockConfirm(externalReference: string) {
-    return request<{ ok: boolean }>('/billing/mock-confirm', json({ externalReference }))
+    return request<{ ok: boolean }>('/billing/mock-confirm', {
+      ...json({ externalReference }),
+      subject: 'merchant',
+    })
   },
 }
 

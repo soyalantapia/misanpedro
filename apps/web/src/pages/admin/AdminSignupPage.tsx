@@ -16,6 +16,7 @@ import { merchantAuth } from '@/lib/merchantStore'
 import { addMerchantUser, findMerchantUserByEmail } from '@/data/mockData'
 import { useToast } from '@/components/Toast'
 import { cn } from '@/lib/cn'
+import { billing } from '@/lib/api'
 
 const PRECIO_NETO = 25_000
 const IVA_RATE = 0.21
@@ -131,11 +132,40 @@ export function AdminSignupPage() {
       },
     })
     if (result.ok) {
-      setSubmitting(false)
-      setStep('listo')
-      toast.success('¡Comercio creado!', 'Te enviamos un email con la confirmación.')
-      setTimeout(() => navigate('/admin', { replace: true }), 1500)
-      return
+      // Disparamos el flujo de billing (Mercado Pago preapproval).
+      // En production, redirigimos al checkout de MP. En development con
+      // MP_ACCESS_TOKEN vacío, el backend devuelve init_point apuntando a
+      // /admin/billing/mock-pay → en ese caso auto-confirmamos para que el
+      // comercio quede activo y pueda usar el panel.
+      try {
+        const pre = await billing.createPreapproval()
+        const ref = pre.subscription.externalReference
+        const initPoint = pre.subscription.initPoint
+        const isMock = initPoint.includes('/admin/billing/mock-pay')
+        if (isMock) {
+          await billing.mockConfirm(ref)
+          setSubmitting(false)
+          setStep('listo')
+          toast.success('¡Comercio activo!', 'Pago simulado en dev. Ya podés usar el panel.')
+          setTimeout(() => navigate('/admin', { replace: true }), 1500)
+          return
+        }
+        // Producción real: redirigir al checkout de MP
+        toast.info('Te llevamos a Mercado Pago…')
+        window.location.href = initPoint
+        return
+      } catch {
+        // Si el billing falla, igual dejamos al comercio entrar al panel
+        // (queda pending_payment y desde Mi Comercio puede reintentar)
+        setSubmitting(false)
+        setStep('listo')
+        toast.success(
+          '¡Comercio creado!',
+          'No pudimos iniciar el cobro automático. Probá desde "Mi Comercio".',
+        )
+        setTimeout(() => navigate('/admin', { replace: true }), 1500)
+        return
+      }
     }
     if (
       result.error.toLowerCase().includes('email') ||

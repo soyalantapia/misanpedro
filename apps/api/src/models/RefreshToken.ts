@@ -6,7 +6,7 @@ const refreshTokenSchema = new Schema(
     tokenHash: { type: String, required: true, unique: true, index: true },
     subjectType: { type: String, enum: ['user', 'merchant_user'], required: true },
     subjectId: { type: Types.ObjectId, required: true, index: true },
-    expiresAt: { type: Date, required: true, index: true },
+    expiresAt: { type: Date, required: true },
     revokedAt: { type: Date },
     userAgent: { type: String },
     ip: { type: String },
