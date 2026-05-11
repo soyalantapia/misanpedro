@@ -1,7 +1,9 @@
 import { Hono } from 'hono'
+import { streamSSE } from 'hono/streaming'
 import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
 import { requireMerchantAuth } from '@/middleware/auth'
+import { verifyAccessToken } from '@/services/jwt.service'
 import { WaSend } from '@/models'
 import * as wa from '@/services/whatsapp.service'
 
@@ -116,30 +118,116 @@ whatsappRoutes.post('/campaign', requireMerchantAuth, async (c) => {
   }
 
   const campaignId = `c-${randomBytes(8).toString('hex')}`
-  let sentCount = 0
-  let failedCount = 0
-  for (const to of parsed.data.recipients) {
-    const result = await wa.sendMessage(auth.merchantId, to, parsed.data.text)
-    if (result.ok) sentCount += 1
-    else failedCount += 1
-    await WaSend.create({
-      merchantId: auth.merchantId,
-      to,
-      text: parsed.data.text,
-      ok: result.ok,
-      error: result.error,
+  const merchantId = auth.merchantId
+
+  // Disparamos la campaña con rate-limit anti-ban. Cada envío:
+  //  - emite progreso vía SSE pub/sub (publish 'campaign.progress')
+  //  - persiste el send individual en WaSend para historial/quota
+  // Si la sesión WA no está conectada, sendCampaign tira error y el cliente
+  // ve un 503.
+  let result: { sentCount: number; failedCount: number }
+  try {
+    result = await wa.sendCampaign(
+      merchantId,
       campaignId,
-    })
+      parsed.data.recipients,
+      parsed.data.text,
+      async (i, ok, error) => {
+        await WaSend.create({
+          merchantId,
+          to: parsed.data.recipients[i],
+          text: parsed.data.text,
+          ok,
+          error,
+          campaignId,
+        })
+      },
+    )
+  } catch (err: any) {
+    return c.json(
+      {
+        ok: false,
+        error: err?.message ?? 'no pudimos enviar la campaña',
+      },
+      503,
+    )
   }
 
   return c.json({
     ok: true,
-    campaign: { id: campaignId, sentCount, failedCount },
+    campaign: { id: campaignId, sentCount: result.sentCount, failedCount: result.failedCount },
     quota: {
       used: used + 1,
       max: MAX_CAMPAIGNS_PER_MONTH,
       remaining: Math.max(0, MAX_CAMPAIGNS_PER_MONTH - used - 1),
     },
+  })
+})
+
+/**
+ * GET /wa/stream — Server-Sent Events para que el panel del comercio reciba
+ * en tiempo real:
+ *   - eventos `qr` cuando WhatsApp genera/refresca el código (se renueva cada
+ *     ~20s mientras nadie escanee)
+ *   - eventos `status` cuando la sesión pasa por authenticating → ready o se
+ *     desconecta
+ *   - `campaign.progress` con `{sent, failed, total}` durante un envío masivo
+ *   - `campaign.done` al cierre
+ *
+ * El navegador no puede setear Authorization en EventSource, así que el JWT
+ * viaja por query string `?token=…` (HTTPS-only en prod).
+ */
+whatsappRoutes.get('/stream', (c) => {
+  const token = c.req.query('token')
+  if (!token) return c.json({ ok: false, error: 'token required' }, 401)
+  let auth
+  try {
+    auth = verifyAccessToken(token)
+  } catch {
+    return c.json({ ok: false, error: 'invalid token' }, 401)
+  }
+  if (auth.type !== 'merchant_user' || !auth.merchantId) {
+    return c.json({ ok: false, error: 'forbidden' }, 403)
+  }
+  const merchantId = auth.merchantId
+
+  return streamSSE(c, async (stream) => {
+    let alive = true
+    const send = async (event: any) => {
+      if (!alive) return
+      try {
+        await stream.writeSSE({
+          event: event.type,
+          data: JSON.stringify(event),
+          id: String(Date.now()),
+        })
+      } catch {
+        alive = false
+      }
+    }
+    const unsubscribe = wa.subscribe(merchantId, (e) => void send(e))
+
+    // Push estado inicial inmediatamente para que el cliente no espere
+    const initial = await wa.getStatus(merchantId)
+    await send({
+      type: 'status',
+      merchantId,
+      status: initial.status,
+      lastError: initial.lastError,
+    })
+    if (initial.qr) await send({ type: 'qr', merchantId, qr: initial.qr })
+
+    // Heartbeat cada 25s contra timeout de proxies
+    while (alive) {
+      await stream.sleep(25_000)
+      if (!alive) break
+      try {
+        await stream.writeSSE({ event: 'heartbeat', data: String(Date.now()) })
+      } catch {
+        alive = false
+      }
+    }
+    unsubscribe()
   })
 })
 

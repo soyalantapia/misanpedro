@@ -25,6 +25,7 @@ import { formatRedeemedDate } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { api, ApiError } from '@/lib/api'
 import { useApiWhatsappStatus } from '@/lib/apiQueries'
+import { useWhatsappStream } from '@/lib/useWhatsappStream'
 
 const MAX_PER_MONTH = 4
 
@@ -69,65 +70,45 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const toast = useToast()
   const [connecting, setConnecting] = useState(false)
-  const [apiQr, setApiQr] = useState<string | null>(null)
-  const [apiStatus, setApiStatus] = useState<string>('disconnected')
-  const [apiAvailable, setApiAvailable] = useState<boolean>(true)
+  // Stream SSE: recibe eventos qr / status / campaign en tiempo real
+  const wa = useWhatsappStream()
 
-  // Pedimos el QR real al backend. Si no responde o devuelve STUB,
-  // mostramos uno simulado (modo demo).
+  // Disparamos /wa/start una sola vez para que el backend inicialice el
+  // cliente whatsapp-web.js y empiece a emitir QR.
   useEffect(() => {
     let cancelled = false
-    api.whatsapp
-      .start()
-      .then((data) => {
-        if (cancelled) return
-        if (data.qr && data.qr !== 'STUB_QR_PLACEHOLDER') setApiQr(data.qr)
-        setApiStatus(data.status)
-      })
-      .catch(() => {
-        if (!cancelled) setApiAvailable(false)
-      })
+    api.whatsapp.start().catch((err) => {
+      if (cancelled) return
+      toast.error(
+        'No pudimos iniciar WhatsApp',
+        err instanceof ApiError ? err.message : 'Revisá tu conexión.',
+      )
+    })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [toast])
 
-  // Polling para detectar cuando la sesión se conecta efectivamente
+  // Cuando el stream pasa a 'ready', marcamos la conexión local
   useEffect(() => {
-    if (!apiAvailable) return
-    const interval = setInterval(async () => {
-      try {
-        const data = await api.whatsapp.status()
-        setApiStatus(data.status)
-        if (data.qr && data.qr !== 'STUB_QR_PLACEHOLDER') setApiQr(data.qr)
-        if (data.status === 'ready') {
-          whatsappActions.connect(merchantId)
-          toast.success('WhatsApp conectado', 'Ya podés mandar campañas masivas.')
-          clearInterval(interval)
-        }
-      } catch {
-        /* noop */
-      }
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [apiAvailable, merchantId, toast])
+    if (wa.status === 'ready') {
+      whatsappActions.connect(merchantId)
+      toast.success('WhatsApp conectado', 'Ya podés mandar campañas masivas.')
+    }
+  }, [wa.status, merchantId, toast])
 
-  // QR fake como fallback
-  const fallbackQr = useMemo(
-    () => `wa-mi-san-pedro:${merchantId}:${Date.now()}:${Math.random().toString(36).slice(2)}`,
-    [merchantId],
-  )
-
+  // Renderizamos el QR real que viene del backend. Si todavía no llegó,
+  // el canvas queda vacío (mostramos un placeholder textual).
   useEffect(() => {
     if (!canvasRef.current) return
-    const text = apiQr ?? fallbackQr
+    if (!wa.qr || wa.qr === 'STUB_QR_PLACEHOLDER') return
     QRCode.toCanvas(
       canvasRef.current,
-      text,
+      wa.qr,
       { width: 240, margin: 1, color: { dark: '#14211B', light: '#ffffff' } },
       () => {},
     )
-  }, [apiQr, fallbackQr])
+  }, [wa.qr])
 
   async function handleConnect() {
     setConnecting(true)
@@ -148,8 +129,6 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
       setConnecting(false)
     }
   }
-  // referenced for clarity; status visible para debugging futuro
-  void apiStatus
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
@@ -319,57 +298,49 @@ function ComposerScreen({
     const total = recipients.length
     setPhase({ kind: 'sending', progress: 0, total, sentSoFar: 0 })
 
-    // Intento 1: API real (/wa/campaign).
+    const recipientNumbers = recipients
+      .map((r) => r.user.whatsapp.replace(/\D/g, ''))
+      .filter((n) => n.length >= 8)
+
+    // POST /wa/campaign: el backend procesa con rate-limit anti-ban (delay
+    // random 2-5s entre cada mensaje) y publica progreso vía SSE.
+    // El hook useWhatsappStream() en este componente recibe los eventos
+    // 'campaign.progress' y actualiza el progress bar en tiempo real
+    // (ver el useEffect inferior que escucha wa.campaign).
     try {
-      const recipientNumbers = recipients
-        .map((r) => r.user.whatsapp.replace(/\D/g, ''))
-        .filter((n) => n.length >= 8)
-
-      // Animación visual mientras el API trabaja
-      let progressTick = 0
-      const animTimer = setInterval(() => {
-        progressTick = Math.min(0.9, progressTick + 0.1)
-        setPhase({
-          kind: 'sending',
-          progress: progressTick,
-          total,
-          sentSoFar: Math.round(progressTick * total),
-        })
-      }, 200)
-
-      try {
-        const data = await api.whatsapp.campaign(recipientNumbers, rendered)
-        clearInterval(animTimer)
-        whatsappActions.send({
-          merchantId,
-          templateId,
-          audiencia: audienceItem.label,
-          rendered,
-          sentCount: data.campaign.sentCount,
-        })
-        setPhase({
-          kind: 'done',
-          sentCount: data.campaign.sentCount,
-          deliveredCount: data.campaign.sentCount,
-          readCount: Math.round(data.campaign.sentCount * 0.7),
-        })
-        toast.success(
-          'Campaña enviada',
-          `${data.campaign.sentCount} entregados${data.campaign.failedCount ? ` · ${data.campaign.failedCount} fallaron` : ''}.`,
-        )
-        apiStatus.refetch()
-        return
-      } catch (err) {
-        clearInterval(animTimer)
-        if (err instanceof ApiError && err.status === 429) {
-          toast.error('Cupo agotado', err.message ?? 'Llegaste al límite mensual.')
-          setPhase({ kind: 'idle' })
-          return
-        }
-        throw err
-      }
+      const data = await api.whatsapp.campaign(recipientNumbers, rendered)
+      whatsappActions.send({
+        merchantId,
+        templateId,
+        audiencia: audienceItem.label,
+        rendered,
+        sentCount: data.campaign.sentCount,
+      })
+      setPhase({
+        kind: 'done',
+        sentCount: data.campaign.sentCount,
+        deliveredCount: data.campaign.sentCount,
+        readCount: Math.round(data.campaign.sentCount * 0.7),
+      })
+      toast.success(
+        'Campaña enviada',
+        `${data.campaign.sentCount} entregados${data.campaign.failedCount ? ` · ${data.campaign.failedCount} fallaron` : ''}.`,
+      )
+      apiStatus.refetch()
     } catch (err) {
-      // El API falló por algo distinto a 429. Reportamos el error y limpiamos.
+      if (err instanceof ApiError && err.status === 429) {
+        toast.error('Cupo agotado', err.message ?? 'Llegaste al límite mensual.')
+        setPhase({ kind: 'idle' })
+        return
+      }
+      if (err instanceof ApiError && err.status === 503) {
+        toast.error(
+          'WhatsApp no está conectado',
+          'Conectá tu sesión escaneando el QR antes de enviar campañas.',
+        )
+        setPhase({ kind: 'idle' })
+        return
+      }
       toast.error(
         'No pudimos enviar la campaña',
         err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
@@ -377,6 +348,23 @@ function ComposerScreen({
       setPhase({ kind: 'idle' })
     }
   }
+
+  // Escucha el stream SSE: cuando llega un evento `campaign.progress`,
+  // actualizamos el progress bar con los conteos reales.
+  const wa = useWhatsappStream()
+  useEffect(() => {
+    if (!wa.campaign || wa.campaign.done) return
+    const sentSoFar = wa.campaign.sent + wa.campaign.failed
+    setPhase((prev) => {
+      if (prev.kind !== 'sending') return prev
+      return {
+        kind: 'sending',
+        total: wa.campaign!.total,
+        sentSoFar,
+        progress: wa.campaign!.total === 0 ? 0 : sentSoFar / wa.campaign!.total,
+      }
+    })
+  }, [wa.campaign])
 
   function handleDisconnect() {
     whatsappActions.disconnect(merchantId)
