@@ -140,31 +140,66 @@ export function CanjeadosPage() {
               const c = getCoupon(r.couponId)
               const m = c ? getMerchantBySlug(c.merchantId) : undefined
               if (!c || !m || !r.redeemedAt) return null
+              const ahorro = r.ahorroEstimado ?? 0
+              const ticket = r.montoTicket ?? 0
+              // montoTicket en backend = precio sin descuento (bruto).
+              // Lo que el vecino realmente pagó = bruto - ahorro.
+              const pagado = ticket > 0 ? Math.max(0, ticket - ahorro) : 0
               return (
                 <div
                   key={r.id}
                   style={{ animationDelay: `${i * 50}ms` }}
-                  className="animate-fade-up flex items-center gap-3 rounded-2xl bg-white p-3 shadow-card ring-1 ring-neutral-100"
+                  className="animate-fade-up flex flex-col gap-2 rounded-2xl bg-white p-3 shadow-card ring-1 ring-neutral-100"
                 >
-                  <CardImage
-                    categoria={m.categoria}
-                    className="h-12 w-12 rounded-xl"
-                    size="sm"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-bold text-neutral-900">{m.nombre}</p>
-                    <p className="text-xs text-neutral-500">
-                      {formatRedeemedDate(r.redeemedAt)} · {c.titulo}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <CardImage
+                      categoria={m.categoria}
+                      className="h-12 w-12 rounded-xl"
+                      size="sm"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-bold text-neutral-900">{m.nombre}</p>
+                      <p className="text-xs text-neutral-500">
+                        {formatRedeemedDate(r.redeemedAt)} · {c.titulo}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-bold text-status-success-fg">
+                        −{formatMoney(ahorro)}
+                      </p>
+                      <p className="text-[11px] font-semibold text-neutral-400">
+                        {c.porcentaje}% off
+                      </p>
+                    </div>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-sm font-bold text-status-success-fg">
-                      −{formatMoney(r.ahorroEstimado ?? 0)}
-                    </p>
-                    <p className="text-[11px] font-semibold text-neutral-400">
-                      {c.porcentaje}% off
-                    </p>
-                  </div>
+                  {ticket > 0 && (
+                    <div className="grid grid-cols-3 gap-2 rounded-xl bg-primary-50 px-3 py-2 text-[11px]">
+                      <div className="flex flex-col">
+                        <span className="font-semibold uppercase tracking-wider text-neutral-400">
+                          Ticket
+                        </span>
+                        <span className="tabular-nums font-bold text-neutral-700">
+                          {formatMoney(ticket)}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-semibold uppercase tracking-wider text-neutral-400">
+                          Pagaste
+                        </span>
+                        <span className="tabular-nums font-bold text-neutral-900">
+                          {formatMoney(pagado)}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-semibold uppercase tracking-wider text-neutral-400">
+                          Ahorraste
+                        </span>
+                        <span className="tabular-nums font-bold text-status-success-fg">
+                          {formatMoney(ahorro)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}
