@@ -34,9 +34,40 @@ const empty: FormState = {
 }
 
 function defaultExpiry(): string {
-  const d = new Date()
-  d.setDate(d.getDate() + 30)
-  return d.toISOString().slice(0, 10)
+  return addDays(new Date(), 30).toISOString().slice(0, 10)
+}
+
+function addDays(d: Date, days: number): Date {
+  const next = new Date(d)
+  next.setDate(d.getDate() + days)
+  return next
+}
+
+const MESES_LARGOS = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+]
+
+function formatDateLong(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso + 'T12:00:00')
+  if (Number.isNaN(d.getTime())) return iso
+  return `${d.getDate()} de ${MESES_LARGOS[d.getMonth()]} de ${d.getFullYear()}`
+}
+
+function daysFromToday(iso: string): string {
+  if (!iso) return ''
+  const target = new Date(iso + 'T12:00:00')
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const ms = target.getTime() - today.getTime()
+  const days = Math.ceil(ms / (1000 * 60 * 60 * 24))
+  if (days < 0) return 'venció'
+  if (days === 0) return 'vence hoy'
+  if (days === 1) return 'queda 1 día'
+  if (days < 30) return `quedan ${days} días`
+  const meses = Math.round(days / 30)
+  return `quedan ~${meses} ${meses === 1 ? 'mes' : 'meses'}`
 }
 
 function isoToDate(iso: string): string {
@@ -215,7 +246,13 @@ export function AdminCuponEditPage() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field
           label="Título del descuento"
+          required
           hint={`${form.titulo.length}/${TITULO_MAX}`}
+          help={
+            form.titulo.length > 0 && form.titulo.length < 8
+              ? `Faltan ${8 - form.titulo.length} caracteres para el mínimo (8)`
+              : undefined
+          }
           input={
             <input
               type="text"
@@ -224,6 +261,7 @@ export function AdminCuponEditPage() {
               onChange={(e) => update('titulo', e.target.value)}
               placeholder="Ej: 20% OFF en pizzas martes y miércoles"
               className={inputCls}
+              autoComplete="off"
             />
           }
         />
@@ -252,7 +290,13 @@ export function AdminCuponEditPage() {
 
         <Field
           label="Descripción"
+          required
           hint={`${form.descripcion.length}/${DESCRIPCION_MAX}`}
+          help={
+            form.descripcion.length > 0 && form.descripcion.length < 20
+              ? `Faltan ${20 - form.descripcion.length} caracteres para el mínimo (20)`
+              : undefined
+          }
           input={
             <textarea
               value={form.descripcion}
@@ -294,13 +338,49 @@ export function AdminCuponEditPage() {
         <Field
           label="Vigente hasta"
           input={
-            <input
-              type="date"
-              value={form.vigenciaHasta}
-              onChange={(e) => update('vigenciaHasta', e.target.value)}
-              className={inputCls}
-              required
-            />
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: '1 sem', days: 7 },
+                  { label: '15 días', days: 15 },
+                  { label: '1 mes', days: 30 },
+                  { label: '3 meses', days: 90 },
+                  { label: '6 meses', days: 180 },
+                  { label: '1 año', days: 365 },
+                ].map((p) => {
+                  const targetDate = addDays(new Date(), p.days).toISOString().slice(0, 10)
+                  const active = form.vigenciaHasta === targetDate
+                  return (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => update('vigenciaHasta', targetDate)}
+                      className={`rounded-full px-3 py-1 text-xs font-bold transition-all ${
+                        active
+                          ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta'
+                          : 'bg-white text-neutral-700 ring-1 ring-neutral-200 hover:bg-primary-50 hover:ring-accent-200'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <input
+                type="date"
+                value={form.vigenciaHasta}
+                onChange={(e) => update('vigenciaHasta', e.target.value)}
+                className={inputCls}
+                min={new Date().toISOString().slice(0, 10)}
+                required
+              />
+              {form.vigenciaHasta && (
+                <p className="text-[11px] text-neutral-500">
+                  Hasta el <span className="font-bold text-neutral-700">{formatDateLong(form.vigenciaHasta)}</span>{' '}
+                  · {daysFromToday(form.vigenciaHasta)}
+                </p>
+              )}
+            </div>
           }
         />
 
@@ -364,20 +444,29 @@ function Field({
   label,
   input,
   hint,
+  help,
+  required,
 }: {
   label: string
   input: React.ReactNode
   hint?: string
+  /** Texto naranja debajo del input (validación inline o feedback). */
+  help?: string
+  required?: boolean
 }) {
   return (
     <label className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
           {label}
+          {required && <span className="ml-1 text-status-error">*</span>}
         </span>
         {hint && <span className="text-[11px] tabular-nums text-neutral-400">{hint}</span>}
       </div>
       {input}
+      {help && (
+        <p className="text-[11px] font-semibold text-status-warning-fg">{help}</p>
+      )}
     </label>
   )
 }

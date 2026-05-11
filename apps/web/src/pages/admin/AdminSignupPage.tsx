@@ -295,6 +295,8 @@ export function AdminSignupPage() {
                 input={
                   <input
                     type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
                     value={form.telefono}
                     onChange={(e) => update('telefono', e.target.value)}
                     placeholder="(03329) 425-678"
@@ -354,10 +356,12 @@ export function AdminSignupPage() {
               input={
                 <input
                   type="password"
+                  autoComplete="new-password"
                   value={form.password}
                   onChange={(e) => update('password', e.target.value)}
                   placeholder="Mínimo 3 caracteres"
                   className={inputCls}
+                  minLength={3}
                 />
               }
             />
@@ -466,11 +470,17 @@ function FiscalStep({
       <Field
         label="CUIT"
         required
-        hint="11 dígitos sin guiones"
+        hint={`${form.cuit.length}/11`}
+        help={
+          form.cuit.length === 11
+            ? `${form.cuit.slice(0, 2)}-${form.cuit.slice(2, 10)}-${form.cuit.slice(10)}`
+            : '11 dígitos sin guiones'
+        }
         input={
           <input
             type="text"
             inputMode="numeric"
+            autoComplete="off"
             value={form.cuit}
             onChange={(e) => update('cuit', e.target.value.replace(/\D/g, '').slice(0, 11))}
             placeholder="20123456789"
@@ -714,11 +724,14 @@ function Field({
   input,
   required,
   hint,
+  help,
 }: {
   label: string
   input: React.ReactNode
   required?: boolean
   hint?: string
+  /** Texto pequeño bajo el input — validación inline o ejemplo formateado. */
+  help?: string
 }) {
   return (
     <label className="flex flex-col gap-1.5">
@@ -726,9 +739,10 @@ function Field({
         <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
           {label} {required && <span className="text-status-error">*</span>}
         </span>
-        {hint && <span className="text-[11px] text-neutral-400">{hint}</span>}
+        {hint && <span className="text-[11px] tabular-nums text-neutral-400">{hint}</span>}
       </div>
       {input}
+      {help && <p className="text-[11px] text-neutral-400">{help}</p>}
     </label>
   )
 }

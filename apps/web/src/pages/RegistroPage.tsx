@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ShieldCheck, Sparkles } from 'lucide-react'
+import {
+  ChevronLeft,
+  ShieldCheck,
+  Sparkles,
+  User as UserIcon,
+  IdCard,
+  Mail,
+  Phone,
+  Cake,
+} from 'lucide-react'
 import { activationActions, userActions } from '@/lib/stores'
 import { useToast } from '@/components/Toast'
 import { userApi, ApiError } from '@/lib/api'
@@ -163,6 +172,8 @@ export function RegistroPage() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field
           label="Nombre completo"
+          required
+          icon={UserIcon}
           error={errors.nombre}
           input={
             <input
@@ -171,26 +182,34 @@ export function RegistroPage() {
               value={form.nombre}
               onChange={(e) => update('nombre', e.target.value)}
               placeholder="Como en tu DNI"
-              className={inputCls}
+              className={iconInputCls}
             />
           }
         />
         <Field
           label="DNI"
+          required
+          icon={IdCard}
+          help="Sólo números, sin puntos"
           error={errors.dni}
           input={
             <input
               type="text"
               inputMode="numeric"
+              autoComplete="off"
+              maxLength={9}
               value={form.dni}
-              onChange={(e) => update('dni', e.target.value)}
-              placeholder="Sin puntos ni espacios"
-              className={inputCls}
+              onChange={(e) => update('dni', e.target.value.replace(/\D/g, ''))}
+              placeholder="30123456"
+              className={iconInputCls}
             />
           }
         />
         <Field
           label="Email"
+          required
+          icon={Mail}
+          help="Te enviamos un código por email para iniciar sesión"
           error={errors.email}
           input={
             <input
@@ -199,12 +218,15 @@ export function RegistroPage() {
               value={form.email}
               onChange={(e) => update('email', e.target.value)}
               placeholder="vos@correo.com"
-              className={inputCls}
+              className={iconInputCls}
             />
           }
         />
         <Field
           label="WhatsApp"
+          required
+          icon={Phone}
+          help="Con código de área. Ej: +54 9 3329…"
           error={errors.whatsapp}
           input={
             <input
@@ -214,12 +236,15 @@ export function RegistroPage() {
               value={form.whatsapp}
               onChange={(e) => update('whatsapp', e.target.value)}
               placeholder="+54 9 3329 …"
-              className={inputCls}
+              className={iconInputCls}
             />
           }
         />
         <Field
           label="Fecha de nacimiento"
+          required
+          icon={Cake}
+          help="Tenés que ser mayor de 16"
           error={errors.fechaNacimiento}
           input={
             <input
@@ -227,6 +252,7 @@ export function RegistroPage() {
               value={form.fechaNacimiento}
               onChange={(e) => update('fechaNacimiento', e.target.value)}
               className={inputCls}
+              max={new Date().toISOString().slice(0, 10)}
             />
           }
         />
@@ -277,22 +303,48 @@ export function RegistroPage() {
 const inputCls =
   'w-full rounded-2xl bg-white px-4 py-3.5 text-sm text-neutral-900 shadow-card ring-1 ring-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400'
 
+/** Input variante con padding-left para acomodar el icono. */
+const iconInputCls =
+  'w-full rounded-2xl bg-white py-3.5 pl-11 pr-4 text-sm text-neutral-900 shadow-card ring-1 ring-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400'
+
 function Field({
   label,
   input,
   error,
+  help,
+  required,
+  icon: Icon,
 }: {
   label: string
   input: React.ReactNode
   error?: string
+  /** Texto de ayuda debajo del input (neutral). */
+  help?: string
+  /** Muestra asterisco rojo en el label. */
+  required?: boolean
+  /** Icono lucide-react que se renderiza dentro del input (izquierda). */
+  icon?: typeof Mail
 }) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
         {label}
+        {required && <span className="ml-1 text-status-error">*</span>}
       </span>
-      {input}
-      {error && <span className="text-xs font-semibold text-status-error">{error}</span>}
+      <div className={Icon ? 'relative' : ''}>
+        {Icon && (
+          <Icon
+            size={14}
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
+          />
+        )}
+        {input}
+      </div>
+      {error ? (
+        <span className="text-xs font-semibold text-status-error-fg">{error}</span>
+      ) : (
+        help && <span className="text-[11px] text-neutral-400">{help}</span>
+      )}
     </label>
   )
 }
