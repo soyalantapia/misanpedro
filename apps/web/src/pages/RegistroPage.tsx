@@ -8,7 +8,6 @@ import {
   IdCard,
   Mail,
   Phone,
-  Cake,
 } from 'lucide-react'
 import { activationActions, userActions } from '@/lib/stores'
 import { useToast } from '@/components/Toast'
@@ -243,7 +242,6 @@ export function RegistroPage() {
         <Field
           label="Fecha de nacimiento"
           required
-          icon={Cake}
           help="Tenés que ser mayor de 16"
           error={errors.fechaNacimiento}
           input={
