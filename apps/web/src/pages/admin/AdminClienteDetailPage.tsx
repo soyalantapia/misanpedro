@@ -19,7 +19,7 @@ import {
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useClientForMerchant } from '@/lib/merchantQueries'
 import { useCoupons } from '@/lib/couponsStore'
-import { formatMoney, formatRedeemedDate } from '@/lib/format'
+import { formatMoney, formatRedeemedDate, formatBirthdate } from '@/lib/format'
 import {
   useApiMerchantClientes,
   useApiRecentRedemptions,
@@ -54,7 +54,7 @@ export function AdminClienteDetailPage() {
         dni: c.dni ?? '',
         email: c.email ?? '',
         whatsapp: c.whatsapp ?? '',
-        fechaNacimiento: '',
+        fechaNacimiento: c.fechaNacimiento ?? '',
         acceptedTcAt: '',
         createdAt: '',
       },
@@ -433,16 +433,6 @@ function ageFrom(iso: string): number | null {
   const m = now.getMonth() - dob.getMonth()
   if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--
   return age
-}
-
-function formatBirthdate(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  const months = [
-    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-  ]
-  return `${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}`
 }
 
 function NotesSection({ userId }: { userId: string }) {

@@ -103,6 +103,7 @@ export function DescuentosPage() {
       if (!q) return true
       return (
         c.titulo.toLowerCase().includes(q) ||
+        c.descripcion.toLowerCase().includes(q) ||
         m.nombre.toLowerCase().includes(q) ||
         (CATEGORIAS.find((cat) => cat.id === m.categoria)?.label.toLowerCase().includes(q) ?? false)
       )
@@ -114,12 +115,23 @@ export function DescuentosPage() {
     return merchants.filter((m) => {
       if (categoria && m.categoria !== categoria) return false
       if (!q) return true
-      return (
-        m.nombre.toLowerCase().includes(q) ||
-        (CATEGORIAS.find((cat) => cat.id === m.categoria)?.label.toLowerCase().includes(q) ?? false)
+      const matchNombre = m.nombre.toLowerCase().includes(q)
+      const matchRubro = CATEGORIAS.find((cat) => cat.id === m.categoria)
+        ?.label.toLowerCase()
+        .includes(q)
+      // También matcheamos si alguno de los cupones del comercio contiene
+      // la query en título o descripción ("pizza" debe encontrar a La Esquina
+      // aunque su nombre no contenga la palabra).
+      const matchCupones = COUPONS.some(
+        (c) =>
+          c.merchantId === m.id &&
+          c.estado === 'activo' &&
+          (c.titulo.toLowerCase().includes(q) ||
+            c.descripcion.toLowerCase().includes(q)),
       )
+      return matchNombre || !!matchRubro || matchCupones
     })
-  }, [search, categoria, merchants])
+  }, [search, categoria, merchants, COUPONS])
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
@@ -230,7 +242,7 @@ function SearchBar({
         type="search"
         value={search}
         onChange={(e) => onSearch(e.target.value)}
-        placeholder="Buscar comercios o rubros…"
+        placeholder="Buscar comercio, rubro o descuento…"
         className="w-full rounded-2xl bg-white py-3.5 pl-10 pr-12 text-sm text-neutral-900 shadow-card ring-1 ring-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400"
       />
       {search && (

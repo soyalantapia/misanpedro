@@ -116,3 +116,15 @@ export function defaultHorariosSemana(): HorariosSemana {
   })
   return result as HorariosSemana
 }
+
+/** Convierte "1992-06-15" → "15 de junio de 1992" (es-AR). */
+export function formatBirthdate(iso: string): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  const meses = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ]
+  return `${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`
+}

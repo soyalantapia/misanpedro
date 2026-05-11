@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ShieldCheck, Mail, KeyRound } from 'lucide-react'
 import { userApi, ApiError } from '@/lib/api'
 import { userActions } from '@/lib/stores'
+import { purgeDemoDataForApiUser } from '@/lib/demoSeeder'
 import { useToast } from '@/components/Toast'
 
 type Phase =
@@ -47,6 +48,8 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       const res = await userApi.verifyOtp(phase.email, code.replace(/\D/g, ''))
+      // Vecino real: descartamos demoUsers + activations seed (catálogo se mantiene)
+      purgeDemoDataForApiUser()
       // Espejamos el user al store local para que toda la app reaccione
       userActions.replace({
         id: res.user.id,

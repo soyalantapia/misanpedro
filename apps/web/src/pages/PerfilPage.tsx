@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { habeasData, userApi, ApiError } from '@/lib/api'
 import { useUser, userActions, demoStoreActions } from '@/lib/stores'
+import { formatBirthdate } from '@/lib/format'
 import { useToast } from '@/components/Toast'
 
 const SUPPORT_WHATSAPP = (import.meta.env.VITE_SUPPORT_WHATSAPP as string) ?? '5493329000000'
@@ -112,7 +113,7 @@ export function PerfilPage() {
             <Row icon={IdCard} label="DNI" value={user.dni} />
             <Row icon={Mail} label="Email" value={user.email} />
             <Row icon={Phone} label="WhatsApp" value={user.whatsapp} />
-            <Row icon={Cake} label="Nacimiento" value={user.fechaNacimiento} />
+            <Row icon={Cake} label="Nacimiento" value={formatBirthdate(user.fechaNacimiento)} />
           </div>
           <p className="mt-3 text-[11px] text-neutral-400">
             ¿Necesitás corregir algo? Escribinos a{' '}

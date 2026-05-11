@@ -270,6 +270,7 @@ redemptionsRoutes.get('/clientes', requireMerchantAuth, async (c) => {
       dni: u?.dni,
       email: u?.email,
       whatsapp: u?.whatsapp,
+      fechaNacimiento: u?.fechaNacimiento,
     }
   })
   clientes.sort((a, b) => b.canjes - a.canjes)

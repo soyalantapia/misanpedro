@@ -76,6 +76,9 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const isLaEsquina = merchantId === 'la-esquina'
+  // Sólo mostramos el banner del código demo a cuentas demo offline (id
+  // tipo slug). Comercios reales del API usan ObjectId 24-char hex.
+  const isApiMerchant = /^[0-9a-f]{24}$/i.test(merchantId)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -155,7 +158,7 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
             </button>
           </p>
 
-          {isLaEsquina ? (
+          {isLaEsquina && (
             <button
               type="button"
               onClick={() => setCode('123456')}
@@ -176,7 +179,8 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
                 </span>
               </span>
             </button>
-          ) : (
+          )}
+          {!isLaEsquina && !isApiMerchant && (
             <div className="flex items-start gap-2.5 rounded-2xl bg-status-info-bg p-3 text-status-info-fg ring-1 ring-status-info/20">
               <span className="text-base leading-none">💡</span>
               <p className="text-xs leading-snug">

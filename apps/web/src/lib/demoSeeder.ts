@@ -208,6 +208,17 @@ export function ensureDemoDataLoaded() {
   if (typeof window === 'undefined') return
   if (isDemoLoaded()) return
 
+  // Si hay sesión API real del vecino (refresh token persistido), NO
+  // cargamos los datos demo. ApiSync va a hidratar las activations reales
+  // del API. Cargar seed demo encima mostraría 28 canjes ficticios + un
+  // cupón "Pizzas martes" como si fueran de él, que confunde al usuario.
+  try {
+    const hasUserApiSession = !!window.localStorage.getItem('msp.tok.user.refresh')
+    if (hasUserApiSession) return
+  } catch {
+    /* noop */
+  }
+
   let currentUser: User | null = null
   try {
     const raw = window.localStorage.getItem('misanpedro.v1')
@@ -220,6 +231,34 @@ export function ensureDemoDataLoaded() {
   }
 
   loadDemoData(currentUser)
+}
+
+/**
+ * Vacía las activations + demoUsers que cargó el seed inicial cuando
+ * detectamos que la app pasó de "público anónimo" a "vecino logueado vía API".
+ * Mantiene cupones y comercios (catálogo).
+ *
+ * Idempotente: si ya no hay nada que limpiar, no hace nada.
+ */
+export function purgeDemoDataForApiUser() {
+  if (typeof window === 'undefined') return
+  try {
+    const raw = window.localStorage.getItem('misanpedro.v1')
+    if (!raw) return
+    const parsed = JSON.parse(raw) as {
+      user?: User | null
+      demoUsers?: User[]
+      activations?: Activation[]
+    }
+    const next = {
+      user: parsed.user ?? null,
+      demoUsers: [],
+      activations: [],
+    }
+    window.localStorage.setItem('misanpedro.v1', JSON.stringify(next))
+  } catch {
+    /* noop */
+  }
 }
 
 /**

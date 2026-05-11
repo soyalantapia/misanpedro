@@ -4,6 +4,7 @@ import { ChevronLeft, ShieldCheck, Sparkles } from 'lucide-react'
 import { activationActions, userActions } from '@/lib/stores'
 import { useToast } from '@/components/Toast'
 import { userApi, ApiError } from '@/lib/api'
+import { purgeDemoDataForApiUser } from '@/lib/demoSeeder'
 
 type Errors = Partial<Record<keyof FormState, string>>
 
@@ -85,6 +86,9 @@ export function RegistroPage() {
     let registeredFromApi = false
     try {
       const data = await userApi.register({ ...payload, acceptedTc: true })
+      // Vecino real: descartamos los demoUsers + activations seed que
+      // pudieran haberse cargado para sesión anónima. Mantenemos catálogo.
+      purgeDemoDataForApiUser()
       // Espejar al store con el id Mongo (en vez de generar id local)
       userActions.replace({
         id: data.user.id,
@@ -99,7 +103,14 @@ export function RegistroPage() {
       registeredFromApi = true
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setErrors({ email: err.payload?.error ?? 'Email ya registrado' })
+        // Ruteamos el error al campo correcto según el mensaje del backend
+        // ("email ya registrado", "whatsapp ya registrado", "dni ya registrado")
+        const msg = (err.payload?.error ?? '').toString().toLowerCase()
+        const next: Errors = {}
+        if (msg.includes('whatsapp')) next.whatsapp = err.payload.error
+        else if (msg.includes('dni')) next.dni = err.payload.error
+        else next.email = err.payload?.error ?? 'Email ya registrado'
+        setErrors(next)
         setSubmitting(false)
         return
       }
