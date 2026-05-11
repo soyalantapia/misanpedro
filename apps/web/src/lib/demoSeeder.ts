@@ -2,7 +2,7 @@ import type { Activation, Categoria, User } from './types'
 import { SEED_DEMO_USERS } from '@/data/seedDemoUsers'
 import { SEED_COUPONS } from '@/data/seedCoupons'
 import { SEED_MERCHANTS } from '@/data/seedMerchants'
-import { demoStoreActions, getActivationsSnapshot } from './stores'
+import { demoStoreActions, getActivationsSnapshot, getUserSnapshot } from './stores'
 import { couponsActions } from './couponsStore'
 import { whatsappActions } from './whatsappStore'
 
@@ -242,23 +242,11 @@ export function ensureDemoDataLoaded() {
  */
 export function purgeDemoDataForApiUser() {
   if (typeof window === 'undefined') return
-  try {
-    const raw = window.localStorage.getItem('misanpedro.v1')
-    if (!raw) return
-    const parsed = JSON.parse(raw) as {
-      user?: User | null
-      demoUsers?: User[]
-      activations?: Activation[]
-    }
-    const next = {
-      user: parsed.user ?? null,
-      demoUsers: [],
-      activations: [],
-    }
-    window.localStorage.setItem('misanpedro.v1', JSON.stringify(next))
-  } catch {
-    /* noop */
-  }
+  // Disparamos via demoStoreActions para que el store en memoria + listeners
+  // se actualicen (sólo tocar localStorage no notifica a useSyncExternalStore).
+  // Conservamos el user actual (lo seteamos por separado en RegistroPage/LoginPage).
+  const current = getUserSnapshot()
+  demoStoreActions.bulkSeed({ user: current, demoUsers: [], activations: [] })
 }
 
 /**
