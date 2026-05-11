@@ -32,6 +32,20 @@ import {
   type HorarioDia,
   type HorariosSemana,
 } from '@/lib/types'
+
+/**
+ * Si el merchant viene del API con `horariosDetalle: {}` (objeto vacío) o
+ * sin algún día, completamos con defaults para que el editor no crashee.
+ */
+function ensureHorariosSemana(detalle: HorariosSemana | undefined | null): HorariosSemana {
+  const def = defaultHorariosSemana()
+  if (!detalle || typeof detalle !== 'object') return def
+  const next: HorariosSemana = { ...def }
+  for (const d of DIAS_SEMANA) {
+    if (detalle[d.id]) next[d.id] = detalle[d.id]
+  }
+  return next
+}
 import { useCouponsByMerchant } from '@/lib/couponsStore'
 import { useApiMyCoupons } from '@/lib/apiQueries'
 import { useToast } from '@/components/Toast'
@@ -116,7 +130,7 @@ export function AdminComercioPage() {
       coverImageUrl: merchant.coverImageUrl,
       logoUrl: merchant.logoUrl,
       mapsUrl: merchant.mapsUrl ?? '',
-      horariosDetalle: merchant.horariosDetalle ?? defaultHorariosSemana(),
+      horariosDetalle: ensureHorariosSemana(merchant.horariosDetalle),
     })
     setEditing(true)
   }
