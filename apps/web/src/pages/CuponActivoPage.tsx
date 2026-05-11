@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
-import { ChevronLeft, Smartphone, X, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, Store, X, CheckCircle2 } from 'lucide-react'
 import { CountdownTimer } from '@/components/CountdownTimer'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/Toast'
@@ -81,6 +81,46 @@ export function CuponActivoPage() {
     navigate('/canjeados', { replace: true })
   }
 
+  // Polling: si la activación es de Mongo (API) y está activa, polleamos
+  // cada 5s para detectar cuando el comercio confirme el canje. Cuando
+  // detectamos status === 'canjeado' en el API, espejamos al store local
+  // (lo que dispara RedemptionWatcher) y redirigimos a canjeados.
+  const pollIntervalRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!activation) return
+    const looksLikeMongoId = /^[0-9a-f]{24}$/i.test(activation.id)
+    const userToken = tokens.get('user').access
+    const isActiveStatus = activation.status === 'activo'
+    if (!looksLikeMongoId || !userToken || !isActiveStatus) return
+
+    let cancelled = false
+    async function check() {
+      try {
+        const res = await api.activations.get(activation!.id)
+        if (cancelled) return
+        if (res.activation.status === 'canjeado') {
+          activationActions.markRedeemed(
+            activation!.id,
+            res.activation.ahorroEstimado ?? calcAhorro(coupon?.porcentaje ?? 0),
+          )
+          toast.success('¡Cupón canjeado!', 'El comercio confirmó tu descuento.')
+          navigate('/canjeados', { replace: true })
+        }
+      } catch {
+        /* silencioso; volvemos a chequear en el próximo tick */
+      }
+    }
+    pollIntervalRef.current = window.setInterval(check, 5000)
+    return () => {
+      cancelled = true
+      if (pollIntervalRef.current) {
+        window.clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activation?.id, activation?.status])
+
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-md flex-col gap-6 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
       <Link
@@ -115,25 +155,53 @@ export function CuponActivoPage() {
       </div>
 
       {!isExpired && (
-        <div className="rounded-2xl bg-accent-50 p-4 text-accent-800 ring-1 ring-accent-100">
-          <div className="flex items-start gap-2">
-            <Smartphone size={16} className="mt-0.5 shrink-0 text-accent-500" />
-            <div className="flex flex-col gap-1">
-              <p className="text-xs font-bold">Demo MVP</p>
-              <p className="text-[11px] leading-relaxed">
-                Cuando el comercio escanee este QR (Fase 2 · Panel comercio), el cupón se marca como
-                canjeado. Por ahora podés simular el canje para probar el historial.
-              </p>
-              <button
-                type="button"
-                onClick={handleSimulateRedeem}
-                className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-accent-700 shadow-card hover:-translate-y-0.5 transition-all"
-              >
-                <CheckCircle2 size={12} /> Simular canje
-              </button>
-            </div>
-          </div>
-        </div>
+        <>
+          {(() => {
+            const looksLikeMongoId = /^[0-9a-f]{24}$/i.test(activation.id)
+            const userToken = tokens.get('user').access
+            const isReal = looksLikeMongoId && !!userToken
+            if (isReal) {
+              return (
+                <div className="rounded-2xl bg-accent-50 p-4 text-accent-800 ring-1 ring-accent-100">
+                  <div className="flex items-start gap-2">
+                    <Store size={16} className="mt-0.5 shrink-0 text-accent-500" />
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs font-bold">
+                        Mostrale este código al cajero de {merchant.nombre}
+                      </p>
+                      <p className="text-[11px] leading-relaxed">
+                        Cuando lo valide, esta pantalla se actualiza automáticamente y el cupón
+                        queda en tu historial. No tenés que hacer nada más.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+            // Modo demo / sin sesión API real: ofrecemos simulación
+            return (
+              <div className="rounded-2xl bg-amber-50 p-4 text-amber-900 ring-1 ring-amber-200">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                  <div className="flex flex-col gap-1">
+                    <p className="text-xs font-bold">Modo demo</p>
+                    <p className="text-[11px] leading-relaxed">
+                      No estás logueado contra el servidor. Podés simular el canje para probar el
+                      historial.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleSimulateRedeem}
+                      className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-amber-700 shadow-card transition-all hover:-translate-y-0.5"
+                    >
+                      <CheckCircle2 size={12} /> Simular canje
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </>
       )}
 
       <button

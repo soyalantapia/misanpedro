@@ -90,7 +90,7 @@ export function AdminClientesPage() {
     a.download = `clientes-${merchantId}-${Date.now()}.csv`
     a.click()
     URL.revokeObjectURL(url)
-    toast.success('CSV descargado', `${clients.length} clientes exportados.`)
+    toast.success('CSV descargado', `${clients.length} ${clients.length === 1 ? "cliente exportado" : "clientes exportados"}.`)
   }
 
   return (

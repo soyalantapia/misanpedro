@@ -3,14 +3,20 @@ import { Link } from 'react-router-dom'
 import { CheckCircle2, TrendingUp, Sparkles, PiggyBank } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
 import { EmptyState } from '@/components/EmptyState'
-import { useActivations } from '@/lib/stores'
+import { useActivations, useUser } from '@/lib/stores'
 import { getMerchant } from '@/data/mockData'
 import { useCoupons } from '@/lib/couponsStore'
 import { formatMoney, formatRedeemedDate } from '@/lib/format'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 
 export function CanjeadosPage() {
-  const activations = useActivations()
+  const allActivations = useActivations()
+  const user = useUser()
+  // Filtramos por user actual; sin login mostramos empty state.
+  const activations = useMemo(
+    () => (user ? allActivations.filter((a) => a.userId === user.id) : []),
+    [allActivations, user],
+  )
   const localCoupons = useCoupons()
   const apiCouponsRes = useApiCoupons()
   const apiMerchantsRes = useApiMerchants()

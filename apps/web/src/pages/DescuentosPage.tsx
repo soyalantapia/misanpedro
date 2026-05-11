@@ -143,7 +143,9 @@ export function DescuentosPage() {
           Descubrí descuentos en San&nbsp;Pedro
         </h1>
         <p className="text-base text-neutral-500">
-          {merchants.length} comercios adheridos · {COUPONS.length} cupones activos.
+          {merchants.length} {merchants.length === 1 ? 'comercio adherido' : 'comercios adheridos'}
+          {' · '}
+          {COUPONS.length} {COUPONS.length === 1 ? 'cupón activo' : 'cupones activos'}.
         </p>
       </div>
 

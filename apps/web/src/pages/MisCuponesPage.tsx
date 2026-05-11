@@ -4,7 +4,7 @@ import { Ticket, Sparkles, RefreshCw, ArrowRight, Clock, AlertCircle } from 'luc
 import { CardImage } from '@/components/CardImage'
 import { EmptyState } from '@/components/EmptyState'
 import { useToast } from '@/components/Toast'
-import { activationActions, useActivations } from '@/lib/stores'
+import { activationActions, useActivations, useUser } from '@/lib/stores'
 import { getMerchant } from '@/data/mockData'
 import { useCoupons } from '@/lib/couponsStore'
 import { formatTimeRemaining } from '@/lib/format'
@@ -12,7 +12,14 @@ import { cn } from '@/lib/cn'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 
 export function MisCuponesPage() {
-  const activations = useActivations()
+  const allActivations = useActivations()
+  const user = useUser()
+  // Sólo mostramos activaciones del usuario actual. Si no hay user, mostramos
+  // empty state (no filtramos vs el seed demo de otros vecinos).
+  const activations = useMemo(
+    () => (user ? allActivations.filter((a) => a.userId === user.id) : []),
+    [allActivations, user],
+  )
   const localCoupons = useCoupons()
   const apiCouponsRes = useApiCoupons()
   const apiMerchantsRes = useApiMerchants()
