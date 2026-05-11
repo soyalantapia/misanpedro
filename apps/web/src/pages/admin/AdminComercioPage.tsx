@@ -100,9 +100,8 @@ export function AdminComercioPage() {
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
   const cuponesActivos = allCoupons.filter((c) => c.estado === 'activo').length
 
-  const horariosDisplay = merchant.horariosDetalle
-    ? formatHorariosSemana(merchant.horariosDetalle)
-    : merchant.horarios
+  const horariosDisplay =
+    formatHorariosSemana(merchant.horariosDetalle) || merchant.horarios
   const mapsHref =
     merchant.mapsUrl ||
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${merchant.nombre}, ${merchant.direccion}`)}`

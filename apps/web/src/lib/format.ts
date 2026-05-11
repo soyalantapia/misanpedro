@@ -61,8 +61,16 @@ import { DIAS_SEMANA } from './types'
 /**
  * Convierte HorariosSemana a un string legible agrupando días con el mismo
  * horario. Ej: "Lun a Vie · 9 a 18 hs · Sáb 10 a 14 · Dom cerrado"
+ *
+ * Si el detalle es inválido (undefined, vacío o le faltan días) retorna ''.
+ * Los callers pueden hacer fallback al string viejo de `merchant.horarios`.
  */
-export function formatHorariosSemana(detalle: HorariosSemana): string {
+export function formatHorariosSemana(detalle: HorariosSemana | undefined | null): string {
+  if (!detalle || typeof detalle !== 'object') return ''
+  // Si falta cualquier día, no se puede formatear de forma confiable.
+  const completo = DIAS_SEMANA.every((d) => detalle[d.id] !== undefined)
+  if (!completo) return ''
+
   type Group = { from: number; to: number; key: string; label: string }
   const groups: Group[] = []
   let current: Group | null = null

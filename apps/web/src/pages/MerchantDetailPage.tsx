@@ -60,9 +60,8 @@ export function MerchantDetailPage() {
   const mapsUrl =
     merchant.mapsUrl ||
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${merchant.nombre}, ${merchant.direccion}`)}`
-  const horariosDisplay = merchant.horariosDetalle
-    ? formatHorariosSemana(merchant.horariosDetalle)
-    : merchant.horarios
+  const horariosDisplay =
+    formatHorariosSemana(merchant.horariosDetalle) || merchant.horarios
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col">
