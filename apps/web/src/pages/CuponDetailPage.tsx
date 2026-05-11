@@ -87,34 +87,37 @@ export function CuponDetailPage() {
       return
     }
 
-    // Si tenemos token de vecino válido, intentamos activar contra el API.
-    // El couponId del API es un Mongo ObjectId (24 chars hex); el local es un slug.
-    // Sólo enviamos al API cuando parece un id de Mongo.
+    // Activación contra el API. El couponId del API es ObjectId 24-hex.
+    // Si no es un id válido para API, mostramos error en lugar de fallback local.
     const userToken = tokens.get('user').access
     const looksLikeMongoId = /^[0-9a-f]{24}$/i.test(coupon.id)
-    if (userToken && looksLikeMongoId) {
-      try {
-        const data = await api.activations.create(coupon.id)
-        // Espejamos la activación al store local para que las vistas existentes
-        // (CuponActivoPage, MisCuponesPage) la encuentren sin migrar.
-        const local = activationActions.activate(coupon.id, {
-          id: data.activation.id,
-          codigoNumerico: data.activation.codigoNumerico,
-          qrPayload: data.activation.qrPayload,
-        })
-        navigate(`/activacion/${local.id}`)
-        return
-      } catch (err) {
-        if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
-          // 4xx: cupón inválido o expirado — no creamos en local
-          console.warn('[activate] api error:', err.message)
-        }
-      }
+    if (!userToken || !looksLikeMongoId) {
+      // No hay sesión API (probable demo offline). Activación local sólo
+      // para que el flujo demo funcione; en producción esto no debería ocurrir.
+      const a = activationActions.activate(coupon.id)
+      navigate(`/activacion/${a.id}`)
+      return
     }
-
-    // Fallback: store local (modo offline / cupón seed)
-    const a = activationActions.activate(coupon.id)
-    navigate(`/activacion/${a.id}`)
+    try {
+      const data = await api.activations.create(coupon.id)
+      // Espejamos al store local para que CuponActivoPage / MisCuponesPage
+      // lo encuentren con el mismo id de Mongo.
+      const local = activationActions.activate(coupon.id, {
+        id: data.activation.id,
+        codigoNumerico: data.activation.codigoNumerico,
+        qrPayload: data.activation.qrPayload,
+      })
+      navigate(`/activacion/${local.id}`)
+    } catch (err) {
+      console.warn('[activate] api error:', err)
+      // Mostramos el cupón nuevamente sin redirigir; el usuario puede reintentar.
+      // No caemos al store local porque generaría un id desconocido para el API.
+      alert(
+        err instanceof ApiError
+          ? `No se pudo activar el cupón: ${err.message}`
+          : 'No se pudo activar el cupón. Revisá tu conexión y reintentá.',
+      )
+    }
   }
 
   const mapsUrl =

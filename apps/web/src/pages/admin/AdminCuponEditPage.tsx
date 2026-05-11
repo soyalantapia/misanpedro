@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, Save, Tag, Sparkles, Wand2 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
-import { couponsActions, useCoupon } from '@/lib/couponsStore'
+import { useCoupon } from '@/lib/couponsStore'
 import { useToast } from '@/components/Toast'
 import { CardImage } from '@/components/CardImage'
 import { getMerchant } from '@/data/mockData'
-import type { Coupon, Categoria } from '@/lib/types'
+import type { Categoria } from '@/lib/types'
 import { api, ApiError, templates as templatesApi } from '@/lib/api'
 import { useApiMyCoupons } from '@/lib/apiQueries'
 
@@ -150,7 +150,6 @@ export function AdminCuponEditPage() {
     }
     setSubmitting(true)
 
-    // Intentamos primero contra el API; si está caído, caemos al store local
     const apiPayload = {
       titulo: form.titulo.trim(),
       descripcion: form.descripcion.trim(),
@@ -169,38 +168,14 @@ export function AdminCuponEditPage() {
         toast.success('Cupón creado', 'Ya está visible para los vecinos.')
       }
       navigate('/admin/cupones', { replace: true })
-      setSubmitting(false)
-      return
     } catch (err) {
-      // si es validación o conflicto, mostramos el error y no seguimos
-      if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
-        toast.error('No se pudo guardar', err.message)
-        setSubmitting(false)
-        return
-      }
-      // 5xx o sin red: fallback local
+      toast.error(
+        'No se pudo guardar',
+        err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
+      )
+    } finally {
+      setSubmitting(false)
     }
-
-    const payload: Omit<Coupon, 'id'> = {
-      merchantId: session.merchantId,
-      titulo: form.titulo.trim(),
-      descripcion: form.descripcion.trim(),
-      condiciones: form.condiciones.trim(),
-      porcentaje: form.porcentaje,
-      vigenciaHasta: dateToIso(form.vigenciaHasta),
-      imagenSeed: existing?.imagenSeed ?? 'custom',
-      estado: existing?.estado ?? 'activo',
-      diasAplica: form.diasAplica.trim() || undefined,
-    }
-    if (isEdit && id) {
-      couponsActions.patch(id, payload)
-      toast.success('Cupón actualizado (modo offline)')
-    } else {
-      couponsActions.create(payload)
-      toast.success('Cupón creado (modo offline)')
-    }
-    navigate('/admin/cupones', { replace: true })
-    setSubmitting(false)
   }
 
   return (

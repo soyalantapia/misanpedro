@@ -1,6 +1,5 @@
 import { useSyncExternalStore } from 'react'
 import type { MerchantSession } from './types'
-import { findMerchantUser, getAllMerchantUsers } from '@/data/mockData'
 import { merchantApi, tokens } from './api'
 
 const STORAGE_KEY = 'misanpedro.merchant.v1'
@@ -62,7 +61,8 @@ export const merchantAuth = {
     email: string,
     password: string,
   ): Promise<{ ok: true } | { ok: false; error: string }> {
-    // Intento 1: API real
+    // Sólo API real. Sin fallback local: el comercio tiene que existir en
+    // la DB para poder validar cupones, recibir notificaciones, cobrar, etc.
     try {
       const data = await merchantApi.login(email, password)
       const session: MerchantSession = {
@@ -77,20 +77,8 @@ export const merchantAuth = {
       }))
       return { ok: true }
     } catch (apiErr) {
-      // Fallback: si el backend está caído, usamos los seed locales para no
-      // romper la demo. Esto se puede deshabilitar cuando todo esté en prod.
-      const user = findMerchantUser(email, password)
-      if (!user) {
-        const msg = (apiErr as Error)?.message ?? 'Email o contraseña incorrectos'
-        return { ok: false, error: msg }
-      }
-      const session: MerchantSession = {
-        userId: user.id,
-        merchantId: user.merchantId,
-        loggedAt: new Date().toISOString(),
-      }
-      update(() => ({ session, apiUser: null, apiMerchant: null }))
-      return { ok: true }
+      const msg = (apiErr as Error)?.message ?? 'Email o contraseña incorrectos'
+      return { ok: false, error: msg }
     }
   },
   async signup(payload: {
@@ -134,10 +122,7 @@ export const merchantAuth = {
     update(() => empty)
   },
   getCurrentUser() {
-    if (state.apiUser) return state.apiUser
-    if (!state.session) return null
-    const localUser = getAllMerchantUsers().find((u) => u.id === state.session!.userId)
-    return localUser ?? null
+    return state.apiUser ?? null
   },
   getCurrentMerchant() {
     return state.apiMerchant ?? null

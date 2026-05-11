@@ -87,19 +87,16 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   const trimmed = code.replace(/\D/g, '').slice(0, 6)
   const localResult = useValidateByCode(trimmed, merchantId)
   const { result: apiResult } = useApiValidateByCode(trimmed)
-  // Estrategia para no romper la demo:
-  //   1) Si el API responde ok → usar API (datos reales).
-  //   2) Si el API responde error de red → fallback al local.
-  //   3) Si el API responde 404 (no encontrado) PERO el local tiene un
-  //      hit válido (ej. código demo 123456 que no existe en backend) →
-  //      preferir local. Para errores 403/409 (cupón de otro comercio,
-  //      ya canjeado, expirado) preferimos el del API porque es más fiel.
+  // Comercio real: confiamos en el API. El fallback local sólo se usa en
+  // entornos sin sesión API (gh-pages demo).
+  const isApiMerchantSession = /^[0-9a-f]{24}$/i.test(merchantId)
   const result = (() => {
-    if (!apiResult) return localResult
-    if (apiResult.ok) return toLegacyResult(apiResult)
-    if (apiResult.reason === 'network') return localResult
-    if (apiResult.reason === '404' && localResult?.ok) return localResult
-    return toLegacyResult(apiResult)
+    if (isApiMerchantSession) {
+      // Comercio API: usamos exclusivamente la respuesta del API
+      return apiResult ? toLegacyResult(apiResult) : null
+    }
+    // Comercio demo / offline: usamos el local
+    return localResult
   })()
   const ready = trimmed.length === 6
 

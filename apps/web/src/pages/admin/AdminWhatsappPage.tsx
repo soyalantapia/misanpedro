@@ -131,30 +131,22 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
 
   async function handleConnect() {
     setConnecting(true)
-    if (apiAvailable) {
-      // Verificar estado real
-      try {
-        const data = await api.whatsapp.status()
-        if (data.status === 'ready') {
-          whatsappActions.connect(merchantId)
-          toast.success('WhatsApp conectado', 'Ya podés mandar campañas masivas.')
-          setConnecting(false)
-          return
-        }
+    try {
+      const data = await api.whatsapp.status()
+      if (data.status === 'ready') {
+        whatsappActions.connect(merchantId)
+        toast.success('WhatsApp conectado', 'Ya podés mandar campañas masivas.')
+      } else {
         toast.warning('Todavía no se conectó', 'Escaneá el QR primero desde tu WhatsApp.')
-        setConnecting(false)
-        return
-      } catch (err) {
-        // si el API falla, caemos al modo demo
-        if (!(err instanceof ApiError)) setApiAvailable(false)
       }
-    }
-    // Modo demo: simulamos la conexión
-    setTimeout(() => {
-      whatsappActions.connect(merchantId)
-      toast.success('WhatsApp conectado (demo)', 'Ya podés mandar campañas masivas.')
+    } catch (err) {
+      toast.error(
+        'No pudimos verificar el estado',
+        err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
+      )
+    } finally {
       setConnecting(false)
-    }, 700)
+    }
   }
   // referenced for clarity; status visible para debugging futuro
   void apiStatus
@@ -376,35 +368,13 @@ function ComposerScreen({
         }
         throw err
       }
-    } catch {
-      // Fallback: modo demo local con animación simulada
-      const stepDuration = Math.max(60, 2200 / total)
-      let i = 0
-      const interval = setInterval(() => {
-        i++
-        if (i >= total) {
-          clearInterval(interval)
-          const campaign = whatsappActions.send({
-            merchantId,
-            templateId,
-            audiencia: audienceItem.label,
-            rendered,
-            sentCount: total,
-          })
-          setPhase({
-            kind: 'done',
-            sentCount: campaign.sentCount,
-            deliveredCount: campaign.deliveredCount,
-            readCount: campaign.readCount,
-          })
-          toast.success(
-            'Campaña enviada (demo)',
-            `${total} ${total === 1 ? 'mensaje entregado' : 'mensajes entregados'}.`,
-          )
-        } else {
-          setPhase({ kind: 'sending', progress: i / total, total, sentSoFar: i })
-        }
-      }, stepDuration)
+    } catch (err) {
+      // El API falló por algo distinto a 429. Reportamos el error y limpiamos.
+      toast.error(
+        'No pudimos enviar la campaña',
+        err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
+      )
+      setPhase({ kind: 'idle' })
     }
   }
 

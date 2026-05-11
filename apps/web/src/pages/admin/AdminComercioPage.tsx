@@ -20,7 +20,7 @@ import {
   ShieldOff,
 } from 'lucide-react'
 import { useMerchantSession, merchantAuth } from '@/lib/merchantStore'
-import { useMerchant, merchantsActions } from '@/lib/merchantsStore'
+import { useMerchant } from '@/lib/merchantsStore'
 import { api, ApiError, subscription } from '@/lib/api'
 import { useApiMerchantProfile } from '@/lib/apiQueries'
 import { CardImage } from '@/components/CardImage'
@@ -161,27 +161,12 @@ export function AdminComercioPage() {
     try {
       await api.merchantAdmin.updateMe(apiPayload)
     } catch (err) {
-      if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
-        toast.error('No se pudo guardar', err.message)
-        return
-      }
-      // 5xx o sin red → fallback local
+      toast.error(
+        'No se pudo guardar',
+        err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
+      )
+      return
     }
-
-    // Local store: sólo aplicar cuando estamos en modo demo offline
-    if (localMerchant) {
-      merchantsActions.patch(merchant.id, {
-        nombre: draft.nombre.trim(),
-        categoria: draft.categoria,
-        direccion: draft.direccion.trim(),
-        telefono: draft.telefono.trim(),
-        horariosDetalle: draft.horariosDetalle,
-        horarios: formatHorariosSemana(draft.horariosDetalle),
-        coverImageUrl: draft.coverImageUrl,
-        mapsUrl: draft.mapsUrl.trim() || undefined,
-      })
-    }
-    // Refrescar datos del API
     apiRes.refetch()
     toast.success('Comercio actualizado', 'Los cambios ya se ven en la app del vecino.')
     setEditing(false)

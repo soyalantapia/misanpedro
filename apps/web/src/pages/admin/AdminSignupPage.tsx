@@ -11,9 +11,7 @@ import {
   Receipt,
 } from 'lucide-react'
 import { CATEGORIAS, type Categoria } from '@/lib/types'
-import { merchantsActions } from '@/lib/merchantsStore'
 import { merchantAuth } from '@/lib/merchantStore'
-import { addMerchantUser, findMerchantUserByEmail } from '@/data/mockData'
 import { useToast } from '@/components/Toast'
 import { cn } from '@/lib/cn'
 import { billing } from '@/lib/api'
@@ -78,7 +76,6 @@ export function AdminSignupPage() {
     if (form.nombreAdmin.trim().length < 3) return 'Falta tu nombre completo'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAdmin)) return 'Email inválido'
     if (form.password.length < 3) return 'La contraseña debe tener al menos 3 caracteres'
-    if (findMerchantUserByEmail(form.emailAdmin)) return 'Ya existe una cuenta con ese email'
     return null
   }
 
@@ -167,45 +164,19 @@ export function AdminSignupPage() {
         return
       }
     }
+    // El API rechazó el signup. Mostramos error y volvemos al primer paso si
+    // el problema fue de email. No hay fallback local — todos los comercios
+    // deben existir en la DB para poder validar cupones, recibir pagos, etc.
+    setSubmitting(false)
     if (
       result.error.toLowerCase().includes('email') ||
       result.error.toLowerCase().includes('ya registrado')
     ) {
-      setSubmitting(false)
       setError(result.error)
       setStep('datos')
       return
     }
-    // 5xx / network → fallback local (modo demo gh-pages)
-    const merchant = merchantsActions.create({
-      nombre: form.nombreComercio.trim(),
-      categoria: form.categoria,
-      direccion: form.direccion.trim(),
-      lat: -33.6797,
-      lng: -59.6669,
-      telefono: form.telefono.trim(),
-      horarios: form.horarios.trim(),
-      cover: 'custom',
-      logoSeed: form.nombreComercio
-        .split(' ')
-        .map((p) => p[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase(),
-    })
-    addMerchantUser({
-      id: `mu-${Math.random().toString(36).slice(2, 10)}`,
-      merchantId: merchant.id,
-      email: form.emailAdmin.trim().toLowerCase(),
-      password: form.password,
-      nombre: form.nombreAdmin.trim(),
-      rol: 'admin',
-    })
-    await merchantAuth.login(form.emailAdmin, form.password)
-    setSubmitting(false)
-    setStep('listo')
-    toast.success('¡Comercio creado! (modo offline)', 'Demostrado localmente.')
-    setTimeout(() => navigate('/admin', { replace: true }), 1500)
+    setError(result.error || 'No pudimos crear el comercio. Reintentá en un momento.')
   }
 
   return (

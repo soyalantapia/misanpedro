@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { activationActions, userActions } from '@/lib/stores'
 import { useToast } from '@/components/Toast'
-import { userApi, ApiError } from '@/lib/api'
+import { api, userApi, ApiError } from '@/lib/api'
 import { purgeDemoDataForApiUser } from '@/lib/demoSeeder'
 
 type Errors = Partial<Record<keyof FormState, string>>
@@ -89,15 +89,13 @@ export function RegistroPage() {
       fechaNacimiento: form.fechaNacimiento,
     }
 
-    // Intentamos registrar contra el API; si falla (offline / backend caído)
-    // caemos al store local para no romper la demo.
-    let registeredFromApi = false
+    // Registramos contra el API. Sin fallback local: si falla, el usuario
+    // tiene que reintentar. Es la única forma de garantizar que la cuenta
+    // exista en la DB y pueda usar canjes/notificaciones reales.
     try {
       const data = await userApi.register({ ...payload, acceptedTc: true })
-      // Vecino real: descartamos los demoUsers + activations seed que
-      // pudieran haberse cargado para sesión anónima. Mantenemos catálogo.
+      // Vecino real: descartamos demoUsers + activations seed previos
       purgeDemoDataForApiUser()
-      // Espejar al store con el id Mongo (en vez de generar id local)
       userActions.replace({
         id: data.user.id,
         nombre: data.user.nombre,
@@ -108,11 +106,8 @@ export function RegistroPage() {
         acceptedTcAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
       })
-      registeredFromApi = true
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        // Ruteamos el error al campo correcto según el mensaje del backend
-        // ("email ya registrado", "whatsapp ya registrado", "dni ya registrado")
         const msg = (err.payload?.error ?? '').toString().toLowerCase()
         const next: Errors = {}
         if (msg.includes('whatsapp')) next.whatsapp = err.payload.error
@@ -122,16 +117,38 @@ export function RegistroPage() {
         setSubmitting(false)
         return
       }
-      // fallback offline: seguimos con userActions.register local
-    }
-    if (!registeredFromApi) {
-      userActions.register(payload)
+      // 5xx / network: mostramos error visible, NO seguimos con local
+      toast.error(
+        'No pudimos crear tu cuenta',
+        err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
+      )
+      setSubmitting(false)
+      return
     }
     toast.success('¡Cuenta creada!', 'Ya podés canjear descuentos.')
     const activarMatch = next.match(/^\/cupon\/([^/]+)\/activar$/)
     if (activarMatch) {
-      const a = activationActions.activate(activarMatch[1])
-      navigate(`/activacion/${a.id}`, { replace: true })
+      // Activar el cupón vía API (NO usar activationActions.activate local
+      // que generaría id `a-xxx` que el backend no reconoce).
+      try {
+        const data = await userApi.me() // sólo para confirmar token; opcional
+        void data
+      } catch {
+        /* noop */
+      }
+      try {
+        const act = await api.activations.create(activarMatch[1])
+        // Espejar al store local con el id Mongo
+        activationActions.activate(activarMatch[1], {
+          id: act.activation.id,
+          codigoNumerico: act.activation.codigoNumerico,
+          qrPayload: act.activation.qrPayload,
+        })
+        navigate(`/activacion/${act.activation.id}`, { replace: true })
+      } catch {
+        // si falla la activación, llevamos al user al detalle del cupón
+        navigate(`/cupon/${activarMatch[1]}`, { replace: true })
+      }
     } else {
       navigate(next, { replace: true })
     }
