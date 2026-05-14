@@ -1,99 +1,10 @@
 import type { Merchant } from '@/lib/types'
 
-const SAN_PEDRO = { lat: -33.6797, lng: -59.6669 }
-
-function offset(latDelta: number, lngDelta: number) {
-  return { lat: SAN_PEDRO.lat + latDelta, lng: SAN_PEDRO.lng + lngDelta }
-}
-
-export const SEED_MERCHANTS: Merchant[] = [
-  {
-    id: 'la-esquina',
-    nombre: 'La Esquina',
-    categoria: 'gastronomia',
-    direccion: 'Mitre 1247, San Pedro',
-    ...offset(0.001, -0.0008),
-    telefono: '(03329) 425-678',
-    horarios: 'Mar a Dom · 19 a 24 hs',
-    cover: 'la-esquina',
-    logoSeed: 'LE',
-    destacado: true,
-  },
-  {
-    id: 'carmen-vintage',
-    nombre: 'Carmen Vintage',
-    categoria: 'indumentaria',
-    direccion: 'Pellegrini 458, San Pedro',
-    ...offset(-0.0012, 0.0006),
-    telefono: '(03329) 422-901',
-    horarios: 'Lun a Sáb · 10 a 13 y 17 a 20:30 hs',
-    cover: 'carmen',
-    logoSeed: 'CV',
-  },
-  {
-    id: 'vivero-pampero',
-    nombre: 'Vivero El Pampero',
-    categoria: 'hogar',
-    direccion: 'Av. 3 de Febrero 2104, San Pedro',
-    ...offset(0.0034, 0.0021),
-    telefono: '(03329) 428-110',
-    horarios: 'Lun a Sáb · 9 a 13 y 16 a 19 hs',
-    cover: 'pampero',
-    logoSeed: 'VP',
-  },
-  {
-    id: 'farmacia-centro',
-    nombre: 'Farmacia del Centro',
-    categoria: 'salud',
-    direccion: 'Mitre 980, San Pedro',
-    ...offset(0.0006, -0.0003),
-    telefono: '(03329) 423-444',
-    horarios: 'Todos los días · 8 a 22 hs',
-    cover: 'farmacia',
-    logoSeed: 'FC',
-  },
-  {
-    id: 'almendra-belleza',
-    nombre: 'Almendra Belleza',
-    categoria: 'belleza',
-    direccion: 'Pellegrini 712, San Pedro',
-    ...offset(-0.0008, 0.0014),
-    telefono: '(03329) 15-498-201',
-    horarios: 'Mar a Sáb · 10 a 19 hs',
-    cover: 'almendra',
-    logoSeed: 'AB',
-  },
-  {
-    id: 'estacion-25',
-    nombre: 'Estación 25',
-    categoria: 'gastronomia',
-    direccion: 'Bv. 25 de Mayo 1402, San Pedro',
-    ...offset(0.0021, -0.0017),
-    telefono: '(03329) 426-700',
-    horarios: 'Mar a Dom · 9 a 23 hs',
-    cover: 'estacion',
-    logoSeed: 'E25',
-  },
-  {
-    id: 'servimax',
-    nombre: 'Servimax',
-    categoria: 'servicios',
-    direccion: 'Belgrano 1518, San Pedro',
-    ...offset(-0.0024, -0.0011),
-    telefono: '(03329) 427-330',
-    horarios: 'Lun a Vie · 8 a 18 hs',
-    cover: 'servimax',
-    logoSeed: 'SM',
-  },
-  {
-    id: 'hogar-parana',
-    nombre: 'Hogar Río Paraná',
-    categoria: 'hogar',
-    direccion: 'San Martín 220, San Pedro',
-    ...offset(0.0042, 0.0008),
-    telefono: '(03329) 424-820',
-    horarios: 'Lun a Sáb · 9 a 13 y 15:30 a 20 hs',
-    cover: 'parana',
-    logoSeed: 'HP',
-  },
-]
+/**
+ * Catálogo de comercios — vacío en producción.
+ *
+ * Los comercios reales viven en MongoDB (`merchants` collection) y se
+ * hidratan vía `useApiMerchants()` desde el backend. Este array existe
+ * sólo por compatibilidad con código legacy que importa `SEED_MERCHANTS`.
+ */
+export const SEED_MERCHANTS: Merchant[] = []

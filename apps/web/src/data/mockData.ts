@@ -1,78 +1,48 @@
 import type { Merchant, MerchantUser } from '@/lib/types'
 import { SEED_MERCHANTS } from './seedMerchants'
 
-/** @deprecated Use useMerchants() o getMerchantSync() del merchantsStore */
+/**
+ * Datos mock — vacíos en producción.
+ *
+ * Toda la data real (comercios, usuarios de comercio, cupones, vecinos) vive
+ * en MongoDB y se hidrata vía el API. Estos exports existen sólo por
+ * compatibilidad con código legacy que aún los importa.
+ *
+ * - Para comercios usar `useApiMerchants()` / `useMerchant()` / `getMerchantSync()`
+ * - Para usuarios de comercio usar el endpoint `POST /auth/merchant/login`
+ * - Para cupones usar `useApiCoupons()`
+ */
+
+/** @deprecated Vacío. Usar `useApiMerchants()` o `getMerchantSync()`. */
 export const MERCHANTS: Merchant[] = SEED_MERCHANTS
 
-export const MERCHANT_USERS: MerchantUser[] = [
-  {
-    id: 'mu-esquina-1',
-    merchantId: 'la-esquina',
-    email: 'cajero@laesquina.com',
-    password: 'demo123',
-    nombre: 'Mario Pizza',
-    rol: 'admin',
-  },
-  {
-    id: 'mu-carmen-1',
-    merchantId: 'carmen-vintage',
-    email: 'admin@carmenvintage.com',
-    password: 'demo123',
-    nombre: 'Carmen R.',
-    rol: 'admin',
-  },
-  {
-    id: 'mu-pampero-1',
-    merchantId: 'vivero-pampero',
-    email: 'jose@vivero-pampero.com',
-    password: 'demo123',
-    nombre: 'José',
-    rol: 'admin',
-  },
-]
+/** @deprecated Vacío. La auth de comercios va por `POST /auth/merchant/login`. */
+export const MERCHANT_USERS: MerchantUser[] = []
 
-const STORAGE_USERS_KEY = 'misanpedro.merchantUsers.v1'
-
-function loadCustomUsers(): MerchantUser[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = window.localStorage.getItem(STORAGE_USERS_KEY)
-    if (!raw) return []
-    return JSON.parse(raw) as MerchantUser[]
-  } catch {
-    return []
-  }
+/** @deprecated Stub legacy. La auth real va por API. Devuelve undefined siempre. */
+export function findMerchantUser(_email: string, _password: string): MerchantUser | undefined {
+  return undefined
 }
 
-function saveCustomUsers(users: MerchantUser[]) {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(users))
+/** @deprecated Stub legacy. La auth real va por API. Devuelve undefined siempre. */
+export function findMerchantUserByEmail(_email: string): MerchantUser | undefined {
+  return undefined
 }
 
-export function findMerchantUser(email: string, password: string): MerchantUser | undefined {
-  const all = [...MERCHANT_USERS, ...loadCustomUsers()]
-  const e = email.trim().toLowerCase()
-  return all.find((u) => u.email.toLowerCase() === e && u.password === password)
+/** @deprecated Stub legacy. No-op. */
+export function addMerchantUser(_user: MerchantUser) {
+  /* no-op: el alta de comercios va por POST /auth/merchant/signup */
 }
 
-export function findMerchantUserByEmail(email: string): MerchantUser | undefined {
-  const all = [...MERCHANT_USERS, ...loadCustomUsers()]
-  const e = email.trim().toLowerCase()
-  return all.find((u) => u.email.toLowerCase() === e)
-}
-
-export function addMerchantUser(user: MerchantUser) {
-  const custom = loadCustomUsers()
-  saveCustomUsers([...custom, user])
-}
-
+/** @deprecated Stub legacy. Devuelve [] siempre. */
 export function getAllMerchantUsers(): MerchantUser[] {
-  return [...MERCHANT_USERS, ...loadCustomUsers()]
+  return []
 }
 
 /**
- * Devuelve el merchant del seed inicial. Para datos editables/reactivos usar
- * useMerchant() o getMerchantSync() del merchantsStore.
+ * @deprecated Fallback legacy. Devuelve undefined en producción porque
+ * SEED_MERCHANTS está vacío. Para datos reales usar `getMerchantSync()` del
+ * merchantsStore (hidratado desde API) o `useApiMerchants()`.
  */
 export function getMerchant(id: string): Merchant | undefined {
   return SEED_MERCHANTS.find((m) => m.id === id)

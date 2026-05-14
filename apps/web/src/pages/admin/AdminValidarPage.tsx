@@ -4,7 +4,6 @@ import { ScanLine, Hash, AlertCircle, Camera, Keyboard } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useValidateByCode } from '@/lib/merchantQueries'
 import { useApiValidateByCode } from '@/lib/apiQueries'
-import { refreshDemoActiveCoupon } from '@/lib/demoSeeder'
 import { cn } from '@/lib/cn'
 
 type Mode = 'qr' | 'code'
@@ -13,12 +12,6 @@ export function AdminValidarPage() {
   const { session } = useMerchantSession()
   const merchantId = session?.merchantId ?? ''
   const [mode, setMode] = useState<Mode>('code')
-
-  // Garantiza que siempre haya un cupón demo activo con código 123456 para
-  // probar la validación, incluso después de canjearlo varias veces.
-  useEffect(() => {
-    refreshDemoActiveCoupon()
-  }, [])
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
