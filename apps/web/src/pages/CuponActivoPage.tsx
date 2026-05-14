@@ -72,6 +72,7 @@ export function CuponActivoPage() {
           activationActions.markRedeemed(
             actId,
             res.activation.ahorroEstimado ?? calcAhorro(couponPorcentaje),
+            res.activation.montoTicket,
           )
           toast.success('¡Cupón canjeado!', 'El comercio confirmó tu descuento.')
           navigate('/canjeados', { replace: true })

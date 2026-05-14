@@ -254,8 +254,9 @@ export const activationActions = {
       ),
     }))
   },
-  /** Demo helper: simula que un comercio canjeó el cupón */
-  markRedeemed(activationId: string, ahorroEstimado?: number) {
+  /** Marca una activación como canjeada. Usado por el polling de
+   *  CuponActivoPage cuando el API confirma + por simular en modo demo. */
+  markRedeemed(activationId: string, ahorroEstimado?: number, montoTicket?: number) {
     update((s) => ({
       ...s,
       activations: s.activations.map((a) =>
@@ -265,6 +266,7 @@ export const activationActions = {
               status: 'canjeado' as ActivationStatus,
               redeemedAt: new Date().toISOString(),
               ahorroEstimado,
+              montoTicket: montoTicket ?? a.montoTicket,
             }
           : a,
       ),
