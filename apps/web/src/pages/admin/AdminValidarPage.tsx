@@ -68,10 +68,6 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   const [code, setCode] = useState('')
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
-  const isLaEsquina = merchantId === 'la-esquina'
-  // Sólo mostramos el banner del código demo a cuentas demo offline (id
-  // tipo slug). Comercios reales del API usan ObjectId 24-char hex.
-  const isApiMerchant = /^[0-9a-f]{24}$/i.test(merchantId)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -148,38 +144,6 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
             </button>
           </p>
 
-          {isLaEsquina && (
-            <button
-              type="button"
-              onClick={() => setCode('123456')}
-              className="flex items-start gap-3 rounded-2xl bg-amber-50 p-3 text-left ring-1 ring-amber-200 transition-all hover:-translate-y-0.5 hover:bg-amber-100"
-            >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-300 to-orange-400 text-white text-xs font-bold">
-                💡
-              </span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[11px] font-bold uppercase tracking-widest text-amber-700">
-                  Código demo · tap para autocompletar
-                </span>
-                <span className="mt-0.5 block font-mono text-base font-bold text-neutral-900">
-                  123 456
-                </span>
-                <span className="mt-0.5 block text-[11px] text-neutral-500">
-                  Marta Domínguez · 20% OFF en pizzas martes y miércoles
-                </span>
-              </span>
-            </button>
-          )}
-          {!isLaEsquina && !isApiMerchant && (
-            <div className="flex items-start gap-2.5 rounded-2xl bg-status-info-bg p-3 text-status-info-fg ring-1 ring-status-info/20">
-              <span className="text-base leading-none">💡</span>
-              <p className="text-xs leading-snug">
-                El código demo <span className="font-mono font-bold">123 456</span> solo
-                funciona si entrás como cajero de <span className="font-bold">La Esquina</span>.
-                Para validar un cupón real, pedile el código al cliente.
-              </p>
-            </div>
-          )}
         </>
       )}
     </div>
