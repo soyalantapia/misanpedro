@@ -1,19 +1,23 @@
 import { Quote } from 'lucide-react'
+import { AnimatedSection } from '@/components/AnimatedSection'
 
 export function UseCase() {
   return (
-    <section id="casos-de-uso" className="scroll-mt-20 px-6 py-24 sm:py-32">
+    <section id="casos-de-uso" className="scroll-mt-20 px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-5xl">
-        <div className="text-center">
+        <AnimatedSection className="text-center">
           <span className="text-xs font-bold uppercase tracking-widest text-accent-700">
             Caso de uso
           </span>
           <h2 className="mt-3 text-balance text-4xl font-bold leading-[1.1] tracking-tight text-neutral-900 sm:text-5xl">
             Un día en La Frutilla
           </h2>
-        </div>
+        </AnimatedSection>
 
-        <div className="mt-12 grid gap-8 rounded-3xl bg-gradient-to-br from-neutral-50 to-white p-6 ring-1 ring-neutral-200 sm:p-10 md:grid-cols-[320px_1fr]">
+        <AnimatedSection
+          delay={120}
+          className="mt-12 grid gap-8 rounded-2xl bg-gradient-to-br from-neutral-50 to-white p-6 ring-1 ring-neutral-200 sm:p-10 md:grid-cols-[320px_1fr]"
+        >
           {/* Foto placeholder */}
           <figure className="space-y-3">
             <div
@@ -38,7 +42,7 @@ export function UseCase() {
 
           {/* Quote + numbers */}
           <div className="flex flex-col">
-            <Quote size={24} className="text-accent-300" aria-hidden />
+            <Quote size={28} className="text-accent-300" aria-hidden />
             <blockquote className="mt-4 text-pretty text-xl leading-relaxed text-neutral-700 sm:text-2xl">
               "Empezamos un martes a las 10 de la mañana. Subí el primer cupón —25% en
               pizzas hasta el viernes— y a las 11 ya tenía 3 canjes. Para el viernes 48.
@@ -53,7 +57,7 @@ export function UseCase() {
               <Metric value="0" label="volantes" hint="impresos desde entonces" />
             </div>
           </div>
-        </div>
+        </AnimatedSection>
       </div>
     </section>
   )

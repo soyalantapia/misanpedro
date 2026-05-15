@@ -1,7 +1,19 @@
 import { MapPin, Mail, ArrowRight } from 'lucide-react'
 import { APP_URL, SIGNUP_URL, SUPPORT_EMAIL } from '@/lib/cn'
+import { AnimatedSection } from '@/components/AnimatedSection'
 
-const COLS = [
+type FooterLink = {
+  label: string
+  href: string
+  external?: boolean
+}
+
+type FooterColumn = {
+  title: string
+  links: readonly FooterLink[]
+}
+
+const COLS: readonly FooterColumn[] = [
   {
     title: 'Producto',
     links: [
@@ -24,22 +36,42 @@ const COLS = [
     title: 'Empresa',
     links: [
       { label: 'Contacto', href: `mailto:${SUPPORT_EMAIL}` },
-      { label: 'Términos y condiciones', href: `${APP_URL}/#/legal/terminos`, external: true },
+      {
+        label: 'Términos y condiciones',
+        href: `${APP_URL}/#/legal/terminos`,
+        external: true,
+      },
       { label: 'Privacidad', href: `${APP_URL}/#/legal/privacidad`, external: true },
     ],
   },
-] as const
+]
+
+/** Bandera AR mini-SVG (evita inconsistencias de emoji entre OS). */
+function ArFlag() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 12 8"
+      width={14}
+      height={10}
+      className="inline-block align-middle"
+    >
+      <rect width="12" height="8" fill="#74acdf" />
+      <rect y="2.67" width="12" height="2.67" fill="#fff" />
+      <circle cx="6" cy="4" r="0.8" fill="#f6b40e" />
+    </svg>
+  )
+}
 
 export function Footer() {
   const year = new Date().getFullYear()
   return (
     <footer className="relative overflow-hidden border-t border-neutral-200 bg-gradient-to-b from-white to-neutral-50 px-6 pt-20 pb-10">
-      {/* Subtle accent orb */}
       <div className="pointer-events-none absolute -top-32 right-0 h-[400px] w-[600px] rounded-full bg-accent-50/60 blur-3xl" />
 
       <div className="relative mx-auto max-w-6xl">
-        {/* Top: CTA banner inside footer */}
-        <div className="grid gap-10 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm sm:grid-cols-[1.3fr_1fr] sm:p-10 sm:items-center">
+        {/* Top: CTA banner */}
+        <AnimatedSection className="grid gap-10 rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm sm:grid-cols-[1.3fr_1fr] sm:items-center sm:p-10">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-accent-700">
               Última oportunidad
@@ -57,14 +89,20 @@ export function Footer() {
               className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
             >
               Empezar
-              <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight
+                size={16}
+                className="transition-transform group-hover:translate-x-0.5"
+              />
             </a>
           </div>
-        </div>
+        </AnimatedSection>
 
         {/* Main grid */}
-        <div className="mt-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          {/* Brand column */}
+        <AnimatedSection
+          delay={120}
+          className="mt-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]"
+        >
+          {/* Brand */}
           <div>
             <div className="flex items-center gap-2 font-bold tracking-tight">
               <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 text-white shadow-sm">
@@ -93,12 +131,13 @@ export function Footer() {
               </li>
             </ul>
 
-            <p className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-accent-700">
-              🇦🇷 Hecho en San Pedro
+            <p className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+              <ArFlag />
+              Hecho en San Pedro
             </p>
           </div>
 
-          {/* Nav columns */}
+          {/* Columns */}
           {COLS.map((col) => (
             <nav key={col.title} aria-label={col.title} className="text-sm">
               <p className="text-xs font-bold uppercase tracking-widest text-neutral-900">
@@ -109,7 +148,7 @@ export function Footer() {
                   <li key={l.label}>
                     <a
                       href={l.href}
-                      {...('external' in l && l.external
+                      {...(l.external
                         ? { target: '_blank', rel: 'noopener noreferrer' }
                         : {})}
                       className="transition-colors hover:text-neutral-900"
@@ -121,7 +160,7 @@ export function Footer() {
               </ul>
             </nav>
           ))}
-        </div>
+        </AnimatedSection>
 
         {/* Bottom bar */}
         <div className="mt-16 flex flex-col items-start gap-3 border-t border-neutral-200 pt-6 text-xs text-neutral-500 sm:flex-row sm:items-center sm:justify-between">

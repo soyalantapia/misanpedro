@@ -48,9 +48,10 @@ export function Hero() {
             </a>
             <a
               href="#precios"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-700 underline-offset-4 transition-colors hover:text-neutral-900 hover:underline"
+              className="group inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-700 transition-colors hover:text-neutral-900"
             >
-              Ver precio →
+              Ver precio
+              <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>
 
@@ -118,7 +119,7 @@ function HeroMockup() {
           <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-neutral-200">
             <div className="flex items-start gap-3">
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent-50 text-accent-700">
-                <Ticket size={16} />
+                <Ticket size={18} />
               </span>
               <div className="flex-1">
                 <div className="flex items-center justify-between gap-2">
@@ -171,7 +172,7 @@ function HeroMockup() {
           </p>
           <div className="mt-2 flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-full bg-white/15 ring-1 ring-white/30 backdrop-blur">
-              <User size={18} />
+              <User size={16} />
             </span>
             <div>
               <p className="font-bold">Carolina Pérez</p>
@@ -192,7 +193,7 @@ function HeroMockup() {
             aria-hidden
             className="pointer-events-none mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-xs font-bold text-accent-700"
           >
-            <MessageCircle size={12} />
+            <MessageCircle size={14} />
             Mandarle un WhatsApp
           </div>
         </div>

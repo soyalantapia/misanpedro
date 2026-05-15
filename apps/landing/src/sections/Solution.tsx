@@ -1,11 +1,12 @@
 import { ArrowRight, Smartphone, Hash, Heart } from 'lucide-react'
 import { SIGNUP_URL } from '@/lib/cn'
+import { AnimatedSection } from '@/components/AnimatedSection'
 
 export function Solution() {
   return (
-    <section className="px-6 py-24 sm:py-32">
+    <section className="px-6 py-20 sm:py-28">
       <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1.05fr_1fr] lg:items-center">
-        <div>
+        <AnimatedSection>
           <span className="text-xs font-bold uppercase tracking-widest text-accent-700">
             La solución
           </span>
@@ -38,10 +39,11 @@ export function Solution() {
             Empezar
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
           </a>
-        </div>
+        </AnimatedSection>
 
-        {/* Right: 3-step flow visual */}
-        <FlowVisual />
+        <AnimatedSection delay={120}>
+          <FlowVisual />
+        </AnimatedSection>
       </div>
     </section>
   )
@@ -73,18 +75,17 @@ const FLOW_STEPS = [
 
 function FlowVisual() {
   return (
-    <div className="relative rounded-3xl bg-gradient-to-br from-neutral-50 to-white p-6 ring-1 ring-neutral-200">
-      {/* Vertical connector line behind cards */}
+    <div className="relative rounded-2xl bg-gradient-to-br from-neutral-50 to-white p-6 ring-1 ring-neutral-200">
       <div className="absolute left-12 top-12 bottom-12 w-px bg-gradient-to-b from-accent-300 via-success to-neutral-900 opacity-40" />
 
       <div className="relative space-y-4">
         {FLOW_STEPS.map((s, i) => (
           <div
             key={s.title}
-            className="flex items-start gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-100"
+            className="group flex items-start gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-100 transition-all hover:-translate-x-1 hover:shadow-md"
           >
             <span
-              className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${s.bg} ${s.fg}`}
+              className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${s.bg} ${s.fg} transition-transform group-hover:scale-110`}
             >
               <s.icon size={18} />
             </span>

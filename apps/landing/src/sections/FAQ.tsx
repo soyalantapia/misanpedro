@@ -1,4 +1,5 @@
 import { ChevronDown } from 'lucide-react'
+import { AnimatedSection } from '@/components/AnimatedSection'
 
 const FAQS = [
   {
@@ -33,30 +34,40 @@ const FAQS = [
 
 export function FAQ() {
   return (
-    <section id="faq" className="scroll-mt-20 px-6 py-24 sm:py-32">
+    <section id="faq" className="scroll-mt-20 px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-3xl">
-        <div className="text-center">
+        <AnimatedSection className="text-center">
           <span className="text-xs font-bold uppercase tracking-widest text-accent-700">
             FAQ
           </span>
           <h2 className="mt-3 text-balance text-4xl font-bold leading-[1.1] tracking-tight text-neutral-900 sm:text-5xl">
             Preguntas frecuentes
           </h2>
-        </div>
+        </AnimatedSection>
 
-        <dl className="mt-12 divide-y divide-neutral-200 rounded-3xl bg-white px-6 ring-1 ring-neutral-200 sm:px-8">
-          {FAQS.map((qa, i) => (
-            <details key={qa.q} className="group py-6" open={i === 0}>
-              <summary className="flex cursor-pointer list-none items-start justify-between gap-4">
-                <dt className="text-base font-bold text-neutral-900 sm:text-lg">{qa.q}</dt>
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-neutral-100 text-neutral-500 transition-transform group-open:rotate-180">
-                  <ChevronDown size={14} />
-                </span>
-              </summary>
-              <dd className="mt-3 text-pretty leading-relaxed text-neutral-600">{qa.a}</dd>
-            </details>
-          ))}
-        </dl>
+        <AnimatedSection
+          delay={120}
+          className="mt-12 divide-y divide-neutral-200 rounded-2xl bg-white px-6 ring-1 ring-neutral-200 sm:px-8"
+          as="div"
+        >
+          <dl>
+            {FAQS.map((qa, i) => (
+              <details key={qa.q} className="group py-6 pr-2" open={i === 0}>
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4">
+                  <dt className="text-base font-bold text-neutral-900 sm:text-lg">
+                    {qa.q}
+                  </dt>
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-neutral-100 text-neutral-500 transition-transform group-open:rotate-180">
+                    <ChevronDown size={14} />
+                  </span>
+                </summary>
+                <dd className="mt-3 text-pretty leading-relaxed text-neutral-600">
+                  {qa.a}
+                </dd>
+              </details>
+            ))}
+          </dl>
+        </AnimatedSection>
       </div>
     </section>
   )

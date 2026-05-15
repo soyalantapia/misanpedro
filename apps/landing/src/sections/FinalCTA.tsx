@@ -1,10 +1,11 @@
 import { ArrowRight } from 'lucide-react'
 import { SIGNUP_URL } from '@/lib/cn'
+import { AnimatedSection } from '@/components/AnimatedSection'
 
 export function FinalCTA() {
   return (
-    <section className="px-6 pb-24 pt-12 sm:pb-32">
-      <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-500 via-accent-600 to-accent-800 p-10 text-center text-white shadow-2xl shadow-accent-500/20 sm:p-16">
+    <section className="px-6 pb-20 pt-12 sm:pb-28">
+      <AnimatedSection className="relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-500 via-accent-600 to-accent-800 p-10 text-center text-white shadow-2xl shadow-accent-500/20 sm:p-16">
         {/* Decorative orbs */}
         <div className="pointer-events-none absolute -top-32 left-1/2 h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 right-10 h-48 w-48 rounded-full bg-accent-300/30 blur-2xl" />
@@ -25,7 +26,7 @@ export function FinalCTA() {
               href={SIGNUP_URL}
               className="group inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-accent-700 shadow-lg transition-all hover:-translate-y-0.5 hover:bg-neutral-50"
             >
-              Empezar
+              Sumar mi comercio
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>
@@ -34,7 +35,7 @@ export function FinalCTA() {
             Cancelás cuando quieras · Sin permanencia · Hecho en San Pedro
           </p>
         </div>
-      </div>
+      </AnimatedSection>
     </section>
   )
 }

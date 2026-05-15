@@ -1,5 +1,6 @@
 import { ArrowRight, Check, Sparkles } from 'lucide-react'
 import { SIGNUP_URL } from '@/lib/cn'
+import { AnimatedSection } from '@/components/AnimatedSection'
 
 const INCLUDED = [
   'Cupones ilimitados',
@@ -14,8 +15,8 @@ const INCLUDED = [
 
 export function Pricing() {
   return (
-    <section id="precios" className="scroll-mt-20 px-6 py-24 sm:py-32">
-      <div className="mx-auto max-w-3xl text-center">
+    <section id="precios" className="scroll-mt-20 bg-neutral-50/60 px-6 py-20 sm:py-28">
+      <AnimatedSection className="mx-auto max-w-3xl text-center">
         <span className="text-xs font-bold uppercase tracking-widest text-accent-700">
           Precios
         </span>
@@ -23,20 +24,20 @@ export function Pricing() {
           Un solo plan. Sin sorpresas.
         </h2>
         <p className="mt-5 text-pretty text-lg leading-relaxed text-neutral-600">
-          Plan único mensual. Cobramos por MercadoPago. Cancelás cuando quieras desde tu
-          panel.
+          Plan único mensual. Cobramos por MercadoPago. Cancelás cuando quieras desde
+          tu panel.
         </p>
-      </div>
+      </AnimatedSection>
 
-      {/* Billboard horizontal full-bleed */}
-      <div className="mx-auto mt-14 max-w-7xl">
+      {/* Billboard horizontal */}
+      <AnimatedSection delay={100} className="mx-auto mt-12 max-w-6xl">
         <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-500 via-accent-600 to-accent-800 shadow-2xl shadow-accent-500/20">
           {/* Decorative orbs */}
           <div className="pointer-events-none absolute -top-32 -left-20 h-[500px] w-[500px] rounded-full bg-white/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-32 -right-20 h-[500px] w-[500px] rounded-full bg-accent-300/30 blur-3xl" />
 
-          <div className="relative grid gap-10 p-8 sm:p-12 lg:grid-cols-[1.4fr_1fr] lg:gap-16 lg:p-16">
-            {/* ─── LEFT: copy + features ─────────────────────────────── */}
+          <div className="relative grid gap-10 p-8 sm:p-12 lg:grid-cols-[1.4fr_1fr] lg:gap-16 lg:p-14">
+            {/* LEFT */}
             <div className="text-white">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white ring-1 ring-white/30 backdrop-blur">
                 <Sparkles size={11} />
@@ -47,7 +48,7 @@ export function Pricing() {
                 Plan Comercio
               </h3>
               <p className="mt-2 text-base text-white/75 sm:text-lg">
-                Todo lo que necesitás para fidelizar a tu clientela.
+                Todo lo que necesitás para que tus clientes vuelvan.
                 <br className="hidden sm:inline" />
                 Sin tiers, sin add-ons, sin sorpresas.
               </p>
@@ -67,8 +68,8 @@ export function Pricing() {
               </ul>
             </div>
 
-            {/* ─── RIGHT: price + CTA ────────────────────────────────── */}
-            <div className="flex flex-col justify-center rounded-3xl bg-white p-8 shadow-xl sm:p-10">
+            {/* RIGHT */}
+            <div className="flex flex-col justify-center rounded-2xl bg-white p-8 shadow-xl sm:p-10">
               <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">
                 Mensualidad
               </p>
@@ -83,14 +84,14 @@ export function Pricing() {
               </div>
 
               <p className="mt-1 flex items-baseline gap-2">
-                <span className="bg-gradient-to-br from-accent-600 to-accent-800 bg-clip-text text-6xl font-bold tabular-nums text-transparent">
+                <span className="bg-gradient-to-br from-accent-600 to-accent-800 bg-clip-text text-5xl font-bold tabular-nums text-transparent sm:text-6xl">
                   $25.000
                 </span>
                 <span className="text-base font-medium text-neutral-500">/mes</span>
               </p>
 
-              <p className="mt-3 text-sm font-semibold text-accent-700">
-                Congelado de por vida 🔒
+              <p className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-accent-700">
+                <span aria-hidden>🔒</span> Congelado de por vida
               </p>
 
               <a
@@ -111,7 +112,6 @@ export function Pricing() {
           </div>
         </div>
 
-        {/* Footnote */}
         <p className="mx-auto mt-6 max-w-3xl text-center text-xs leading-relaxed text-neutral-500">
           <strong className="text-neutral-700">
             Esta oferta vale hasta los primeros 20 comercios adheridos.
@@ -119,7 +119,7 @@ export function Pricing() {
           El precio queda congelado de por vida aunque después suba para nuevos
           comercios.
         </p>
-      </div>
+      </AnimatedSection>
     </section>
   )
 }
