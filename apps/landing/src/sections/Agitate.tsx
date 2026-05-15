@@ -1,20 +1,21 @@
 export function Agitate() {
   return (
-    <section className="relative overflow-hidden bg-neutral-950 px-6 py-24 text-white sm:py-32">
-      {/* Subtle radial gradient backdrop */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(105,94,222,0.18),transparent_60%)]" />
+    <section className="relative overflow-hidden bg-gradient-to-br from-accent-50 via-white to-accent-100 px-6 py-24 sm:py-32">
+      {/* Soft accent orbs para dar profundidad */}
+      <div className="pointer-events-none absolute -top-32 left-1/3 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-accent-200/50 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 right-0 h-[400px] w-[700px] rounded-full bg-accent-100 blur-3xl" />
 
       <div className="relative mx-auto max-w-4xl text-center">
-        <h2 className="text-balance text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.1] tracking-tight">
+        <h2 className="text-balance text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-neutral-900">
           Cada cliente que entra a tu local
           <br />
           es una relación que{' '}
-          <span className="bg-gradient-to-br from-accent-300 to-accent-500 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-br from-accent-500 to-accent-700 bg-clip-text text-transparent">
             se evapora
           </span>{' '}
           apenas cruza la puerta de salida.
         </h2>
-        <p className="mt-8 text-pretty text-lg leading-relaxed text-white/60">
+        <p className="mt-8 text-pretty text-lg leading-relaxed text-neutral-600">
           Y vos seguís bajando la persiana sin saber si Carlos vuelve mañana o no.
         </p>
       </div>

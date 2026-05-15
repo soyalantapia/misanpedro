@@ -28,62 +28,97 @@ export function Pricing() {
         </p>
       </div>
 
-      <div className="mx-auto mt-14 max-w-md">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-neutral-950 to-neutral-900 p-8 text-white shadow-2xl ring-1 ring-white/10">
-          {/* Decorative gradient orb */}
-          <div className="pointer-events-none absolute -top-20 right-0 h-48 w-48 rounded-full bg-accent-500/30 blur-3xl" />
+      {/* Billboard horizontal full-bleed */}
+      <div className="mx-auto mt-14 max-w-7xl">
+        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-500 via-accent-600 to-accent-800 shadow-2xl shadow-accent-500/20">
+          {/* Decorative orbs */}
+          <div className="pointer-events-none absolute -top-32 -left-20 h-[500px] w-[500px] rounded-full bg-white/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-32 -right-20 h-[500px] w-[500px] rounded-full bg-accent-300/30 blur-3xl" />
 
-          <div className="relative">
-            <span className="inline-flex items-center gap-1 rounded-full bg-accent-500/15 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-accent-200 ring-1 ring-accent-500/30">
-              <Sparkles size={10} />
-              Precio fundador
-            </span>
+          <div className="relative grid gap-10 p-8 sm:p-12 lg:grid-cols-[1.4fr_1fr] lg:gap-16 lg:p-16">
+            {/* ─── LEFT: copy + features ─────────────────────────────── */}
+            <div className="text-white">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white ring-1 ring-white/30 backdrop-blur">
+                <Sparkles size={11} />
+                Precio fundador
+              </span>
 
-            <div className="mt-5">
-              <p className="font-bold">Plan Comercio</p>
-              <p className="mt-1 text-sm text-white/60">Para PyMEs adheridas al programa</p>
+              <h3 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+                Plan Comercio
+              </h3>
+              <p className="mt-2 text-base text-white/75 sm:text-lg">
+                Todo lo que necesitás para fidelizar a tu clientela.
+                <br className="hidden sm:inline" />
+                Sin tiers, sin add-ons, sin sorpresas.
+              </p>
+
+              <ul className="mt-8 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                {INCLUDED.map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-2.5 text-sm text-white/90"
+                  >
+                    <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur">
+                      <Check size={11} strokeWidth={3} />
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <div className="mt-7 flex items-end gap-3">
-              <span className="text-base font-bold text-white/40 line-through tabular-nums">
-                $45.000
-              </span>
-              <p className="text-6xl font-bold tabular-nums leading-none">
-                $25.000
-                <span className="ml-1 text-base font-medium text-white/60">/mes</span>
+            {/* ─── RIGHT: price + CTA ────────────────────────────────── */}
+            <div className="flex flex-col justify-center rounded-3xl bg-white p-8 shadow-xl sm:p-10">
+              <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                Mensualidad
+              </p>
+
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-lg font-bold text-neutral-400 line-through tabular-nums">
+                  $45.000
+                </span>
+                <span className="rounded-full bg-accent-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-700">
+                  −44%
+                </span>
+              </div>
+
+              <p className="mt-1 flex items-baseline gap-2">
+                <span className="bg-gradient-to-br from-accent-600 to-accent-800 bg-clip-text text-6xl font-bold tabular-nums text-transparent">
+                  $25.000
+                </span>
+                <span className="text-base font-medium text-neutral-500">/mes</span>
+              </p>
+
+              <p className="mt-3 text-sm font-semibold text-accent-700">
+                Congelado por 12 meses
+              </p>
+
+              <a
+                href={SIGNUP_URL}
+                className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-neutral-900 px-6 py-4 text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-neutral-800"
+              >
+                Empezar gratis 14 días
+                <ArrowRight
+                  size={16}
+                  className="transition-transform group-hover:translate-x-0.5"
+                />
+              </a>
+
+              <p className="mt-4 text-center text-xs leading-relaxed text-neutral-500">
+                14 días gratis · Sin tarjeta
+                <br />
+                Cancelás cuando quieras
               </p>
             </div>
-            <p className="mt-3 text-xs font-semibold text-accent-200">
-              Congelado por 12 meses si te sumás durante la beta
-            </p>
-
-            <ul className="mt-8 space-y-3 text-sm">
-              {INCLUDED.map((item) => (
-                <li key={item} className="flex items-start gap-2.5">
-                  <Check size={14} className="mt-0.5 shrink-0 text-accent-300" />
-                  <span className="text-white/85">{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            <a
-              href={SIGNUP_URL}
-              className="group mt-9 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-6 py-4 text-sm font-bold text-neutral-900 transition-all hover:-translate-y-0.5 hover:bg-neutral-100"
-            >
-              Empezar gratis 14 días
-              <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
-            </a>
-
-            <p className="mt-4 text-center text-xs text-white/50">
-              14 días gratis · Sin tarjeta · Cancelás cuando quieras
-            </p>
           </div>
         </div>
 
-        <p className="mx-auto mt-6 max-w-md text-center text-xs leading-relaxed text-neutral-500">
+        {/* Footnote */}
+        <p className="mx-auto mt-6 max-w-3xl text-center text-xs leading-relaxed text-neutral-500">
           Después del trial, $25.000/mes.{' '}
           <strong className="text-neutral-700">
-            Si te sumás durante la beta, ese precio queda congelado durante 12 meses
+            Si te sumás entre los primeros 20 comercios, ese precio queda congelado
+            durante 12 meses
           </strong>{' '}
           aunque después suba para nuevos comercios.
         </p>

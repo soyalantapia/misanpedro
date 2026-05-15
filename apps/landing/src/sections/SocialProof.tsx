@@ -16,7 +16,7 @@ export function SocialProof() {
         <div className="flex flex-col items-center gap-2 text-center">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-accent-700">
             <Sparkles size={11} />
-            Beta abierta · Primeros 20 comercios
+            Programa fundador · Primeros 20 comercios
           </span>
           {/* H2 visualmente sutil pero presente para SEO + jerarquía */}
           <h2 className="text-balance text-base font-semibold leading-snug text-neutral-700 sm:text-lg">
