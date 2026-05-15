@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://comercios.misanpedro.app/sitemap.xml
+Sitemap: https://soyalantapia.github.io/misanpedro/comercios/sitemap.xml

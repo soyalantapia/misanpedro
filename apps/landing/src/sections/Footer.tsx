@@ -1,5 +1,5 @@
 import { MapPin, Mail, ArrowRight } from 'lucide-react'
-import { APP_URL, SIGNUP_URL, SUPPORT_EMAIL } from '@/lib/cn'
+import { APP_URL, LOGIN_URL, SIGNUP_URL, SUPPORT_EMAIL } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
 
 type FooterLink = {
@@ -27,14 +27,16 @@ const COLS: readonly FooterColumn[] = [
   {
     title: 'Para vecinos',
     links: [
-      { label: 'Descargar la app', href: APP_URL, external: true },
-      { label: 'Comercios adheridos', href: `${APP_URL}/#/descuentos`, external: true },
-      { label: 'Cómo canjear', href: `${APP_URL}/#/mis-cupones`, external: true },
+      { label: 'Ver descuentos', href: `${APP_URL}/#/`, external: true },
+      { label: 'Crear cuenta de vecino', href: `${APP_URL}/#/registro`, external: true },
+      { label: 'Iniciar sesión', href: `${APP_URL}/#/login`, external: true },
     ],
   },
   {
-    title: 'Empresa',
+    title: 'Comercios',
     links: [
+      { label: 'Empezar', href: SIGNUP_URL, external: true },
+      { label: 'Iniciar sesión', href: LOGIN_URL, external: true },
       { label: 'Contacto', href: `mailto:${SUPPORT_EMAIL}` },
       {
         label: 'Términos y condiciones',
@@ -190,7 +192,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="hover:text-neutral-700"
             >
-              app.misanpedro.app ↗
+              App del vecino ↗
             </a>
           </div>
         </div>
