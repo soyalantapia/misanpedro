@@ -1,5 +1,5 @@
 import { ArrowRight, MessageCircle, ShoppingBag, Ticket, User } from 'lucide-react'
-import { SIGNUP_URL, WHATSAPP_URL } from '@/lib/cn'
+import { SIGNUP_URL } from '@/lib/cn'
 
 export function Hero() {
   return (
@@ -41,19 +41,16 @@ export function Hero() {
           >
             <a
               href={SIGNUP_URL}
-              className="group inline-flex items-center gap-2 rounded-full bg-neutral-900 px-7 py-4 text-sm font-bold text-white shadow-lg shadow-neutral-900/20 transition-all hover:-translate-y-0.5 hover:shadow-xl"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-7 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
             >
-              Empezar gratis 14 días
+              Empezar
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
             </a>
             <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-neutral-700 ring-1 ring-neutral-200 transition-all hover:bg-neutral-50"
+              href="#precios"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-700 underline-offset-4 transition-colors hover:text-neutral-900 hover:underline"
             >
-              <MessageCircle size={16} className="text-success" />
-              Hablar por WhatsApp
+              Ver precio →
             </a>
           </div>
 
@@ -61,7 +58,7 @@ export function Hero() {
             className="animate-fade-up mt-6 text-xs text-neutral-500"
             style={{ animationDelay: '240ms' }}
           >
-            Sin tarjeta · Cancelás cuando quieras · Soporte por WhatsApp
+            Cancelás cuando quieras · Precio congelado de por vida · Hecho en San Pedro
           </p>
         </div>
 

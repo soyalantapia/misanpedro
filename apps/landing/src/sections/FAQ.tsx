@@ -25,6 +25,10 @@ const FAQS = [
     q: '¿Funciona con WhatsApp de verdad o es un link?',
     a: 'WhatsApp Business integrado de verdad: usás tu propio número, mandás mensajes desde la plataforma, ves quién leyó y quién respondió. No es un "compartir por WhatsApp" — es una herramienta de campaña real.',
   },
+  {
+    q: '¿El precio de $25.000/mes es para siempre?',
+    a: 'Sí, si te sumás dentro de los primeros 20 comercios queda congelado de por vida. Aunque después subamos el precio para nuevos comercios, vos seguís pagando $25.000/mes mientras tu cuenta esté activa. Si pausás y volvés, conservás el precio.',
+  },
 ] as const
 
 export function FAQ() {

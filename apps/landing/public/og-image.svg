@@ -49,14 +49,14 @@
 
   <!-- CTA pill -->
   <g transform="translate(80, 520)">
-    <rect width="300" height="60" rx="30" fill="#333132"/>
-    <text x="150" y="38" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif" font-size="18" font-weight="700" fill="#ffffff">
-      Empezar gratis 14 días →
+    <rect width="220" height="60" rx="30" fill="url(#logo)"/>
+    <text x="110" y="38" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif" font-size="18" font-weight="700" fill="#ffffff">
+      Empezar →
     </text>
   </g>
 
   <!-- Trust strip -->
   <text x="80" y="600" font-family="-apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif" font-size="14" font-weight="500" fill="#8b8589">
-    Sin tarjeta · Cancelás cuando quieras · Hecho en San Pedro
+    Cancelás cuando quieras · Precio congelado de por vida · Hecho en San Pedro
   </text>
 </svg>

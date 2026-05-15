@@ -9,7 +9,7 @@ const INCLUDED = [
   'Validación con código de 6 dígitos',
   'MercadoPago integrado',
   'Reportes en tiempo real',
-  'Soporte por WhatsApp',
+  'Soporte dedicado',
 ] as const
 
 export function Pricing() {
@@ -40,7 +40,7 @@ export function Pricing() {
             <div className="text-white">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white ring-1 ring-white/30 backdrop-blur">
                 <Sparkles size={11} />
-                Precio fundador
+                Precio fundador · Hasta los primeros 20 comercios
               </span>
 
               <h3 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
@@ -90,14 +90,14 @@ export function Pricing() {
               </p>
 
               <p className="mt-3 text-sm font-semibold text-accent-700">
-                Congelado por 12 meses
+                Congelado de por vida 🔒
               </p>
 
               <a
                 href={SIGNUP_URL}
-                className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-neutral-900 px-6 py-4 text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-neutral-800"
+                className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
               >
-                Empezar gratis 14 días
+                Empezar
                 <ArrowRight
                   size={16}
                   className="transition-transform group-hover:translate-x-0.5"
@@ -105,9 +105,7 @@ export function Pricing() {
               </a>
 
               <p className="mt-4 text-center text-xs leading-relaxed text-neutral-500">
-                14 días gratis · Sin tarjeta
-                <br />
-                Cancelás cuando quieras
+                Cancelás cuando quieras desde tu panel
               </p>
             </div>
           </div>
@@ -115,12 +113,11 @@ export function Pricing() {
 
         {/* Footnote */}
         <p className="mx-auto mt-6 max-w-3xl text-center text-xs leading-relaxed text-neutral-500">
-          Después del trial, $25.000/mes.{' '}
           <strong className="text-neutral-700">
-            Si te sumás entre los primeros 20 comercios, ese precio queda congelado
-            durante 12 meses
+            Esta oferta vale hasta los primeros 20 comercios adheridos.
           </strong>{' '}
-          aunque después suba para nuevos comercios.
+          El precio queda congelado de por vida aunque después suba para nuevos
+          comercios.
         </p>
       </div>
     </section>

@@ -18,7 +18,7 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section className="relative overflow-hidden bg-neutral-50 px-6 py-24 sm:py-32">
+    <section id="como-funciona" className="relative scroll-mt-20 overflow-hidden bg-neutral-50 px-6 py-24 sm:py-32">
       {/* Soft accent backdrop */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[400px] bg-gradient-to-b from-accent-50 to-transparent" />
 

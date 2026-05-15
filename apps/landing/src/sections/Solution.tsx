@@ -33,9 +33,9 @@ export function Solution() {
 
           <a
             href={SIGNUP_URL}
-            className="group mt-9 inline-flex items-center gap-2 rounded-full bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-neutral-900/15 transition-all hover:-translate-y-0.5 hover:shadow-xl"
+            className="group mt-9 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
           >
-            Empezar gratis 14 días
+            Empezar
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
           </a>
         </div>
