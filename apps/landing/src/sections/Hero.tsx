@@ -189,13 +189,15 @@ function HeroMockup() {
             <Stat label="Cumple" value="11 abr" hint="Próximo en 14 días" />
           </div>
 
-          <button
-            type="button"
-            className="mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-xs font-bold text-accent-700 transition-all hover:bg-white/90"
+          {/* Decorativo: simula el botón del panel del comercio. NO interactivo
+              en la landing — el flujo real vive en la app. */}
+          <div
+            aria-hidden
+            className="pointer-events-none mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-xs font-bold text-accent-700"
           >
             <MessageCircle size={12} />
             Mandarle un WhatsApp
-          </button>
+          </div>
         </div>
       </div>
     </div>

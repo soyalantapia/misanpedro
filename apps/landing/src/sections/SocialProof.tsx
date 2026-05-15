@@ -18,10 +18,11 @@ export function SocialProof() {
             <Sparkles size={11} />
             Beta abierta · Primeros 20 comercios
           </span>
-          <p className="text-sm text-neutral-600">
-            Precio fundador <strong className="text-neutral-900">$25.000/mes</strong> congelado
-            por 12 meses
-          </p>
+          {/* H2 visualmente sutil pero presente para SEO + jerarquía */}
+          <h2 className="text-balance text-base font-semibold leading-snug text-neutral-700 sm:text-lg">
+            Precio fundador <strong className="text-neutral-900">$25.000/mes</strong>{' '}
+            congelado por 12 meses
+          </h2>
         </div>
 
         {/* Placeholder de logos hasta tener los reales */}

@@ -42,7 +42,7 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section id="funciones" className="px-6 py-24 sm:py-32">
+    <section id="funciones" className="scroll-mt-20 px-6 py-24 sm:py-32">
       <div className="mx-auto max-w-3xl text-center">
         <span className="text-xs font-bold uppercase tracking-widest text-accent-700">
           Todo lo que necesitás

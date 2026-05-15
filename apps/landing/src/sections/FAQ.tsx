@@ -29,7 +29,7 @@ const FAQS = [
 
 export function FAQ() {
   return (
-    <section id="faq" className="px-6 py-24 sm:py-32">
+    <section id="faq" className="scroll-mt-20 px-6 py-24 sm:py-32">
       <div className="mx-auto max-w-3xl">
         <div className="text-center">
           <span className="text-xs font-bold uppercase tracking-widest text-accent-700">

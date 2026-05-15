@@ -6,6 +6,12 @@
       "runtimeExecutable": "/opt/homebrew/opt/node@22/bin/npm",
       "runtimeArgs": ["run", "dev", "--prefix", "client"],
       "port": 5180
+    },
+    {
+      "name": "landing",
+      "runtimeExecutable": "true",
+      "runtimeArgs": [],
+      "port": 5181
     }
   ]
 }
