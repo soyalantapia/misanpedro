@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://comercios.misanpedro.app/sitemap.xml
