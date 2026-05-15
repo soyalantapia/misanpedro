@@ -232,7 +232,7 @@ export function AdminClienteDetailPage() {
             <a
               href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}`}
               target="_blank"
-              rel="noreferrer"
+              rel="noreferrer noopener"
               className="inline-flex items-center gap-1 text-accent-700 hover:underline"
             >
               {user.whatsapp} <MessageCircle size={11} />
@@ -328,7 +328,7 @@ export function AdminClienteDetailPage() {
           <a
             href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}`}
             target="_blank"
-            rel="noreferrer"
+            rel="noreferrer noopener"
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
           >
             <MessageCircle size={16} /> Escribir por WhatsApp

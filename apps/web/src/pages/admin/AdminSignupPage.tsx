@@ -16,9 +16,12 @@ import { useToast } from '@/components/Toast'
 import { cn } from '@/lib/cn'
 import { billing } from '@/lib/api'
 
-const PRECIO_NETO = 25_000
-const IVA_RATE = 0.21
-const PRECIO_TOTAL = Math.round(PRECIO_NETO * (1 + IVA_RATE))
+/**
+ * Precio único $25.000/mes para el comercio. Es el precio FINAL que ve
+ * el usuario en la landing comercial — no se le suma IVA arriba.
+ * El backoffice maneja el IVA dentro de la factura.
+ */
+const PRECIO_TOTAL = 25_000
 
 type Step = 'datos' | 'fiscal' | 'pago' | 'listo'
 type CondicionFiscal = 'monotributo' | 'responsable_inscripto' | 'consumidor_final'
@@ -195,7 +198,7 @@ export function AdminSignupPage() {
           </div>
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-accent-700">
-              Sumá tu comercio · ${PRECIO_NETO.toLocaleString('es-AR')} / mes + IVA
+              Sumá tu comercio · ${PRECIO_TOTAL.toLocaleString('es-AR')} / mes
             </p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900">
               {step === 'datos' && 'Datos del comercio'}
@@ -206,7 +209,7 @@ export function AdminSignupPage() {
             <p className="mt-1 text-sm text-neutral-500">
               {step === 'datos' && '3 minutos · Sin permanencia'}
               {step === 'fiscal' && 'Para emitir tu factura A o C'}
-              {step === 'pago' && `${PRECIO_TOTAL.toLocaleString('es-AR')} ARS / mes (IVA incluido)`}
+              {step === 'pago' && `${PRECIO_TOTAL.toLocaleString('es-AR')} ARS / mes · Precio congelado de por vida`}
               {step === 'listo' && 'Te estamos llevando al panel…'}
             </p>
           </div>
@@ -554,7 +557,7 @@ function PagoStep({
             <span className="ml-1 text-base font-normal text-accent-50">/ mes</span>
           </p>
           <p className="mt-1 text-xs text-accent-50/90">
-            ${PRECIO_NETO.toLocaleString('es-AR')} + IVA · Sin permanencia · Cancelás cuando quieras
+            Precio congelado de por vida · Sin permanencia · Cancelás cuando quieras
           </p>
         </div>
         <div className="px-5 pt-4 pb-3">

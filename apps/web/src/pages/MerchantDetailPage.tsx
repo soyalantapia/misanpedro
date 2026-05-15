@@ -97,7 +97,7 @@ export function MerchantDetailPage() {
           <a
             href={mapsUrl}
             target="_blank"
-            rel="noreferrer"
+            rel="noreferrer noopener"
             className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-accent-700 hover:text-accent-600"
           >
             Abrir en Google Maps <ExternalLink size={12} />

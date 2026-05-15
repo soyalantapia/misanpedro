@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// Deploys apps/web/dist a la rama gh-pages.
+// Deploys apps/web/dist a la rama gh-pages (root).
+// Preserva el subdirectorio /comercios/ (landing).
 // Asume que ya corriste `pnpm --filter @misanpedro/web build`.
 
 import { execSync } from 'node:child_process'
-import { existsSync, mkdtempSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -11,6 +12,7 @@ const ROOT = process.cwd().endsWith('/apps/web')
   ? join(process.cwd(), '../..')
   : process.cwd()
 const DIST = join(ROOT, 'apps/web/dist')
+const PRESERVED_DIRS = ['comercios'] // landing vive acá, no la pises
 
 if (!existsSync(DIST)) {
   console.error(`❌ No existe ${DIST}. Corré primero: pnpm --filter @misanpedro/web build`)
@@ -26,15 +28,24 @@ const tmp = mkdtempSync(join(tmpdir(), 'msp-gh-'))
 
 try {
   sh(`git -C "${ROOT}" worktree add "${tmp}" gh-pages`)
-  sh(`find "${tmp}" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +`)
+
+  // Borrar todo del worktree EXCEPTO .git, .nojekyll, y los PRESERVED_DIRS
+  const entries = readdirSync(tmp)
+  for (const entry of entries) {
+    if (entry === '.git' || entry === '.nojekyll' || PRESERVED_DIRS.includes(entry)) continue
+    rmSync(join(tmp, entry), { recursive: true, force: true })
+  }
+
   sh(`cp -R "${DIST}/." "${tmp}"`)
   sh(`touch "${tmp}/.nojekyll"`)
   sh(`git -C "${tmp}" add -A`)
   try {
-    sh(`git -C "${tmp}" commit -m "Deploy: $(date +%Y-%m-%d-%H%M)"`)
+    sh(`git -C "${tmp}" commit -m "Deploy web: $(date +%Y-%m-%d-%H%M)"`)
     sh(`git -C "${tmp}" push origin gh-pages`)
-    console.log('✅ Deployed to gh-pages')
-  } catch (e) {
+    console.log('\n✅ Deployed to gh-pages')
+    console.log('→ PWA vecino: https://soyalantapia.github.io/misanpedro/')
+    console.log('→ Landing:    https://soyalantapia.github.io/misanpedro/comercios/  (preservado)')
+  } catch {
     console.log('ℹ️  Nada para commitear (no hay cambios en dist).')
   }
 } finally {
