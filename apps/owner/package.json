@@ -1,0 +1,31 @@
+{
+  "name": "@misanpedro/owner",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5182",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --port 5182",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "lucide-react": "^1.14.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.2",
+    "recharts": "^3.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.4",
+    "@types/node": "^24.12.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "tailwindcss": "^4.2.4",
+    "typescript": "~6.0.2",
+    "vite": "^7.3.2"
+  }
+}
