@@ -17,7 +17,6 @@
  *   DEFAULT_TENANT_SLUG=otrociudad pnpm ...
  */
 
-import 'dotenv/config'
 import mongoose from 'mongoose'
 import {
   App,
@@ -47,8 +46,9 @@ async function main() {
     `\n${DRY_RUN ? '🔍 DRY RUN' : '🚀 RUNNING'} · slug default: "${DEFAULT_SLUG}"\n`,
   )
 
-  await mongoose.connect(URI!)
-  console.log('[migrate] mongo conectado')
+  // Mismo dbName que usa el API en src/db/connection.ts.
+  await mongoose.connect(URI!, { dbName: process.env.MONGODB_DB ?? 'misanpedro' })
+  console.log('[migrate] mongo conectado · db:', mongoose.connection.name)
 
   // 1) Asegurar que existe la App "sanpedro" (o el slug provisto).
   let app = await App.findOne({ slug: DEFAULT_SLUG })

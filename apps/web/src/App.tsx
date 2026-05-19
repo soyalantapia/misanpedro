@@ -29,8 +29,22 @@ import { PrivacidadPage } from '@/pages/legal/PrivacidadPage'
 import { ToastProvider } from '@/components/Toast'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { ApiSync } from '@/components/ApiSync'
+import { useTenant } from '@/lib/tenant'
+import { TenantSelectorPage } from '@/pages/TenantSelectorPage'
 
 export default function App() {
+  const { slug } = useTenant()
+
+  // Sin tenant resuelto → mostrar selector de ciudades.
+  // El selector setea localStorage y recarga, cuando vuelve ya hay slug.
+  if (!slug) {
+    return (
+      <ToastProvider>
+        <TenantSelectorPage />
+      </ToastProvider>
+    )
+  }
+
   return (
     <ToastProvider>
       <ApiSync />

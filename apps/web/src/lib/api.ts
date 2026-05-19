@@ -56,6 +56,18 @@ async function request<T>(
   }
   if (access) finalHeaders.Authorization = `Bearer ${access}`
 
+  // Multi-tenant: pasamos el slug via header X-Tenant-Slug en cada request.
+  // Importamos perezosamente para evitar ciclo (api.ts ↔ tenant.ts).
+  if (!finalHeaders['X-Tenant-Slug']) {
+    try {
+      const { getTenantSnapshot } = await import('./tenant')
+      const slug = getTenantSnapshot().slug
+      if (slug) finalHeaders['X-Tenant-Slug'] = slug
+    } catch {
+      /* tenant module no disponible — sin header */
+    }
+  }
+
   const res = await fetch(`${BASE}${path}`, { ...rest, headers: finalHeaders })
 
   // Auto-refresh en 401

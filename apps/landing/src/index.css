@@ -114,3 +114,14 @@
     transform: none;
   }
 }
+
+/* ── Multi-tenant overrides ────────────────────────────────
+   `lib/tenant.ts` setea --tenant-primary y --tenant-accent en
+   :root cuando la config del tenant llega del API. Componentes
+   pueden consumir via inline style o tw arbitrary value:
+     class="bg-[var(--tenant-primary)]"
+   Defaults igualan al accent del @theme (Cuponcito violet). */
+:root {
+  --tenant-primary: var(--color-accent-500);
+  --tenant-accent: var(--color-accent-700);
+}

@@ -1,7 +1,16 @@
 import { ArrowRight, MessageCircle, ShoppingBag, Ticket, User } from 'lucide-react'
 import { SIGNUP_URL } from '@/lib/cn'
+import { useTenant } from '@/lib/tenant'
 
 export function Hero() {
+  const { config } = useTenant()
+  const eyebrow = config?.brand?.heroEyebrow
+    ? config.brand.heroEyebrow
+    : config?.ciudad
+      ? `Para comercios de ${config.ciudad}`
+      : 'Para comercios PyME del barrio'
+  const headlineOverride = config?.brand?.heroHeadline
+
   return (
     <section className="relative overflow-hidden px-6 pt-16 pb-20 sm:pt-24 sm:pb-28">
       {/* Background — soft accent gradient orbs */}
@@ -12,19 +21,28 @@ export function Hero() {
         <div className="flex flex-col items-center text-center">
           <span className="animate-fade-up inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-accent-700 shadow-sm ring-1 ring-accent-100">
             <ShoppingBag size={12} />
-            Para comercios de San Pedro
+            {eyebrow}
           </span>
 
-          <h1
-            className="animate-fade-up mt-7 text-balance text-[clamp(2.5rem,7vw,5rem)] font-bold leading-[1.02] tracking-tight text-neutral-900"
-            style={{ animationDelay: '60ms' }}
-          >
-            Tus clientes vuelven solos.
-            <br />
-            <span className="bg-gradient-to-br from-accent-500 to-accent-700 bg-clip-text text-transparent">
-              Sin imprimir un volante más.
-            </span>
-          </h1>
+          {headlineOverride ? (
+            <h1
+              className="animate-fade-up mt-7 text-balance text-[clamp(2.5rem,7vw,5rem)] font-bold leading-[1.02] tracking-tight text-neutral-900"
+              style={{ animationDelay: '60ms' }}
+            >
+              {headlineOverride}
+            </h1>
+          ) : (
+            <h1
+              className="animate-fade-up mt-7 text-balance text-[clamp(2.5rem,7vw,5rem)] font-bold leading-[1.02] tracking-tight text-neutral-900"
+              style={{ animationDelay: '60ms' }}
+            >
+              Tus clientes vuelven solos.
+              <br />
+              <span className="bg-gradient-to-br from-accent-500 to-accent-700 bg-clip-text text-transparent">
+                Sin imprimir un volante más.
+              </span>
+            </h1>
+          )}
 
           <p
             className="animate-fade-up mt-7 max-w-2xl text-pretty text-lg leading-relaxed text-neutral-600 sm:text-xl"
@@ -32,7 +50,7 @@ export function Hero() {
           >
             Subí tus descuentos en 5 minutos, validalos con un código de 6 dígitos
             desde el celular, y enterate de cada cliente que vuelve. Sin contratos.
-            Sin letra chica. Hecho en San Pedro.
+            Sin letra chica. {config?.ciudad ? `Hecho para ${config.ciudad}.` : 'Hecho para vos.'}
           </p>
 
           <div

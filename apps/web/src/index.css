@@ -335,3 +335,16 @@ input:focus-visible {
       transparent 60%
     );
 }
+
+/* ── Multi-tenant branding overrides ───────────────────────────
+   `tenant.ts` setea --tenant-primary y --tenant-accent en :root
+   cuando la config del tenant llega. Si querés que un botón se
+   pinte con el color del tenant, usá:
+     style={{ background: 'var(--tenant-primary, var(--color-accent-500))' }}
+   El fallback al color por default es importante para preview en dev. */
+:root {
+  /* defaults: igualan al accent del @theme (violet brand). Se sobrescriben
+     en runtime cuando loadTenantConfig() responde. */
+  --tenant-primary: var(--color-accent-500);
+  --tenant-accent: var(--color-accent-700);
+}

@@ -14,7 +14,6 @@
  * te va a mostrar el QR del 2FA para escanear con Google Authenticator.
  */
 
-import 'dotenv/config'
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { Owner } from '../src/models'
@@ -40,8 +39,10 @@ if (!password || password.length < 8) {
 }
 
 async function main() {
-  await mongoose.connect(URI!)
-  console.log('[bootstrap-owner] mongo conectado')
+  // Mismo dbName que usa el API en src/db/connection.ts. Sin esto, el script
+  // crearía el Owner en la DB default ('test') y el API no lo encontraría.
+  await mongoose.connect(URI!, { dbName: process.env.MONGODB_DB ?? 'misanpedro' })
+  console.log('[bootstrap-owner] mongo conectado · db:', mongoose.connection.name)
 
   const existing = await Owner.findOne({ email })
   if (existing && !reset) {
