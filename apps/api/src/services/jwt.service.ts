@@ -6,12 +6,14 @@ import { RefreshToken } from '@/models'
 const ACCESS_TTL = '15m'
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 días
 
-export type Subject = 'user' | 'merchant_user'
+export type Subject = 'user' | 'merchant_user' | 'owner'
 
 export type AccessPayload = {
   sub: string
   type: Subject
   merchantId?: string // si type = merchant_user
+  appId?: string // si type = user o merchant_user — tenant scope
+  rol?: string // si type = owner — 'super' por ahora
 }
 
 export function signAccessToken(payload: AccessPayload): string {

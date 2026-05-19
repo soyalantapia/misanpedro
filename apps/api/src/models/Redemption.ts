@@ -2,6 +2,8 @@ import { Schema, model, Types, type InferSchemaType } from 'mongoose'
 
 const redemptionSchema = new Schema(
   {
+    /** Tenant: la app donde ocurrió el canje. */
+    appId: { type: Types.ObjectId, ref: 'App', required: true, index: true },
     activationId: {
       type: Types.ObjectId,
       ref: 'Activation',
@@ -24,6 +26,7 @@ const redemptionSchema = new Schema(
   { timestamps: true },
 )
 
+redemptionSchema.index({ appId: 1, redeemedAt: -1 })
 redemptionSchema.index({ merchantId: 1, redeemedAt: -1 })
 redemptionSchema.index({ merchantId: 1, userId: 1 })
 

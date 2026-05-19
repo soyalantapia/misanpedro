@@ -2,6 +2,8 @@ import { Schema, model, Types, type InferSchemaType } from 'mongoose'
 
 const couponSchema = new Schema(
   {
+    /** Tenant: la app del comercio dueño del cupón. */
+    appId: { type: Types.ObjectId, ref: 'App', required: true, index: true },
     merchantId: { type: Types.ObjectId, ref: 'Merchant', required: true, index: true },
     titulo: { type: String, required: true },
     descripcion: { type: String, required: true },
@@ -22,6 +24,7 @@ const couponSchema = new Schema(
   { timestamps: true },
 )
 
+couponSchema.index({ appId: 1, estado: 1 })
 couponSchema.index({ merchantId: 1, estado: 1 })
 
 export type CouponDoc = InferSchemaType<typeof couponSchema> & { _id: string }

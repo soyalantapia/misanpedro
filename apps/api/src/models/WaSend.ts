@@ -6,6 +6,8 @@ import { Schema, model, Types, type InferSchemaType } from 'mongoose'
  */
 const waSendSchema = new Schema(
   {
+    /** Tenant. */
+    appId: { type: Types.ObjectId, ref: 'App', required: true, index: true },
     merchantId: { type: Types.ObjectId, ref: 'Merchant', required: true, index: true },
     to: { type: String, required: true },
     text: { type: String, required: true },

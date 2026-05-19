@@ -2,6 +2,8 @@ import { Schema, model, Types, type InferSchemaType } from 'mongoose'
 
 const subscriptionSchema = new Schema(
   {
+    /** Tenant. */
+    appId: { type: Types.ObjectId, ref: 'App', required: true, index: true },
     merchantId: { type: Types.ObjectId, ref: 'Merchant', required: true, index: true },
     provider: { type: String, enum: ['mercadopago'], default: 'mercadopago' },
     preapprovalId: { type: String, index: true }, // id MP preapproval

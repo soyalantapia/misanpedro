@@ -1,3 +1,7 @@
+export { App } from './App'
+export type { AppDoc } from './App'
+export { Owner } from './Owner'
+export type { OwnerDoc } from './Owner'
 export { User } from './User'
 export type { UserDoc } from './User'
 export { Merchant } from './Merchant'

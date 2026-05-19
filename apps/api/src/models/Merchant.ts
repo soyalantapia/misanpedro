@@ -1,4 +1,4 @@
-import { Schema, model, type InferSchemaType } from 'mongoose'
+import { Schema, model, Types, type InferSchemaType } from 'mongoose'
 import type { Categoria } from '@misanpedro/shared'
 
 const horarioDiaSchema = new Schema(
@@ -12,7 +12,10 @@ const horarioDiaSchema = new Schema(
 
 const merchantSchema = new Schema(
   {
-    slug: { type: String, required: true, unique: true, index: true },
+    /** Tenant: cada comercio pertenece a UNA App (ciudad). */
+    appId: { type: Types.ObjectId, ref: 'App', required: true, index: true },
+
+    slug: { type: String, required: true },
     nombre: { type: String, required: true },
     categoria: {
       type: String,
@@ -66,6 +69,8 @@ const merchantSchema = new Schema(
   { timestamps: true },
 )
 
+// Compound uniques scoped al tenant
+merchantSchema.index({ appId: 1, slug: 1 }, { unique: true })
 merchantSchema.index({ location: '2dsphere' })
 
 export type MerchantDoc = InferSchemaType<typeof merchantSchema> & {

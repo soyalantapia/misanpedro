@@ -6,6 +6,8 @@ import { Schema, model, Types, type InferSchemaType } from 'mongoose'
  */
 const customerNoteSchema = new Schema(
   {
+    /** Tenant. */
+    appId: { type: Types.ObjectId, ref: 'App', required: true, index: true },
     merchantId: { type: Types.ObjectId, ref: 'Merchant', required: true, index: true },
     userId: { type: Types.ObjectId, ref: 'User', required: true, index: true },
     /** Quién creó la nota (cajero o admin del comercio). */
