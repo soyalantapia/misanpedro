@@ -1,0 +1,41 @@
+# Railway build config para el backend (@misanpedro/api).
+#
+# Railway usa Nixpacks por default. Este archivo le dice cómo
+# construir el monorepo (pnpm workspaces) y arrancar el API.
+#
+# Si en el futuro montás un segundo service en Railway (ej. para
+# el Owner Panel), creá su propio nixpacks.toml dentro de la carpeta
+# del service o configurá overrides via Railway dashboard.
+
+[phases.setup]
+# Node 22 (matches engines.node en package.json)
+nixPkgs = ["nodejs_22", "openssl"]
+
+[phases.install]
+# Corepack viene con Node 22 → activa pnpm según `packageManager` del root.
+# `pnpm install --frozen-lockfile` respeta pnpm-lock.yaml.
+cmds = [
+  "corepack enable",
+  "corepack prepare pnpm@10.28.2 --activate",
+  "pnpm install --frozen-lockfile --filter @misanpedro/api... --filter @misanpedro/shared..."
+]
+
+[phases.build]
+# Buildea solo el API y sus deps de workspace (no tocamos apps/web ni landing).
+cmds = ["pnpm --filter @misanpedro/api build"]
+
+[start]
+# Production start: lee env vars del environment, no de un .env file.
+cmd = "node apps/api/dist/index.js"
+
+[variables]
+# Skip Chromium download de Puppeteer (whatsapp-web.js).
+# Si más adelante querés activar WA Business en prod, instalá Chromium
+# via nixPkgs (chromium) y borrá esta línea + setea PUPPETEER_EXECUTABLE_PATH.
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
+PUPPETEER_SKIP_DOWNLOAD = "true"
+
+# Activá HTTPS redirect + X-Forwarded-* en Railway
+TRUST_PROXY = "true"
+
+NODE_ENV = "production"
