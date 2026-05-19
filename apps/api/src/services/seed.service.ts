@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import { Coupon, Merchant, MerchantUser } from '@/models'
+import { App, Coupon, Merchant, MerchantUser } from '@/models'
 
 const SAN_PEDRO = { lat: -33.6797, lng: -59.6669 }
 const offset = (latDelta: number, lngDelta: number) => ({
@@ -222,25 +222,53 @@ const SEED_MERCHANT_USERS = [
 
 const DEMO_PASSWORD = 'demo123'
 
+/**
+ * Asegura que exista la App "sanpedro" (tenant default).
+ * Idempotente — no falla si ya existe.
+ */
+async function ensureSanpedroApp() {
+  const existing = await App.findOne({ slug: 'sanpedro' })
+  if (existing) return existing
+  return await App.create({
+    slug: 'sanpedro',
+    nombre: 'Mi San Pedro',
+    ciudad: 'San Pedro',
+    provincia: 'Buenos Aires',
+    pais: 'Argentina',
+    subdomain: 'sanpedro',
+    status: 'active',
+    plan: 'founder',
+    brand: { primaryColor: '#695ede', accentColor: '#4239a3' },
+  })
+}
+
 export async function seedIfEmpty(): Promise<void> {
   // El seed automático está desactivado por default. Para reactivarlo,
-  // setear `SEED_DEMO_DATA=true` en el .env. Útil para empezar con DB
-  // limpia en producción y poblarla con comercios reales.
+  // setear `SEED_DEMO_DATA=true` en el .env.
   if (process.env.SEED_DEMO_DATA !== 'true') {
     console.log('[seed] desactivado (set SEED_DEMO_DATA=true para reactivar)')
+    // Igual aseguramos que exista la App sanpedro para que el sistema
+    // multi-tenant tenga un tenant default funcional desde el primer boot.
+    await ensureSanpedroApp().catch((err) =>
+      console.warn('[seed] no se pudo asegurar App sanpedro:', err?.message),
+    )
     return
   }
   const merchantCount = await Merchant.countDocuments()
   if (merchantCount > 0) {
     console.log(`[seed] skipped — ${merchantCount} merchants ya existen`)
+    await ensureSanpedroApp()
     return
   }
 
-  console.log('[seed] DB vacía, sembrando datos demo…')
+  console.log('[seed] DB vacía, sembrando datos demo en App sanpedro…')
+  const app = await ensureSanpedroApp()
+  const appId = app._id
 
   const slugToId = new Map<string, string>()
   for (const m of SEED_MERCHANTS) {
     const doc = await Merchant.create({
+      appId,
       slug: m.slug,
       nombre: m.nombre,
       categoria: m.categoria,
@@ -263,6 +291,7 @@ export async function seedIfEmpty(): Promise<void> {
     const merchantId = slugToId.get(c.merchantSlug)
     if (!merchantId) continue
     await Coupon.create({
+      appId,
       merchantId,
       titulo: c.titulo,
       descripcion: c.descripcion,
@@ -280,6 +309,7 @@ export async function seedIfEmpty(): Promise<void> {
     const merchantId = slugToId.get(u.merchantSlug)
     if (!merchantId) continue
     await MerchantUser.create({
+      appId,
       merchantId,
       email: u.email,
       passwordHash,

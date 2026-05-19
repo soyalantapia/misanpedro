@@ -15,11 +15,14 @@ import {
 } from '@/services/jwt.service'
 import { requireUserAuth } from '@/middleware/auth'
 import { rateLimit } from '@/middleware/security'
+import { tenantContext, getAppId } from '@/middleware/tenant'
 import { sendOtpCode, sendUserWelcome } from '@/services/email.service'
 
 export const userAuthRoutes = new Hono()
 
-// Rate limits para anti-abuse
+// Toda la auth del vecino requiere tenant.
+userAuthRoutes.use('*', tenantContext)
+
 const registerLimiter = rateLimit({ prefix: 'user-register', max: 5, windowMs: 60 * 60_000 })
 const otpRequestLimiter = rateLimit({ prefix: 'otp-request', max: 5, windowMs: 60 * 60_000 })
 const otpVerifyLimiter = rateLimit({ prefix: 'otp-verify', max: 10, windowMs: 60_000 })
@@ -36,6 +39,7 @@ function generateOtp(): string {
 }
 
 userAuthRoutes.post('/register', registerLimiter, async (c) => {
+  const appId = getAppId(c)
   const body = await c.req.json().catch(() => ({}))
   const parsed = userRegisterSchema.safeParse(body)
   if (!parsed.success) {
@@ -43,7 +47,6 @@ userAuthRoutes.post('/register', registerLimiter, async (c) => {
   }
   const data = parsed.data
 
-  // Validar mayoría de 16
   const dob = new Date(data.fechaNacimiento)
   const minAge = new Date()
   minAge.setFullYear(minAge.getFullYear() - 16)
@@ -51,8 +54,9 @@ userAuthRoutes.post('/register', registerLimiter, async (c) => {
     return c.json({ ok: false, error: 'tenés que ser mayor de 16' }, 400)
   }
 
-  // Conflictos
+  // Conflicto SOLO dentro del tenant.
   const conflict = await User.findOne({
+    appId,
     $or: [{ dni: data.dni }, { email: data.email }, { whatsapp: data.whatsapp }],
   })
   if (conflict) {
@@ -63,6 +67,7 @@ userAuthRoutes.post('/register', registerLimiter, async (c) => {
   }
 
   const user = await User.create({
+    appId,
     dni: data.dni,
     nombre: data.nombre,
     email: data.email,
@@ -71,13 +76,15 @@ userAuthRoutes.post('/register', registerLimiter, async (c) => {
     acceptedTcAt: new Date(),
   })
 
-  // Email de bienvenida (no bloqueante)
   sendUserWelcome(data.email, data.nombre).catch((err) =>
     console.error('[user-welcome-email]', err),
   )
 
-  // Auto-login después del registro
-  const accessToken = signAccessToken({ sub: user._id.toString(), type: 'user' })
+  const accessToken = signAccessToken({
+    sub: user._id.toString(),
+    type: 'user',
+    appId: String(appId),
+  })
   const { token: refreshToken } = await issueRefreshToken({
     subjectType: 'user',
     subjectId: user._id.toString(),
@@ -93,6 +100,7 @@ userAuthRoutes.post('/register', registerLimiter, async (c) => {
 })
 
 userAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
+  const appId = getAppId(c)
   const body = await c.req.json().catch(() => ({}))
   const parsed = otpRequestSchema.safeParse(body)
   if (!parsed.success) {
@@ -101,27 +109,25 @@ userAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
   const { email } = parsed.data
   if (!email) return c.json({ ok: false, error: 'email requerido' }, 400)
 
-  const user = await User.findOne({ email })
+  const user = await User.findOne({ appId, email })
   if (!user) {
-    // Por seguridad devolvemos OK sin revelar si existe
     return c.json({ ok: true })
   }
 
-  // Limpiar OTPs previos del email
-  await Otp.deleteMany({ email })
+  // Limpiar OTPs previos del email POR TENANT.
+  await Otp.deleteMany({ appId, email })
 
   const code = generateOtp()
   await Otp.create({
+    appId,
     email,
     codeHash: sha256(code),
     expiresAt: new Date(Date.now() + OTP_TTL_MS),
   })
 
-  // Enviar por email (Resend si hay key; si no, log en consola)
-  console.log(`[otp] ${email} → ${code}`)
+  console.log(`[otp] ${email} (app ${appId}) → ${code}`)
   sendOtpCode(email, code).catch((err) => console.error('[otp-email]', err))
 
-  // En dev devolvemos el código en la response para facilitar testing
   const debugCode =
     process.env.NODE_ENV !== 'production' ? { _debugCode: code } : {}
 
@@ -129,6 +135,7 @@ userAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
 })
 
 userAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
+  const appId = getAppId(c)
   const body = await c.req.json().catch(() => ({}))
   const parsed = otpVerifySchema.safeParse(body)
   if (!parsed.success) {
@@ -136,7 +143,7 @@ userAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
   }
   const { email, code } = parsed.data
 
-  const otp = await Otp.findOne({ email })
+  const otp = await Otp.findOne({ appId, email })
   if (!otp || otp.consumedAt) {
     return c.json({ ok: false, error: 'código inválido' }, 401)
   }
@@ -155,12 +162,16 @@ userAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
   otp.consumedAt = new Date()
   await otp.save()
 
-  const user = await User.findOne({ email })
+  const user = await User.findOne({ appId, email })
   if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
   user.lastLoginAt = new Date()
   await user.save()
 
-  const accessToken = signAccessToken({ sub: user._id.toString(), type: 'user' })
+  const accessToken = signAccessToken({
+    sub: user._id.toString(),
+    type: 'user',
+    appId: String(appId),
+  })
   const { token: refreshToken } = await issueRefreshToken({
     subjectType: 'user',
     subjectId: user._id.toString(),
@@ -171,6 +182,7 @@ userAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
 })
 
 userAuthRoutes.post('/refresh', async (c) => {
+  const appId = getAppId(c)
   const { refreshToken } = await c.req.json().catch(() => ({}))
   if (!refreshToken) return c.json({ ok: false, error: 'refresh token required' }, 400)
   const rotated = await rotateRefreshToken(refreshToken, {
@@ -179,9 +191,13 @@ userAuthRoutes.post('/refresh', async (c) => {
   if (!rotated || rotated.subjectType !== 'user') {
     return c.json({ ok: false, error: 'invalid refresh token' }, 401)
   }
-  const user = await User.findById(rotated.subjectId)
+  const user = await User.findOne({ _id: rotated.subjectId, appId })
   if (!user) return c.json({ ok: false, error: 'user not found' }, 401)
-  const accessToken = signAccessToken({ sub: user._id.toString(), type: 'user' })
+  const accessToken = signAccessToken({
+    sub: user._id.toString(),
+    type: 'user',
+    appId: String(appId),
+  })
   return c.json({ ok: true, accessToken, refreshToken: rotated.token })
 })
 
@@ -192,23 +208,24 @@ userAuthRoutes.post('/logout', async (c) => {
 })
 
 userAuthRoutes.get('/me', requireUserAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
-  const user = await User.findById(auth.sub)
+  const user = await User.findOne({ _id: auth.sub, appId })
   if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
   return c.json({ ok: true, user: serializeUser(user) })
 })
 
 // ─── Habeas Data (Ley 25.326, Argentina) ──────────────────────────────
 
-/** GET /auth/me/data-export — exporta TODOS los datos del usuario. */
 userAuthRoutes.get('/me/data-export', requireUserAuth, async (c) => {
   const { Activation, Redemption } = await import('@/models')
+  const appId = getAppId(c)
   const auth = c.get('auth')
-  const user = await User.findById(auth.sub)
+  const user = await User.findOne({ _id: auth.sub, appId })
   if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
 
-  const activations = await Activation.find({ userId: auth.sub })
-  const redemptions = await Redemption.find({ userId: auth.sub })
+  const activations = await Activation.find({ appId, userId: auth.sub })
+  const redemptions = await Redemption.find({ appId, userId: auth.sub })
 
   return c.json({
     ok: true,
@@ -246,37 +263,28 @@ userAuthRoutes.get('/me/data-export', requireUserAuth, async (c) => {
   })
 })
 
-/**
- * DELETE /auth/me — borra la cuenta del usuario y todos los datos asociados.
- * Habeas Data, Ley 25.326. Irreversible.
- */
 userAuthRoutes.delete('/me', requireUserAuth, async (c) => {
   const { Activation, RefreshToken, Redemption } = await import('@/models')
+  const appId = getAppId(c)
   const auth = c.get('auth')
-  const user = await User.findById(auth.sub)
+  const user = await User.findOne({ _id: auth.sub, appId })
   if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
 
-  // Anonimizar redemptions (mantenemos el registro para stats del comercio,
-  // pero sin datos identificables). No se borran porque son evidencia
-  // contractual de transacciones realizadas.
-  await Redemption.updateMany({ userId: auth.sub }, { $unset: { userId: 1 } })
+  // Anonimizar redemptions del MISMO tenant (otros tenants no se tocan).
+  await Redemption.updateMany({ appId, userId: auth.sub }, { $unset: { userId: 1 } })
+  await Activation.deleteMany({ appId, userId: auth.sub })
 
-  // Borrar activaciones (no son contractuales)
-  await Activation.deleteMany({ userId: auth.sub })
-
-  // Revocar tokens
   await RefreshToken.updateMany(
     { subjectId: auth.sub, revokedAt: { $exists: false } },
     { revokedAt: new Date() },
   )
 
-  // Borrar el user
   await user.deleteOne()
 
   return c.json({ ok: true, mensaje: 'Tu cuenta y datos personales fueron eliminados.' })
 })
 
-void bcrypt // referenciado para evitar tree-shake en build
+void bcrypt // referenciado para evitar tree-shake
 
 function serializeUser(user: any) {
   return {

@@ -3,8 +3,11 @@ import { Types } from 'mongoose'
 import { couponCreateSchema, couponUpdateSchema } from '@misanpedro/shared'
 import { Coupon, Merchant } from '@/models'
 import { requireMerchantAuth } from '@/middleware/auth'
+import { tenantContext, getAppId } from '@/middleware/tenant'
 
 export const couponsRoutes = new Hono()
+
+couponsRoutes.use('*', tenantContext)
 
 function serializeCoupon(c: any, merchant?: any) {
   return {
@@ -33,12 +36,13 @@ function serializeCoupon(c: any, merchant?: any) {
   }
 }
 
-// Listado público de cupones activos (con merchant embebido)
+// Listado público de cupones activos POR TENANT (con merchant embebido)
 couponsRoutes.get('/', async (c) => {
+  const appId = getAppId(c)
   const categoria = c.req.query('categoria')
   const merchantSlug = c.req.query('merchant')
 
-  const merchantFilter: Record<string, any> = { estado: 'activo' }
+  const merchantFilter: Record<string, any> = { appId, estado: 'activo' }
   if (categoria) merchantFilter.categoria = categoria
   if (merchantSlug) merchantFilter.slug = merchantSlug
 
@@ -47,6 +51,7 @@ couponsRoutes.get('/', async (c) => {
   const merchantIds = merchants.map((m) => m._id)
 
   const coupons = await Coupon.find({
+    appId,
     merchantId: { $in: merchantIds },
     estado: 'activo',
     vigenciaHasta: { $gte: new Date() },
@@ -60,25 +65,29 @@ couponsRoutes.get('/', async (c) => {
 
 // GET /coupons/:id — detalle público
 couponsRoutes.get('/:id', async (c) => {
+  const appId = getAppId(c)
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
-  const coupon = await Coupon.findById(id)
+  const coupon = await Coupon.findOne({ _id: id, appId })
   if (!coupon) return c.json({ ok: false, error: 'not found' }, 404)
-  const merchant = await Merchant.findById(coupon.merchantId)
+  const merchant = await Merchant.findOne({ _id: coupon.merchantId, appId })
   return c.json({ ok: true, coupon: serializeCoupon(coupon, merchant) })
 })
 
 // ─── CRUD comercio ──────────────────────────────────────────────────────
 
-// GET /coupons/mine — cupones del comercio autenticado
 couponsRoutes.get('/mine/list', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
-  const coupons = await Coupon.find({ merchantId: auth.merchantId }).sort({ createdAt: -1 })
+  const coupons = await Coupon.find({ appId, merchantId: auth.merchantId }).sort({
+    createdAt: -1,
+  })
   return c.json({ ok: true, coupons: coupons.map((c) => serializeCoupon(c)) })
 })
 
 couponsRoutes.post('/', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const body = await c.req.json().catch(() => ({}))
@@ -88,6 +97,7 @@ couponsRoutes.post('/', requireMerchantAuth, async (c) => {
   }
   const coupon = await Coupon.create({
     ...parsed.data,
+    appId,
     merchantId: auth.merchantId,
     vigenciaHasta: new Date(parsed.data.vigenciaHasta),
   })
@@ -95,11 +105,12 @@ couponsRoutes.post('/', requireMerchantAuth, async (c) => {
 })
 
 couponsRoutes.patch('/:id', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
-  const coupon = await Coupon.findById(id)
+  const coupon = await Coupon.findOne({ _id: id, appId })
   if (!coupon) return c.json({ ok: false, error: 'not found' }, 404)
   if (coupon.merchantId.toString() !== auth.merchantId) {
     return c.json({ ok: false, error: 'forbidden' }, 403)
@@ -122,11 +133,12 @@ couponsRoutes.patch('/:id', requireMerchantAuth, async (c) => {
 })
 
 couponsRoutes.delete('/:id', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
-  const coupon = await Coupon.findById(id)
+  const coupon = await Coupon.findOne({ _id: id, appId })
   if (!coupon) return c.json({ ok: false, error: 'not found' }, 404)
   if (coupon.merchantId.toString() !== auth.merchantId) {
     return c.json({ ok: false, error: 'forbidden' }, 403)

@@ -9,10 +9,13 @@ import { Activation, Coupon, CustomerNote, Merchant, Redemption, User } from '@/
 import { z } from 'zod'
 import { requireMerchantAuth } from '@/middleware/auth'
 import { rateLimit } from '@/middleware/security'
+import { tenantContext, getAppId } from '@/middleware/tenant'
 import { sendUserRedemption } from '@/services/email.service'
 import { publish } from '@/services/notifications.service'
 
 export const redemptionsRoutes = new Hono()
+
+redemptionsRoutes.use('*', tenantContext)
 
 // Anti-brute force de códigos: 60 validates por minuto por comercio
 const validateLimiter = rateLimit({ prefix: 'validate', max: 60, windowMs: 60_000 })
@@ -40,6 +43,7 @@ function serializeForValidation(activation: any, coupon: any, user: any) {
 
 // POST /redemptions/validate — comercio valida código o payload
 redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const body = await c.req.json().catch(() => ({}))
@@ -48,26 +52,24 @@ redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, async 
   if (typeof body.codigoNumerico === 'string') {
     const parsed = redeemByCodeSchema.safeParse(body)
     if (!parsed.success) return c.json({ ok: false, error: 'código inválido' }, 400)
-    activation = await Activation.findOne({ codigoNumerico: parsed.data.codigoNumerico })
+    activation = await Activation.findOne({ appId, codigoNumerico: parsed.data.codigoNumerico })
   } else if (typeof body.qrPayload === 'string') {
     const parsed = redeemByPayloadSchema.safeParse(body)
     if (!parsed.success) return c.json({ ok: false, error: 'qr inválido' }, 400)
-    // formato: msp:act:CODIGO:COUPONID
     const parts = parsed.data.qrPayload.split(':')
     if (parts.length !== 4 || parts[0] !== 'msp' || parts[1] !== 'act') {
       return c.json({ ok: false, error: 'qr inválido' }, 400)
     }
-    activation = await Activation.findOne({ codigoNumerico: parts[2] })
+    activation = await Activation.findOne({ appId, codigoNumerico: parts[2] })
   } else {
     return c.json({ ok: false, error: 'código o qr requerido' }, 400)
   }
 
   if (!activation) return c.json({ ok: false, error: 'no encontrado' }, 404)
 
-  const coupon = await Coupon.findById(activation.couponId)
+  const coupon = await Coupon.findOne({ _id: activation.couponId, appId })
   if (!coupon) return c.json({ ok: false, error: 'cupón no encontrado' }, 404)
 
-  // Verificar que el cupón pertenezca a este comercio
   if (coupon.merchantId.toString() !== auth.merchantId) {
     return c.json({ ok: false, error: 'cupón de otro comercio' }, 403)
   }
@@ -81,7 +83,7 @@ redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, async 
     return c.json({ ok: false, error: 'expirado', status: 'expirado' }, 409)
   }
 
-  const user = await User.findById(activation.userId)
+  const user = await User.findOne({ _id: activation.userId, appId })
   if (!user) return c.json({ ok: false, error: 'usuario no encontrado' }, 404)
 
   return c.json({
@@ -90,8 +92,9 @@ redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, async 
   })
 })
 
-// POST /redemptions/confirm — confirmar canje (crea Redemption y marca Activation)
+// POST /redemptions/confirm — confirmar canje
 redemptionsRoutes.post('/confirm', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const body = await c.req.json().catch(() => ({}))
@@ -102,7 +105,7 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, async (c) => {
   if (!Types.ObjectId.isValid(activationId)) {
     return c.json({ ok: false, error: 'no encontrado' }, 404)
   }
-  const activation = await Activation.findById(activationId)
+  const activation = await Activation.findOne({ _id: activationId, appId })
   if (!activation) return c.json({ ok: false, error: 'no encontrado' }, 404)
 
   if (activation.status !== 'activo') {
@@ -112,7 +115,7 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, async (c) => {
     return c.json({ ok: false, error: 'expirado' }, 409)
   }
 
-  const coupon = await Coupon.findById(activation.couponId)
+  const coupon = await Coupon.findOne({ _id: activation.couponId, appId })
   if (!coupon) return c.json({ ok: false, error: 'cupón no encontrado' }, 404)
   if (coupon.merchantId.toString() !== auth.merchantId) {
     return c.json({ ok: false, error: 'cupón de otro comercio' }, 403)
@@ -122,15 +125,14 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, async (c) => {
     ? Math.round((montoTicket * coupon.porcentaje) / 100)
     : 0
 
-  // Marcar activation como canjeada
   activation.status = 'canjeado'
   activation.redeemedAt = new Date()
   activation.montoTicket = montoTicket
   activation.ahorroEstimado = ahorroEstimado
   await activation.save()
 
-  // Crear Redemption
   const redemption = await Redemption.create({
+    appId,
     activationId: activation._id,
     couponId: coupon._id,
     merchantId: coupon.merchantId,
@@ -141,15 +143,14 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, async (c) => {
     redeemedAt: activation.redeemedAt,
   })
 
-  // Incrementar contador del cupón
   coupon.stockUsado = (coupon.stockUsado ?? 0) + 1
   await coupon.save()
 
-  // Email de confirmación al vecino + publish event para SSE
+  // Email + event (no bloqueante)
   void (async () => {
     try {
-      const user = await User.findById(activation.userId)
-      const merchant = await Merchant.findById(coupon.merchantId)
+      const user = await User.findOne({ _id: activation.userId, appId })
+      const merchant = await Merchant.findOne({ _id: coupon.merchantId, appId })
       if (user?.email && merchant) {
         await sendUserRedemption({
           to: user.email,
@@ -195,19 +196,20 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, async (c) => {
 
 // GET /redemptions/recent — últimos canjes del comercio
 redemptionsRoutes.get('/recent', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const limitRaw = parseInt(c.req.query('limit') ?? '50', 10)
   const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 200) : 50
 
-  const redemptions = await Redemption.find({ merchantId: auth.merchantId })
+  const redemptions = await Redemption.find({ appId, merchantId: auth.merchantId })
     .sort({ redeemedAt: -1 })
     .limit(limit)
 
   const couponIds = [...new Set(redemptions.map((r) => r.couponId.toString()))]
-  const userIds = [...new Set(redemptions.map((r) => r.userId.toString()))]
-  const coupons = await Coupon.find({ _id: { $in: couponIds } })
-  const users = await User.find({ _id: { $in: userIds } })
+  const userIds = [...new Set(redemptions.map((r) => r.userId?.toString()).filter(Boolean))]
+  const coupons = await Coupon.find({ appId, _id: { $in: couponIds } })
+  const users = await User.find({ appId, _id: { $in: userIds } })
   const couponMap = new Map(coupons.map((c) => [c._id.toString(), c]))
   const userMap = new Map(users.map((u) => [u._id.toString(), u]))
 
@@ -215,11 +217,11 @@ redemptionsRoutes.get('/recent', requireMerchantAuth, async (c) => {
     ok: true,
     redemptions: redemptions.map((r) => {
       const coupon = couponMap.get(r.couponId.toString())
-      const user = userMap.get(r.userId.toString())
+      const user = r.userId ? userMap.get(r.userId.toString()) : undefined
       return {
         id: r._id.toString(),
         couponId: r.couponId.toString(),
-        userId: r.userId.toString(),
+        userId: r.userId?.toString(),
         montoTicket: r.montoTicket,
         ahorroEstimado: r.ahorroEstimado,
         redeemedAt: r.redeemedAt.toISOString(),
@@ -232,14 +234,16 @@ redemptionsRoutes.get('/recent', requireMerchantAuth, async (c) => {
 
 // GET /redemptions/clientes — clientes únicos con métricas
 redemptionsRoutes.get('/clientes', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
 
-  const redemptions = await Redemption.find({ merchantId: auth.merchantId }).sort({
+  const redemptions = await Redemption.find({ appId, merchantId: auth.merchantId }).sort({
     redeemedAt: -1,
   })
   const userMap = new Map<string, any>()
   for (const r of redemptions) {
+    if (!r.userId) continue
     const id = r.userId.toString()
     const acc = userMap.get(id) ?? {
       userId: id,
@@ -257,7 +261,7 @@ redemptionsRoutes.get('/clientes', requireMerchantAuth, async (c) => {
     userMap.set(id, acc)
   }
 
-  const users = await User.find({ _id: { $in: [...userMap.keys()] } })
+  const users = await User.find({ appId, _id: { $in: [...userMap.keys()] } })
   const userInfoMap = new Map(users.map((u) => [u._id.toString(), u]))
 
   const clientes = [...userMap.values()].map((c) => {
@@ -287,11 +291,13 @@ const noteCreateSchema = z.object({
 })
 
 redemptionsRoutes.get('/clientes/:userId/notes', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const userId = c.req.param('userId')
   if (!Types.ObjectId.isValid(userId)) return c.json({ ok: false, error: 'invalid id' }, 400)
   const notes = await CustomerNote.find({
+    appId,
     merchantId: auth.merchantId,
     userId,
   }).sort({ createdAt: -1 })
@@ -308,6 +314,7 @@ redemptionsRoutes.get('/clientes/:userId/notes', requireMerchantAuth, async (c) 
 })
 
 redemptionsRoutes.post('/clientes/notes', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const body = await c.req.json().catch(() => ({}))
@@ -317,6 +324,7 @@ redemptionsRoutes.post('/clientes/notes', requireMerchantAuth, async (c) => {
     return c.json({ ok: false, error: 'invalid userId' }, 400)
   }
   const note = await CustomerNote.create({
+    appId,
     merchantId: auth.merchantId,
     userId: parsed.data.userId,
     createdBy: auth.sub,
@@ -338,11 +346,12 @@ redemptionsRoutes.post('/clientes/notes', requireMerchantAuth, async (c) => {
 })
 
 redemptionsRoutes.delete('/clientes/notes/:id', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'invalid id' }, 400)
-  const note = await CustomerNote.findById(id)
+  const note = await CustomerNote.findOne({ _id: id, appId })
   if (!note) return c.json({ ok: false, error: 'not found' }, 404)
   if (note.merchantId.toString() !== auth.merchantId) {
     return c.json({ ok: false, error: 'forbidden' }, 403)

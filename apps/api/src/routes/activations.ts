@@ -4,9 +4,12 @@ import { randomInt } from 'node:crypto'
 import { activateCouponSchema } from '@misanpedro/shared'
 import { Activation, Coupon, Merchant, User } from '@/models'
 import { requireUserAuth } from '@/middleware/auth'
+import { tenantContext, getAppId } from '@/middleware/tenant'
 import { publish } from '@/services/notifications.service'
 
 export const activationsRoutes = new Hono()
+
+activationsRoutes.use('*', tenantContext)
 
 const ACTIVATION_TTL_MS = 30 * 60 * 1000 // 30 min
 
@@ -14,12 +17,11 @@ function generateNumeric(): string {
   return randomInt(100_000, 1_000_000).toString()
 }
 
-async function generateUniqueCode(): Promise<string> {
-  // Verifica contra TODAS las activaciones (no sólo activas) porque el index
-  // unique en codigoNumerico aplica al collection completo.
+async function generateUniqueCode(appId: Types.ObjectId): Promise<string> {
+  // El index unique es `{appId, codigoNumerico}`. Verificamos POR TENANT.
   for (let i = 0; i < 12; i++) {
     const code = generateNumeric()
-    const exists = await Activation.exists({ codigoNumerico: code })
+    const exists = await Activation.exists({ appId, codigoNumerico: code })
     if (!exists) return code
   }
   throw new Error('could not generate unique code')
@@ -61,6 +63,7 @@ function serializeActivation(a: any, coupon?: any, merchant?: any) {
 
 // POST /activations — vecino activa un cupón
 activationsRoutes.post('/', requireUserAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   const body = await c.req.json().catch(() => ({}))
   const parsed = activateCouponSchema.safeParse(body)
@@ -72,7 +75,7 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
     return c.json({ ok: false, error: 'cupón no encontrado' }, 404)
   }
 
-  const coupon = await Coupon.findById(couponId)
+  const coupon = await Coupon.findOne({ _id: couponId, appId })
   if (!coupon || coupon.estado !== 'activo') {
     return c.json({ ok: false, error: 'cupón no disponible' }, 404)
   }
@@ -82,24 +85,26 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
 
   // Si el usuario ya tiene una activación activa para este cupón, devolverla
   const existing = await Activation.findOne({
+    appId,
     couponId: coupon._id,
     userId: auth.sub,
     status: 'activo',
     expiresAt: { $gt: new Date() },
   })
   if (existing) {
-    const merchant = await Merchant.findById(coupon.merchantId)
+    const merchant = await Merchant.findOne({ _id: coupon.merchantId, appId })
     return c.json({ ok: true, activation: serializeActivation(existing, coupon, merchant) })
   }
 
-  // Intentamos crear con retry por si hay race en codigoNumerico
+  // Retry por si hay race en codigoNumerico
   let activation: any = null
   let lastErr: any = null
   for (let attempt = 0; attempt < 3 && !activation; attempt++) {
     try {
-      const codigoNumerico = await generateUniqueCode()
+      const codigoNumerico = await generateUniqueCode(appId)
       const qrPayload = `msp:act:${codigoNumerico}:${coupon._id.toString()}`
       activation = await Activation.create({
+        appId,
         couponId: coupon._id,
         userId: auth.sub,
         codigoNumerico,
@@ -110,7 +115,6 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
       })
     } catch (err: any) {
       lastErr = err
-      // E11000 duplicate key → reintentamos con otro código
       if (err?.code !== 11000) throw err
     }
   }
@@ -119,11 +123,11 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
     return c.json({ ok: false, error: 'no se pudo generar código único, intentá de nuevo' }, 500)
   }
 
-  const merchant = await Merchant.findById(coupon.merchantId)
+  const merchant = await Merchant.findOne({ _id: coupon.merchantId, appId })
   // Notif al cajero (no bloqueante)
   void (async () => {
     try {
-      const user = await User.findById(auth.sub)
+      const user = await User.findOne({ _id: auth.sub, appId })
       if (user) {
         publish({
           type: 'activation.created',
@@ -145,17 +149,18 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
 
 // GET /activations/me — activaciones del usuario (con filtro por status)
 activationsRoutes.get('/me', requireUserAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   const status = c.req.query('status')
-  const filter: Record<string, any> = { userId: auth.sub }
+  const filter: Record<string, any> = { appId, userId: auth.sub }
   if (status) filter.status = status
 
   const activations = await Activation.find(filter).sort({ activatedAt: -1 }).limit(100)
   const couponIds = [...new Set(activations.map((a) => a.couponId.toString()))]
-  const coupons = await Coupon.find({ _id: { $in: couponIds } })
+  const coupons = await Coupon.find({ appId, _id: { $in: couponIds } })
   const couponMap = new Map(coupons.map((c) => [c._id.toString(), c]))
   const merchantIds = [...new Set(coupons.map((c) => c.merchantId.toString()))]
-  const merchants = await Merchant.find({ _id: { $in: merchantIds } })
+  const merchants = await Merchant.find({ appId, _id: { $in: merchantIds } })
   const merchantMap = new Map(merchants.map((m) => [m._id.toString(), m]))
 
   return c.json({
@@ -168,27 +173,29 @@ activationsRoutes.get('/me', requireUserAuth, async (c) => {
   })
 })
 
-// GET /activations/:id — detalle (auth user, sólo dueño)
+// GET /activations/:id — detalle (auth user, sólo dueño dentro del tenant)
 activationsRoutes.get('/:id', requireUserAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
-  const activation = await Activation.findById(id)
+  const activation = await Activation.findOne({ _id: id, appId })
   if (!activation) return c.json({ ok: false, error: 'not found' }, 404)
   if (activation.userId.toString() !== auth.sub) {
     return c.json({ ok: false, error: 'forbidden' }, 403)
   }
-  const coupon = await Coupon.findById(activation.couponId)
-  const merchant = coupon ? await Merchant.findById(coupon.merchantId) : null
+  const coupon = await Coupon.findOne({ _id: activation.couponId, appId })
+  const merchant = coupon ? await Merchant.findOne({ _id: coupon.merchantId, appId }) : null
   return c.json({ ok: true, activation: serializeActivation(activation, coupon, merchant) })
 })
 
 // POST /activations/:id/cancel — cancelar activación
 activationsRoutes.post('/:id/cancel', requireUserAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
-  const activation = await Activation.findById(id)
+  const activation = await Activation.findOne({ _id: id, appId })
   if (!activation) return c.json({ ok: false, error: 'not found' }, 404)
   if (activation.userId.toString() !== auth.sub) {
     return c.json({ ok: false, error: 'forbidden' }, 403)

@@ -2,8 +2,11 @@ import { Hono } from 'hono'
 import { merchantUpdateSchema } from '@misanpedro/shared'
 import { Coupon, Merchant, Redemption } from '@/models'
 import { requireMerchantAuth } from '@/middleware/auth'
+import { tenantContext, getAppId } from '@/middleware/tenant'
 
 export const merchantsRoutes = new Hono()
+
+merchantsRoutes.use('*', tenantContext)
 
 function serializeMerchant(m: any) {
   if (!m) return null
@@ -37,12 +40,13 @@ function serializeMerchant(m: any) {
   }
 }
 
-// Listado público de comercios activos
+// Listado público de comercios activos POR TENANT
 merchantsRoutes.get('/', async (c) => {
+  const appId = getAppId(c)
   const categoria = c.req.query('categoria')
   const q = c.req.query('q')?.toLowerCase()
 
-  const filter: Record<string, any> = { estado: 'activo' }
+  const filter: Record<string, any> = { appId, estado: 'activo' }
   if (categoria) filter.categoria = categoria
 
   let merchants = await Merchant.find(filter).sort({ destacado: -1, nombre: 1 })
@@ -55,20 +59,19 @@ merchantsRoutes.get('/', async (c) => {
   return c.json({ ok: true, merchants: merchants.map(serializeMerchant) })
 })
 
-// GET /merchants/me/profile — perfil completo del comercio autenticado.
-// A diferencia de /merchants/:slug (público, filtra estado='activo'), este
-// devuelve el merchant completo independiente del estado, para que el dueño
-// pueda gestionar su comercio aunque esté pending_payment, suspendido, etc.
+// GET /merchants/me/profile — perfil completo del comercio autenticado (cualquier estado).
 merchantsRoutes.get('/me/profile', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
-  const merchant = await Merchant.findById(auth.merchantId)
+  const merchant = await Merchant.findOne({ _id: auth.merchantId, appId })
   if (!merchant) return c.json({ ok: false, error: 'merchant not found' }, 404)
   return c.json({ ok: true, merchant: serializeMerchant(merchant) })
 })
 
 // PATCH /merchants/me — comercio editando su propio perfil
 merchantsRoutes.patch('/me', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const body = await c.req.json().catch(() => ({}))
@@ -77,7 +80,7 @@ merchantsRoutes.patch('/me', requireMerchantAuth, async (c) => {
     return c.json({ ok: false, error: 'invalid input', issues: parsed.error.format() }, 400)
   }
 
-  const merchant = await Merchant.findById(auth.merchantId)
+  const merchant = await Merchant.findOne({ _id: auth.merchantId, appId })
   if (!merchant) return c.json({ ok: false, error: 'merchant not found' }, 404)
 
   const data = parsed.data
@@ -102,14 +105,15 @@ merchantsRoutes.patch('/me', requireMerchantAuth, async (c) => {
 
 // GET /merchants/me/stats — métricas del comercio autenticado
 merchantsRoutes.get('/me/stats', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
 
-  const redemptions = await Redemption.find({ merchantId: auth.merchantId })
+  const redemptions = await Redemption.find({ appId, merchantId: auth.merchantId })
   const total = redemptions.length
   const ahorroTotal = redemptions.reduce((s, r) => s + (r.ahorroEstimado || 0), 0)
   const ingresosTotal = redemptions.reduce((s, r) => s + (r.montoTicket || 0), 0)
-  const clientesUnicos = new Set(redemptions.map((r) => r.userId.toString())).size
+  const clientesUnicos = new Set(redemptions.map((r) => r.userId?.toString())).size
 
   return c.json({
     ok: true,
@@ -124,11 +128,13 @@ merchantsRoutes.get('/me/stats', requireMerchantAuth, async (c) => {
 
 // GET /merchants/:slug — detalle público
 merchantsRoutes.get('/:slug', async (c) => {
+  const appId = getAppId(c)
   const slug = c.req.param('slug')
-  const merchant = await Merchant.findOne({ slug, estado: 'activo' })
+  const merchant = await Merchant.findOne({ appId, slug, estado: 'activo' })
   if (!merchant) return c.json({ ok: false, error: 'not found' }, 404)
 
   const coupons = await Coupon.find({
+    appId,
     merchantId: merchant._id,
     estado: 'activo',
     vigenciaHasta: { $gte: new Date() },
