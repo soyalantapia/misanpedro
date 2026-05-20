@@ -1,24 +1,29 @@
 /**
  * Job de expiración: corre al boot y luego cada 10 min.
- *   - Cupones con vigenciaHasta < now y estado='activo' → 'vencido'
- *   - Activations con expiresAt < now y status='activo' → 'expirado'
+ *
+ * Ahora SOLO marca cupones vencidos. Las activations YA NO TIENEN TTL —
+ * el código vale mientras el cupón esté activo. Si el cupón vence, las
+ * activaciones siguen como "activo" en DB pero al canjearlo el endpoint
+ * `/redemptions/confirm` chequea `coupon.estado` y `coupon.vigenciaHasta`
+ * y rechaza el canje.
+ *
+ * Decisión de diseño:
+ *   - Sin TTL = vecino no se siente apurado por el countdown
+ *   - El comercio sigue protegido porque el canje chequea el cupón en runtime
+ *   - Activations huérfanas no son problema (no ocupan recursos críticos)
  *
  * Idempotente. Si la DB se cae el job loguea y sigue.
  */
 
-import { Activation, Coupon } from '@/models'
+import { Coupon } from '@/models'
 
 const TICK_MS = 10 * 60 * 1000
 
 let timer: ReturnType<typeof setInterval> | null = null
 
-export async function runExpirySweep(): Promise<{
-  couponsExpired: number
-  activationsExpired: number
-}> {
+export async function runExpirySweep(): Promise<{ couponsExpired: number }> {
   const now = new Date()
   let couponsExpired = 0
-  let activationsExpired = 0
 
   try {
     const c = await Coupon.updateMany(
@@ -30,23 +35,11 @@ export async function runExpirySweep(): Promise<{
     console.error('[expiry] cupones falló:', err)
   }
 
-  try {
-    const a = await Activation.updateMany(
-      { status: 'activo', expiresAt: { $lt: now } },
-      { status: 'expirado' },
-    )
-    activationsExpired = a.modifiedCount ?? 0
-  } catch (err) {
-    console.error('[expiry] activations falló:', err)
+  if (couponsExpired > 0) {
+    console.log(`[expiry] sweep: ${couponsExpired} cupones vencidos`)
   }
 
-  if (couponsExpired > 0 || activationsExpired > 0) {
-    console.log(
-      `[expiry] sweep: ${couponsExpired} cupones vencidos, ${activationsExpired} activations expiradas`,
-    )
-  }
-
-  return { couponsExpired, activationsExpired }
+  return { couponsExpired }
 }
 
 export function startExpiryLoop(): void {

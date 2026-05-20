@@ -25,6 +25,7 @@ function serializeForValidation(activation: any, coupon: any, user: any) {
     activationId: activation._id.toString(),
     codigoNumerico: activation.codigoNumerico,
     status: activation.status,
+    // expiresAt queda como deprecated; los nuevos códigos no expiran por tiempo
     expiresAt: activation.expiresAt?.toISOString?.(),
     coupon: {
       id: coupon._id.toString(),
@@ -77,10 +78,13 @@ redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, async 
   if (activation.status !== 'activo') {
     return c.json({ ok: false, error: `ya ${activation.status}`, status: activation.status }, 409)
   }
-  if (activation.expiresAt.getTime() < Date.now()) {
-    activation.status = 'expirado'
-    await activation.save()
-    return c.json({ ok: false, error: 'expirado', status: 'expirado' }, 409)
+
+  // Chequeamos que el cupón siga vigente (sin TTL en la activación)
+  if (coupon.estado !== 'activo') {
+    return c.json({ ok: false, error: 'el cupón ya no está activo', status: 'inactivo' }, 409)
+  }
+  if (coupon.vigenciaHasta.getTime() < Date.now()) {
+    return c.json({ ok: false, error: 'el cupón está vencido', status: 'vencido' }, 409)
   }
 
   const user = await User.findOne({ _id: activation.userId, appId })
@@ -111,14 +115,18 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, async (c) => {
   if (activation.status !== 'activo') {
     return c.json({ ok: false, error: `ya ${activation.status}` }, 409)
   }
-  if (activation.expiresAt.getTime() < Date.now()) {
-    return c.json({ ok: false, error: 'expirado' }, 409)
-  }
 
   const coupon = await Coupon.findOne({ _id: activation.couponId, appId })
   if (!coupon) return c.json({ ok: false, error: 'cupón no encontrado' }, 404)
   if (coupon.merchantId.toString() !== auth.merchantId) {
     return c.json({ ok: false, error: 'cupón de otro comercio' }, 403)
+  }
+  // Sin TTL en activations: chequeo sólo el cupón.
+  if (coupon.estado !== 'activo') {
+    return c.json({ ok: false, error: 'el cupón ya no está activo' }, 409)
+  }
+  if (coupon.vigenciaHasta.getTime() < Date.now()) {
+    return c.json({ ok: false, error: 'el cupón está vencido' }, 409)
   }
 
   const ahorroEstimado = montoTicket

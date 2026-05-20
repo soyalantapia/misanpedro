@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Ticket, Sparkles, RefreshCw, ArrowRight, Clock, AlertCircle } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
@@ -7,8 +7,6 @@ import { useToast } from '@/components/Toast'
 import { activationActions, useActivations, useUser } from '@/lib/stores'
 import { getMerchant } from '@/data/mockData'
 import { useCoupons } from '@/lib/couponsStore'
-import { formatTimeRemaining } from '@/lib/format'
-import { cn } from '@/lib/cn'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 
 export function MisCuponesPage() {
@@ -71,14 +69,9 @@ export function MisCuponesPage() {
       logoSeed: apiM.logoSeed,
     }
   }
-  const [now, setNow] = useState(() => Date.now())
   const navigate = useNavigate()
   const toast = useToast()
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [])
+  // Sin ticker — los cupones no expiran por tiempo. Renderizamos una sola vez.
 
   const visible = useMemo(
     () =>
@@ -133,9 +126,10 @@ export function MisCuponesPage() {
             if (!c || !m) return null
 
             const isActive = a.status === 'activo'
-            const remaining = new Date(a.expiresAt).getTime() - now
-            const expired = isActive && remaining <= 0
-            const showAsActive = isActive && !expired
+            // Sin TTL: si la activation tiene status='activo', se muestra como activa.
+            // Las viejas con expiresAt legacy ya no se vencen automáticamente.
+            const expired = false
+            const showAsActive = isActive
 
             return (
               <div
@@ -163,13 +157,7 @@ export function MisCuponesPage() {
                     </span>
                   </div>
 
-                  <StatusLine
-                    status={a.status}
-                    remaining={remaining}
-                    expiresAt={a.expiresAt}
-                    now={now}
-                    expired={expired}
-                  />
+                  <StatusLine status={a.status} expired={expired} />
 
                   <div className="mt-2 flex items-center gap-2">
                     {showAsActive ? (
@@ -207,15 +195,9 @@ export function MisCuponesPage() {
 
 function StatusLine({
   status,
-  remaining,
-  expiresAt,
-  now,
   expired,
 }: {
   status: string
-  remaining: number
-  expiresAt: string
-  now: number
   expired: boolean
 }) {
   if (status === 'cancelado') {
@@ -233,15 +215,9 @@ function StatusLine({
     )
   }
   if (status === 'activo') {
-    const isWarn = remaining < 5 * 60 * 1000
     return (
-      <p
-        className={cn(
-          'inline-flex items-center gap-1 text-[11px] font-bold tabular-nums',
-          isWarn ? 'text-status-warning-fg' : 'text-status-success-fg',
-        )}
-      >
-        <Clock size={11} /> Expira en {formatTimeRemaining(expiresAt, now)}
+      <p className="inline-flex items-center gap-1 text-[11px] font-bold tabular-nums text-status-success-fg">
+        <Clock size={11} /> Listo para canjear
       </p>
     )
   }

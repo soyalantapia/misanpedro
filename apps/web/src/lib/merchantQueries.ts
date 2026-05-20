@@ -60,11 +60,13 @@ function buildResult(
     }
   }
 
-  if (activation.status === 'expirado' || new Date(activation.expiresAt).getTime() <= Date.now()) {
+  // Los códigos ya no expiran por tiempo. Sólo chequeamos status legacy
+  // de activaciones viejas marcadas como expiradas en la DB.
+  if (activation.status === 'expirado') {
     return {
       ok: false,
       reason: 'expired',
-      message: 'El cupón expiró. Pedile al cliente que lo reactive desde la app.',
+      message: 'Esta activación está marcada como expirada en la base. Pedile al cliente que reactive el cupón desde la app.',
     }
   }
 

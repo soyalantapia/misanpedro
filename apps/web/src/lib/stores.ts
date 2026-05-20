@@ -59,26 +59,11 @@ function getSnapshot() {
   return state
 }
 
-const expirationCheckInterval = 15_000
-let timer: ReturnType<typeof setInterval> | null = null
-
-function startExpirationLoop() {
-  if (typeof window === 'undefined' || timer) return
-  timer = setInterval(() => {
-    const now = Date.now()
-    let dirty = false
-    const next = state.activations.map((a) => {
-      if (a.status === 'activo' && new Date(a.expiresAt).getTime() <= now) {
-        dirty = true
-        return { ...a, status: 'expirado' as ActivationStatus }
-      }
-      return a
-    })
-    if (dirty) update((s) => ({ ...s, activations: next }))
-  }, expirationCheckInterval)
-}
-
-startExpirationLoop()
+// Loop de expiración local DESHABILITADO.
+// Los códigos ya no expiran por tiempo — viven mientras el cupón esté activo.
+// El canje se valida en runtime contra el cupón en /redemptions/confirm.
+// Activaciones legacy con status='expirado' siguen funcionando porque otros
+// chequeos (canjeado, cancelado) las descartan correctamente.
 
 // Storage events: sincroniza cambios entre tabs del mismo browser
 if (typeof window !== 'undefined') {
@@ -194,7 +179,6 @@ export const activationActions = {
     if (existing) return existing
 
     const now = new Date()
-    const expiresAt = new Date(now.getTime() + 30 * 60 * 1000)
     const codigoNumerico = overrides?.codigoNumerico ?? generateNumericCode()
     const id = overrides?.id ?? `a-${randomToken(10)}`
     const activation: Activation = {
@@ -209,10 +193,9 @@ export const activationActions = {
           userId,
           activationId: id,
           codigo: codigoNumerico,
-          exp: expiresAt.getTime(),
         }),
       activatedAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
+      // Sin expiresAt: los códigos no expiran por tiempo.
       status: 'activo',
     }
     update((s) => ({ ...s, activations: [activation, ...s.activations] }))
@@ -224,7 +207,6 @@ export const activationActions = {
     if (target.status === 'activo') return target
 
     const now = new Date()
-    const expiresAt = new Date(now.getTime() + 30 * 60 * 1000)
     const codigoNumerico = generateNumericCode()
     const next: Activation = {
       ...target,
@@ -233,10 +215,10 @@ export const activationActions = {
         couponId: target.couponId,
         userId: target.userId,
         codigo: codigoNumerico,
-        exp: expiresAt.getTime(),
       }),
       activatedAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
+      // expiresAt limpio (las activations nuevas no lo necesitan)
+      expiresAt: undefined,
       status: 'activo',
       redeemedAt: undefined,
     }

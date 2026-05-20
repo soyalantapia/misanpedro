@@ -78,7 +78,12 @@ export type Activation = {
   codigoNumerico: string
   qrPayload: string
   activatedAt: string
-  expiresAt: string
+  /**
+   * @deprecated Los códigos ya no expiran por tiempo. Campo legacy
+   * mantenido por compatibilidad con activations viejas. Opcional para
+   * que las nuevas no lo seteen.
+   */
+  expiresAt?: string
   status: ActivationStatus
   redeemedAt?: string
   ahorroEstimado?: number

@@ -9,7 +9,13 @@ const activationSchema = new Schema(
     codigoNumerico: { type: String, required: true },
     qrPayload: { type: String, required: true },
     activatedAt: { type: Date, required: true, default: Date.now },
-    expiresAt: { type: Date, required: true, index: true },
+    /**
+     * @deprecated Los códigos ya no tienen TTL. Campo legacy mantenido por
+     * compatibilidad con activations viejas. NUEVAS activations NO lo setean.
+     * El código vale mientras el cupón (Coupon) esté activo + dentro de vigencia
+     * + stock disponible. Se cancela manualmente desde el vecino o al canjearse.
+     */
+    expiresAt: { type: Date, index: true },
     status: {
       type: String,
       enum: ['activo', 'canjeado', 'expirado', 'cancelado'],
@@ -29,7 +35,7 @@ const activationSchema = new Schema(
 
 // Código numérico único por tenant — distintas apps pueden tener el mismo código.
 activationSchema.index({ appId: 1, codigoNumerico: 1 }, { unique: true })
-activationSchema.index({ appId: 1, status: 1, expiresAt: 1 })
+activationSchema.index({ appId: 1, status: 1 })
 activationSchema.index({ couponId: 1, userId: 1, status: 1 })
 
 export type ActivationDoc = InferSchemaType<typeof activationSchema> & {

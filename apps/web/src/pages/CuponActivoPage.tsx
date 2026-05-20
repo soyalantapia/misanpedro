@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { ChevronLeft, Store, X } from 'lucide-react'
-import { CountdownTimer } from '@/components/CountdownTimer'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/Toast'
 import { activationActions, useActivation } from '@/lib/stores'
@@ -144,12 +143,11 @@ export function CuponActivoPage() {
           {formatCode(activation.codigoNumerico)}
         </p>
         <p className="max-w-xs text-center text-xs text-neutral-500">
-          Mostrá este código al cajero. Se canjea solo una vez en {merchant.nombre}.
+          Mostrá este código al cajero. Se canjea una sola vez en {merchant.nombre}.
         </p>
-        <CountdownTimer
-          expiresAt={activation.expiresAt}
-          onExpire={() => toast.warning('Cupón expirado', 'Reactivalo desde Mis cupones.')}
-        />
+        <p className="max-w-xs text-center text-[11px] text-neutral-400">
+          Sin tiempo límite — el código vale hasta que lo uses.
+        </p>
       </div>
 
       {!isExpired && (

@@ -11,8 +11,6 @@ export const activationsRoutes = new Hono()
 
 activationsRoutes.use('*', tenantContext)
 
-const ACTIVATION_TTL_MS = 30 * 60 * 1000 // 30 min
-
 function generateNumeric(): string {
   return randomInt(100_000, 1_000_000).toString()
 }
@@ -83,13 +81,13 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
     return c.json({ ok: false, error: 'cupón vencido' }, 400)
   }
 
-  // Si el usuario ya tiene una activación activa para este cupón, devolverla
+  // Si el usuario ya tiene una activación activa para este cupón, devolverla.
+  // Los códigos no expiran por tiempo: viven hasta que se canjeen o cancelen.
   const existing = await Activation.findOne({
     appId,
     couponId: coupon._id,
     userId: auth.sub,
     status: 'activo',
-    expiresAt: { $gt: new Date() },
   })
   if (existing) {
     const merchant = await Merchant.findOne({ _id: coupon.merchantId, appId })
@@ -110,7 +108,9 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
         codigoNumerico,
         qrPayload,
         activatedAt: new Date(),
-        expiresAt: new Date(Date.now() + ACTIVATION_TTL_MS),
+        // Sin TTL: el código vale mientras el cupón esté activo. Si el cupón
+        // se pausa o vence (Coupon.estado/vigenciaHasta), la activación
+        // tampoco se va a poder canjear (chequeo en redemptions/validate).
         status: 'activo',
       })
     } catch (err: any) {
