@@ -47,6 +47,18 @@ const schema = z.object({
     .string()
     .default('false')
     .transform((v) => v === 'true'),
+
+  /**
+   * Si true, el flujo de login del Owner Panel exige TOTP (2FA con QR).
+   * Si false (default), el primer login emite tokens directo con email + password.
+   * Recomendado activar antes de exponer el Owner Panel en prod.
+   *
+   * Cambiar a 'true' en prod cuando estés listo para escanear el QR.
+   */
+  OWNER_2FA_REQUIRED: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
 })
 
 const parsed = schema.safeParse(process.env)

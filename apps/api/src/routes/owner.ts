@@ -24,6 +24,7 @@ import {
 } from '@/services/totp.service'
 import { sendOwnerNewAppNotice } from '@/services/email.service'
 import { requireOwnerAuth } from '@/middleware/auth'
+import { env } from '@/env'
 
 export const ownerRoutes = new Hono()
 
@@ -65,30 +66,33 @@ ownerRoutes.post('/auth/login', async (c) => {
     return c.json({ ok: false, error: 'invalid credentials' }, 401)
   }
 
-  // Si el owner no tiene 2FA aún, devolvemos el secret + URI para escanear
-  if (!owner.totpEnabled || !owner.totpSecret) {
-    const secret = generateTotpSecret()
-    const uri = buildTotpUri({ email: owner.email, secret, issuer: 'Cuponcito' })
-    owner.totpSecret = secret
-    await owner.save()
-    return c.json({
-      ok: true,
-      setup2FA: true,
-      totpUri: uri,
-      secret,
-      message: 'Escaneá el QR con Google Authenticator y verificá con POST /owner/auth/2fa/verify',
-    })
-  }
+  // 2FA flow opcional. Si OWNER_2FA_REQUIRED=false (default), saltamos
+  // todo el flujo de TOTP y emitimos tokens directo. Si está activado,
+  // se exige: setup → verify → login con código.
+  if (env.OWNER_2FA_REQUIRED) {
+    if (!owner.totpEnabled || !owner.totpSecret) {
+      const secret = generateTotpSecret()
+      const uri = buildTotpUri({ email: owner.email, secret, issuer: 'Cuponcito' })
+      owner.totpSecret = secret
+      await owner.save()
+      return c.json({
+        ok: true,
+        setup2FA: true,
+        totpUri: uri,
+        secret,
+        message:
+          'Escaneá el QR con Google Authenticator y verificá con POST /owner/auth/2fa/verify',
+      })
+    }
 
-  // Si tiene 2FA habilitado pero el cliente no mandó el código, pedimos
-  if (!totp) {
-    return c.json({ ok: true, needTotp: true })
-  }
+    if (!totp) {
+      return c.json({ ok: true, needTotp: true })
+    }
 
-  // Verificar TOTP
-  const totpOk = verifyTotpCode({ secret: owner.totpSecret, code: totp })
-  if (!totpOk) {
-    return c.json({ ok: false, error: 'invalid 2fa code' }, 401)
+    const totpOk = verifyTotpCode({ secret: owner.totpSecret, code: totp })
+    if (!totpOk) {
+      return c.json({ ok: false, error: 'invalid 2fa code' }, 401)
+    }
   }
 
   // Emitir tokens
