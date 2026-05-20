@@ -257,3 +257,55 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 }
+
+// ──────────────────────────────────────────────────────────────
+// Owner notifications
+// ──────────────────────────────────────────────────────────────
+
+/**
+ * Notifica al owner (vos) que se creó una nueva app/tenant.
+ * Se manda al SUPPORT_EMAIL configurado en env.
+ */
+export async function sendOwnerNewAppNotice(input: {
+  appNombre: string
+  appSlug: string
+  ciudad: string
+  subdomain: string
+  ownerEmail: string
+  ownerNombre: string
+}) {
+  return sendEmail({
+    to: env.SUPPORT_EMAIL,
+    subject: `Nueva app creada: ${input.appNombre} (${input.appSlug})`,
+    html: wrap(
+      `Nueva app: ${escapeHtml(input.appNombre)}`,
+      `
+        <p>Acabás de crear una app nueva en Cuponcito:</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          <tr>
+            <td style="padding:6px 0;color:#8b8589;font-size:13px">Slug</td>
+            <td style="padding:6px 0;font-family:monospace;font-size:13px">${escapeHtml(input.appSlug)}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#8b8589;font-size:13px">Ciudad</td>
+            <td style="padding:6px 0;font-size:13px">${escapeHtml(input.ciudad)}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#8b8589;font-size:13px">Subdomain</td>
+            <td style="padding:6px 0;font-family:monospace;font-size:13px">${escapeHtml(input.subdomain)}.cuponcito.app</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#8b8589;font-size:13px">Creada por</td>
+            <td style="padding:6px 0;font-size:13px">${escapeHtml(input.ownerNombre)} (${escapeHtml(input.ownerEmail)})</td>
+          </tr>
+        </table>
+        <h3 style="margin:24px 0 8px;font-size:15px">Próximos pasos</h3>
+        <ol style="font-size:13px;color:#605a5e;padding-left:20px;line-height:1.7">
+          <li>Configurar DNS: A/CNAME para <code>${escapeHtml(input.subdomain)}.cuponcito.app</code> apuntando al deploy.</li>
+          <li>(Opcional) Sumar comercios pioneros desde el panel.</li>
+          <li>Compartir el subdomain con el operador local.</li>
+        </ol>
+      `,
+    ),
+  })
+}

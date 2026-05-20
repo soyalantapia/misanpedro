@@ -22,6 +22,7 @@ import {
   generateTotpSecret,
   verifyTotpCode,
 } from '@/services/totp.service'
+import { sendOwnerNewAppNotice } from '@/services/email.service'
 import { requireOwnerAuth } from '@/middleware/auth'
 
 export const ownerRoutes = new Hono()
@@ -291,16 +292,18 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
     return c.json({ ok: false, error: 'invalid input', detail: parsed.error.flatten() }, 400)
   }
   const data = parsed.data
+  const auth = c.get('auth')
 
   const exists = await App.findOne({ slug: data.slug })
   if (exists) return c.json({ ok: false, error: 'slug already exists' }, 409)
 
+  const subdomain = data.subdomain ?? data.slug
   const app = await App.create({
     slug: data.slug,
     nombre: data.nombre,
     ciudad: data.ciudad,
     provincia: data.provincia,
-    subdomain: data.subdomain ?? data.slug,
+    subdomain,
     status: 'active',
     plan: 'founder',
     brand: {
@@ -308,6 +311,24 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
       accentColor: data.accentColor ?? '#4239a3',
     },
   })
+
+  // Notificación al owner (no bloqueante). Si Resend no está configurado,
+  // el service loguea a consola sin fallar.
+  void (async () => {
+    try {
+      const ownerDoc = await Owner.findById(auth.sub)
+      await sendOwnerNewAppNotice({
+        appNombre: app.nombre,
+        appSlug: app.slug,
+        ciudad: app.ciudad,
+        subdomain: app.subdomain,
+        ownerEmail: ownerDoc?.email ?? '',
+        ownerNombre: ownerDoc?.nombre ?? 'Owner',
+      })
+    } catch (err) {
+      console.warn('[owner.createApp] email failed:', (err as Error).message)
+    }
+  })()
 
   return c.json({ ok: true, app }, 201)
 })

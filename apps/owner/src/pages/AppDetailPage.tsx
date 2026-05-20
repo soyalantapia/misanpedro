@@ -6,6 +6,7 @@ import { fmtDate, fmtNumber } from '@/lib/format'
 import { PageHeader } from '@/components/PageHeader'
 import { StatCard } from '@/components/StatCard'
 import { StatusBadge } from '@/components/StatusBadge'
+import { DnsSetupCard } from '@/components/DnsSetupCard'
 
 export function AppDetailPage() {
   const { id = '' } = useParams<{ id: string }>()
@@ -129,6 +130,12 @@ export function AppDetailPage() {
           />
         </section>
       )}
+
+      <DnsSetupCard
+        subdomain={app.subdomain}
+        customDomain={app.customDomain}
+        status={app.status}
+      />
 
       <section className="rounded-2xl bg-white p-6 ring-1 ring-neutral-200">
         <h2 className="text-sm font-bold text-neutral-900">Drill-down</h2>
