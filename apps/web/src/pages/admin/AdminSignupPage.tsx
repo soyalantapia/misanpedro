@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Store,
@@ -62,18 +62,88 @@ const empty: Form = {
   acceptedTc: false,
 }
 
+/**
+ * Persistencia del draft del signup en localStorage.
+ * Si el usuario recarga (F5, cierra y vuelve a abrir, navega y vuelve),
+ * los datos quedan. Excluimos `password` y `acceptedTc` por seguridad/legal:
+ *   - password no se almacena nunca en localStorage (XSS-safe)
+ *   - acceptedTc tiene que ser un consent fresco cada vez
+ */
+const DRAFT_KEY = 'msp.admin.signup.draft.v1'
+
+type StoredDraft = Omit<Form, 'password' | 'acceptedTc'>
+
+function loadDraft(): Partial<Form> | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as StoredDraft
+    // Sanitizamos: solo conservamos campos string conocidos.
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function saveDraft(form: Form) {
+  try {
+    const { password: _p, acceptedTc: _a, ...rest } = form
+    // Si está todo vacío, no escribimos basura al storage.
+    const someFilled = Object.values(rest).some(
+      (v) => typeof v === 'string' && v.trim().length > 0,
+    )
+    if (!someFilled) {
+      localStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(rest))
+  } catch {
+    /* storage lleno o bloqueado — no es crítico */
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY)
+  } catch {
+    /* noop */
+  }
+}
+
 export function AdminSignupPage() {
+  // Siempre arrancamos en 'datos' al recargar: el usuario tiene que volver
+  // a ingresar la contraseña (no se persiste) y re-aceptar los TyC.
   const [step, setStep] = useState<Step>('datos')
-  const [form, setForm] = useState<Form>(empty)
+  const [form, setForm] = useState<Form>(() => {
+    const draft = loadDraft()
+    if (!draft) return empty
+    return { ...empty, ...draft }
+  })
+  const [draftRestored, setDraftRestored] = useState<boolean>(() => loadDraft() !== null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
   const toast = useToast()
 
+  // Persistimos el form en localStorage en cada cambio. No persistimos
+  // password ni acceptedTc (ver saveDraft). Tampoco después de "listo".
+  useEffect(() => {
+    if (step === 'listo') return
+    saveDraft(form)
+  }, [form, step])
+
   function update<K extends keyof Form>(key: K, value: Form[K]) {
     setForm((f) => ({ ...f, [key]: value }))
     setError(null)
+    if (draftRestored) setDraftRestored(false)
+  }
+
+  function discardDraft() {
+    clearDraft()
+    setForm(empty)
+    setDraftRestored(false)
+    setStep('datos')
   }
 
   function validateDatos(): string | null {
@@ -142,6 +212,8 @@ export function AdminSignupPage() {
       acceptedTc: true,
     })
     if (result.ok) {
+      // Comercio creado en backend — limpiamos el draft persistido.
+      clearDraft()
       // Disparamos el flujo de billing (Mercado Pago preapproval).
       // En production, redirigimos al checkout de MP. En development con
       // MP_ACCESS_TOKEN vacío, el backend devuelve init_point apuntando a
@@ -226,6 +298,22 @@ export function AdminSignupPage() {
         </div>
 
         <Stepper step={step} />
+
+        {step === 'datos' && draftRestored && (
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-status-info-bg px-4 py-3 text-status-info-fg ring-1 ring-status-info/20">
+            <p className="text-xs leading-snug">
+              <strong>Recuperamos tus datos</strong> de la última vez que estuviste acá. Revisalos y
+              completá la contraseña antes de continuar.
+            </p>
+            <button
+              type="button"
+              onClick={discardDraft}
+              className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-status-info-fg ring-1 ring-status-info/30 hover:bg-status-info/10"
+            >
+              Empezar de cero
+            </button>
+          </div>
+        )}
 
         {step === 'datos' && (
           <div className="flex flex-col gap-4 rounded-3xl bg-white p-5 shadow-floating ring-1 ring-neutral-100">
