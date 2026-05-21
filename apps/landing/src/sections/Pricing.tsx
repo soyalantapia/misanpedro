@@ -98,7 +98,7 @@ export function Pricing() {
                 href={SIGNUP_URL}
                 className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
               >
-                Empezar
+                Reservar mi precio
                 <ArrowRight
                   size={16}
                   className="transition-transform group-hover:translate-x-0.5"

@@ -34,9 +34,17 @@ export function SocialProof() {
           ))}
         </AnimatedSection>
 
-        <p className="mt-8 text-center text-xs text-neutral-500">
-          Los primeros comercios adheridos al programa. Cargá tu local y sumate.
-        </p>
+        <div className="mt-8 flex flex-col items-center gap-2 text-center">
+          <p className="text-xs text-neutral-500">
+            Programa cerrado al cupo 20. Después el precio sube para nuevos comercios.
+          </p>
+          <a
+            href="#precios"
+            className="inline-flex items-center gap-1 text-xs font-bold text-accent-700 underline-offset-4 transition-colors hover:text-accent-900 hover:underline"
+          >
+            Ver precio fundador →
+          </a>
+        </div>
       </div>
     </section>
   )

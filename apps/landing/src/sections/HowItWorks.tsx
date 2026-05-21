@@ -9,7 +9,7 @@ const STEPS = [
   {
     n: '02',
     title: 'El vecino activa el cupón',
-    body: 'Carolina ve tu descuento en la app, lo activa con un toque. Le aparece un código de 6 dígitos válido por 30 minutos.',
+    body: 'Carolina ve tu descuento en la app, lo activa con un toque. Le aparece un código de 6 dígitos que vale hasta que lo use.',
   },
   {
     n: '03',

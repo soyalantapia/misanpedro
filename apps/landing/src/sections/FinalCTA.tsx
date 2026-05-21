@@ -11,14 +11,17 @@ export function FinalCTA() {
         <div className="pointer-events-none absolute -bottom-20 right-10 h-48 w-48 rounded-full bg-accent-300/30 blur-2xl" />
 
         <div className="relative">
-          <h2 className="text-balance text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.05] tracking-tight">
-            Tu primer canje en menos de 10 minutos.
+          <p className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white ring-1 ring-white/30 backdrop-blur">
+            ⏳ Cupo limitado · Primeros 20 comercios
+          </p>
+
+          <h2 className="mt-6 text-balance text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.05] tracking-tight">
+            Antes de que cierre el cupo.
           </h2>
 
           <p className="mt-5 text-pretty text-lg leading-relaxed text-white/85">
-            Precio fundador <strong>hasta los primeros 20 comercios.</strong>
-            <br className="hidden sm:inline" />
-            Congelado de por vida.
+            Sumate al programa fundador. Tu precio queda{' '}
+            <strong>congelado de por vida</strong> — mientras tu cuenta esté activa.
           </p>
 
           <div className="mt-9 flex justify-center">

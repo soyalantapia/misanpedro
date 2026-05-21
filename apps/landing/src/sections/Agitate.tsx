@@ -8,16 +8,18 @@ export function Agitate() {
 
       <AnimatedSection className="relative mx-auto max-w-4xl text-center">
         <h2 className="text-balance text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-neutral-900">
-          Cada cliente que entra a tu local
+          Hoy atendiste 80 personas.
           <br className="hidden sm:inline" />
-          {' '}es una relación que{' '}
+          {' '}¿Cuántas vuelven{' '}
           <span className="bg-gradient-to-br from-accent-500 to-accent-700 bg-clip-text text-transparent">
-            se evapora
-          </span>{' '}
-          apenas cruza la puerta de salida.
+            mañana
+          </span>
+          ?
         </h2>
         <p className="mt-8 text-pretty text-lg leading-relaxed text-neutral-600">
-          Y vos seguís bajando la persiana sin saber si Carlos vuelve mañana o no.
+          Vos no sabés. Y por eso ellas tampoco vuelven.
+          <br className="hidden sm:inline" />
+          {' '}El olvido es mutuo. Y cada cliente que se olvida es plata que se va.
         </p>
       </AnimatedSection>
     </section>
