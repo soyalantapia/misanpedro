@@ -71,9 +71,6 @@ export const merchantLoginSchema = z.object({
   password: z.string().min(3, 'Mínimo 3 caracteres'),
 })
 
-/** Validación de CUIT: 11 dígitos sin guiones (ej: 20123456789). */
-const cuitRegex = /^\d{11}$/
-
 export const merchantSignupSchema = z.object({
   comercio: z.object({
     nombre: z.string().min(3),
@@ -84,8 +81,11 @@ export const merchantSignupSchema = z.object({
     telefono: z.string().min(6),
     /** Horarios ahora es OPCIONAL — se completa después en el panel. */
     horarios: z.string().optional().default(''),
-    /** CUIT 11 dígitos. Opcional al signup, requerido para facturar. */
-    cuit: z.string().regex(cuitRegex, 'CUIT debe ser 11 dígitos').optional(),
+    /**
+     * CUIT como texto libre (sin regex). El comercio lo carga como pueda;
+     * lo normalizamos en backoffice cuando facturamos.
+     */
+    cuit: z.string().optional(),
     razonSocial: z.string().min(3).optional(),
     condicionFiscal: z
       .enum(['monotributo', 'responsable_inscripto', 'consumidor_final'])
@@ -154,7 +154,7 @@ export const merchantUpdateSchema = z.object({
   coverImageUrl: z.string().optional().nullable(),
   logoUrl: z.string().optional().nullable(),
   mapsUrl: z.string().url().optional().nullable(),
-  cuit: z.string().regex(cuitRegex).optional().nullable(),
+  cuit: z.string().optional().nullable(),
   razonSocial: z.string().min(3).optional().nullable(),
   condicionFiscal: z
     .enum(['monotributo', 'responsable_inscripto', 'consumidor_final'])

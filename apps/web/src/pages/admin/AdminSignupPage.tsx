@@ -15,6 +15,7 @@ import {
 import { CATEGORIAS, type Categoria } from '@/lib/types'
 import { merchantAuth } from '@/lib/merchantStore'
 import { useToast } from '@/components/Toast'
+import { Select } from '@/components/Select'
 import { cn } from '@/lib/cn'
 import { billing } from '@/lib/api'
 
@@ -160,8 +161,9 @@ export function AdminSignupPage() {
   }
 
   function validateFiscal(): string | null {
-    const dni = form.cuit.replace(/\D/g, '')
-    if (dni.length !== 11) return 'CUIT inválido (11 dígitos)'
+    // CUIT como texto libre — sin validación de formato. Solo pedimos
+    // que esté presente porque es necesario para emitir la factura.
+    if (form.cuit.trim().length < 3) return 'Falta el CUIT'
     if (form.razonSocial.trim().length < 3) return 'Falta la razón social'
     if (form.direccionFiscal.trim().length < 5) return 'Falta la dirección fiscal'
     return null
@@ -199,7 +201,7 @@ export function AdminSignupPage() {
         direccion: form.direccion.trim(),
         telefono: form.telefono.trim(),
         horarios: form.horarios.trim(),
-        cuit: form.cuit.replace(/\D/g, ''),
+        cuit: form.cuit.trim(),
         razonSocial: form.razonSocial.trim(),
         condicionFiscal: form.condicionFiscal,
         direccionFiscal: form.direccionFiscal.trim(),
@@ -334,17 +336,12 @@ export function AdminSignupPage() {
               label="Categoría"
               required
               input={
-                <select
+                <Select<Categoria>
                   value={form.categoria}
-                  onChange={(e) => update('categoria', e.target.value as Categoria)}
-                  className={inputCls}
-                >
-                  {CATEGORIAS.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => update('categoria', v)}
+                  options={CATEGORIAS.map((c) => ({ value: c.id, label: c.label }))}
+                  ariaLabel="Categoría del comercio"
+                />
               }
             />
             {form.categoria === 'otro' && (
@@ -557,20 +554,13 @@ function FiscalStep({
       <Field
         label="CUIT"
         required
-        hint={`${form.cuit.length}/11`}
-        help={
-          form.cuit.length === 11
-            ? `${form.cuit.slice(0, 2)}-${form.cuit.slice(2, 10)}-${form.cuit.slice(10)}`
-            : '11 dígitos sin guiones'
-        }
         input={
           <input
             type="text"
-            inputMode="numeric"
             autoComplete="off"
             value={form.cuit}
-            onChange={(e) => update('cuit', e.target.value.replace(/\D/g, '').slice(0, 11))}
-            placeholder="20123456789"
+            onChange={(e) => update('cuit', e.target.value)}
+            placeholder="Ej: 20-12345678-9"
             className={inputCls}
           />
         }
@@ -592,15 +582,16 @@ function FiscalStep({
         label="Condición fiscal"
         required
         input={
-          <select
+          <Select<CondicionFiscal>
             value={form.condicionFiscal}
-            onChange={(e) => update('condicionFiscal', e.target.value as CondicionFiscal)}
-            className={inputCls}
-          >
-            <option value="monotributo">Monotributista</option>
-            <option value="responsable_inscripto">Responsable Inscripto</option>
-            <option value="consumidor_final">Consumidor Final</option>
-          </select>
+            onChange={(v) => update('condicionFiscal', v)}
+            options={[
+              { value: 'monotributo', label: 'Monotributista' },
+              { value: 'responsable_inscripto', label: 'Responsable Inscripto' },
+              { value: 'consumidor_final', label: 'Consumidor Final' },
+            ]}
+            ariaLabel="Condición fiscal"
+          />
         }
       />
       <Field
