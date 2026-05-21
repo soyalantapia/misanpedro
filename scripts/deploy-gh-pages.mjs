@@ -4,7 +4,7 @@
 // Asume que ya corriste `pnpm --filter @misanpedro/web build`.
 
 import { execSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -17,6 +17,32 @@ const PRESERVED_DIRS = ['comercios'] // landing vive acá, no la pises
 if (!existsSync(DIST)) {
   console.error(`❌ No existe ${DIST}. Corré primero: pnpm --filter @misanpedro/web build`)
   process.exit(1)
+}
+
+// Guardrails: que no se deploye un build con la URL placeholder del API,
+// ni uno apuntando a localhost (sería un site público roto).
+const ALLOW_BROKEN = process.argv.includes('--allow-broken')
+const assets = readdirSync(join(DIST, 'assets')).filter((f) => f.endsWith('.js'))
+const jsContents = assets
+  .map((f) => readFileSync(join(DIST, 'assets', f), 'utf8'))
+  .join('\n')
+if (!ALLOW_BROKEN) {
+  if (jsContents.includes('CHANGE-ME-RAILWAY-URL')) {
+    console.error(
+      '\n❌ El build todavía tiene la URL placeholder del API.\n' +
+        '   Editá apps/web/.env.production con la URL pública de Railway y rebuildeá.\n' +
+        '   (Para forzar el deploy igual: agregá --allow-broken)\n',
+    )
+    process.exit(2)
+  }
+  if (/localhost:\d+/.test(jsContents)) {
+    console.error(
+      '\n❌ El build apunta a localhost — eso solo funciona en tu máquina.\n' +
+        '   Setá VITE_API_URL en apps/web/.env.production y rebuildeá.\n' +
+        '   (Para forzar el deploy igual: agregá --allow-broken)\n',
+    )
+    process.exit(2)
+  }
 }
 
 const sh = (cmd, opts = {}) => {

@@ -32,9 +32,21 @@ app.use(httpsRedirect)
 app.use(logger())
 
 // 2) CORS
+// Para GH Pages el origin es siempre la raíz (https://soyalantapia.github.io),
+// el path /misanpedro no aparece en el header Origin. Por eso normalizamos
+// APP_URL_FRONT a su origin antes de matchear.
+function toOrigin(url: string): string {
+  try {
+    return new URL(url).origin
+  } catch {
+    return url
+  }
+}
 const corsOriginList = [
-  env.APP_URL_FRONT,
-  ...(env.CORS_ORIGINS ? env.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean) : []),
+  toOrigin(env.APP_URL_FRONT),
+  ...(env.CORS_ORIGINS
+    ? env.CORS_ORIGINS.split(',').map((s) => toOrigin(s.trim())).filter(Boolean)
+    : []),
   ...(isProd ? [] : ['http://localhost:5180', 'http://127.0.0.1:5180', 'http://localhost:5173']),
 ]
 app.use(
@@ -43,11 +55,13 @@ app.use(
     origin: (origin) => {
       // Permitir requests sin origin (curl, server-to-server)
       if (!origin) return origin
-      // Match exacto contra la allowlist
+      // Match exacto contra la allowlist (ambos lados ya están en formato origin)
       return corsOriginList.includes(origin) ? origin : null
     },
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+    // X-Tenant-Slug es necesario porque la PWA multi-tenant envía el slug
+    // del comercio en cada request. Sin esto el preflight falla.
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Tenant-Slug'],
     exposeHeaders: ['X-Request-Id'],
     credentials: true,
     maxAge: 86400,

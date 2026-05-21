@@ -1,26 +1,41 @@
 # Deploy del backend (apps/api) en Railway
 
-Guía paso-a-paso para subir el backend de Cuponcito a Railway por primera vez.
+Guía paso-a-paso para subir el backend a Railway y conectar el PWA público.
 **Tiempo estimado: 15-20 minutos.**
 
 ---
 
-## Pre-requisitos
+## 🚀 Quick start (TL;DR)
 
-- [ ] Cuenta en [Railway](https://railway.app) (free tier alcanza para empezar)
-- [ ] Repo conectado a GitHub (este: `soyalantapia/misanpedro`)
-- [ ] Acceso a Settings → Pages / Deployments del repo
-- [ ] (Si tenés OAuth client de Railway) — **borralo y rotalo** (ver advertencia más abajo)
+Si solo querés los pasos esenciales:
+
+1. **Railway → New Project → Deploy from GitHub repo → `soyalantapia/misanpedro`**
+2. **+ New → Database → MongoDB**
+3. **Service API → Variables → pegar las 5 vars obligatorias** (ver Paso 3)
+4. **Service API → Settings → Networking → Generate Domain** → copiar URL
+5. **En tu compu**, editar `apps/web/.env.production` con la URL de Railway:
+   ```
+   VITE_API_URL=https://TU-URL.up.railway.app
+   ```
+6. **Re-build + re-deploy del PWA**:
+   ```bash
+   pnpm --filter @misanpedro/web build
+   pnpm --filter @misanpedro/web deploy:gh-pages
+   git add apps/web/.env.production && git commit -m "config: URL del API público" && git push
+   ```
+
+Listo. Probá el signup en https://soyalantapia.github.io/misanpedro/#/admin/registro.
 
 ---
 
 ## ⚠️ Importante — Seguridad
 
-**No necesitamos OAuth de Railway para este deploy.** El método que vamos a
-usar es la integración nativa de GitHub. Si creaste un OAuth Client de
-Railway y compartiste el secret en algún lugar (chat, etc.), borralo
-desde Railway → Account Settings → OAuth Apps y crealo de nuevo
-guardándolo en un password manager.
+**No necesitamos OAuth de Railway para este deploy.** Conectá Railway con GitHub
+desde el UI directamente. Si en algún momento compartiste un Client Secret de
+Railway OAuth (en chat con un asistente, en Slack, en Discord, etc.), considéralo
+comprometido: borralo desde Railway → Settings → Developer → tu app y generá
+uno nuevo guardándolo en un password manager. Lo mismo para los API tokens
+(Account Settings → Tokens).
 
 ---
 
