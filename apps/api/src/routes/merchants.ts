@@ -16,6 +16,7 @@ function serializeMerchant(m: any) {
     slug: m.slug,
     nombre: m.nombre,
     categoria: m.categoria,
+    categoriaOtro: m.categoriaOtro,
     direccion: m.direccion,
     lat: coords?.[1],
     lng: coords?.[0],
@@ -86,6 +87,7 @@ merchantsRoutes.patch('/me', requireMerchantAuth, async (c) => {
   const data = parsed.data
   if (data.nombre !== undefined) merchant.nombre = data.nombre
   if (data.categoria !== undefined) merchant.categoria = data.categoria
+  if (data.categoriaOtro !== undefined) merchant.categoriaOtro = data.categoriaOtro ?? undefined
   if (data.direccion !== undefined) merchant.direccion = data.direccion
   if (data.telefono !== undefined) merchant.telefono = data.telefono
   if (data.horarios !== undefined) merchant.horarios = data.horarios

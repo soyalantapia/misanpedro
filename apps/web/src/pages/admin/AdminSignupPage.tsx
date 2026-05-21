@@ -9,6 +9,8 @@ import {
   Sparkles,
   Clock,
   Receipt,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { CATEGORIAS, type Categoria } from '@/lib/types'
 import { merchantAuth } from '@/lib/merchantStore'
@@ -29,6 +31,7 @@ type CondicionFiscal = 'monotributo' | 'responsable_inscripto' | 'consumidor_fin
 type Form = {
   nombreComercio: string
   categoria: Categoria
+  categoriaOtro: string
   direccion: string
   telefono: string
   horarios: string
@@ -45,6 +48,7 @@ type Form = {
 const empty: Form = {
   nombreComercio: '',
   categoria: 'gastronomia',
+  categoriaOtro: '',
   direccion: '',
   telefono: '',
   horarios: '',
@@ -63,6 +67,7 @@ export function AdminSignupPage() {
   const [form, setForm] = useState<Form>(empty)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
   const toast = useToast()
 
@@ -73,9 +78,11 @@ export function AdminSignupPage() {
 
   function validateDatos(): string | null {
     if (form.nombreComercio.trim().length < 3) return 'El nombre del comercio es muy corto'
+    if (form.categoria === 'otro' && form.categoriaOtro.trim().length < 2)
+      return 'Indicá qué tipo de comercio es'
     if (form.direccion.trim().length < 5) return 'Falta una dirección válida'
     if (!form.telefono.trim()) return 'Falta el teléfono'
-    if (!form.horarios.trim()) return 'Indicá los horarios de atención'
+    // Los horarios ya no son obligatorios al signup — se completan en el panel
     if (form.nombreAdmin.trim().length < 3) return 'Falta tu nombre completo'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAdmin)) return 'Email inválido'
     if (form.password.length < 3) return 'La contraseña debe tener al menos 3 caracteres'
@@ -117,6 +124,8 @@ export function AdminSignupPage() {
       comercio: {
         nombre: form.nombreComercio.trim(),
         categoria: form.categoria,
+        categoriaOtro:
+          form.categoria === 'otro' ? form.categoriaOtro.trim() : undefined,
         direccion: form.direccion.trim(),
         telefono: form.telefono.trim(),
         horarios: form.horarios.trim(),
@@ -130,6 +139,7 @@ export function AdminSignupPage() {
         email: form.emailAdmin.trim().toLowerCase(),
         password: form.password,
       },
+      acceptedTc: true,
     })
     if (result.ok) {
       // Disparamos el flujo de billing (Mercado Pago preapproval).
@@ -249,6 +259,21 @@ export function AdminSignupPage() {
                 </select>
               }
             />
+            {form.categoria === 'otro' && (
+              <Field
+                label="¿Qué tipo de comercio?"
+                required
+                input={
+                  <input
+                    type="text"
+                    value={form.categoriaOtro}
+                    onChange={(e) => update('categoriaOtro', e.target.value)}
+                    placeholder="Ej: rotisería, casa de regalos, peluquería canina…"
+                    className={inputCls}
+                  />
+                }
+              />
+            )}
             <Field
               label="Dirección comercial"
               required
@@ -262,36 +287,25 @@ export function AdminSignupPage() {
                 />
               }
             />
-            <div className="grid grid-cols-2 gap-3">
-              <Field
-                label="Teléfono"
-                required
-                input={
-                  <input
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    value={form.telefono}
-                    onChange={(e) => update('telefono', e.target.value)}
-                    placeholder="(03329) 425-678"
-                    className={inputCls}
-                  />
-                }
-              />
-              <Field
-                label="Horarios"
-                required
-                input={
-                  <input
-                    type="text"
-                    value={form.horarios}
-                    onChange={(e) => update('horarios', e.target.value)}
-                    placeholder="Mar a Dom · 19 a 24"
-                    className={inputCls}
-                  />
-                }
-              />
-            </div>
+            <Field
+              label="Teléfono"
+              required
+              input={
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={form.telefono}
+                  onChange={(e) => update('telefono', e.target.value)}
+                  placeholder="(03329) 425-678"
+                  className={inputCls}
+                />
+              }
+            />
+            <p className="text-[11px] text-neutral-500">
+              <Clock size={10} className="mr-1 inline" />
+              Los horarios de atención los cargás después desde el panel.
+            </p>
 
             <div className="my-2 border-t border-neutral-100" />
             <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
@@ -328,15 +342,26 @@ export function AdminSignupPage() {
               label="Contraseña"
               required
               input={
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  value={form.password}
-                  onChange={(e) => update('password', e.target.value)}
-                  placeholder="Mínimo 3 caracteres"
-                  className={inputCls}
-                  minLength={3}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={form.password}
+                    onChange={(e) => update('password', e.target.value)}
+                    placeholder="Mínimo 3 caracteres"
+                    className={cn(inputCls, 'pr-11')}
+                    minLength={3}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    aria-pressed={showPassword}
+                    className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
+                  >
+                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
               }
             />
 

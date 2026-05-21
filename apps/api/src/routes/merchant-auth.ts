@@ -70,10 +70,11 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
     slug,
     nombre: comercio.nombre,
     categoria: comercio.categoria,
+    categoriaOtro: comercio.categoriaOtro,
     direccion: comercio.direccion,
     location: { type: 'Point', coordinates: [SAN_PEDRO.lng, SAN_PEDRO.lat] },
     telefono: comercio.telefono,
-    horarios: comercio.horarios,
+    horarios: comercio.horarios ?? '',
     logoSeed: comercio.nombre
       .split(/\s+/)
       .map((p) => p[0])

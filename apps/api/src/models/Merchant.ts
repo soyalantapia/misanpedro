@@ -19,16 +19,38 @@ const merchantSchema = new Schema(
     nombre: { type: String, required: true },
     categoria: {
       type: String,
-      enum: ['gastronomia', 'indumentaria', 'salud', 'belleza', 'servicios', 'hogar'],
+      enum: [
+        'gastronomia',
+        'cafeteria',
+        'panaderia',
+        'supermercado',
+        'kiosco',
+        'indumentaria',
+        'calzado',
+        'belleza',
+        'salud',
+        'farmacia',
+        'hogar',
+        'libreria',
+        'ferreteria',
+        'tecnologia',
+        'mascotas',
+        'deporte',
+        'servicios',
+        'otro',
+      ],
       required: true,
     },
+    /** Si categoria === 'otro', el comercio especifica acá su rubro real. */
+    categoriaOtro: { type: String, maxlength: 60 },
     direccion: { type: String, required: true },
     location: {
       type: { type: String, enum: ['Point'], default: 'Point' },
       coordinates: { type: [Number], required: true }, // [lng, lat]
     },
     telefono: { type: String, required: true },
-    horarios: { type: String, required: true },
+    /** Horarios libres en texto. Opcional al signup; se completa en el panel. */
+    horarios: { type: String, default: '' },
     horariosDetalle: {
       lun: horarioDiaSchema,
       mar: horarioDiaSchema,

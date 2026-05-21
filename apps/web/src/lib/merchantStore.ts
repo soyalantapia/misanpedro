@@ -85,15 +85,19 @@ export const merchantAuth = {
     comercio: {
       nombre: string
       categoria: any
+      /** Texto libre si categoria === 'otro'. */
+      categoriaOtro?: string
       direccion: string
       telefono: string
-      horarios: string
+      /** Horarios ahora opcional — se completa después en el panel. */
+      horarios?: string
       cuit?: string
       razonSocial?: string
       condicionFiscal?: 'monotributo' | 'responsable_inscripto' | 'consumidor_final'
       direccionFiscal?: string
     }
     admin: { nombre: string; email: string; password: string }
+    acceptedTc?: boolean
   }): Promise<{ ok: true } | { ok: false; error: string }> {
     try {
       const data = await merchantApi.signup({ ...payload, acceptedTc: true })

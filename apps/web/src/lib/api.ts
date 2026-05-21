@@ -121,6 +121,8 @@ export type ApiMerchant = {
   slug: string
   nombre: string
   categoria: string
+  /** Texto libre si categoria === 'otro' (ej: "rotisería"). */
+  categoriaOtro?: string
   direccion: string
   lat?: number
   lng?: number
@@ -220,9 +222,11 @@ export const merchantApi = {
     comercio: {
       nombre: string
       categoria: string
+      categoriaOtro?: string
       direccion: string
       telefono: string
-      horarios: string
+      /** Horarios ahora opcional — se completa después en el panel. */
+      horarios?: string
       cuit?: string
       razonSocial?: string
       condicionFiscal?: 'monotributo' | 'responsable_inscripto' | 'consumidor_final'

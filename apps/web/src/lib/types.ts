@@ -1,18 +1,42 @@
 export type Categoria =
   | 'gastronomia'
+  | 'cafeteria'
+  | 'panaderia'
+  | 'supermercado'
+  | 'kiosco'
   | 'indumentaria'
-  | 'salud'
+  | 'calzado'
   | 'belleza'
-  | 'servicios'
+  | 'salud'
+  | 'farmacia'
   | 'hogar'
+  | 'libreria'
+  | 'ferreteria'
+  | 'tecnologia'
+  | 'mascotas'
+  | 'deporte'
+  | 'servicios'
+  | 'otro'
 
 export const CATEGORIAS: { id: Categoria; label: string }[] = [
   { id: 'gastronomia', label: 'Gastronomía' },
+  { id: 'cafeteria', label: 'Cafetería' },
+  { id: 'panaderia', label: 'Panadería' },
+  { id: 'supermercado', label: 'Supermercado / Almacén' },
+  { id: 'kiosco', label: 'Kiosco' },
   { id: 'indumentaria', label: 'Indumentaria' },
-  { id: 'salud', label: 'Salud' },
+  { id: 'calzado', label: 'Calzado' },
   { id: 'belleza', label: 'Belleza' },
+  { id: 'salud', label: 'Salud' },
+  { id: 'farmacia', label: 'Farmacia' },
+  { id: 'hogar', label: 'Hogar y deco' },
+  { id: 'libreria', label: 'Librería' },
+  { id: 'ferreteria', label: 'Ferretería' },
+  { id: 'tecnologia', label: 'Tecnología' },
+  { id: 'mascotas', label: 'Mascotas' },
+  { id: 'deporte', label: 'Deporte' },
   { id: 'servicios', label: 'Servicios' },
-  { id: 'hogar', label: 'Hogar' },
+  { id: 'otro', label: 'Otro · completar' },
 ]
 
 export type DiaSemana = 'lun' | 'mar' | 'mie' | 'jue' | 'vie' | 'sab' | 'dom'

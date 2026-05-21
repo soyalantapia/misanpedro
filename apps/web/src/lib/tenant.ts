@@ -117,21 +117,32 @@ function detectInitialSlug(): string | null {
   const stored = window.localStorage.getItem(STORAGE_KEY)
   if (stored) return stored
 
-  // 3. Subdomain
+  // 3. Subdomain — SOLO cuando el host termina en uno de los dominios "del
+  //    producto" donde sí controlamos los subdomains. En GitHub Pages u otros
+  //    hosts el primer label no es un tenant slug válido (sería 'soyalantapia',
+  //    'vercel', etc.) y cae a la fallback.
   const host = window.location.hostname
-  // Sub-host count 3+ (sub.domain.tld). En localhost saltea esta vía.
-  if (host === 'localhost' || host === '127.0.0.1' || /^\d/.test(host)) {
-    // dev: usar build-time slug si está
-    return (import.meta.env.VITE_TENANT_SLUG as string | undefined) ?? null
-  }
-  const parts = host.split('.')
-  if (parts.length >= 3) {
-    const sub = parts[0].toLowerCase()
-    if (!RESERVED_SUBDOMAINS.has(sub)) return sub
+  const TENANT_HOSTS = ['cuponcito.app', 'misanpedro.app']
+  const isTenantHost = TENANT_HOSTS.some(
+    (h) => host === h || host.endsWith(`.${h}`),
+  )
+  if (isTenantHost) {
+    const parts = host.split('.')
+    if (parts.length >= 3) {
+      const sub = parts[0].toLowerCase()
+      if (!RESERVED_SUBDOMAINS.has(sub)) return sub
+    }
   }
 
-  // 4. Build-time fallback
-  return (import.meta.env.VITE_TENANT_SLUG as string | undefined) ?? null
+  // 4. Build-time fallback (VITE_TENANT_SLUG)
+  const buildTime = import.meta.env.VITE_TENANT_SLUG as string | undefined
+  if (buildTime) return buildTime
+
+  // 5. Default para deploys "single-tenant" (ej. GH Pages con el producto
+  //    Mi San Pedro): apuntamos al tenant 'sanpedro' por compatibilidad.
+  //    Cuando se compre cuponcito.app y se sirvan subdominios reales, este
+  //    fallback se vuelve irrelevante.
+  return 'sanpedro'
 }
 
 /**

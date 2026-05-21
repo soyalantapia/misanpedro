@@ -5,11 +5,23 @@ import { z } from 'zod'
 
 export const categoriaSchema = z.enum([
   'gastronomia',
+  'cafeteria',
+  'panaderia',
+  'supermercado',
+  'kiosco',
   'indumentaria',
-  'salud',
+  'calzado',
   'belleza',
-  'servicios',
+  'salud',
+  'farmacia',
   'hogar',
+  'libreria',
+  'ferreteria',
+  'tecnologia',
+  'mascotas',
+  'deporte',
+  'servicios',
+  'otro',
 ])
 
 export const diaSemanaSchema = z.enum(['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'])
@@ -66,9 +78,12 @@ export const merchantSignupSchema = z.object({
   comercio: z.object({
     nombre: z.string().min(3),
     categoria: categoriaSchema,
+    /** Si categoria === 'otro', acá va el rubro real (free text). */
+    categoriaOtro: z.string().max(60).optional(),
     direccion: z.string().min(5),
     telefono: z.string().min(6),
-    horarios: z.string().min(3),
+    /** Horarios ahora es OPCIONAL — se completa después en el panel. */
+    horarios: z.string().optional().default(''),
     /** CUIT 11 dígitos. Opcional al signup, requerido para facturar. */
     cuit: z.string().regex(cuitRegex, 'CUIT debe ser 11 dígitos').optional(),
     razonSocial: z.string().min(3).optional(),
@@ -131,6 +146,7 @@ export const confirmRedemptionSchema = z.object({
 export const merchantUpdateSchema = z.object({
   nombre: z.string().min(3).optional(),
   categoria: categoriaSchema.optional(),
+  categoriaOtro: z.string().max(60).optional().nullable(),
   direccion: z.string().min(5).optional(),
   telefono: z.string().min(6).optional(),
   horarios: z.string().optional(),
