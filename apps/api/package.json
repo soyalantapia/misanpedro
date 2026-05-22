@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch-path=src --import tsx --env-file=.env src/index.ts",
-    "build": "tsc -b",
+    "build": "tsc -b --noEmit && node build.mjs",
     "start": "node dist/index.js",
     "start:local": "node --env-file=.env dist/index.js",
     "lint": "eslint .",
@@ -27,6 +27,8 @@
     "@types/bcryptjs": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^24.12.2",
+    "esbuild": "^0.28.0",
+    "tsc-alias": "^1.8.17",
     "tsx": "^4.20.0",
     "typescript": "~6.0.2"
   }
