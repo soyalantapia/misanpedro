@@ -129,7 +129,14 @@ export const activateCouponSchema = z.object({
 })
 
 export const redeemByCodeSchema = z.object({
-  codigoNumerico: z.string().regex(/^\d{6}$/),
+  // Normalizamos antes de validar: el UI muestra el código formateado "123 456"
+  // pero el regex pide 6 dígitos pelados. Stripeamos cualquier whitespace
+  // (espacios, guiones, etc.) para que copy-paste y typos suaves no rompan
+  // la validación del cajero.
+  codigoNumerico: z
+    .string()
+    .transform((s) => s.replace(/\D/g, ''))
+    .pipe(z.string().regex(/^\d{6}$/, 'Código de 6 dígitos')),
 })
 
 export const redeemByPayloadSchema = z.object({
