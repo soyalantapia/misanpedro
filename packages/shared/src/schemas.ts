@@ -145,7 +145,11 @@ export const redeemByPayloadSchema = z.object({
 
 export const confirmRedemptionSchema = z.object({
   activationId: z.string(),
-  montoTicket: z.number().positive().optional(),
+  // montoTicket es OBLIGATORIO: si el cajero confirma sin meter el monto,
+  // las stats del comercio quedan contaminadas (canje cuenta pero ahorro
+  // e ingresos=0). Mejor forzar a que lo ingrese — son 2 segundos extras
+  // de typing y la data del comercio queda limpia.
+  montoTicket: z.number().positive('El monto del ticket es obligatorio'),
 })
 
 // ─── Merchant edit ────────────────────────────────────────────────────

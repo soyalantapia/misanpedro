@@ -47,7 +47,10 @@ export const tenantContext: MiddlewareHandler = async (c, next) => {
   }
 
   if (!tenant) {
-    return c.json({ ok: false, error: 'tenant not found', slug }, 404)
+    // NO incluimos el slug fallido en la respuesta para evitar info-leak
+    // (ej. exponer el subdomain interno de Railway/Render o ayudar a un
+    // atacante a enumerar tenants posibles).
+    return c.json({ ok: false, error: 'tenant not found' }, 404)
   }
 
   if (tenant.status === 'archived') {
@@ -85,17 +88,23 @@ function resolveTenantSlug(c: Context): string | null {
   const hdr = c.req.header('X-Tenant-Slug') || c.req.header('x-tenant-slug')
   if (hdr) return hdr.toLowerCase()
 
-  // 2) Subdomain
+  // 2) Subdomain (solo en dominios "tenant-friendly" — no en infra PaaS)
   const host = c.req.header('host')?.toLowerCase().split(':')[0]
   if (host) {
-    // Si es algo tipo sanpedro.cuponcito.app, primer parte = slug
-    const parts = host.split('.')
-    if (parts.length >= 3) {
-      const sub = parts[0]
-      // Filtrar subdominios "técnicos" que NO son tenants:
-      // www, api, admin, owner, app, comercios
-      const RESERVED = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios'])
-      if (!RESERVED.has(sub)) return sub
+    // Whitelist de dominios donde el subdomain SÍ identifica al tenant.
+    // Si el host es un dominio de PaaS (Railway, Render, Fly, etc.) o
+    // localhost, NO interpretamos el primer label como slug — porque
+    // `api-production-43c52.up.railway.app` no es un tenant válido.
+    const TENANT_HOST_SUFFIXES = ['.cuponcito.app', '.misanpedro.app']
+    const isTenantDomain = TENANT_HOST_SUFFIXES.some((s) => host.endsWith(s))
+    if (isTenantDomain) {
+      const parts = host.split('.')
+      if (parts.length >= 3) {
+        const sub = parts[0]
+        // Filtrar subdominios "técnicos" que NO son tenants:
+        const RESERVED = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios'])
+        if (!RESERVED.has(sub)) return sub
+      }
     }
   }
 

@@ -65,8 +65,17 @@ export function AdminConfirmarCanjePage() {
 
   async function handleConfirm() {
     if (!view) return
+    // El monto del ticket es obligatorio: sin él, las stats del comercio
+    // quedan contaminadas (canje cuenta pero ahorro/ingresos=0).
+    const monto_n = monto ? parseInt(monto.replace(/\D/g, ''), 10) : NaN
+    if (!Number.isFinite(monto_n) || monto_n <= 0) {
+      toast.error(
+        'Falta el monto',
+        'Ingresá el monto del ticket para que el canje quede registrado bien.',
+      )
+      return
+    }
     setSubmitting(true)
-    const monto_n = monto ? parseInt(monto.replace(/\D/g, ''), 10) : undefined
 
     if (view.source === 'api') {
       try {
