@@ -115,7 +115,15 @@ export const couponCreateSchema = z.object({
     .refine((n) => [5, 10, 15, 20, 25, 30, 40, 50].includes(n), {
       message: 'Porcentaje inválido',
     }),
-  vigenciaHasta: z.string(),
+  vigenciaHasta: z
+    .string()
+    .refine(
+      (s) => {
+        const d = new Date(s)
+        return !isNaN(d.getTime()) && d.getTime() > Date.now()
+      },
+      { message: 'La vigencia tiene que ser una fecha futura' },
+    ),
   diasAplica: z.string().max(80).optional(),
   estado: z.enum(['activo', 'pausado']).default('activo'),
 })
