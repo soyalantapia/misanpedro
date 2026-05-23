@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Outlet, NavLink, Navigate, useNavigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -34,6 +35,20 @@ export function MerchantShell() {
   const { session } = sessionState
   const navigate = useNavigate()
   const localMerchant = useMerchant(session?.merchantId)
+
+  // Si en cualquier momento se pierde la sesión (refresh token falló, etc.),
+  // el cliente HTTP dispara `msp:session-expired`. Limpiamos sesión local y
+  // redirigimos al login con flag para mostrar mensaje "Tu sesión expiró".
+  useEffect(() => {
+    const onExpired = (e: Event) => {
+      const detail = (e as CustomEvent<{ subject: string }>).detail
+      if (detail?.subject !== 'merchant') return
+      void merchantAuth.logout()
+      navigate('/admin/login?reason=expired', { replace: true })
+    }
+    window.addEventListener('msp:session-expired', onExpired)
+    return () => window.removeEventListener('msp:session-expired', onExpired)
+  }, [navigate])
 
   if (!session) return <Navigate to="/admin/login" replace />
 

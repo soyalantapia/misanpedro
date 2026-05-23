@@ -30,6 +30,16 @@ export const tokens = {
   clear(s: Subject) {
     localStorage.removeItem(STORAGE[s].access)
     localStorage.removeItem(STORAGE[s].refresh)
+    // Notificamos al UI que se perdió la sesión. Cualquier handler puede
+    // escuchar `msp:session-expired` y redirigir a la pantalla de login
+    // correspondiente (vecino o comercio).
+    try {
+      window.dispatchEvent(
+        new CustomEvent('msp:session-expired', { detail: { subject: s } }),
+      )
+    } catch {
+      /* SSR / no window — noop */
+    }
   },
 }
 

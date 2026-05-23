@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Store,
   ShieldCheck,
@@ -19,7 +19,14 @@ export function AdminLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPwd, setShowPwd] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [params] = useSearchParams()
+  // Si el shell del comercio nos redirigió acá con ?reason=expired,
+  // mostramos un mensaje claro (en lugar de pantalla en blanco).
+  const expiredMsg =
+    params.get('reason') === 'expired'
+      ? 'Tu sesión expiró por inactividad. Volvé a ingresar tus datos.'
+      : null
+  const [error, setError] = useState<string | null>(expiredMsg)
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
 

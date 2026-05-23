@@ -3,7 +3,10 @@ import { createHash, randomBytes } from 'node:crypto'
 import { env } from '@/env'
 import { RefreshToken } from '@/models'
 
-const ACCESS_TTL = '15m'
+// Access token: 1h. Suficiente para no fragmentar la sesión del cajero pero
+// corto para limitar el daño si se filtra. El refresh token rota cada uso
+// y vive 30 días — así un cajero típico no vuelve a loguearse en todo el mes.
+const ACCESS_TTL = '1h'
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 días
 
 export type Subject = 'user' | 'merchant_user' | 'owner'
