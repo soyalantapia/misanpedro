@@ -71,14 +71,49 @@ export const merchantLoginSchema = z.object({
   password: z.string().min(3, 'Mínimo 3 caracteres'),
 })
 
+/**
+ * URL para usar en <a href=...> — sólo esquemas seguros que el browser
+ * NO ejecuta como código. Bloquea `javascript:`, `data:` (cuando va a
+ * href puede ser HTML), `vbscript:`, etc.
+ */
+const safeHrefUrlSchema = z
+  .string()
+  .refine(
+    (u) => /^(https?|geo|mailto|tel):/i.test(u.trim()),
+    { message: 'URL inválida (solo se permite http://, https://, geo:, mailto:, tel:)' },
+  )
+
+/**
+ * URL para usar en <img src=...>. Permite http/https y data:image/* (porque
+ * el browser sólo decodifica esos como imagen, no ejecuta JS). Bloquea data:
+ * con MIME peligroso como text/html y los esquemas javascript:, vbscript:.
+ */
+const safeImageSrcSchema = z
+  .string()
+  .refine(
+    (u) => /^(https?:|data:image\/(png|jpe?g|gif|webp|svg\+xml);)/i.test(u.trim()),
+    { message: 'URL de imagen inválida (solo http/https o data:image/*)' },
+  )
+
+/**
+ * Teléfono: dígitos, espacios, guiones, paréntesis, +. No permitimos HTML
+ * ni caracteres especiales para evitar inyección si el frontend renderea
+ * el campo sin escape (defensa en profundidad — React escapa por default).
+ */
+const phoneSchema = z
+  .string()
+  .min(6)
+  .max(40)
+  .regex(/^[\d\s\-+()\.]+$/, 'Teléfono solo puede tener dígitos, espacios, guiones, paréntesis y +')
+
 export const merchantSignupSchema = z.object({
   comercio: z.object({
     nombre: z.string().min(3),
     categoria: categoriaSchema,
     /** Si categoria === 'otro', acá va el rubro real (free text). */
     categoriaOtro: z.string().max(60).optional(),
-    direccion: z.string().min(5),
-    telefono: z.string().min(6),
+    direccion: z.string().min(5).max(160),
+    telefono: phoneSchema,
     /** Horarios ahora es OPCIONAL — se completa después en el panel. */
     horarios: z.string().optional().default(''),
     /**
@@ -163,16 +198,16 @@ export const confirmRedemptionSchema = z.object({
 // ─── Merchant edit ────────────────────────────────────────────────────
 
 export const merchantUpdateSchema = z.object({
-  nombre: z.string().min(3).optional(),
+  nombre: z.string().min(3).max(80).optional(),
   categoria: categoriaSchema.optional(),
   categoriaOtro: z.string().max(60).optional().nullable(),
-  direccion: z.string().min(5).optional(),
-  telefono: z.string().min(6).optional(),
-  horarios: z.string().optional(),
+  direccion: z.string().min(5).max(160).optional(),
+  telefono: phoneSchema.optional(),
+  horarios: z.string().max(500).optional(),
   horariosDetalle: horariosSemanaSchema.optional(),
-  coverImageUrl: z.string().optional().nullable(),
-  logoUrl: z.string().optional().nullable(),
-  mapsUrl: z.string().url().optional().nullable(),
+  coverImageUrl: safeImageSrcSchema.optional().nullable(),
+  logoUrl: safeImageSrcSchema.optional().nullable(),
+  mapsUrl: safeHrefUrlSchema.optional().nullable(),
   cuit: z.string().optional().nullable(),
   razonSocial: z.string().min(3).optional().nullable(),
   condicionFiscal: z
