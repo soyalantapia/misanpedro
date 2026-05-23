@@ -30,6 +30,15 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        // Forzar al SW nuevo a tomar control YA, sin esperar a que el user
+        // cierre todos los tabs. Crítico para que cambios de config (ej. la
+        // URL del API) lleguen al user en el siguiente refresh sin que tenga
+        // que limpiar cache manualmente.
+        skipWaiting: true,
+        clientsClaim: true,
+        // Limpia precaches viejos (de versiones anteriores del bundle) para
+        // evitar que el browser cargue assets stale después de un deploy.
+        cleanupOutdatedCaches: true,
       },
     }),
   ],
