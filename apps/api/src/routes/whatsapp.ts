@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
-import { requireMerchantAuth } from '@/middleware/auth'
+import { requireMerchantAuth, requireMerchantActive } from '@/middleware/auth'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { verifyAccessToken } from '@/services/jwt.service'
 import { WaSend } from '@/models'
@@ -108,7 +108,7 @@ whatsappRoutes.get('/status', requireMerchantAuth, async (c) => {
   })
 })
 
-whatsappRoutes.post('/start', requireMerchantAuth, async (c) => {
+whatsappRoutes.post('/start', requireMerchantAuth, requireMerchantActive, async (c) => {
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const state = await wa.startSession(auth.merchantId)
@@ -131,7 +131,7 @@ const sendSchema = z.object({
   text: z.string().min(1).max(2000),
   campaignId: z.string().optional(),
 })
-whatsappRoutes.post('/send', requireMerchantAuth, async (c) => {
+whatsappRoutes.post('/send', requireMerchantAuth, requireMerchantActive, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
@@ -156,7 +156,7 @@ const campaignSchema = z.object({
   recipients: z.array(z.string().min(8)).min(1).max(500),
   text: z.string().min(1).max(2000),
 })
-whatsappRoutes.post('/campaign', requireMerchantAuth, async (c) => {
+whatsappRoutes.post('/campaign', requireMerchantAuth, requireMerchantActive, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)

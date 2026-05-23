@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { Types } from 'mongoose'
 import { couponCreateSchema, couponUpdateSchema } from '@misanpedro/shared'
 import { Coupon, Merchant } from '@/models'
-import { requireMerchantAuth } from '@/middleware/auth'
+import { requireMerchantAuth, requireMerchantActive } from '@/middleware/auth'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 
 export const couponsRoutes = new Hono()
@@ -86,7 +86,7 @@ couponsRoutes.get('/mine/list', requireMerchantAuth, async (c) => {
   return c.json({ ok: true, coupons: coupons.map((c) => serializeCoupon(c)) })
 })
 
-couponsRoutes.post('/', requireMerchantAuth, async (c) => {
+couponsRoutes.post('/', requireMerchantAuth, requireMerchantActive, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
@@ -104,7 +104,7 @@ couponsRoutes.post('/', requireMerchantAuth, async (c) => {
   return c.json({ ok: true, coupon: serializeCoupon(coupon) }, 201)
 })
 
-couponsRoutes.patch('/:id', requireMerchantAuth, async (c) => {
+couponsRoutes.patch('/:id', requireMerchantAuth, requireMerchantActive, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
@@ -132,7 +132,7 @@ couponsRoutes.patch('/:id', requireMerchantAuth, async (c) => {
   return c.json({ ok: true, coupon: serializeCoupon(coupon) })
 })
 
-couponsRoutes.delete('/:id', requireMerchantAuth, async (c) => {
+couponsRoutes.delete('/:id', requireMerchantAuth, requireMerchantActive, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)

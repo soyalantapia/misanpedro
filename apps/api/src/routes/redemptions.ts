@@ -7,7 +7,7 @@ import {
 } from '@misanpedro/shared'
 import { Activation, Coupon, CustomerNote, Merchant, Redemption, User } from '@/models'
 import { z } from 'zod'
-import { requireMerchantAuth } from '@/middleware/auth'
+import { requireMerchantAuth, requireMerchantActive } from '@/middleware/auth'
 import { rateLimit } from '@/middleware/security'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { sendUserRedemption } from '@/services/email.service'
@@ -43,7 +43,7 @@ function serializeForValidation(activation: any, coupon: any, user: any) {
 }
 
 // POST /redemptions/validate — comercio valida código o payload
-redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, async (c) => {
+redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, requireMerchantActive, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
@@ -97,7 +97,7 @@ redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, async 
 })
 
 // POST /redemptions/confirm — confirmar canje
-redemptionsRoutes.post('/confirm', requireMerchantAuth, async (c) => {
+redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
