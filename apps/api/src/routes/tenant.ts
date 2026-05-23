@@ -15,7 +15,10 @@ tenantRoutes.get('/:slug/config', async (c) => {
   const app = await App.findOne({ slug }).lean()
 
   if (!app) {
-    return c.json({ ok: false, error: 'tenant not found', slug }, 404)
+    // No reflejamos el slug en la respuesta JSON aunque el atacante ya lo
+    // controla (vino en el path). Es defensa en profundidad: evita XSS
+    // reflected si algún cliente toma la respuesta y la rendea sin escape.
+    return c.json({ ok: false, error: 'tenant not found' }, 404)
   }
   if (app.status === 'archived') {
     return c.json({ ok: false, error: 'tenant archived' }, 410)

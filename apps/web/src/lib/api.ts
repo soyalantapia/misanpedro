@@ -53,6 +53,58 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Deduplicación de refresh tokens concurrentes.
+ *
+ * Sin esto: si N requests caen en 401 simultáneamente, las N intentan
+ * refrescar con el mismo refresh token. Una gana (rota a NEW), las otras
+ * pegan al mismo endpoint con el viejo token YA REVOCADO — el backend
+ * detecta "token reuse" y revoca toda la familia de tokens del user
+ * (defensa anti-robo). El cliente queda sin sesión válida después de un
+ * solo refresh exitoso.
+ *
+ * Fix: cuando una request inicia un refresh, las otras esperan ESA misma
+ * promise en lugar de disparar una nueva.
+ */
+const refreshInFlight: { [k in Subject]?: Promise<string | null> } = {}
+
+async function doRefresh(subject: Subject): Promise<string | null> {
+  if (refreshInFlight[subject]) return refreshInFlight[subject]!
+  refreshInFlight[subject] = (async () => {
+    try {
+      const refresh = localStorage.getItem(STORAGE[subject].refresh)
+      if (!refresh) return null
+      const refreshPath = subject === 'merchant' ? '/merchant/auth/refresh' : '/auth/refresh'
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      // El backend exige X-Tenant-Slug también para refresh.
+      try {
+        const { getTenantSnapshot } = await import('./tenant')
+        const slug = getTenantSnapshot().slug
+        if (slug) headers['X-Tenant-Slug'] = slug
+      } catch {
+        /* sin tenant — el backend va a rechazar */
+      }
+      const r = await fetch(`${BASE}${refreshPath}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ refreshToken: refresh }),
+      })
+      if (!r.ok) {
+        tokens.clear(subject)
+        return null
+      }
+      const data = (await r.json()) as { accessToken: string; refreshToken?: string }
+      tokens.set(subject, data.accessToken, data.refreshToken)
+      return data.accessToken
+    } finally {
+      // Limpiamos el slot apenas termina (success o failure) para no
+      // bloquear refreshes futuros legítimos.
+      delete refreshInFlight[subject]
+    }
+  })()
+  return refreshInFlight[subject]!
+}
+
 async function request<T>(
   path: string,
   init: RequestInit & { subject?: Subject } = {},
@@ -80,37 +132,20 @@ async function request<T>(
 
   const res = await fetch(`${BASE}${path}`, { ...rest, headers: finalHeaders })
 
-  // Auto-refresh en 401
+  // Auto-refresh en 401 — deduplicado por subject (ver doRefresh)
   if (res.status === 401 && subject) {
-    const refresh = localStorage.getItem(STORAGE[subject].refresh)
-    if (refresh) {
-      const refreshPath = subject === 'merchant' ? '/merchant/auth/refresh' : '/auth/refresh'
-      const r = await fetch(`${BASE}${refreshPath}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: refresh }),
-      })
-      if (r.ok) {
-        const data = (await r.json()) as { accessToken: string; refreshToken?: string }
-        // Si el backend implementa rotation, persistimos también el nuevo refresh
-        tokens.set(subject, data.accessToken, data.refreshToken)
-        finalHeaders.Authorization = `Bearer ${data.accessToken}`
-        const retry = await fetch(`${BASE}${path}`, { ...rest, headers: finalHeaders })
-        if (retry.status === 401) {
-          // Si el retry sigue 401, los tokens están rotos; limpiamos.
-          tokens.clear(subject)
-          throw new ApiError(401, await retry.json().catch(() => ({})))
-        }
-        if (!retry.ok) throw new ApiError(retry.status, await retry.json().catch(() => ({})))
-        return retry.json() as Promise<T>
-      } else {
-        // refresh falló → tokens inválidos, limpiamos
+    const newAccess = await doRefresh(subject)
+    if (newAccess) {
+      finalHeaders.Authorization = `Bearer ${newAccess}`
+      const retry = await fetch(`${BASE}${path}`, { ...rest, headers: finalHeaders })
+      if (retry.status === 401) {
         tokens.clear(subject)
+        throw new ApiError(401, await retry.json().catch(() => ({})))
       }
-    } else {
-      // 401 sin refresh disponible → limpiamos también
-      tokens.clear(subject)
+      if (!retry.ok) throw new ApiError(retry.status, await retry.json().catch(() => ({})))
+      return retry.json() as Promise<T>
     }
+    // Refresh falló o no había refresh → ya limpió doRefresh.
   }
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}))
