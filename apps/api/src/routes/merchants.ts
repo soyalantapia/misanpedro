@@ -8,7 +8,11 @@ export const merchantsRoutes = new Hono()
 
 merchantsRoutes.use('*', tenantContext)
 
-function serializeMerchant(m: any) {
+/**
+ * Serializer base — campos visibles al vecino (público).
+ * Información de contacto y operación, NUNCA datos fiscales/internos.
+ */
+function serializeMerchantPublic(m: any) {
   if (!m) return null
   const coords = m.location?.coordinates
   return {
@@ -32,6 +36,19 @@ function serializeMerchant(m: any) {
     foundingMember: !!m.foundingMember,
     nivel: m.nivel,
     estado: m.estado,
+  }
+}
+
+/**
+ * Serializer privado — incluye datos fiscales (cuit/razón social) y notas
+ * internas. SOLO se debe usar en endpoints autenticados como dueño/admin
+ * del propio comercio. NO devolver a vecinos.
+ */
+function serializeMerchantPrivate(m: any) {
+  const pub = serializeMerchantPublic(m)
+  if (!pub) return null
+  return {
+    ...pub,
     razonSocial: m.razonSocial,
     cuit: m.cuit,
     condicionFiscal: m.condicionFiscal,
@@ -40,6 +57,10 @@ function serializeMerchant(m: any) {
     arrepentimientoExpiraEn: m.arrepentimientoExpiraEn?.toISOString?.(),
   }
 }
+
+// Alias por compatibilidad. El catálogo público SIEMPRE pasa por
+// serializeMerchantPublic; el panel del comercio usa el Private.
+const serializeMerchant = serializeMerchantPublic
 
 // Listado público de comercios activos POR TENANT
 merchantsRoutes.get('/', async (c) => {
@@ -67,7 +88,8 @@ merchantsRoutes.get('/me/profile', requireMerchantAuth, async (c) => {
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const merchant = await Merchant.findOne({ _id: auth.merchantId, appId })
   if (!merchant) return c.json({ ok: false, error: 'merchant not found' }, 404)
-  return c.json({ ok: true, merchant: serializeMerchant(merchant) })
+  // Endpoint del comercio sobre sí mismo → incluye datos fiscales/internos.
+  return c.json({ ok: true, merchant: serializeMerchantPrivate(merchant) })
 })
 
 // PATCH /merchants/me — comercio editando su propio perfil
@@ -102,7 +124,8 @@ merchantsRoutes.patch('/me', requireMerchantAuth, async (c) => {
   if (data.notasInternas !== undefined) merchant.notasInternas = data.notasInternas ?? undefined
 
   await merchant.save()
-  return c.json({ ok: true, merchant: serializeMerchant(merchant) })
+  // PATCH lo hace el comercio sobre sí mismo → incluye datos fiscales.
+  return c.json({ ok: true, merchant: serializeMerchantPrivate(merchant) })
 })
 
 // GET /merchants/me/stats — métricas del comercio autenticado

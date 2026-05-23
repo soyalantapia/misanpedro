@@ -140,10 +140,24 @@ export const merchantSignupSchema = z.object({
 
 // ─── Cupones ──────────────────────────────────────────────────────────
 
+/**
+ * Texto plano sin HTML. Bloquea `<` y `>` para evitar inyección de tags
+ * en campos que el frontend renderea. Defensa en profundidad — React
+ * escapa text nodes, pero igual no aceptamos basura en la DB.
+ */
+const plainTextSchema = (min: number, max: number, label: string) =>
+  z
+    .string()
+    .min(min, `Mínimo ${min} caracteres`)
+    .max(max)
+    .refine((s) => !/[<>]/.test(s), {
+      message: `${label} no puede contener < ni >`,
+    })
+
 export const couponCreateSchema = z.object({
-  titulo: z.string().min(8, 'Mínimo 8 caracteres').max(60),
-  descripcion: z.string().min(20, 'Mínimo 20 caracteres').max(280),
-  condiciones: z.string().max(280).optional().default(''),
+  titulo: plainTextSchema(8, 60, 'Título'),
+  descripcion: plainTextSchema(20, 280, 'Descripción'),
+  condiciones: plainTextSchema(0, 280, 'Condiciones').optional().default(''),
   porcentaje: z
     .number()
     .int()

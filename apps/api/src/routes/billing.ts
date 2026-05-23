@@ -44,7 +44,13 @@ function verifyMpSignature(
   requestId: string | undefined,
   dataId: string,
 ): boolean {
-  if (!env.MP_WEBHOOK_SECRET) return true
+  if (!env.MP_WEBHOOK_SECRET) {
+    // En PRODUCTION, exigir el secret. Sin él cualquiera puede falsificar
+    // webhooks y marcar suscripciones como pagas. Mejor fallar cerrado.
+    if (env.NODE_ENV === 'production') return false
+    // En development sin secret, aceptamos cualquier llamada (para testing).
+    return true
+  }
   if (!signatureHeader || !requestId) return false
 
   const parts = Object.fromEntries(

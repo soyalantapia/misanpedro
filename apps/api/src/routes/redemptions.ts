@@ -331,6 +331,13 @@ redemptionsRoutes.post('/clientes/notes', requireMerchantAuth, async (c) => {
   if (!Types.ObjectId.isValid(parsed.data.userId)) {
     return c.json({ ok: false, error: 'invalid userId' }, 400)
   }
+  // Validar que el user existe en este tenant. Antes el endpoint dejaba
+  // crear notas apuntando a userIds inexistentes — ensucia data y permite
+  // un atacante autenticado generar registros basura.
+  const userExists = await User.exists({ _id: parsed.data.userId, appId })
+  if (!userExists) {
+    return c.json({ ok: false, error: 'cliente no encontrado' }, 404)
+  }
   const note = await CustomerNote.create({
     appId,
     merchantId: auth.merchantId,
