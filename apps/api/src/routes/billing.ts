@@ -272,7 +272,11 @@ billingRoutes.post('/cancel', requireMerchantAuth, async (c) => {
 })
 
 billingRoutes.post('/mock-confirm', requireMerchantAuth, async (c) => {
-  if (env.NODE_ENV === 'production') return c.json({ ok: false, error: 'forbidden' }, 403)
+  // Mock-confirm SOLO está habilitado cuando NO hay MP_ACCESS_TOKEN configurado
+  // (= modo mock, sin cobro real). Cuando configures MercadoPago real, el flujo
+  // de activación pasa por el redirect del initPoint + webhook — bloqueamos esta
+  // ruta para no dejar un bypass que active comercios sin pagar.
+  if (env.MP_ACCESS_TOKEN) return c.json({ ok: false, error: 'forbidden' }, 403)
   const appId = getAppId(c)
   const auth = c.get('auth')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
