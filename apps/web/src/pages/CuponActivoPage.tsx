@@ -143,7 +143,7 @@ export function CuponActivoPage() {
           {formatCode(activation.codigoNumerico)}
         </p>
         <p className="max-w-xs text-center text-xs text-neutral-500">
-          Mostrá este código al cajero. Se canjea una sola vez en {merchant.nombre}.
+          Mostrá este código en {merchant.nombre}. Se canjea una sola vez.
         </p>
         <p className="max-w-xs text-center text-[11px] text-neutral-400">
           Sin tiempo límite — el código vale hasta que lo uses.
@@ -156,7 +156,7 @@ export function CuponActivoPage() {
             <Store size={16} className="mt-0.5 shrink-0 text-accent-500" />
             <div className="flex flex-col gap-1">
               <p className="text-xs font-bold">
-                Mostrale este código al cajero de {merchant.nombre}
+                Mostrale este código al encargado de {merchant.nombre}
               </p>
               <p className="text-[11px] leading-relaxed">
                 Cuando lo valide, esta pantalla se actualiza automáticamente y el cupón

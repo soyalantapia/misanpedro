@@ -17,6 +17,7 @@ import {
   PawPrint,
   Dumbbell,
   Tag,
+  Building2,
   type LucideIcon,
 } from 'lucide-react'
 import type { Categoria } from '@/lib/types'
@@ -95,6 +96,10 @@ const variants: Record<Categoria, Variant> = {
   servicios: {
     bg: 'from-sky-300 via-blue-400 to-indigo-600',
     Icon: Wrench,
+  },
+  inmobiliaria: {
+    bg: 'from-slate-400 via-blue-500 to-indigo-700',
+    Icon: Building2,
   },
   otro: {
     bg: 'from-neutral-300 via-zinc-400 to-stone-500',

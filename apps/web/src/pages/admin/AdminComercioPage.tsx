@@ -217,14 +217,23 @@ export function AdminComercioPage() {
                 <MapPin size={14} className="mt-0.5 shrink-0 text-neutral-400" />
                 <span>{merchant.direccion}</span>
               </div>
-              <div className="flex items-start gap-2.5 text-neutral-700">
-                <Phone size={14} className="mt-0.5 shrink-0 text-neutral-400" />
-                <span>{merchant.telefono}</span>
-              </div>
-              <div className="flex items-start gap-2.5 text-neutral-700">
-                <Clock size={14} className="mt-0.5 shrink-0 text-neutral-400" />
-                <span>{horariosDisplay}</span>
-              </div>
+              {merchant.telefono && (
+                <div className="flex items-start gap-2.5 text-neutral-700">
+                  <Phone size={14} className="mt-0.5 shrink-0 text-neutral-400" />
+                  <a
+                    href={`tel:${merchant.telefono.replace(/\s/g, '')}`}
+                    className="font-medium text-accent-700 hover:underline"
+                  >
+                    {merchant.telefono}
+                  </a>
+                </div>
+              )}
+              {horariosDisplay && (
+                <div className="flex items-start gap-2.5 text-neutral-700">
+                  <Clock size={14} className="mt-0.5 shrink-0 text-neutral-400" />
+                  <span>{horariosDisplay}</span>
+                </div>
+              )}
               <a
                 href={mapsHref}
                 target="_blank"
@@ -606,7 +615,7 @@ function HorariosEditor({
                     d.id,
                     horario.abierto
                       ? { abierto: false }
-                      : { abierto: true, desde: '09:00', hasta: '20:00' },
+                      : { abierto: true, desde: '09:00', hasta: '18:00' },
                   )
                 }
                 className={cn(

@@ -142,7 +142,7 @@ export function AdminLoginPage() {
                       setEmail(e.target.value)
                       setError(null)
                     }}
-                    placeholder="cajero@tucomercio.com"
+                    placeholder="vos@tucomercio.com"
                     className={inputCls}
                     required
                   />

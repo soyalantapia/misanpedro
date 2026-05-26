@@ -40,7 +40,7 @@ export function PrivacidadPage() {
 
         <Section title="3. Para qué los usamos">
           <ul>
-            <li>Operar la plataforma (que vos veas tus cupones, que el cajero valide).</li>
+            <li>Operar la plataforma (que vos veas tus cupones, que el comercio valide).</li>
             <li>Generar estadísticas para el comercio (canjes, ahorro, clientes únicos).</li>
             <li>Enviarte emails transaccionales (bienvenida, OTP, confirmación de canje).</li>
             <li>Contactarte ante incidencias o preguntas.</li>

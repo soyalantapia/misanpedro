@@ -21,6 +21,7 @@ export const categoriaSchema = z.enum([
   'mascotas',
   'deporte',
   'servicios',
+  'inmobiliaria',
   'otro',
 ])
 

@@ -73,12 +73,35 @@ const TEMPLATES: Record<string, Array<{ titulo: string; descripcion: string; con
   ],
   servicios: [
     {
-      titulo: '15% en servicio de turno',
+      titulo: '15% OFF en tu primera consulta',
       descripcion:
-        'Cualquier servicio reservado con turno: revisión, mantenimiento, control general. Asesoramiento incluido.',
-      condiciones: 'Sólo turnos lunes a jueves. Excluye repuestos importados.',
+        'Descuento especial en la primera consulta o servicio para clientes nuevos. Válido con turno previo.',
+      condiciones: 'Solo para nuevos clientes. Sujeto a disponibilidad de agenda.',
       porcentaje: 15,
-      diasAplica: 'Lun a Jue · con turno',
+      diasAplica: 'Lun a Vie · con turno',
+    },
+    {
+      titulo: '10% OFF en honorarios este mes',
+      descripcion:
+        'Reducción del 10% en los honorarios del servicio contratado durante el mes vigente.',
+      condiciones: 'No acumulable con otras promociones. Consultar condiciones.',
+      porcentaje: 10,
+    },
+  ],
+  inmobiliaria: [
+    {
+      titulo: '10% OFF en honorarios de alquiler',
+      descripcion:
+        'Descuento del 10% en los honorarios de gestión de alquiler para nuevos inquilinos.',
+      condiciones: 'Válido para contratos nuevos firmados durante la vigencia del cupón.',
+      porcentaje: 10,
+    },
+    {
+      titulo: '15% OFF en tasación gratuita + gestión',
+      descripcion:
+        'Tasación de tu propiedad sin cargo y 15% de descuento en los honorarios de la primera operación.',
+      condiciones: 'Solo para propietarios que nos contacten por primera vez.',
+      porcentaje: 15,
     },
   ],
   hogar: [

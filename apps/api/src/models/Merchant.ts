@@ -37,6 +37,7 @@ const merchantSchema = new Schema(
         'mascotas',
         'deporte',
         'servicios',
+        'inmobiliaria',
         'otro',
       ],
       required: true,

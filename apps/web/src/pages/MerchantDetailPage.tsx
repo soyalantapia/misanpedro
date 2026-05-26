@@ -92,8 +92,17 @@ export function MerchantDetailPage() {
 
         <div className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100 text-sm text-neutral-700">
           <Row icon={MapPin}>{merchant.direccion}</Row>
-          <Row icon={Phone}>{merchant.telefono}</Row>
-          <Row icon={Clock}>{horariosDisplay}</Row>
+          {merchant.telefono && (
+            <Row icon={Phone}>
+              <a
+                href={`tel:${merchant.telefono.replace(/\s/g, '')}`}
+                className="font-medium text-accent-700 hover:underline"
+              >
+                {merchant.telefono}
+              </a>
+            </Row>
+          )}
+          {horariosDisplay && <Row icon={Clock}>{horariosDisplay}</Row>}
           <a
             href={mapsUrl}
             target="_blank"

@@ -234,7 +234,7 @@ export function AdminCuponEditPage() {
               value={form.titulo}
               maxLength={TITULO_MAX}
               onChange={(e) => update('titulo', e.target.value)}
-              placeholder="Ej: 20% OFF en pizzas martes y miércoles"
+              placeholder="Ej: 20% OFF en tu primera consulta"
               className={inputCls}
               autoComplete="off"
             />
@@ -261,6 +261,25 @@ export function AdminCuponEditPage() {
               </button>
             ))}
           </div>
+          {/* Custom percentage */}
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-[11px] text-neutral-400">Otro:</span>
+            <div className="relative">
+              <input
+                type="number"
+                min={1}
+                max={99}
+                value={PORCENTAJES.includes(form.porcentaje as (typeof PORCENTAJES)[number]) ? '' : form.porcentaje}
+                onChange={(e) => {
+                  const v = Math.max(1, Math.min(99, Number(e.target.value)))
+                  if (!Number.isNaN(v)) update('porcentaje', v)
+                }}
+                placeholder="Ej: 12"
+                className="w-20 rounded-full bg-white px-3 py-1.5 text-center text-xs font-bold ring-1 ring-neutral-200 focus:outline-none focus:ring-2 focus:ring-accent-400"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400">%</span>
+            </div>
+          </div>
         </div>
 
         <Field
@@ -278,7 +297,7 @@ export function AdminCuponEditPage() {
               maxLength={DESCRIPCION_MAX}
               rows={4}
               onChange={(e) => update('descripcion', e.target.value)}
-              placeholder="¿Qué incluye el descuento? ¿En qué productos aplica?"
+              placeholder="¿Qué incluye el descuento? ¿En qué servicios o productos aplica?"
               className={`${inputCls} resize-none`}
             />
           }
@@ -304,7 +323,7 @@ export function AdminCuponEditPage() {
               type="text"
               value={form.diasAplica}
               onChange={(e) => update('diasAplica', e.target.value)}
-              placeholder="Ej: Martes y miércoles · 20 a 23 hs"
+              placeholder="Ej: Lunes a viernes · 9 a 18 hs"
               className={inputCls}
             />
           }

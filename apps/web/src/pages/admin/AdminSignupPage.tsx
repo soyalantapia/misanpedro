@@ -11,6 +11,7 @@ import {
   Receipt,
   Eye,
   EyeOff,
+  Lock,
 } from 'lucide-react'
 import { CATEGORIAS, type Categoria } from '@/lib/types'
 import { merchantAuth } from '@/lib/merchantStore'
@@ -27,7 +28,7 @@ import { billing } from '@/lib/api'
 const PRECIO_TOTAL = 25_000
 
 type Step = 'datos' | 'fiscal' | 'pago' | 'listo'
-type CondicionFiscal = 'monotributo' | 'responsable_inscripto' | 'consumidor_final'
+type CondicionFiscal = 'monotributo' | 'responsable_inscripto'
 
 type Form = {
   nombreComercio: string
@@ -58,7 +59,7 @@ const empty: Form = {
   nombreAdmin: '',
   cuit: '',
   razonSocial: '',
-  condicionFiscal: 'monotributo',
+  condicionFiscal: 'monotributo' as CondicionFiscal,
   direccionFiscal: '',
   acceptedTc: false,
 }
@@ -327,7 +328,7 @@ export function AdminSignupPage() {
                   type="text"
                   value={form.nombreComercio}
                   onChange={(e) => update('nombreComercio', e.target.value)}
-                  placeholder="Ej: La Esquina"
+                  placeholder="Ej: Tu Comercio"
                   className={inputCls}
                 />
               }
@@ -573,7 +574,7 @@ function FiscalStep({
             type="text"
             value={form.razonSocial}
             onChange={(e) => update('razonSocial', e.target.value)}
-            placeholder="Ej: La Esquina S.A. o Tu Nombre Apellido"
+            placeholder="Ej: Tu Nombre Apellido o Nombre Comercio S.A."
             className={inputCls}
           />
         }
@@ -588,7 +589,6 @@ function FiscalStep({
             options={[
               { value: 'monotributo', label: 'Monotributista' },
               { value: 'responsable_inscripto', label: 'Responsable Inscripto' },
-              { value: 'consumidor_final', label: 'Consumidor Final' },
             ]}
             ariaLabel="Condición fiscal"
           />
@@ -689,7 +689,7 @@ function PagoStep({
             <Highlight>Estadísticas en tiempo real</Highlight> de canjes, ahorro y patrones
           </Bullet>
           <Bullet>
-            <Highlight>Notas internas</Highlight> sobre cada cliente (alergias, preferencias)
+            <Highlight>Notas internas</Highlight> sobre cada cliente (historial, preferencias)
           </Bullet>
           <Bullet>
             <Highlight>Soporte por WhatsApp</Highlight> para todos los comercios adheridos
@@ -742,11 +742,20 @@ function PagoStep({
         type="button"
         onClick={onPay}
         disabled={submitting || !acceptedTc}
-        className="mt-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-4 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60"
+        className={cn(
+          'mt-1 flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-bold text-white shadow-cta transition-all',
+          acceptedTc && !submitting
+            ? 'bg-gradient-to-br from-accent-400 to-accent-600 hover:-translate-y-0.5'
+            : 'cursor-not-allowed bg-neutral-300 text-neutral-500 shadow-none',
+        )}
       >
         {submitting ? (
           <>
             <Clock size={16} className="animate-pulse" /> Procesando pago…
+          </>
+        ) : !acceptedTc ? (
+          <>
+            <Lock size={16} /> Aceptá los términos para continuar
           </>
         ) : (
           <>

@@ -17,7 +17,7 @@ export function AdminValidarPage() {
     <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
       <header className="flex flex-col gap-1.5">
         <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
-          <ScanLine size={12} /> Caja
+          <ScanLine size={12} /> Validar
         </div>
         <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
           Validar cupón
@@ -90,7 +90,7 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   const ready = trimmed.length === 6
 
   // Auto-navega al confirmar canje cuando el cupón es válido (con un toque
-  // de delay para que el cajero alcance a ver el feedback verde).
+  // de delay para que el encargado alcance a ver el feedback verde).
   const okActivationId = result && result.ok ? result.activation.id : null
   useEffect(() => {
     if (!okActivationId) return

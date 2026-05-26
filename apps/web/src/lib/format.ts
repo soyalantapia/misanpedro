@@ -15,7 +15,7 @@ const monthsShort = [
 
 export function formatVigencia(iso: string): string {
   const d = new Date(iso)
-  return `Vigente hasta el ${d.getDate()} de ${monthsShort[d.getMonth()]}`
+  return `Vigente hasta el ${d.getDate()} de ${monthsShort[d.getMonth()]} de ${d.getFullYear()}`
 }
 
 export function formatRedeemedDate(iso: string): string {
@@ -103,15 +103,17 @@ export function formatHorariosSemana(detalle: HorariosSemana | undefined | null)
     .join(' · ')
 }
 
-/** Convierte string viejo a un HorariosSemana sensato (todos abiertos 9-18) */
+/** Convierte string viejo a un HorariosSemana sensato (Lun–Vie 9–18, Sáb 9–13, Dom cerrado) */
 export function defaultHorariosSemana(): HorariosSemana {
-  const dias: DiaSemana[] = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom']
   const result: Partial<HorariosSemana> = {}
+  const dias: DiaSemana[] = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom']
   dias.forEach((d) => {
     if (d === 'dom') {
       result[d] = { abierto: false }
+    } else if (d === 'sab') {
+      result[d] = { abierto: true, desde: '09:00', hasta: '13:00' }
     } else {
-      result[d] = { abierto: true, desde: '09:00', hasta: '20:00' }
+      result[d] = { abierto: true, desde: '09:00', hasta: '18:00' }
     }
   })
   return result as HorariosSemana
