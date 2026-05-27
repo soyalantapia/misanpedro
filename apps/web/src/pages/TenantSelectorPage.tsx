@@ -53,8 +53,8 @@ export function TenantSelectorPage() {
         </header>
 
         {error && (
-          <div className="mb-4 flex w-full items-start gap-2 rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
-            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+          <div role="alert" className="mb-4 flex w-full items-start gap-2 rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
+            <AlertCircle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
             {error}
           </div>
         )}

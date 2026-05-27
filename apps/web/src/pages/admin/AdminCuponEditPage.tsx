@@ -253,14 +253,15 @@ export function AdminCuponEditPage() {
         />
 
         <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
             Porcentaje de descuento
-          </p>
-          <div className="flex flex-wrap gap-2">
+          </h2>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Porcentajes predefinidos">
             {PORCENTAJES.map((p) => (
               <button
                 key={p}
                 type="button"
+                aria-pressed={form.porcentaje === p}
                 onClick={() => update('porcentaje', p)}
                 className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
                   form.porcentaje === p
@@ -280,6 +281,7 @@ export function AdminCuponEditPage() {
                 type="number"
                 min={1}
                 max={99}
+                aria-label="Porcentaje personalizado"
                 value={PORCENTAJES.includes(form.porcentaje as (typeof PORCENTAJES)[number]) ? '' : form.porcentaje}
                 onChange={(e) => {
                   const v = Math.max(1, Math.min(99, Number(e.target.value)))
@@ -470,7 +472,7 @@ function Field({
       </div>
       {input}
       {help && (
-        <p className="text-[11px] font-semibold text-status-warning-fg">{help}</p>
+        <p role="alert" className="text-[11px] font-semibold text-status-warning-fg">{help}</p>
       )}
     </label>
   )
