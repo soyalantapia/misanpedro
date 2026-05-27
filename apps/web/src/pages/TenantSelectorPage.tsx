@@ -65,7 +65,7 @@ export function TenantSelectorPage() {
               <div key={i} className="h-20 animate-pulse rounded-2xl bg-white" />
             ))}
           </div>
-        ) : tenants.length === 0 ? (
+        ) : !error && tenants.length === 0 ? (
           <div className="grid w-full place-items-center rounded-2xl bg-white p-10 ring-1 ring-neutral-100">
             <div className="text-center">
               <h3 className="font-bold text-neutral-900">Todavía no hay ciudades</h3>
