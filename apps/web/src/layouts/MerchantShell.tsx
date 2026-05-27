@@ -83,7 +83,7 @@ export function MerchantShell() {
 
   return (
     <div className="flex min-h-[100svh] flex-col bg-primary-50 text-neutral-900 md:flex-row">
-      <aside className="hidden shrink-0 border-r border-neutral-100 bg-white md:flex md:w-64 md:flex-col lg:w-72">
+      <aside aria-label="Panel lateral comercio" className="hidden shrink-0 border-r border-neutral-100 bg-white md:flex md:w-64 md:flex-col lg:w-72">
         <div className="flex flex-col gap-3 px-5 py-6">
           <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-accent-700">
             <ShieldCheck size={10} /> Panel comercio
@@ -99,7 +99,7 @@ export function MerchantShell() {
             <NotificationsBell />
           </div>
         </div>
-        <nav className="flex flex-col gap-1 px-3">
+        <nav aria-label="Navegación panel comercio" className="flex flex-col gap-1 px-3">
           {links.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
@@ -188,6 +188,7 @@ export function MerchantShell() {
       </main>
 
       <nav
+        aria-label="Navegación móvil"
         className="fixed inset-x-3 bottom-3 z-30 rounded-3xl bg-white p-1.5 shadow-floating md:hidden"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >

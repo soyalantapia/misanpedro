@@ -133,6 +133,26 @@ export function DescuentosPage() {
     })
   }, [search, categoria, merchants, COUPONS])
 
+  const isLoading = apiMerchantsRes.loading || apiCouponsRes.loading
+
+  if (isLoading && localCoupons.length === 0) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
+        <div className="flex flex-col gap-2">
+          <div className="h-4 w-32 animate-pulse rounded-full bg-accent-100" />
+          <div className="h-9 w-64 animate-pulse rounded-2xl bg-neutral-200" />
+          <div className="h-4 w-48 animate-pulse rounded-full bg-neutral-100" />
+        </div>
+        <div className="h-12 w-full animate-pulse rounded-2xl bg-white shadow-card" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-32 animate-pulse rounded-3xl bg-white shadow-card" style={{ animationDelay: `${i * 60}ms` }} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
       <div className="flex flex-col gap-1.5">

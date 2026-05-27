@@ -15,7 +15,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-[100svh] flex-col bg-primary-50 text-neutral-900 md:flex-row">
       {/* Sidebar (md+) */}
-      <aside className="hidden shrink-0 border-r border-neutral-100 bg-white md:flex md:w-60 md:flex-col lg:w-64">
+      <aside aria-label="Panel lateral" className="hidden shrink-0 border-r border-neutral-100 bg-white md:flex md:w-60 md:flex-col lg:w-64">
         <div className="flex items-center gap-3 px-6 py-7">
           <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta">
             <Tag size={22} />
@@ -25,7 +25,7 @@ export function AppShell() {
             <p className="text-xs font-medium text-neutral-400">Descuentos vecinales</p>
           </div>
         </div>
-        <nav className="flex flex-col gap-1 px-3">
+        <nav aria-label="Navegación principal" className="flex flex-col gap-1 px-3">
           {links.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
@@ -101,6 +101,7 @@ export function AppShell() {
 
       {/* Mobile bottom nav */}
       <nav
+        aria-label="Navegación móvil"
         className="fixed inset-x-3 bottom-3 z-30 rounded-3xl bg-white p-1.5 shadow-floating md:hidden"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
