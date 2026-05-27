@@ -45,6 +45,7 @@ export function CanjeadosPage() {
     if (!apiM) return undefined
     return { id: apiM.slug, nombre: apiM.nombre, categoria: apiM.categoria as any } as any
   }
+  const isLoading = apiCouponsRes.loading || apiMerchantsRes.loading
   const redemptions = useMemo(
     () =>
       activations
@@ -74,6 +75,21 @@ export function CanjeadosPage() {
       monthCount: thisMonth.length,
     }
   }, [redemptions])
+
+  if (isLoading && localCoupons.length === 0) {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
+        <div className="flex flex-col gap-2">
+          <div className="h-4 w-24 animate-pulse rounded-full bg-accent-100" />
+          <div className="h-9 w-36 animate-pulse rounded-2xl bg-neutral-200" />
+        </div>
+        <div className="h-44 animate-pulse rounded-3xl bg-accent-100" />
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-20 animate-pulse rounded-2xl bg-white shadow-card" style={{ animationDelay: `${i * 60}ms` }} />
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">

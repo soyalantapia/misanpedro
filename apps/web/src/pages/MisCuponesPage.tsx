@@ -71,7 +71,8 @@ export function MisCuponesPage() {
   }
   const navigate = useNavigate()
   const toast = useToast()
-  // Sin ticker — los cupones no expiran por tiempo. Renderizamos una sola vez.
+
+  const isLoading = apiCouponsRes.loading || apiMerchantsRes.loading
 
   const visible = useMemo(
     () =>
@@ -80,6 +81,20 @@ export function MisCuponesPage() {
       ),
     [activations],
   )
+
+  if (isLoading && localCoupons.length === 0) {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
+        <div className="flex flex-col gap-2">
+          <div className="h-4 w-32 animate-pulse rounded-full bg-accent-100" />
+          <div className="h-9 w-48 animate-pulse rounded-2xl bg-neutral-200" />
+        </div>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-24 animate-pulse rounded-3xl bg-white shadow-card" style={{ animationDelay: `${i * 60}ms` }} />
+        ))}
+      </div>
+    )
+  }
 
   function handleReactivate(id: string) {
     const a = activationActions.reactivate(id)

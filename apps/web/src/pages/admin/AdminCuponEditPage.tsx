@@ -120,8 +120,19 @@ export function AdminCuponEditPage() {
   }, [existing?.id])
 
   if (!session || !merchant) return <Navigate to="/admin/login" replace />
-  // Si todavía no cargó la lista de la API y tampoco encontramos local,
-  // esperamos antes de redirigir.
+  if (isEdit && !existing && apiCupones.loading) {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 animate-pulse rounded-full bg-neutral-200" />
+          <div className="h-5 w-40 animate-pulse rounded-full bg-neutral-200" />
+        </div>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-14 animate-pulse rounded-2xl bg-white shadow-card" style={{ animationDelay: `${i * 60}ms` }} />
+        ))}
+      </div>
+    )
+  }
   if (isEdit && !existing && !apiCupones.loading) {
     return <Navigate to="/admin/cupones" replace />
   }
