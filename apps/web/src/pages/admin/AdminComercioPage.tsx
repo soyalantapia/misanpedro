@@ -189,7 +189,7 @@ export function AdminComercioPage() {
             {merchant.nombre}
           </h1>
           <p className="text-sm text-neutral-500">
-            Así te ven los vecinos en la app de Mi San Pedro.
+            Así te ven los vecinos en la app.
           </p>
         </div>
         {!editing && (

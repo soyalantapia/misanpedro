@@ -60,7 +60,7 @@ export function InstallPrompt() {
         <Sparkles size={18} />
       </div>
       <div className="flex flex-1 flex-col gap-1">
-        <p className="text-sm font-bold text-neutral-900">Instalá Mi San Pedro</p>
+        <p className="text-sm font-bold text-neutral-900">Instalá Cuponcito</p>
         <p className="text-xs text-neutral-500">
           Agregala a tu pantalla de inicio para acceso rápido.
         </p>

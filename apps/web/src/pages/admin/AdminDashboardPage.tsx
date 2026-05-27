@@ -143,7 +143,7 @@ export function AdminDashboardPage() {
               icon={UserPlus}
               label="Clientes nuevos"
               value={String(clientesUnicos)}
-              hint={`${clientesUnicos === 1 ? 'vecino' : 'vecinos'} llegaron por Mi San Pedro`}
+              hint={`${clientesUnicos === 1 ? 'vecino' : 'vecinos'} llegaron por la app`}
             />
           </div>
         </section>

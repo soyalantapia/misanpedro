@@ -3,6 +3,7 @@ import { Tag, Ticket, CheckCircle2, User } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { OfflineBanner } from '@/components/OfflineBanner'
 import { RedemptionWatcher } from '@/components/RedemptionWatcher'
+import { useTenant } from '@/lib/tenant'
 
 const links = [
   { to: '/', label: 'Descuentos', icon: Tag, end: true },
@@ -12,6 +13,8 @@ const links = [
 ]
 
 export function AppShell() {
+  const tenant = useTenant()
+  const appName = tenant.config?.nombre ?? 'Cuponcito'
   return (
     <div className="flex min-h-[100svh] flex-col bg-primary-50 text-neutral-900 md:flex-row">
       {/* Sidebar (md+) */}
@@ -21,7 +24,7 @@ export function AppShell() {
             <Tag size={22} />
           </div>
           <div>
-            <p className="text-base font-bold text-neutral-900">Mi San Pedro</p>
+            <p className="text-base font-bold text-neutral-900">{appName}</p>
             <p className="text-xs font-medium text-neutral-400">Descuentos vecinales</p>
           </div>
         </div>
@@ -67,7 +70,7 @@ export function AppShell() {
             <Tag size={18} />
           </div>
           <div>
-            <p className="text-sm font-bold leading-tight text-neutral-900">Mi San Pedro</p>
+            <p className="text-sm font-bold leading-tight text-neutral-900">{appName}</p>
             <p className="text-[11px] font-medium leading-tight text-neutral-400">Descuentos vecinales</p>
           </div>
         </div>
