@@ -12,6 +12,7 @@ import {
   HandCoins,
   Receipt,
   UserPlus,
+  CreditCard,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useRedemptionsForMerchant } from '@/lib/merchantQueries'
@@ -22,7 +23,9 @@ import { cn } from '@/lib/cn'
 import { useApiMerchantStats, useApiRecentRedemptions, useApiMyCoupons } from '@/lib/apiQueries'
 
 export function AdminDashboardPage() {
-  const { session } = useMerchantSession()
+  const merchantSession = useMerchantSession()
+  const { session } = merchantSession
+  const pendingPayment = merchantSession.apiMerchant?.estado === 'pending_payment'
   const merchantId = session?.merchantId ?? ''
   const merchant = useMerchant(merchantId)
   const localRedemptions = useRedemptionsForMerchant(merchantId)
@@ -102,6 +105,25 @@ export function AdminDashboardPage() {
           Validá cupones, gestioná descuentos y mirá tu base de clientes de la app.
         </p>
       </header>
+
+      {pendingPayment && (
+        <Link
+          to="/admin/comercio"
+          role="alert"
+          className="flex items-start gap-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 transition-all hover:ring-amber-300"
+        >
+          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700">
+            <CreditCard size={16} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-amber-900">Suscripción pendiente de pago</p>
+            <p className="mt-0.5 text-xs text-amber-700">
+              Completá el pago para que tu comercio sea visible para los vecinos. Tocá para ver el estado.
+            </p>
+          </div>
+          <ArrowRight size={14} className="mt-1 shrink-0 text-amber-600" />
+        </Link>
+      )}
 
       <section className="grid grid-cols-3 gap-2.5">
         <Kpi label="Canjes hoy" value={kpis.hoy} />

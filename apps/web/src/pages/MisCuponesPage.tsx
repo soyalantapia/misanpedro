@@ -138,7 +138,17 @@ export function MisCuponesPage() {
           {visible.map((a, i) => {
             const c = getCoupon(a.couponId)
             const m = c ? getMerchantBySlug(c.merchantId) : undefined
-            if (!c || !m) return null
+            if (!c || !m) {
+              // Datos de cupón/comercio aún no disponibles (API cargando o seed
+              // sin resolver). Mostramos un skeleton para no ocultar silenciosamente
+              // la activación mientras el store termina de hidratar.
+              return (
+                <div
+                  key={a.id}
+                  className="h-24 animate-pulse rounded-3xl bg-white shadow-card ring-1 ring-neutral-100"
+                />
+              )
+            }
 
             const isActive = a.status === 'activo'
             const showAsActive = isActive

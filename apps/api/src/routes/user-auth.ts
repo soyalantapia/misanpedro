@@ -129,7 +129,7 @@ userAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
   sendOtpCode(email, code).catch((err) => console.error('[otp-email]', err))
 
   const debugCode =
-    process.env.NODE_ENV !== 'production' ? { _debugCode: code } : {}
+    process.env.NODE_ENV === 'development' ? { _debugCode: code } : {}
 
   return c.json({ ok: true, ...debugCode })
 })

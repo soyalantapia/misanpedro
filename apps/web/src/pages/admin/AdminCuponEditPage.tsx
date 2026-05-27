@@ -103,6 +103,7 @@ export function AdminCuponEditPage() {
 
   const [form, setForm] = useState<FormState>(empty)
   const [submitting, setSubmitting] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({})
 
   useEffect(() => {
     if (existing) {
@@ -139,26 +140,31 @@ export function AdminCuponEditPage() {
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }))
+    // Limpia el error del campo cuando el usuario empieza a corregirlo
+    if (fieldErrors[key]) setFieldErrors((prev) => { const n = { ...prev }; delete n[key]; return n })
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!session) return
-    if (form.titulo.trim().length < 8) {
-      toast.error('Título muy corto', 'Mínimo 8 caracteres para que se entienda el descuento.')
+
+    // Validación inline: acumula todos los errores antes de mostrarlos
+    const errors: Partial<Record<keyof FormState, string>> = {}
+    if (form.titulo.trim().length < 8)
+      errors.titulo = `Mínimo 8 caracteres (faltan ${8 - form.titulo.trim().length})`
+    if (form.descripcion.trim().length < 20)
+      errors.descripcion = `Mínimo 20 caracteres (faltan ${20 - form.descripcion.trim().length})`
+    if (!form.vigenciaHasta)
+      errors.vigenciaHasta = 'Indicá hasta cuándo aplica el descuento'
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      // Scroll al primer campo con error
+      const firstKey = Object.keys(errors)[0]
+      document.querySelector(`[data-field="${firstKey}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
-    if (form.descripcion.trim().length < 20) {
-      toast.error(
-        'Descripción muy corta',
-        'Contale al vecino qué incluye (mínimo 20 caracteres).',
-      )
-      return
-    }
-    if (!form.vigenciaHasta) {
-      toast.error('Falta la vigencia', 'Indicá hasta cuándo aplica.')
-      return
-    }
+    setFieldErrors({})
     setSubmitting(true)
 
     const apiPayload = {
@@ -233,9 +239,11 @@ export function AdminCuponEditPage() {
         <Field
           label="Título del descuento"
           required
+          fieldKey="titulo"
           hint={`${form.titulo.length}/${TITULO_MAX}`}
+          error={fieldErrors.titulo}
           help={
-            form.titulo.length > 0 && form.titulo.length < 8
+            !fieldErrors.titulo && form.titulo.length > 0 && form.titulo.length < 8
               ? `Faltan ${8 - form.titulo.length} caracteres para el mínimo (8)`
               : undefined
           }
@@ -246,7 +254,7 @@ export function AdminCuponEditPage() {
               maxLength={TITULO_MAX}
               onChange={(e) => update('titulo', e.target.value)}
               placeholder="Ej: 20% OFF en tu primera consulta"
-              className={inputCls}
+              className={`${inputCls} ${fieldErrors.titulo ? 'ring-status-error focus:ring-status-error' : ''}`}
               autoComplete="off"
             />
           }
@@ -298,9 +306,11 @@ export function AdminCuponEditPage() {
         <Field
           label="Descripción"
           required
+          fieldKey="descripcion"
           hint={`${form.descripcion.length}/${DESCRIPCION_MAX}`}
+          error={fieldErrors.descripcion}
           help={
-            form.descripcion.length > 0 && form.descripcion.length < 20
+            !fieldErrors.descripcion && form.descripcion.length > 0 && form.descripcion.length < 20
               ? `Faltan ${20 - form.descripcion.length} caracteres para el mínimo (20)`
               : undefined
           }
@@ -344,6 +354,9 @@ export function AdminCuponEditPage() {
 
         <Field
           label="Vigente hasta"
+          required
+          fieldKey="vigenciaHasta"
+          error={fieldErrors.vigenciaHasta}
           input={
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap gap-1.5">
@@ -452,17 +465,23 @@ function Field({
   input,
   hint,
   help,
+  error,
   required,
+  fieldKey,
 }: {
   label: string
   input: React.ReactNode
   hint?: string
-  /** Texto naranja debajo del input (validación inline o feedback). */
+  /** Texto naranja debajo del input (validación de longitud en tiempo real). */
   help?: string
+  /** Texto rojo debajo del input (error de validación al intentar enviar). */
+  error?: string
   required?: boolean
+  /** Usado para el scroll-to del primer campo inválido. */
+  fieldKey?: string
 }) {
   return (
-    <label className="flex flex-col gap-1.5">
+    <label className="flex flex-col gap-1.5" data-field={fieldKey}>
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
           {label}
@@ -471,7 +490,10 @@ function Field({
         {hint && <span className="text-[11px] tabular-nums text-neutral-400">{hint}</span>}
       </div>
       {input}
-      {help && (
+      {error && (
+        <p role="alert" className="text-[11px] font-semibold text-status-error-fg">{error}</p>
+      )}
+      {!error && help && (
         <p role="alert" className="text-[11px] font-semibold text-status-warning-fg">{help}</p>
       )}
     </label>

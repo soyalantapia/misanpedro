@@ -7,7 +7,7 @@ const STORAGE_KEY = 'misanpedro.merchant.v1'
 type State = {
   session: MerchantSession | null
   apiUser?: { id: string; email: string; nombre: string; rol: string; merchantId: string } | null
-  apiMerchant?: { id: string; slug: string; nombre: string; categoria: string } | null
+  apiMerchant?: { id: string; slug: string; nombre: string; categoria: string; estado?: string } | null
 }
 
 const empty: State = { session: null, apiUser: null, apiMerchant: null }

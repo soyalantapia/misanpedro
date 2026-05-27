@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ShieldCheck, Mail, KeyRound } from 'lucide-react'
 import { userApi, ApiError } from '@/lib/api'
@@ -18,10 +18,46 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [resending, setResending] = useState(false)
   const [resent, setResent] = useState(false)
+  // Timer: después de OTP_HINT_SECS segundos en la fase "code" sin ingresar
+  // el código, mostramos un hint para el caso de email no registrado / spam.
+  const OTP_HINT_SECS = 120
+  const [otpSecondsLeft, setOtpSecondsLeft] = useState(OTP_HINT_SECS)
+  const otpTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const next = params.get('next') ?? '/'
   const toast = useToast()
+
+  // Inicia el countdown cuando entramos a la fase "code".
+  useEffect(() => {
+    if (phase.kind !== 'code') {
+      // Reset al volver a la fase email
+      setOtpSecondsLeft(OTP_HINT_SECS)
+      if (otpTimerRef.current) {
+        clearInterval(otpTimerRef.current)
+        otpTimerRef.current = null
+      }
+      return
+    }
+    setOtpSecondsLeft(OTP_HINT_SECS)
+    otpTimerRef.current = setInterval(() => {
+      setOtpSecondsLeft((s) => {
+        if (s <= 1) {
+          clearInterval(otpTimerRef.current!)
+          otpTimerRef.current = null
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+    return () => {
+      if (otpTimerRef.current) {
+        clearInterval(otpTimerRef.current)
+        otpTimerRef.current = null
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase.kind])
 
   async function handleRequestOtp(e: React.FormEvent) {
     e.preventDefault()
@@ -204,6 +240,19 @@ export function LoginPage() {
           {error && (
             <p role="alert" className="rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
               {error}
+            </p>
+          )}
+          {otpSecondsLeft === 0 && !error && (
+            <p role="status" className="rounded-xl bg-status-warning-bg px-3 py-2 text-xs font-semibold text-status-warning-fg">
+              ¿No recibiste el código? Revisá la carpeta de spam, o{' '}
+              <button
+                type="button"
+                onClick={() => { setPhase({ kind: 'email' }); setCode(''); setError(null); setResent(false) }}
+                className="underline underline-offset-2"
+              >
+                volvé a intentar con otro email
+              </button>
+              .
             </p>
           )}
           <button

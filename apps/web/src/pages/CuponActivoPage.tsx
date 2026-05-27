@@ -63,7 +63,19 @@ export function CuponActivoPage() {
     let cancelled = false
     const actId = activation.id
     const couponPorcentaje = coupon?.porcentaje ?? 0
+    // Limitamos a 72 ticks (≈6 min a 5s/tick). Pasado ese tiempo es poco probable
+    // que el comercio confirme sin que el vecino ya se haya ido, y dejamos de
+    // hacer llamadas innecesarias al servidor.
+    let ticks = 0
+    const MAX_TICKS = 72
     async function check() {
+      if (++ticks > MAX_TICKS) {
+        if (pollIntervalRef.current) {
+          window.clearInterval(pollIntervalRef.current)
+          pollIntervalRef.current = null
+        }
+        return
+      }
       try {
         const res = await api.activations.get(actId)
         if (cancelled) return
