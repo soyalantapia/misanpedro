@@ -1,12 +1,14 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Ticket, Sparkles, RefreshCw, ArrowRight, Clock, AlertCircle } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
 import { EmptyState } from '@/components/EmptyState'
 import { useToast } from '@/components/Toast'
-import { activationActions, useActivations, useUser } from '@/lib/stores'
+import { activationActions, demoStoreActions, useActivations, useUser } from '@/lib/stores'
+import type { Activation } from '@/lib/types'
 import { getMerchant } from '@/data/mockData'
 import { useCoupons } from '@/lib/couponsStore'
+import { api, ApiError } from '@/lib/api'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 
 export function MisCuponesPage() {
@@ -71,6 +73,7 @@ export function MisCuponesPage() {
   }
   const navigate = useNavigate()
   const toast = useToast()
+  const [reactivating, setReactivating] = useState<string | null>(null)
 
   const isLoading = apiCouponsRes.loading || apiMerchantsRes.loading
 
@@ -96,11 +99,49 @@ export function MisCuponesPage() {
     )
   }
 
-  function handleReactivate(id: string) {
-    const a = activationActions.reactivate(id)
-    if (a) {
-      toast.success('Cupón reactivado', 'Tenés 30 minutos para usarlo.')
-      navigate(`/activacion/${a.id}`)
+  async function handleReactivate(activationId: string, couponId: string) {
+    if (reactivating) return
+    setReactivating(activationId)
+    const isMongoId = /^[0-9a-f]{24}$/i.test(couponId)
+    if (isMongoId) {
+      // Reactivación vía API: valida que el cupón siga activo en el servidor
+      // y devuelve una activación fresca (o la ya activa existente).
+      try {
+        const res = await api.activations.create(couponId)
+        const a = res.activation
+        const local: Activation = {
+          id: a.id,
+          couponId: a.couponId,
+          userId: a.userId,
+          codigoNumerico: a.codigoNumerico,
+          qrPayload: a.qrPayload,
+          activatedAt: a.activatedAt,
+          expiresAt: a.expiresAt ?? undefined,
+          status: a.status,
+          redeemedAt: a.redeemedAt,
+          ahorroEstimado: a.ahorroEstimado,
+          montoTicket: a.montoTicket,
+        }
+        demoStoreActions.upsertActivation(local)
+        toast.success('Cupón reactivado', 'Tenés el código listo para usar.')
+        navigate(`/activacion/${a.id}`)
+      } catch (err) {
+        const msg =
+          err instanceof ApiError
+            ? err.message
+            : 'No se pudo reactivar el cupón. Revisá tu conexión.'
+        toast.error('No disponible', msg)
+      } finally {
+        setReactivating(null)
+      }
+    } else {
+      // Demo / seed: reactivación local (datos de prueba, no hay server real)
+      const a = activationActions.reactivate(activationId)
+      setReactivating(null)
+      if (a) {
+        toast.success('Cupón reactivado', 'Tenés 30 minutos para usarlo.')
+        navigate(`/activacion/${a.id}`)
+      }
     }
   }
 
@@ -192,10 +233,12 @@ export function MisCuponesPage() {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => handleReactivate(a.id)}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-bold text-accent-700 ring-1 ring-accent-200 transition-all hover:-translate-y-0.5 hover:bg-accent-50"
+                        onClick={() => handleReactivate(a.id, a.couponId)}
+                        disabled={reactivating === a.id}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-bold text-accent-700 ring-1 ring-accent-200 transition-all hover:-translate-y-0.5 hover:bg-accent-50 disabled:opacity-60"
                       >
-                        <RefreshCw size={12} /> Reactivar
+                        <RefreshCw size={12} className={reactivating === a.id ? 'animate-spin' : ''} />
+                        {reactivating === a.id ? 'Activando…' : 'Reactivar'}
                       </button>
                     )}
                     <Link
