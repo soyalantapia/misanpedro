@@ -40,6 +40,7 @@ tenantRoutes.get('/:slug/config', async (c) => {
       brand: app.brand,
       settings: app.settings,
       status: app.status,
+      geoCenter: app.geoCenter ?? { lat: -33.6797, lng: -59.6669 },
     },
   })
 })

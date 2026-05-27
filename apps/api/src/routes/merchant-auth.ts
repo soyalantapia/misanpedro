@@ -61,8 +61,11 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
   }
 
   const slug = await generateUniqueSlug(comercio.nombre, appId)
-  // Coordenadas placeholder — San Pedro centro. Se actualizan via PATCH /me.
-  const SAN_PEDRO = { lat: -33.6797, lng: -59.6669 }
+  // Coordenadas placeholder: centro geográfico del tenant. Se actualizan
+  // cuando el comerciante edita su perfil. Fallback a San Pedro si el
+  // tenant no tiene geoCenter configurado (compatibilidad con registros viejos).
+  const tenant = c.get('tenant')
+  const geoCenter = tenant?.geoCenter ?? { lat: -33.6797, lng: -59.6669 }
   const now = new Date()
   const arrepentimientoExpiraEn = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000)
   const merchant = await Merchant.create({
@@ -72,7 +75,7 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
     categoria: comercio.categoria,
     categoriaOtro: comercio.categoriaOtro,
     direccion: comercio.direccion,
-    location: { type: 'Point', coordinates: [SAN_PEDRO.lng, SAN_PEDRO.lat] },
+    location: { type: 'Point', coordinates: [geoCenter.lng, geoCenter.lat] },
     telefono: comercio.telefono,
     horarios: comercio.horarios ?? '',
     logoSeed: comercio.nombre

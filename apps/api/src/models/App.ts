@@ -82,6 +82,16 @@ const appSchema = new Schema(
       redemptionsLast30Days: { type: Number, default: 0 },
     },
 
+    /**
+     * Centro geográfico del tenant — coordenadas usadas como placeholder
+     * para nuevos comercios hasta que actualicen su dirección real.
+     * { lat: -33.68, lng: -59.67 } es el centro de San Pedro, BA.
+     */
+    geoCenter: {
+      lat: { type: Number, default: -33.6797 },
+      lng: { type: Number, default: -59.6669 },
+    },
+
     /** Configuración del tenant (features flags futuras). */
     settings: {
       // Si true, los vecinos pueden ver descuentos sin login.

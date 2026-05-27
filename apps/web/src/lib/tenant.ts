@@ -39,6 +39,8 @@ export type TenantConfig = {
     showOnboarding?: boolean
   }
   status: 'pending' | 'active' | 'suspended' | 'archived'
+  /** Centro geográfico del tenant para coordenadas placeholder de nuevos comercios. */
+  geoCenter?: { lat: number; lng: number }
 }
 
 type TenantState = {
