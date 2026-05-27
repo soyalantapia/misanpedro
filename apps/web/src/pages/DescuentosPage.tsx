@@ -145,7 +145,8 @@ export function DescuentosPage() {
         <p className="text-base text-neutral-500">
           {merchants.length} {merchants.length === 1 ? 'comercio adherido' : 'comercios adheridos'}
           {' · '}
-          {COUPONS.length} {COUPONS.length === 1 ? 'cupón activo' : 'cupones activos'}.
+          {COUPONS.filter((c) => c.estado === 'activo').length}{' '}
+          {COUPONS.filter((c) => c.estado === 'activo').length === 1 ? 'cupón activo' : 'cupones activos'}.
         </p>
       </div>
 
@@ -245,6 +246,7 @@ function SearchBar({
         value={search}
         onChange={(e) => onSearch(e.target.value)}
         placeholder="Buscar comercio, rubro o descuento…"
+        aria-label="Buscar comercios o descuentos"
         className="w-full rounded-2xl bg-white py-3.5 pl-10 pr-12 text-sm text-neutral-900 shadow-card ring-1 ring-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400"
       />
       {search && (

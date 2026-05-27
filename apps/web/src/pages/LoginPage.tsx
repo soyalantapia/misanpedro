@@ -28,7 +28,11 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       const res = await userApi.requestOtp(email.trim().toLowerCase())
-      setPhase({ kind: 'code', email: email.trim().toLowerCase(), debugCode: res._debugCode })
+      setPhase({
+        kind: 'code',
+        email: email.trim().toLowerCase(),
+        debugCode: import.meta.env.DEV ? res._debugCode : undefined,
+      })
       toast.info('Código enviado', 'Revisá tu email (en demo aparece debajo).')
     } catch (err) {
       if (err instanceof ApiError) {

@@ -281,13 +281,25 @@ export function RegistroPage() {
           />
           <span className="text-xs leading-relaxed text-neutral-600">
             Acepto los{' '}
-            <a href="#" className="font-bold text-accent-700">
+            <Link
+              to="/legal/terminos"
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="font-bold text-accent-700 underline-offset-2 hover:underline"
+            >
               términos y condiciones
-            </a>{' '}
+            </Link>{' '}
             y la{' '}
-            <a href="#" className="font-bold text-accent-700">
+            <Link
+              to="/legal/privacidad"
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="font-bold text-accent-700 underline-offset-2 hover:underline"
+            >
               política de privacidad
-            </a>{' '}
+            </Link>{' '}
             de Mi San Pedro. Mis datos quedan protegidos por la Ley 25.326.
           </span>
         </label>

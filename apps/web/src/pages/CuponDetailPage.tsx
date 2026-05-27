@@ -15,6 +15,7 @@ import { activationActions, useActivationByCoupon, useUser } from '@/lib/stores'
 import { formatHorariosSemana, formatVigencia } from '@/lib/format'
 import { api, ApiError, tokens } from '@/lib/api'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
+import { useToast } from '@/components/Toast'
 
 export function CuponDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -22,6 +23,7 @@ export function CuponDetailPage() {
   const localMerchant = useMerchant(localCoupon?.merchantId)
   const user = useUser()
   const navigate = useNavigate()
+  const toast = useToast()
 
   // Fallback al API si no encontramos en el store local
   const apiCouponsRes = useApiCoupons()
@@ -109,13 +111,9 @@ export function CuponDetailPage() {
       })
       navigate(`/activacion/${local.id}`)
     } catch (err) {
-      console.warn('[activate] api error:', err)
-      // Mostramos el cupón nuevamente sin redirigir; el usuario puede reintentar.
-      // No caemos al store local porque generaría un id desconocido para el API.
-      alert(
-        err instanceof ApiError
-          ? `No se pudo activar el cupón: ${err.message}`
-          : 'No se pudo activar el cupón. Revisá tu conexión y reintentá.',
+      toast.error(
+        'No se pudo activar el cupón',
+        err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
       )
     }
   }
@@ -228,6 +226,7 @@ export function CuponDetailPage() {
 }
 
 function Section({ title, body }: { title: string; body: string }) {
+  if (!body) return null
   return (
     <div>
       <p className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">

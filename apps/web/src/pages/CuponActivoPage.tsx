@@ -218,7 +218,12 @@ function QRDisplay({ payload }: { payload: string }) {
   }
   return (
     <div className="rounded-3xl bg-white p-6 shadow-floating ring-1 ring-neutral-100">
-      <canvas ref={canvasRef} className="block" />
+      <canvas
+        ref={canvasRef}
+        role="img"
+        aria-label="Código QR para canje del cupón"
+        className="block"
+      />
     </div>
   )
 }

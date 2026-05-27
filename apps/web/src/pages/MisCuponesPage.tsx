@@ -126,9 +126,6 @@ export function MisCuponesPage() {
             if (!c || !m) return null
 
             const isActive = a.status === 'activo'
-            // Sin TTL: si la activation tiene status='activo', se muestra como activa.
-            // Las viejas con expiresAt legacy ya no se vencen automáticamente.
-            const expired = false
             const showAsActive = isActive
 
             return (
@@ -157,7 +154,7 @@ export function MisCuponesPage() {
                     </span>
                   </div>
 
-                  <StatusLine status={a.status} expired={expired} />
+                  <StatusLine status={a.status} />
 
                   <div className="mt-2 flex items-center gap-2">
                     {showAsActive ? (
@@ -193,13 +190,7 @@ export function MisCuponesPage() {
   )
 }
 
-function StatusLine({
-  status,
-  expired,
-}: {
-  status: string
-  expired: boolean
-}) {
+function StatusLine({ status }: { status: string }) {
   if (status === 'cancelado') {
     return (
       <p className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-400">
@@ -207,7 +198,7 @@ function StatusLine({
       </p>
     )
   }
-  if (status === 'expirado' || expired) {
+  if (status === 'expirado') {
     return (
       <p className="inline-flex items-center gap-1 text-[11px] font-medium text-status-error-fg">
         <AlertCircle size={11} /> Expirado · podés reactivarlo

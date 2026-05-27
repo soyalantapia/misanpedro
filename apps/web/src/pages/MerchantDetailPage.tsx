@@ -87,7 +87,6 @@ export function MerchantDetailPage() {
           <h1 className="text-3xl font-bold leading-tight tracking-tight text-neutral-900 sm:text-4xl">
             {merchant.nombre}
           </h1>
-          <p className="text-sm text-neutral-500">{merchant.direccion}</p>
         </header>
 
         <div className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100 text-sm text-neutral-700">
