@@ -37,6 +37,13 @@ const activationSchema = new Schema(
 activationSchema.index({ appId: 1, codigoNumerico: 1 }, { unique: true })
 activationSchema.index({ appId: 1, status: 1 })
 activationSchema.index({ couponId: 1, userId: 1, status: 1 })
+// Garantía a nivel DB: un usuario solo puede tener UN cupón activo a la vez
+// por tenant. Protege contra race conditions de double-tap / requests simultáneos.
+// Permite múltiples activaciones en estado canjeado/expirado/cancelado (historial).
+activationSchema.index(
+  { appId: 1, couponId: 1, userId: 1 },
+  { unique: true, partialFilterExpression: { status: 'activo' } },
+)
 
 export type ActivationDoc = InferSchemaType<typeof activationSchema> & {
   _id: string

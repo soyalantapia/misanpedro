@@ -94,7 +94,9 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
     return c.json({ ok: true, activation: serializeActivation(existing, coupon, merchant) })
   }
 
-  // Retry por si hay race en codigoNumerico
+  // Retry por si hay race en codigoNumerico (index único por tenant).
+  // Si el índice parcial {appId, couponId, userId, status:'activo'} lanza 11000,
+  // significa que una request concurrente ya creó la activación — la devolvemos.
   let activation: any = null
   let lastErr: any = null
   for (let attempt = 0; attempt < 3 && !activation; attempt++) {
@@ -116,6 +118,16 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
     } catch (err: any) {
       lastErr = err
       if (err?.code !== 11000) throw err
+      // Determinar si el conflicto es por el índice parcial de activación única
+      // (race condition de double-tap). Si es así, recuperamos la ya creada.
+      const raceActivation = await Activation.findOne({
+        appId, couponId: coupon._id, userId: auth.sub, status: 'activo',
+      })
+      if (raceActivation) {
+        const merchant = await Merchant.findOne({ _id: coupon.merchantId, appId })
+        return c.json({ ok: true, activation: serializeActivation(raceActivation, coupon, merchant) })
+      }
+      // Si no hay activación activa, el 11000 fue por codigoNumerico → reintentar
     }
   }
   if (!activation) {
