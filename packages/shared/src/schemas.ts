@@ -131,7 +131,7 @@ export const merchantSignupSchema = z.object({
   admin: z.object({
     nombre: z.string().min(3),
     email: z.string().email().toLowerCase(),
-    password: z.string().min(3),
+    password: z.string().min(8, 'Mínimo 8 caracteres'),
   }),
   /** El comercio debe aceptar TyC + Privacidad explícitamente. */
   acceptedTc: z.literal(true, {
