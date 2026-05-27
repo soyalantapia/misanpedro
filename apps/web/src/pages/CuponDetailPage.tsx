@@ -173,9 +173,9 @@ export function CuponDetailPage() {
         )}
 
         <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
             Información del comercio
-          </p>
+          </h2>
           <div className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100 text-sm text-neutral-700">
             <Row icon={MapPin}>{merchant.direccion}</Row>
             {merchant.telefono && (
@@ -229,9 +229,9 @@ function Section({ title, body }: { title: string; body: string }) {
   if (!body) return null
   return (
     <div>
-      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+      <h2 className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
         {title}
-      </p>
+      </h2>
       <p className="text-sm leading-relaxed text-neutral-700">{body}</p>
     </div>
   )

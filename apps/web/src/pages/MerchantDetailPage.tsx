@@ -113,14 +113,20 @@ export function MerchantDetailPage() {
         </div>
 
         <div>
-          <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          <h2 className="mb-3 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
             Descuentos disponibles
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {coupons.map((c, i) => (
-              <CouponCard key={c.id} coupon={c} merchant={merchant} index={i} />
-            ))}
-          </div>
+          </h2>
+          {coupons.length === 0 ? (
+            <p className="rounded-2xl bg-primary-50 p-5 text-center text-sm text-neutral-500">
+              Este comercio no tiene descuentos activos en este momento.
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {coupons.map((c, i) => (
+                <CouponCard key={c.id} coupon={c} merchant={merchant} index={i} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

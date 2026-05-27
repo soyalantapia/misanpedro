@@ -300,11 +300,11 @@ export function RegistroPage() {
             >
               política de privacidad
             </Link>{' '}
-            de Mi San Pedro. Mis datos quedan protegidos por la Ley 25.326.
+            de Cuponcito. Mis datos quedan protegidos por la Ley 25.326.
           </span>
         </label>
         {errors.acceptedTc && (
-          <p className="-mt-2 text-xs font-semibold text-status-error">{errors.acceptedTc}</p>
+          <p role="alert" className="-mt-2 text-xs font-semibold text-status-error">{errors.acceptedTc}</p>
         )}
 
         <div className="mt-2 flex items-start gap-3 rounded-2xl bg-status-info-bg p-4 text-status-info-fg">

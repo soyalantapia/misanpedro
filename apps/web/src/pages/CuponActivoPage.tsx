@@ -167,14 +167,24 @@ export function CuponActivoPage() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setConfirmCancel(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-sm font-bold text-neutral-700 shadow-card ring-1 ring-neutral-100 transition-all hover:bg-status-error-bg hover:text-status-error-fg"
-      >
-        <X size={16} />
-        {isExpired ? 'Volver' : 'Cancelar cupón'}
-      </button>
+      {isExpired ? (
+        <Link
+          to="/mis-cupones"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-sm font-bold text-neutral-700 shadow-card ring-1 ring-neutral-100 transition-all hover:bg-primary-100"
+        >
+          <ChevronLeft size={16} />
+          Volver a mis cupones
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirmCancel(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-sm font-bold text-neutral-700 shadow-card ring-1 ring-neutral-100 transition-all hover:bg-status-error-bg hover:text-status-error-fg"
+        >
+          <X size={16} />
+          Cancelar cupón
+        </button>
+      )}
 
       <ConfirmDialog
         open={confirmCancel}

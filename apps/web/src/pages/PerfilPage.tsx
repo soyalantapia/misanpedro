@@ -106,9 +106,9 @@ export function PerfilPage() {
       </header>
 
       <section className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
             Datos personales
-          </p>
+          </h2>
           <div className="mt-3 flex flex-col gap-2.5 text-sm">
             <Row icon={IdCard} label="DNI" value={user.dni} />
             <Row icon={Mail} label="Email" value={user.email} />
@@ -125,9 +125,9 @@ export function PerfilPage() {
         </section>
 
       <section className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
-          <Lock size={11} /> Privacidad y datos (Ley 25.326)
-        </p>
+        <h2 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          <Lock size={11} aria-hidden="true" /> Privacidad y datos (Ley 25.326)
+        </h2>
         <p className="mt-2 text-xs text-neutral-500">
           Tenés derecho a acceder, rectificar, suprimir y oponerte al uso de tus datos.
         </p>
@@ -181,9 +181,9 @@ export function PerfilPage() {
       </section>
 
       <section className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
           Más
-        </p>
+        </h2>
         <div className="mt-3 flex flex-col gap-1">
           <Link
             to="/legal/terminos"
@@ -199,7 +199,7 @@ export function PerfilPage() {
           </Link>
           <a
             href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
-              'Hola Mi San Pedro, necesito ayuda con mi cuenta.',
+              'Hola, necesito ayuda con mi cuenta Cuponcito.',
             )}`}
             target="_blank"
             rel="noreferrer noopener"
