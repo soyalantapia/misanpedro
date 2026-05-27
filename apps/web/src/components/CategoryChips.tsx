@@ -9,7 +9,7 @@ export function CategoryChips({
   onChange: (c: Categoria | null) => void
 }) {
   return (
-    <div className="flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div role="group" aria-label="Filtrar por categoría" className="flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <Chip active={selected === null} onClick={() => onChange(null)}>
         Todas
       </Chip>
@@ -38,6 +38,7 @@ function Chip({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       className={cn(
         'shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition-all duration-200',
