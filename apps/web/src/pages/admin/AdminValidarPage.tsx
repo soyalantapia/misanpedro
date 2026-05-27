@@ -28,9 +28,10 @@ export function AdminValidarPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-2 rounded-full bg-primary-100 p-1 ring-1 ring-neutral-100">
+      <div role="group" aria-label="Modo de validación" className="grid grid-cols-2 rounded-full bg-primary-100 p-1 ring-1 ring-neutral-100">
         <button
           type="button"
+          aria-pressed={mode === 'qr'}
           onClick={() => setMode('qr')}
           className={cn(
             'inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200',
@@ -43,6 +44,7 @@ export function AdminValidarPage() {
         </button>
         <button
           type="button"
+          aria-pressed={mode === 'code'}
           onClick={() => setMode('code')}
           className={cn(
             'inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200',

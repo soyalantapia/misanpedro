@@ -99,7 +99,7 @@ export function AdminDashboardPage() {
           {merchant?.nombre ?? 'Tu comercio'}
         </h1>
         <p className="text-sm text-neutral-500">
-          Validá cupones, gestioná descuentos y mirá tu base de clientes Mi San Pedro.
+          Validá cupones, gestioná descuentos y mirá tu base de clientes de la app.
         </p>
       </header>
 
@@ -153,12 +153,21 @@ export function AdminDashboardPage() {
         <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
           Acción rápida
         </p>
-        <PrimaryAction
-          to="/admin/validar"
-          title="Validar cupón"
-          description="Escaneá el QR del cliente o ingresá el código manual."
-          icon={ScanLine}
-        />
+        {merchantCoupons.length === 0 ? (
+          <PrimaryAction
+            to="/admin/cupones/nuevo"
+            title="Creá tu primer cupón"
+            description="Sin cupones activos los vecinos no ven tu comercio en la app."
+            icon={Tag}
+          />
+        ) : (
+          <PrimaryAction
+            to="/admin/validar"
+            title="Validar cupón"
+            description="Escaneá el QR del cliente o ingresá el código manual."
+            icon={ScanLine}
+          />
+        )}
       </section>
 
       <section className="flex flex-col gap-3">

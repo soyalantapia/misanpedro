@@ -232,9 +232,9 @@ export function AdminLoginPage() {
       <div className="relative mx-auto max-w-6xl px-4 pb-8 sm:px-8">
         <p className="text-center text-xs text-white/50 sm:text-left">
           ¿Sos vecino?{' '}
-          <a href="#/" className="font-bold text-white/90 hover:text-white">
-            Volvé al inicio de Mi San Pedro
-          </a>
+          <Link to="/" className="font-bold text-white/90 hover:text-white">
+            Volvé a la app
+          </Link>
         </p>
       </div>
     </div>

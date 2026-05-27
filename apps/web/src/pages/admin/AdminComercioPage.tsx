@@ -565,7 +565,7 @@ function MapsUrlField({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) 
           />
           <p className="text-[11px] text-neutral-400">
             En Google Maps tap{' '}
-            <Copy size={10} className="inline" /> Compartir → Copiar link y pegalo acá. Si lo
+            <Copy size={10} className="inline" aria-hidden="true" /> Compartir → Copiar link y pegalo acá. Si lo
             dejás vacío, se busca por nombre + dirección.
           </p>
         </>
@@ -653,6 +653,7 @@ function HorariosEditor({
                   <input
                     type="time"
                     value={horario.desde}
+                    aria-label={`${d.label} apertura`}
                     onChange={(e) =>
                       setDay(d.id, { ...horario, desde: e.target.value })
                     }
@@ -662,6 +663,7 @@ function HorariosEditor({
                   <input
                     type="time"
                     value={horario.hasta}
+                    aria-label={`${d.label} cierre`}
                     onChange={(e) =>
                       setDay(d.id, { ...horario, hasta: e.target.value })
                     }

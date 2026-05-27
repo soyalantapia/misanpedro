@@ -103,6 +103,7 @@ export function AdminResetPasswordPage() {
                   <button
                     type="button"
                     onClick={() => setShowPwd((s) => !s)}
+                    aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     className="absolute right-3 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-neutral-400 hover:text-neutral-700"
                   >
                     {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}

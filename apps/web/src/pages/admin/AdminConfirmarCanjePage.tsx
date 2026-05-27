@@ -135,7 +135,7 @@ export function AdminConfirmarCanjePage() {
         <div className="text-center">
           <p className="text-base font-bold text-neutral-900">{customerName}</p>
           <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
-            Cliente Mi San Pedro
+            Cliente Cuponcito
           </p>
         </div>
       </div>

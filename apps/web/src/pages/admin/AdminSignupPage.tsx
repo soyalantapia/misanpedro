@@ -436,7 +436,7 @@ export function AdminSignupPage() {
                     onChange={(e) => update('password', e.target.value)}
                     placeholder="Mínimo 8 caracteres"
                     className={cn(inputCls, 'pr-11')}
-                    minLength={3}
+                    minLength={8}
                   />
                   <button
                     type="button"

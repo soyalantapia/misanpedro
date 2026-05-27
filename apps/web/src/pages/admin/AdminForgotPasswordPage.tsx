@@ -48,7 +48,7 @@ export function AdminForgotPasswordPage() {
             <p className="mt-1 text-sm text-neutral-500">
               {sent
                 ? `Si ${email} existe en nuestra base, te enviamos un link para crear una contraseña nueva. Revisá tu inbox y la carpeta de spam.`
-                : 'Te enviamos un link a tu email para crear una nueva contraseña.'}
+                : 'Te enviaremos un link a tu email para crear una nueva contraseña.'}
             </p>
           </div>
         </div>

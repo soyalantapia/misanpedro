@@ -103,8 +103,8 @@ export function AdminClientesPage() {
           Vecinos que canjearon en tu comercio
         </h1>
         <p className="text-sm text-neutral-500">
-          Esta base es exclusiva de los vecinos que pasaron por tu local. La base general de Mi
-          San Pedro nunca se entrega.
+          Esta base es exclusiva de los vecinos que pasaron por tu local. La base general de la
+          plataforma nunca se entrega.
         </p>
       </header>
 
@@ -196,7 +196,7 @@ export function AdminClientesPage() {
       </div>
 
       {filtered.length === 0 && (
-        <p className="text-center text-sm text-neutral-400">
+        <p role="status" aria-live="polite" className="text-center text-sm text-neutral-400">
           No hay clientes que coincidan con "{search}".
         </p>
       )}
@@ -228,7 +228,7 @@ function LockedState() {
           <Users size={12} /> Mis clientes
         </div>
         <h1 className="mt-3 text-2xl font-bold leading-tight tracking-tight text-neutral-900 sm:text-3xl">
-          Acá vas a ver a tus clientes Mi San Pedro
+          Acá vas a ver a tus clientes Cuponcito
         </h1>
         <p className="mt-2 text-sm text-neutral-500">
           Esta sección se desbloquea cuando valides tu primer cupón. Cada cliente que canjee en tu

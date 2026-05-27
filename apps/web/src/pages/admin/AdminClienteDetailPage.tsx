@@ -217,9 +217,9 @@ export function AdminClienteDetailPage() {
       </section>
 
       <section className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
           Datos personales
-        </p>
+        </h2>
         <div className="mt-3 flex flex-col gap-2.5 text-sm">
           <Row icon={IdCard} label="DNI">
             {user.dni}
@@ -249,9 +249,9 @@ export function AdminClienteDetailPage() {
       {userId && <NotesSection userId={userId} />}
 
       <section>
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <h2 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
           Patrones de visita
-        </p>
+        </h2>
         <div className="grid gap-2.5 sm:grid-cols-2">
           <PatternCard
             icon={Calendar}
@@ -284,9 +284,9 @@ export function AdminClienteDetailPage() {
       </section>
 
       <section>
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <h2 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
           Historial completo · {count} {count === 1 ? 'canje' : 'canjes'}
-        </p>
+        </h2>
         <div className="flex flex-col gap-2">
           {sortedDesc.map((r, i) => {
             const c = couponMap.get(r.couponId)
@@ -321,21 +321,23 @@ export function AdminClienteDetailPage() {
         </p>
       </div>
 
-      <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">
-          <a
-            href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}`}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
-          >
-            <MessageCircle size={16} /> Escribir por WhatsApp
-          </a>
+      {user.whatsapp && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">
+            <a
+              href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}`}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+            >
+              <MessageCircle size={16} /> Escribir por WhatsApp
+            </a>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

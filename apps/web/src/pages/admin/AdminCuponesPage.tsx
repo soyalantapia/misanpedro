@@ -108,7 +108,13 @@ export function AdminCuponesPage() {
         </Link>
       </header>
 
-      {cupones.length === 0 ? (
+      {apiCupones.loading && localCupones.length === 0 ? (
+        <div className="flex flex-col gap-2.5">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 animate-pulse rounded-2xl bg-white ring-1 ring-neutral-100" />
+          ))}
+        </div>
+      ) : cupones.length === 0 ? (
         <EmptyState
           icon={Tag}
           title="No tenés cupones cargados"
