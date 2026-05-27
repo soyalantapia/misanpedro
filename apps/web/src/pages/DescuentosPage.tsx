@@ -11,6 +11,7 @@ import { useGeolocation, distanceKm } from '@/lib/geo'
 import { CATEGORIAS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
 import { useApiMerchants, useApiCoupons } from '@/lib/apiQueries'
 import type { ApiMerchant, ApiCoupon } from '@/lib/api'
+import { useTenant } from '@/lib/tenant'
 
 const VIEW_KEY = 'misanpedro.view'
 
@@ -49,6 +50,7 @@ function apiCouponToLocal(c: ApiCoupon, merchantSlug: string): Coupon {
 }
 
 export function DescuentosPage() {
+  const tenant = useTenant()
   const [view, setView] = useState<View>(() => {
     if (typeof window === 'undefined') return 'descuento'
     return (window.localStorage.getItem(VIEW_KEY) as View) ?? 'descuento'
@@ -160,7 +162,8 @@ export function DescuentosPage() {
           <Sparkles size={12} /> Descuentos vigentes
         </div>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
-          Descubrí descuentos en San&nbsp;Pedro
+          {tenant.config?.brand?.heroHeadline ??
+            `Descubrí descuentos en ${tenant.config?.nombre ?? 'tu ciudad'}`}
         </h1>
         <p className="text-base text-neutral-500">
           {merchants.length} {merchants.length === 1 ? 'comercio adherido' : 'comercios adheridos'}

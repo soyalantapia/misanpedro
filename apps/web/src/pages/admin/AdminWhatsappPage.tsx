@@ -43,7 +43,7 @@ const TEMPLATES = [
   {
     id: 'tpl-evento',
     name: 'Invitación a evento',
-    body: '{{nombre}}, este {{vigencia}} hacemos evento especial en {{comercio}} con {{porcentaje}}% off para clientes Mi San Pedro. Te esperamos. {{link}}',
+    body: '{{nombre}}, este {{vigencia}} hacemos evento especial en {{comercio}} con {{porcentaje}}% off para clientes Cuponcito. Te esperamos. {{link}}',
   },
 ] as const
 
@@ -143,7 +143,7 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
           Conectá WhatsApp Business
         </h1>
         <p className="text-sm text-neutral-500">
-          Para mandar mensajes masivos a tus clientes Mi San Pedro tenés que conectar tu cuenta de
+          Para mandar mensajes masivos a tus clientes tenés que conectar tu cuenta de
           WhatsApp Business escaneando un QR. Es lo mismo que WhatsApp Web.
         </p>
       </header>
@@ -289,7 +289,7 @@ function ComposerScreen({
     .replace('{{comercio}}', merchantId.replace(/-/g, ' '))
     .replace('{{porcentaje}}', porcentaje)
     .replace('{{vigencia}}', vigencia)
-    .replace('{{link}}', 'misanpedro.app/cupones')
+    .replace('{{link}}', 'cuponcito.app')
 
   async function handleStartSend() {
     if (recipients.length === 0) {
@@ -739,9 +739,9 @@ function Section({
 }) {
   return (
     <section className="flex flex-col gap-2">
-      <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
-        <Icon size={11} /> {title}
-      </p>
+      <h2 className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <Icon size={11} aria-hidden="true" /> {title}
+      </h2>
       {children}
     </section>
   )
