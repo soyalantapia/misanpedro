@@ -16,6 +16,8 @@ export function LoginPage() {
   const [code, setCode] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resending, setResending] = useState(false)
+  const [resent, setResent] = useState(false)
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const next = params.get('next') ?? '/'
@@ -42,6 +44,26 @@ export function LoginPage() {
       }
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleResend() {
+    if (phase.kind !== 'code') return
+    setResending(true)
+    setResent(false)
+    try {
+      const res = await userApi.requestOtp(phase.email)
+      setPhase((prev) =>
+        prev.kind === 'code'
+          ? { ...prev, debugCode: import.meta.env.DEV ? res._debugCode : undefined }
+          : prev,
+      )
+      setResent(true)
+      toast.info('Código reenviado', 'Revisá tu email.')
+    } catch {
+      toast.error('Error al reenviar', 'No se pudo reenviar. Intentá de nuevo.')
+    } finally {
+      setResending(false)
     }
   }
 
@@ -193,10 +215,19 @@ export function LoginPage() {
           </button>
           <button
             type="button"
+            onClick={handleResend}
+            disabled={resending || resent}
+            className="text-center text-xs font-semibold text-neutral-500 hover:text-neutral-900 disabled:opacity-60"
+          >
+            {resent ? '✓ Código reenviado' : resending ? 'Reenviando…' : 'Reenviar código'}
+          </button>
+          <button
+            type="button"
             onClick={() => {
               setPhase({ kind: 'email' })
               setCode('')
               setError(null)
+              setResent(false)
             }}
             className="text-center text-xs font-semibold text-neutral-500 hover:text-neutral-900"
           >

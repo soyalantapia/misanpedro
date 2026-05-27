@@ -74,7 +74,23 @@ export function CuponDetailPage() {
   if ((!coupon || !merchant) && !apiCouponsRes.loading && !apiMerchantsRes.loading) {
     return <Navigate to="/" replace />
   }
-  if (!coupon || !merchant) return null
+  if (!coupon || !merchant) {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col">
+        <div className="h-56 w-full animate-pulse bg-neutral-200 sm:h-64" />
+        <div className="flex flex-col gap-4 px-4 pt-12 pb-32 sm:px-6">
+          <div className="h-3 w-28 animate-pulse rounded-full bg-neutral-200" />
+          <div className="h-7 w-3/4 animate-pulse rounded-xl bg-neutral-200" />
+          <div className="h-3 w-32 animate-pulse rounded-full bg-neutral-200" />
+          <div className="mt-2 flex flex-col gap-2.5">
+            <div className="h-3 w-full animate-pulse rounded-full bg-neutral-200" />
+            <div className="h-3 w-5/6 animate-pulse rounded-full bg-neutral-200" />
+            <div className="h-3 w-4/6 animate-pulse rounded-full bg-neutral-200" />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
 
