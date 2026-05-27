@@ -36,6 +36,7 @@ export function AdminCuponesPage() {
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [confirmPause, setConfirmPause] = useState<{ id: string; isPausado: boolean } | null>(null)
 
   const canjesPorCupon = useMemo(() => {
     const map = new Map<string, number>()
@@ -171,7 +172,10 @@ export function AdminCuponesPage() {
                               </Link>
                               <button
                                 type="button"
-                                onClick={() => togglePause(c.id, isPausado)}
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  setConfirmPause({ id: c.id, isPausado })
+                                }}
                                 className="flex items-center gap-2 px-4 py-2 text-left text-xs font-semibold text-neutral-700 hover:bg-primary-50"
                               >
                                 {isPausado ? <Play size={12} /> : <Pause size={12} />}
@@ -228,6 +232,25 @@ export function AdminCuponesPage() {
         variant="danger"
         onCancel={() => setConfirmDelete(null)}
         onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmPause}
+        title={confirmPause?.isPausado ? '¿Reactivar este cupón?' : '¿Pausar este cupón?'}
+        description={
+          confirmPause?.isPausado
+            ? 'Volvés a hacerlo visible para los vecinos en la app.'
+            : 'Dejará de aparecer para los vecinos hasta que lo reactives.'
+        }
+        confirmLabel={confirmPause?.isPausado ? 'Sí, reactivar' : 'Sí, pausar'}
+        cancelLabel="Volver"
+        onCancel={() => setConfirmPause(null)}
+        onConfirm={() => {
+          if (confirmPause) {
+            void togglePause(confirmPause.id, confirmPause.isPausado)
+            setConfirmPause(null)
+          }
+        }}
       />
     </div>
   )

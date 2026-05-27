@@ -27,6 +27,7 @@ import {
 } from '@/lib/apiQueries'
 import { customerNotes, ApiError } from '@/lib/api'
 import { useToast } from '@/components/Toast'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { Activation } from '@/lib/types'
 
 export function AdminClienteDetailPage() {
@@ -441,6 +442,7 @@ function NotesSection({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
   const toast = useToast()
 
   async function refresh() {
@@ -541,8 +543,8 @@ function NotesSection({ userId }: { userId: string }) {
               </div>
               <button
                 type="button"
-                onClick={() => handleDelete(n.id)}
-                aria-label="Borrar"
+                onClick={() => setNoteToDelete(n.id)}
+                aria-label="Borrar nota"
                 className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-neutral-400 hover:bg-status-error-bg hover:text-status-error-fg"
               >
                 <Trash2 size={11} />
@@ -551,6 +553,22 @@ function NotesSection({ userId }: { userId: string }) {
           ))
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!noteToDelete}
+        title="¿Borrar esta nota?"
+        description="La nota se eliminará permanentemente y no se podrá recuperar."
+        confirmLabel="Sí, borrar"
+        cancelLabel="Volver"
+        variant="danger"
+        onCancel={() => setNoteToDelete(null)}
+        onConfirm={() => {
+          if (noteToDelete) {
+            void handleDelete(noteToDelete)
+            setNoteToDelete(null)
+          }
+        }}
+      />
     </section>
   )
 }

@@ -157,7 +157,7 @@ export function AdminSignupPage() {
     // Los horarios ya no son obligatorios al signup — se completan en el panel
     if (form.nombreAdmin.trim().length < 3) return 'Falta tu nombre completo'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAdmin)) return 'Email inválido'
-    if (form.password.length < 3) return 'La contraseña debe tener al menos 3 caracteres'
+    if (form.password.length < 8) return 'La contraseña debe tener al menos 8 caracteres'
     return null
   }
 
@@ -434,7 +434,7 @@ export function AdminSignupPage() {
                     autoComplete="new-password"
                     value={form.password}
                     onChange={(e) => update('password', e.target.value)}
-                    placeholder="Mínimo 3 caracteres"
+                    placeholder="Mínimo 8 caracteres"
                     className={cn(inputCls, 'pr-11')}
                     minLength={3}
                   />

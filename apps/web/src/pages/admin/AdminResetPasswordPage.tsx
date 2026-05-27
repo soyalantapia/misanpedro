@@ -18,7 +18,7 @@ export function AdminResetPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (pwd.length < 3) return setError('Mínimo 3 caracteres')
+    if (pwd.length < 8) return setError('Mínimo 8 caracteres')
     if (pwd !== confirm) return setError('Las contraseñas no coinciden')
     setSubmitting(true)
     setError(null)
@@ -95,10 +95,10 @@ export function AdminResetPasswordPage() {
                     type={showPwd ? 'text' : 'password'}
                     value={pwd}
                     onChange={(e) => setPwd(e.target.value)}
-                    placeholder="Mínimo 3 caracteres"
+                    placeholder="Mínimo 8 caracteres"
                     className="w-full rounded-2xl bg-white px-4 py-3 pr-12 text-sm ring-1 ring-neutral-200 focus:outline-none focus:ring-2 focus:ring-accent-400"
                     required
-                    minLength={3}
+                    minLength={8}
                   />
                   <button
                     type="button"
@@ -113,13 +113,23 @@ export function AdminResetPasswordPage() {
                 <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
                   Repetir contraseña
                 </span>
-                <input
-                  type={showPwd ? 'text' : 'password'}
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full rounded-2xl bg-white px-4 py-3 text-sm ring-1 ring-neutral-200 focus:outline-none focus:ring-2 focus:ring-accent-400"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showPwd ? 'text' : 'password'}
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    className="w-full rounded-2xl bg-white px-4 py-3 pr-12 text-sm ring-1 ring-neutral-200 focus:outline-none focus:ring-2 focus:ring-accent-400"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd((s) => !s)}
+                    aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    className="absolute right-3 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-neutral-400 hover:text-neutral-700"
+                  >
+                    {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
               </label>
 
               {error && (

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { MerchantSession } from './types'
-import { merchantApi, tokens } from './api'
+import { merchantApi, tokens, ApiError } from './api'
 
 const STORAGE_KEY = 'misanpedro.merchant.v1'
 
@@ -77,8 +77,12 @@ export const merchantAuth = {
       }))
       return { ok: true }
     } catch (apiErr) {
-      const msg = (apiErr as Error)?.message ?? 'Email o contraseña incorrectos'
-      return { ok: false, error: msg }
+      if (apiErr instanceof ApiError && (apiErr.status === 401 || apiErr.status === 403)) {
+        return { ok: false, error: 'Email o contraseña incorrectos. Verificá los datos e intentá de nuevo.' }
+      }
+      const msg = (apiErr as Error)?.message ?? ''
+      const isNetwork = /fetch|network|connect/i.test(msg)
+      return { ok: false, error: isNetwork ? 'Sin conexión. Verificá tu red e intentá de nuevo.' : 'No pudimos iniciar sesión. Verificá tu conexión.' }
     }
   },
   async signup(payload: {

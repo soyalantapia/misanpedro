@@ -49,6 +49,7 @@ function ensureHorariosSemana(detalle: HorariosSemana | undefined | null): Horar
 import { useCouponsByMerchant } from '@/lib/couponsStore'
 import { useApiMyCoupons } from '@/lib/apiQueries'
 import { useToast } from '@/components/Toast'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { defaultHorariosSemana, formatHorariosSemana } from '@/lib/format'
 import { cn } from '@/lib/cn'
 
@@ -76,6 +77,8 @@ export function AdminComercioPage() {
   const toast = useToast()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [cancelConfirm, setCancelConfirm] = useState(false)
 
   // Si tenemos sesión API, traemos el merchant completo de /me/profile
   // (no filtra por estado, así que funciona aunque esté pending_payment).
@@ -146,6 +149,7 @@ export function AdminComercioPage() {
       toast.error('Nombre muy corto', 'Mínimo 3 caracteres.')
       return
     }
+    setSaving(true)
 
     const apiPayload = {
       nombre: draft.nombre.trim(),
@@ -160,17 +164,18 @@ export function AdminComercioPage() {
     }
     try {
       await api.merchantAdmin.updateMe(apiPayload)
+      apiRes.refetch()
+      toast.success('Comercio actualizado', 'Los cambios ya se ven en la app del vecino.')
+      setEditing(false)
+      setDraft(null)
     } catch (err) {
       toast.error(
         'No se pudo guardar',
         err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
       )
-      return
+    } finally {
+      setSaving(false)
     }
-    apiRes.refetch()
-    toast.success('Comercio actualizado', 'Los cambios ya se ven en la app del vecino.')
-    setEditing(false)
-    setDraft(null)
   }
 
   return (
@@ -281,21 +286,37 @@ export function AdminComercioPage() {
           <div className="mx-auto flex w-full max-w-2xl items-stretch gap-2 px-4 py-3 sm:px-6">
             <button
               type="button"
-              onClick={cancelEdit}
-              className="flex shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-status-error-bg px-4 py-3.5 text-sm font-bold text-status-error-fg ring-1 ring-status-error/20 transition-all hover:-translate-y-0.5"
+              onClick={() => setCancelConfirm(true)}
+              disabled={saving}
+              className="flex shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-status-error-bg px-4 py-3.5 text-sm font-bold text-status-error-fg ring-1 ring-status-error/20 transition-all hover:-translate-y-0.5 disabled:opacity-60"
             >
               <X size={16} /> Cancelar
             </button>
             <button
               type="button"
               onClick={save}
-              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+              disabled={saving}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60"
             >
-              <Save size={16} /> Guardar cambios
+              <Save size={16} /> {saving ? 'Guardando…' : 'Guardar cambios'}
             </button>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={cancelConfirm}
+        title="¿Descartar los cambios?"
+        description="Los datos editados se perderán y no se podrán recuperar."
+        confirmLabel="Sí, descartar"
+        cancelLabel="Seguir editando"
+        variant="danger"
+        onCancel={() => setCancelConfirm(false)}
+        onConfirm={() => {
+          setCancelConfirm(false)
+          cancelEdit()
+        }}
+      />
     </div>
   )
 }

@@ -149,7 +149,7 @@ export function AdminConfirmarCanjePage() {
 
       <label className="flex flex-col gap-1.5">
         <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
-          Monto del ticket (opcional)
+          Monto del ticket <span className="text-status-error-fg">*</span>
         </span>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">
@@ -165,7 +165,7 @@ export function AdminConfirmarCanjePage() {
           />
         </div>
         <p className="text-[11px] text-neutral-400">
-          Si lo cargás, generamos estadísticas más precisas para tu comercio.
+          Necesario para registrar el canje y calcular estadísticas precisas.
           {ahorroPreview !== null && (
             <span className="ml-1 font-bold text-status-success-fg">
               Ahorro estimado: {formatMoney(ahorroPreview)}

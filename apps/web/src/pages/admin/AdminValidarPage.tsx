@@ -114,6 +114,7 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
           onChange={(e) => setCode(e.target.value)}
           placeholder="000000"
           maxLength={6}
+          aria-label="Código de canje de 6 dígitos"
           className="mt-3 w-full rounded-2xl bg-primary-50 px-6 py-5 text-center font-mono text-4xl font-bold tracking-[0.4em] tabular-nums text-neutral-900 ring-2 ring-accent-300 focus:outline-none focus:ring-accent-500"
         />
         <div className="mt-3 grid grid-cols-6 gap-1.5">

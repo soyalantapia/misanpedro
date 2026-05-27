@@ -62,7 +62,19 @@ export function MerchantShell() {
         categoria: sessionState.apiMerchant.categoria,
       }
     : localMerchant
-  if (!user || !merchant) return <Navigate to="/admin/login" replace />
+
+  // Sesión existe pero los datos todavía no llegaron: mostramos un skeleton
+  // en lugar de redirigir al login y generar un flash falso.
+  if (!user || !merchant) {
+    return (
+      <div className="flex min-h-[100svh] items-center justify-center bg-primary-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 animate-pulse rounded-2xl bg-accent-100" />
+          <div className="h-3 w-32 animate-pulse rounded-full bg-neutral-200" />
+        </div>
+      </div>
+    )
+  }
 
   function handleLogout() {
     merchantAuth.logout()

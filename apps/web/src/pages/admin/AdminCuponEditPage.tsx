@@ -522,6 +522,7 @@ function TemplatesPicker({
         <button
           type="button"
           onClick={() => setOpen((s) => !s)}
+          aria-label={open ? 'Cerrar plantillas' : `Ver ${items.length} plantillas disponibles`}
           className="shrink-0 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-accent-700 ring-1 ring-accent-200 hover:bg-accent-50"
         >
           {open ? 'Cerrar' : `Ver ${items.length}`}

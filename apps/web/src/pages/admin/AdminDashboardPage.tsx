@@ -321,11 +321,8 @@ function SecondaryAction({
   icon: typeof Tag
   locked?: boolean
 }) {
-  return (
-    <Link
-      to={to}
-      className="group flex items-center gap-4 rounded-3xl bg-white p-4 shadow-card ring-1 ring-neutral-100 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover"
-    >
+  const inner = (
+    <>
       <div
         className={cn(
           'grid h-11 w-11 shrink-0 place-items-center rounded-2xl',
@@ -335,12 +332,32 @@ function SecondaryAction({
         <Icon size={20} />
       </div>
       <div className="flex-1">
-        <p className="text-sm font-bold text-neutral-900">{title}</p>
+        <p className={cn('text-sm font-bold', locked ? 'text-neutral-400' : 'text-neutral-900')}>{title}</p>
         <p className={cn('text-xs', locked ? 'text-neutral-400' : 'text-neutral-500')}>
           {description}
         </p>
       </div>
-      <ArrowRight size={16} className="text-neutral-400 transition-transform group-hover:translate-x-1" />
+      <ArrowRight size={16} className={cn('transition-transform', locked ? 'text-neutral-200' : 'text-neutral-400 group-hover:translate-x-1')} />
+    </>
+  )
+
+  if (locked) {
+    return (
+      <div
+        aria-disabled="true"
+        className="flex cursor-not-allowed items-center gap-4 rounded-3xl bg-white p-4 opacity-60 shadow-card ring-1 ring-neutral-100"
+      >
+        {inner}
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      to={to}
+      className="group flex items-center gap-4 rounded-3xl bg-white p-4 shadow-card ring-1 ring-neutral-100 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover"
+    >
+      {inner}
     </Link>
   )
 }
