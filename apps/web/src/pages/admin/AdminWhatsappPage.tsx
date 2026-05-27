@@ -151,7 +151,7 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
       <div className="rounded-3xl bg-white p-6 shadow-floating ring-1 ring-neutral-100">
         <div className="flex flex-col items-center gap-4">
           <div className="rounded-3xl bg-white p-3 ring-2 ring-accent-100">
-            <canvas ref={canvasRef} className="block" />
+            <canvas ref={canvasRef} role="img" aria-label="Código QR para vincular WhatsApp Business" className="block" />
           </div>
           <div className="text-center">
             <p className="text-xs font-bold uppercase tracking-widest text-accent-700">

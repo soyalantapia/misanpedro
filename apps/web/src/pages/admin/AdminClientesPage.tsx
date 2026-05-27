@@ -152,6 +152,7 @@ export function AdminClientesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nombre, email o DNI…"
+          aria-label="Buscar clientes"
           className="w-full rounded-2xl bg-white py-3 pl-10 pr-4 text-sm shadow-card ring-1 ring-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400"
         />
       </div>
