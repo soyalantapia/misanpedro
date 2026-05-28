@@ -158,6 +158,19 @@ export function DescuentosPage() {
     )
   }
 
+  // V4: detectamos empty state global (sin merchants y sin cupones visibles)
+  // para ocultar search/toggle/geo/categorías → no mostramos controles que
+  // no se pueden usar todavía. Mejora la primera impresión cuando aún no
+  // hay comercios cargados en la ciudad.
+  const visibleCouponsCount = useMemo(
+    () =>
+      COUPONS.filter(
+        (c) => c.estado === 'activo' && !!getMerchantById(c.merchantId),
+      ).length,
+    [COUPONS, getMerchantById],
+  )
+  const isGlobalEmpty = merchants.length === 0 && visibleCouponsCount === 0
+
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
       <div className="flex flex-col gap-1.5">
@@ -169,40 +182,72 @@ export function DescuentosPage() {
             `Descubrí descuentos en ${tenant.config?.nombre ?? 'tu ciudad'}`}
         </h1>
         <p className="text-base text-neutral-500">
-          {/* F1: contamos sólo cupones cuyo merchant también existe en el store.
-              Antes mostrábamos `COUPONS.filter(c.estado === 'activo').length`
-              que producía contradicciones tipo "11 cupones activos · No
-              encontramos descuentos" si los merchants no se cargaban (data
-              huérfana). Ahora el número del header siempre coincide con
-              lo que el usuario realmente puede ver. */}
-          {(() => {
-            const visibleCoupons = COUPONS.filter(
-              (c) => c.estado === 'activo' && !!getMerchantById(c.merchantId),
-            )
-            const m = merchants.length
-            const c = visibleCoupons.length
-            if (m === 0 && c === 0) {
-              return 'Pronto vamos a sumar más comercios a tu ciudad.'
-            }
-            return `${m} ${m === 1 ? 'comercio adherido' : 'comercios adheridos'} · ${c} ${c === 1 ? 'cupón activo' : 'cupones activos'}.`
-          })()}
+          {isGlobalEmpty
+            ? 'Estamos sumando los primeros comercios al programa.'
+            : `${merchants.length} ${merchants.length === 1 ? 'comercio adherido' : 'comercios adheridos'} · ${visibleCouponsCount} ${visibleCouponsCount === 1 ? 'cupón activo' : 'cupones activos'}.`}
         </p>
       </div>
 
-      <SearchBar search={search} onSearch={setSearch} />
+      {/* V4: en empty state TOTAL mostramos un único CTA dedicado y ocultamos
+          search/toggle/geo/categorías (no aplican sin datos). */}
+      {isGlobalEmpty ? (
+        <EmptyState
+          icon={Search}
+          title="Aún no hay comercios cargados"
+          description="Estamos sumando los primeros comercios de tu ciudad. Volvé en unos días o avisanos qué local te gustaría ver."
+        />
+      ) : (
+        <>
+          <SearchBar search={search} onSearch={setSearch} />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <ViewToggle value={view} onChange={setView} />
-        <GeoButton state={geo.status} onRequest={requestGeo} />
-      </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <ViewToggle value={view} onChange={setView} />
+            <GeoButton state={geo.status} onRequest={requestGeo} />
+          </div>
 
-      <CategoryChips selected={categoria} onChange={setCategoria} />
+          <CategoryChips selected={categoria} onChange={setCategoria} />
+        </>
+      )}
 
-      {view === 'descuento' ? (
-        filteredCoupons.length === 0 ? (
+      {/* V4: el listado solo se muestra cuando NO estamos en empty state global.
+          En empty global ya mostramos arriba el EmptyState dedicado. */}
+      {!isGlobalEmpty &&
+        (view === 'descuento' ? (
+          filteredCoupons.length === 0 ? (
+            <EmptyState
+              icon={Search}
+              title="No encontramos descuentos"
+              description={
+                categoria || search
+                  ? 'Probá quitar el filtro o cambiar la búsqueda.'
+                  : 'Pronto vamos a sumar más comercios al programa.'
+              }
+            />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {filteredCoupons.map((c, i) => {
+                const m = getMerchantById(c.merchantId)
+                if (!m) return null
+                const dist =
+                  userCoords && m.lat && m.lng
+                    ? distanceKm(userCoords, { lat: m.lat, lng: m.lng })
+                    : undefined
+                return (
+                  <CouponCard
+                    key={c.id}
+                    coupon={c}
+                    merchant={m}
+                    distanceKm={dist}
+                    index={i}
+                  />
+                )
+              })}
+            </div>
+          )
+        ) : filteredMerchants.length === 0 ? (
           <EmptyState
             icon={Search}
-            title="No encontramos descuentos"
+            title="No encontramos comercios"
             description={
               categoria || search
                 ? 'Probá quitar el filtro o cambiar la búsqueda.'
@@ -210,59 +255,28 @@ export function DescuentosPage() {
             }
           />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {filteredCoupons.map((c, i) => {
-              const m = getMerchantById(c.merchantId)
-              if (!m) return null
+          <div className="flex flex-col gap-3">
+            {filteredMerchants.map((m, i) => {
+              const coupons = COUPONS.filter(
+                (c) => c.merchantId === m.id && c.estado === 'activo',
+              )
+              if (coupons.length === 0) return null
               const dist =
                 userCoords && m.lat && m.lng
                   ? distanceKm(userCoords, { lat: m.lat, lng: m.lng })
                   : undefined
               return (
-                <CouponCard
-                  key={c.id}
-                  coupon={c}
+                <MerchantCard
+                  key={m.id}
                   merchant={m}
+                  coupons={coupons}
                   distanceKm={dist}
                   index={i}
                 />
               )
             })}
           </div>
-        )
-      ) : filteredMerchants.length === 0 ? (
-        <EmptyState
-          icon={Search}
-          title="No encontramos comercios"
-          description={
-            categoria || search
-              ? 'Probá quitar el filtro o cambiar la búsqueda.'
-              : 'Pronto vamos a sumar más comercios al programa.'
-          }
-        />
-      ) : (
-        <div className="flex flex-col gap-3">
-          {filteredMerchants.map((m, i) => {
-            const coupons = COUPONS.filter(
-              (c) => c.merchantId === m.id && c.estado === 'activo',
-            )
-            if (coupons.length === 0) return null
-            const dist =
-              userCoords && m.lat && m.lng
-                ? distanceKm(userCoords, { lat: m.lat, lng: m.lng })
-                : undefined
-            return (
-              <MerchantCard
-                key={m.id}
-                merchant={m}
-                coupons={coupons}
-                distanceKm={dist}
-                index={i}
-              />
-            )
-          })}
-        </div>
-      )}
+        ))}
     </div>
   )
 }
