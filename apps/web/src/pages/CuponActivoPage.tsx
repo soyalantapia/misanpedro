@@ -46,6 +46,15 @@ export function CuponActivoPage() {
   const toast = useToast()
   const [confirmCancel, setConfirmCancel] = useState(false)
 
+  // Tick cada 1s para refrescar el countdown. Sólo arranca si el backend devolvió
+  // expiresAt — si no hay vencimiento, el código vale hasta que lo usen.
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  useEffect(() => {
+    if (!activation?.expiresAt) return
+    const t = window.setInterval(() => setNowMs(Date.now()), 1000)
+    return () => window.clearInterval(t)
+  }, [activation?.expiresAt])
+
   // Polling: si la activación es de Mongo (API) y está activa, polleamos
   // cada 5s para detectar cuando el comercio confirme el canje. Cuando
   // detectamos status === 'canjeado' en el API, espejamos al store local
@@ -157,9 +166,7 @@ export function CuponActivoPage() {
         <p className="max-w-xs text-center text-xs text-neutral-500">
           Mostrá este código en {merchant.nombre}. Se canjea una sola vez.
         </p>
-        <p className="max-w-xs text-center text-[11px] text-neutral-400">
-          Sin tiempo límite — el código vale hasta que lo uses.
-        </p>
+        <ExpiryHint expiresAt={activation.expiresAt} nowMs={nowMs} isActive={!isExpired} />
       </div>
 
       {!isExpired && (
@@ -247,6 +254,51 @@ function QRDisplay({ payload }: { payload: string }) {
         className="block"
       />
     </div>
+  )
+}
+
+function ExpiryHint({
+  expiresAt,
+  nowMs,
+  isActive,
+}: {
+  expiresAt?: string
+  nowMs: number
+  isActive: boolean
+}) {
+  if (!expiresAt) {
+    return (
+      <p className="max-w-xs text-center text-[11px] text-neutral-400">
+        Sin tiempo límite — el código vale hasta que lo uses.
+      </p>
+    )
+  }
+  const ms = new Date(expiresAt).getTime() - nowMs
+  if (!isActive || ms <= 0) {
+    return (
+      <p className="max-w-xs text-center text-[11px] font-semibold text-status-error-fg">
+        El cupón venció. Reactivalo desde Mis cupones.
+      </p>
+    )
+  }
+  const totalSec = Math.floor(ms / 1000)
+  const min = Math.floor(totalSec / 60)
+  const sec = totalSec % 60
+  const isUrgent = min < 5
+  const label =
+    min >= 1
+      ? `Vence en ${min} min ${String(sec).padStart(2, '0')} s`
+      : `Vence en ${sec} s`
+  return (
+    <p
+      role="timer"
+      aria-live="polite"
+      className={`max-w-xs text-center text-[11px] font-bold tabular-nums ${
+        isUrgent ? 'text-status-warning-fg' : 'text-neutral-500'
+      }`}
+    >
+      {label}
+    </p>
   )
 }
 

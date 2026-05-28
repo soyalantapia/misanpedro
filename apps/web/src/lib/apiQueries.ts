@@ -112,6 +112,8 @@ export type ValidationResult =
       customerName: string
       customerDni: string
       expiresAt: string
+      activatedAt: string
+      isFirstVisit: boolean
     }
   | { ok: false; reason: string; message: string }
 
@@ -146,6 +148,8 @@ export function useApiValidateByCode(code: string): {
           customerName: v.user.nombre,
           customerDni: v.user.dni,
           expiresAt: v.expiresAt,
+          activatedAt: v.activatedAt ?? new Date().toISOString(),
+          isFirstVisit: v.isFirstVisit ?? false,
         }
         // Cache para que AdminConfirmarCanjePage pueda leer los datos
         try {

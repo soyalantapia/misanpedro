@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Lock, Users, Download, ScanLine, Search } from 'lucide-react'
+import { Lock, Users, Download, ScanLine, Search, AlertTriangle, X } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useClientsForMerchant } from '@/lib/merchantQueries'
 import { formatRedeemedDate, formatMoney } from '@/lib/format'
@@ -21,6 +21,7 @@ export function AdminClientesPage() {
   const localClients = useClientsForMerchant(merchantId)
   const apiClients = useApiMerchantClientes()
   const [search, setSearch] = useState('')
+  const [showExportConfirm, setShowExportConfirm] = useState(false)
   const toast = useToast()
 
   // Normalizamos: el API trae los campos planos; el local tiene `user` anidado
@@ -51,7 +52,7 @@ export function AdminClientesPage() {
     )
   }, [clients, search])
 
-  if (clients.length === 0) {
+  if (!apiClients.loading && clients.length === 0) {
     return <LockedState />
   }
 
@@ -59,7 +60,7 @@ export function AdminClientesPage() {
   const totalCanjes = clients.reduce((s, c) => s + c.count, 0)
   const totalAhorro = clients.reduce((s, c) => s + c.totalAhorro, 0)
 
-  function handleExport() {
+  function doExport() {
     const rows = [
       [
         'Nombre',
@@ -90,7 +91,8 @@ export function AdminClientesPage() {
     a.download = `clientes-${merchantId}-${Date.now()}.csv`
     a.click()
     URL.revokeObjectURL(url)
-    toast.success('CSV descargado', `${clients.length} ${clients.length === 1 ? "cliente exportado" : "clientes exportados"}.`)
+    setShowExportConfirm(false)
+    toast.success('CSV descargado', `${clients.length} ${clients.length === 1 ? 'cliente exportado' : 'clientes exportados'}.`)
   }
 
   return (
@@ -120,7 +122,7 @@ export function AdminClientesPage() {
           </div>
           <button
             type="button"
-            onClick={handleExport}
+            onClick={() => setShowExportConfirm(true)}
             className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-3.5 py-2 text-xs font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
           >
             <Download size={13} /> CSV
@@ -212,6 +214,62 @@ export function AdminClientesPage() {
           </Link>
         </p>
       </div>
+
+      {/* Modal de confirmación para exportar PII */}
+      {showExportConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="export-dialog-title"
+          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowExportConfirm(false)}
+          />
+          <div className="relative z-10 mx-4 w-full max-w-md rounded-3xl bg-white p-6 shadow-floating ring-1 ring-neutral-100 sm:mx-auto">
+            <button
+              type="button"
+              onClick={() => setShowExportConfirm(false)}
+              aria-label="Cerrar"
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+            >
+              <X size={16} />
+            </button>
+            <div className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-amber-100 text-amber-600">
+              <AlertTriangle size={22} />
+            </div>
+            <h2
+              id="export-dialog-title"
+              className="text-lg font-bold text-neutral-900"
+            >
+              Exportar datos de clientes
+            </h2>
+            <p className="mt-2 text-sm text-neutral-500">
+              El CSV incluye <span className="font-semibold text-neutral-800">nombre, DNI, email y WhatsApp</span> de{' '}
+              <span className="font-semibold text-neutral-800">{clients.length} {clients.length === 1 ? 'cliente' : 'clientes'}</span>.
+              Guardalo de forma segura y usalo solo para comunicaciones relacionadas con tu comercio.
+            </p>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowExportConfirm(false)}
+                className="flex-1 rounded-2xl bg-neutral-100 px-4 py-3 text-sm font-bold text-neutral-700 transition-all hover:bg-neutral-200"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={doExport}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-3 text-sm font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+              >
+                <Download size={14} /> Descargar CSV
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

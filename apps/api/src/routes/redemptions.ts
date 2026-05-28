@@ -20,13 +20,20 @@ redemptionsRoutes.use('*', tenantContext)
 // Anti-brute force de códigos: 60 validates por minuto por comercio
 const validateLimiter = rateLimit({ prefix: 'validate', max: 60, windowMs: 60_000 })
 
-function serializeForValidation(activation: any, coupon: any, user: any) {
+function serializeForValidation(
+  activation: any,
+  coupon: any,
+  user: any,
+  isFirstVisit: boolean,
+) {
   return {
     activationId: activation._id.toString(),
     codigoNumerico: activation.codigoNumerico,
+    activatedAt: activation.activatedAt?.toISOString?.() ?? new Date().toISOString(),
     status: activation.status,
     // expiresAt queda como deprecated; los nuevos códigos no expiran por tiempo
     expiresAt: activation.expiresAt?.toISOString?.(),
+    isFirstVisit,
     coupon: {
       id: coupon._id.toString(),
       titulo: coupon.titulo,
@@ -90,9 +97,17 @@ redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, requir
   const user = await User.findOne({ _id: activation.userId, appId })
   if (!user) return c.json({ ok: false, error: 'usuario no encontrado' }, 404)
 
+  // Primera visita: ningún canje previo de este usuario en este comercio
+  const prevRedemptions = await Redemption.countDocuments({
+    appId,
+    userId: activation.userId,
+    merchantId: coupon.merchantId,
+  })
+  const isFirstVisit = prevRedemptions === 0
+
   return c.json({
     ok: true,
-    validation: serializeForValidation(activation, coupon, user),
+    validation: serializeForValidation(activation, coupon, user, isFirstVisit),
   })
 })
 

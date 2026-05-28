@@ -105,23 +105,6 @@ export function useValidateByCode(code: string, merchantId: string): ValidationR
   return buildResult(merchantId, activation, customerName, redemptionsByMerchant)
 }
 
-export function useValidateByPayload(
-  payload: string,
-  merchantId: string,
-): ValidationResult | null {
-  if (!payload) return null
-  let parsed: { codigo?: string } | null = null
-  try {
-    parsed = JSON.parse(payload)
-  } catch {
-    return { ok: false, reason: 'not-found', message: 'QR ilegible. Probá ingresar el código manual.' }
-  }
-  if (!parsed?.codigo) {
-    return { ok: false, reason: 'not-found', message: 'QR sin código de cupón.' }
-  }
-  return useValidateByCode(parsed.codigo, merchantId)
-}
-
 export function useActivationsForMerchant(merchantId: string) {
   const { activations } = useStore()
   return activations.filter((a) => {

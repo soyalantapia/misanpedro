@@ -31,7 +31,7 @@ export function AdminConfirmarCanjePage() {
         porcentaje: apiCached.porcentaje,
         couponTitulo: apiCached.couponTitulo,
         customerName: apiCached.customerName,
-        activatedAt: new Date().toISOString(),
+        activatedAt: apiCached.activatedAt ?? new Date().toISOString(),
         source: 'api' as const,
       }
     : localActivation && localCoupon && localActivation.status === 'activo'

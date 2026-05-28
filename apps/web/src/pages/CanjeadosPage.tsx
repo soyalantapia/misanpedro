@@ -155,7 +155,13 @@ export function CanjeadosPage() {
             {redemptions.map((r, i) => {
               const c = getCoupon(r.couponId)
               const m = c ? getMerchantBySlug(c.merchantId) : undefined
-              if (!c || !m || !r.redeemedAt) return null
+              // Mientras el API carga, mostramos skeleton en lugar de silenciar la fila
+              if (!r.redeemedAt) return null
+              if (!c || !m) {
+                return isLoading ? (
+                  <div key={r.id} className="h-20 animate-pulse rounded-2xl bg-white ring-1 ring-neutral-100" />
+                ) : null
+              }
               const ahorro = r.ahorroEstimado ?? 0
               const ticket = r.montoTicket ?? 0
               // montoTicket en backend = precio sin descuento (bruto).

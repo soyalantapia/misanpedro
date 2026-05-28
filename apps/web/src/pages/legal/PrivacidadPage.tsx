@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
+import { SUPPORT_EMAIL } from '@/lib/tenant'
 
 const FECHA_VIGENCIA = '10 de mayo de 2026'
 
@@ -84,8 +85,8 @@ export function PrivacidadPage() {
           </ul>
           <p>
             Para ejercer tus derechos:{' '}
-            <a href="mailto:soporte@misanpedro.app" className="font-bold text-accent-700">
-              soporte@misanpedro.app
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-accent-700">
+              {SUPPORT_EMAIL}
             </a>
             . También podés borrar tu cuenta directamente desde el perfil del vecino.
           </p>
@@ -140,8 +141,8 @@ export function PrivacidadPage() {
         <Section title="11. Contacto">
           <p>
             Soporte:{' '}
-            <a href="mailto:soporte@misanpedro.app" className="font-bold text-accent-700">
-              soporte@misanpedro.app
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-accent-700">
+              {SUPPORT_EMAIL}
             </a>
           </p>
         </Section>

@@ -89,7 +89,9 @@ function loadDraft(): Partial<Form> | null {
 
 function saveDraft(form: Form) {
   try {
-    const { password: _p, acceptedTc: _a, ...rest } = form
+    // password y acceptedTc no se persisten al draft
+    const { password: _, acceptedTc: __, ...rest } = form
+    void _; void __
     // Si está todo vacío, no escribimos basura al storage.
     const someFilled = Object.values(rest).some(
       (v) => typeof v === 'string' && v.trim().length > 0,
@@ -452,7 +454,7 @@ export function AdminSignupPage() {
             />
 
             {error && (
-              <p className="rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
+              <p role="alert" className="rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
                 {error}
               </p>
             )}

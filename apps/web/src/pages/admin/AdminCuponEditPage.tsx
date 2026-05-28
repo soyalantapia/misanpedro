@@ -221,6 +221,9 @@ export function AdminCuponEditPage() {
 
       {!isEdit && (
         <TemplatesPicker
+          // key={categoria} fuerza remount al cambiar de rubro → reset natural
+          // de items y open sin setState en render-fase.
+          key={merchant.categoria}
           categoria={merchant.categoria as Categoria}
           onPick={(t) =>
             setForm((f) => ({
@@ -516,12 +519,12 @@ function TemplatesPicker({
   onPick: (t: Template) => void
 }) {
   const [items, setItems] = useState<Template[] | null>(null)
-  const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  // El parent pasa key={categoria}, así que el componente se remonta cuando
+  // cambia el rubro → items vuelve a null sin necesidad de un reset manual.
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
     templatesApi
       .coupons(categoria)
       .then((r) => {
@@ -530,15 +533,13 @@ function TemplatesPicker({
       .catch(() => {
         if (!cancelled) setItems([])
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
     return () => {
       cancelled = true
     }
   }, [categoria])
 
-  if (loading || !items || items.length === 0) return null
+  // items === null mientras carga; [] si falló o no hay templates
+  if (items === null || items.length === 0) return null
 
   return (
     <div className="rounded-3xl bg-gradient-to-br from-pink-50 via-fuchsia-50 to-accent-50 p-4 ring-1 ring-accent-100">

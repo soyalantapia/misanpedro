@@ -56,14 +56,22 @@ const AUDIENCIAS = [
 type AudienciaId = (typeof AUDIENCIAS)[number]['id']
 
 export function AdminWhatsappPage() {
-  const { session } = useMerchantSession()
+  const sessionState = useMerchantSession()
+  const { session } = sessionState
   const merchantId = session?.merchantId ?? ''
+  const merchantNombre = sessionState.apiMerchant?.nombre ?? ''
   const connection = useWhatsappConnection(merchantId)
 
   if (!connection) {
     return <ConnectionScreen merchantId={merchantId} />
   }
-  return <ComposerScreen merchantId={merchantId} connectedAt={connection.connectedAt} />
+  return (
+    <ComposerScreen
+      merchantId={merchantId}
+      merchantNombre={merchantNombre}
+      connectedAt={connection.connectedAt}
+    />
+  )
 }
 
 function ConnectionScreen({ merchantId }: { merchantId: string }) {
@@ -234,9 +242,11 @@ type SendingPhase =
 
 function ComposerScreen({
   merchantId,
+  merchantNombre,
   connectedAt,
 }: {
   merchantId: string
+  merchantNombre: string
   connectedAt: string
 }) {
   const clients = useClientsForMerchant(merchantId)
@@ -256,17 +266,26 @@ function ComposerScreen({
   const remaining = apiStatus.data?.quota
     ? apiStatus.data.quota.remaining
     : Math.max(0, MAX_PER_MONTH - sentThisMonth)
-  const percent = Math.round((sentThisMonth / MAX_PER_MONTH) * 100)
+  const maxThisMonth = apiStatus.data?.quota?.max ?? MAX_PER_MONTH
+  const percent = Math.round((sentThisMonth / maxThisMonth) * 100)
+
+  // `nowMs` se actualiza cada 60s para que el bucket "nuevos (últimos 7 días)"
+  // no quede stale cuando la tab queda abierta. Sacar Date.now() del useMemo
+  // cumple también con react-hooks/purity en React 19 strict.
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  useEffect(() => {
+    const t = window.setInterval(() => setNowMs(Date.now()), 60_000)
+    return () => window.clearInterval(t)
+  }, [])
 
   const audienceBuckets = useMemo(() => {
-    const now = Date.now()
-    const week = now - 7 * 24 * 60 * 60 * 1000
+    const week = nowMs - 7 * 24 * 60 * 60 * 1000
     return {
       todos: clients,
       recurrentes: clients.filter((c) => c.count >= 2),
       nuevos: clients.filter((c) => new Date(c.firstRedeemedAt).getTime() >= week),
     }
-  }, [clients])
+  }, [clients, nowMs])
 
   const [audiencia, setAudiencia] = useState<AudienciaId>('todos')
   const [templateId, setTemplateId] = useState<string>(TEMPLATES[0].id)
@@ -284,9 +303,10 @@ function ComposerScreen({
   const recipients = audienceBuckets[audiencia]
 
   const previewName = recipients[0]?.user.nombre.split(' ')[0] ?? 'vecin@'
+  const nombreComercio = merchantNombre || merchantId
   const rendered = template.body
     .replace('{{nombre}}', previewName)
-    .replace('{{comercio}}', merchantId.replace(/-/g, ' '))
+    .replace('{{comercio}}', nombreComercio)
     .replace('{{porcentaje}}', porcentaje)
     .replace('{{vigencia}}', vigencia)
     .replace('{{link}}', 'cuponcito.app')

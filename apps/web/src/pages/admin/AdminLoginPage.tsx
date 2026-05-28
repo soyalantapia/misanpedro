@@ -176,7 +176,7 @@ export function AdminLoginPage() {
               />
 
               {error && (
-                <p className="rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
+                <p role="alert" className="rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
                   {error}
                 </p>
               )}

@@ -18,6 +18,7 @@ import { habeasData, userApi, ApiError } from '@/lib/api'
 import { useUser, userActions, demoStoreActions } from '@/lib/stores'
 import { formatBirthdate } from '@/lib/format'
 import { useToast } from '@/components/Toast'
+import { SUPPORT_EMAIL } from '@/lib/tenant'
 
 const SUPPORT_WHATSAPP = (import.meta.env.VITE_SUPPORT_WHATSAPP as string) ?? '5493329000000'
 
@@ -117,8 +118,8 @@ export function PerfilPage() {
           </div>
           <p className="mt-3 text-[11px] text-neutral-400">
             ¿Necesitás corregir algo? Escribinos a{' '}
-            <a href="mailto:soporte@misanpedro.app" className="font-bold text-accent-700">
-              soporte@misanpedro.app
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-accent-700">
+              {SUPPORT_EMAIL}
             </a>
             .
           </p>

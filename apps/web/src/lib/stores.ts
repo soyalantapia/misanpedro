@@ -100,9 +100,11 @@ export function useActivation(id: string | undefined) {
 }
 
 export function useActivationByCoupon(couponId: string | undefined) {
-  const userId = useStore().user?.id
+  // Single useStore() call → no conditional hooks. Compute todo derivado abajo.
+  const s = useStore()
+  const userId = s.user?.id
   if (!userId) return undefined
-  return useStore().activations.find(
+  return s.activations.find(
     (a) => a.couponId === couponId && a.userId === userId && a.status === 'activo',
   )
 }

@@ -23,6 +23,7 @@ import { useMerchantSession, merchantAuth } from '@/lib/merchantStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { api, ApiError, subscription } from '@/lib/api'
 import { useApiMerchantProfile } from '@/lib/apiQueries'
+import { SUPPORT_EMAIL } from '@/lib/tenant'
 import { CardImage } from '@/components/CardImage'
 import {
   CATEGORIAS,
@@ -54,6 +55,29 @@ import { defaultHorariosSemana, formatHorariosSemana } from '@/lib/format'
 import { cn } from '@/lib/cn'
 
 const MAX_COVER_BYTES = 2 * 1024 * 1024
+
+/**
+ * TODO (BD01) — Migrar upload de cover/logo a presigned URLs.
+ *
+ * Hoy: cover (≤2MB) + logo (≤600KB) se mandan como data URL base64 en el body
+ * del PATCH /merchants/me. Base64 inflate el payload ~33% → hasta ~3.4MB por
+ * edición. Problemas observados:
+ *   - Timeouts en conexiones móviles lentas (>5s en 3G).
+ *   - Mongoose tiene que cargar y guardar el documento completo.
+ *   - El cache del HTTP client puede romper si los caches limitan tamaño body.
+ *
+ * Plan recomendado cuando se conecte CDN/S3:
+ *   1. Backend: nueva ruta POST /merchants/me/upload-url
+ *      → devuelve { uploadUrl, publicUrl, expiresAt } firmada (15 min TTL).
+ *   2. Frontend: tras leer el File, hacer fetch(uploadUrl, { method: 'PUT', body: file })
+ *      → guarda solo `publicUrl` en draft.coverImageUrl / draft.logoUrl.
+ *   3. PATCH /merchants/me sigue igual pero recibe solo URLs (no base64).
+ *
+ * Servicios candidatos: Cloudflare R2 (S3-compatible, sin egress fee), Bunny CDN,
+ * o el propio bucket S3 si ya hay infra AWS.
+ *
+ * Hasta entonces el límite client-side (MAX_COVER_BYTES) actúa como mitigación.
+ */
 
 type Draft = {
   nombre: string
@@ -760,8 +784,8 @@ function FiscalCard({ merchant }: { merchant: any }) {
       </div>
       <p className="mt-3 text-[11px] text-neutral-400">
         Estos datos se usan para emitir tu factura mensual. Si necesitás corregirlos, escribinos a{' '}
-        <a href="mailto:soporte@misanpedro.app" className="font-bold text-accent-700">
-          soporte@misanpedro.app
+        <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-accent-700">
+          {SUPPORT_EMAIL}
         </a>
         .
       </p>

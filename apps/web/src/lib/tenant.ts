@@ -18,6 +18,14 @@ const RESERVED_SUBDOMAINS = new Set(['www', 'api', 'admin', 'owner', 'app', 'com
 
 const STORAGE_KEY = 'cuponcito.tenant.slug'
 
+/**
+ * Email de soporte mostrado en footers y CTAs de ayuda.
+ * Se puede sobrescribir con VITE_SUPPORT_EMAIL en build time.
+ * Default: `soporte@misanpedro.app` (la dirección que está hoy en prod).
+ */
+export const SUPPORT_EMAIL =
+  (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined) ?? 'soporte@misanpedro.app'
+
 export type TenantConfig = {
   slug: string
   nombre: string

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Tag,
@@ -37,6 +37,16 @@ export function AdminCuponesPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [confirmPause, setConfirmPause] = useState<{ id: string; isPausado: boolean } | null>(null)
+
+  // Cerrar el dropdown con Escape
+  useEffect(() => {
+    if (!openMenuId) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpenMenuId(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [openMenuId])
 
   const canjesPorCupon = useMemo(() => {
     const map = new Map<string, number>()

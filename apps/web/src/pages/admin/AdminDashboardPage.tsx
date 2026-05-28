@@ -99,7 +99,7 @@ export function AdminDashboardPage() {
           <Sparkles size={12} /> Inicio
         </div>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
-          {merchant?.nombre ?? 'Tu comercio'}
+          {merchantSession.apiMerchant?.nombre ?? merchant?.nombre ?? 'Tu comercio'}
         </h1>
         <p className="text-sm text-neutral-500">
           Validá cupones, gestioná descuentos y mirá tu base de clientes de la app.
@@ -130,6 +130,27 @@ export function AdminDashboardPage() {
         <Kpi label="Esta semana" value={kpis.semana} />
         <Kpi label="Este mes" value={kpis.mes} accent />
       </section>
+
+      {!hasRedemptions && !pendingPayment && (
+        <section
+          aria-labelledby="onboarding-title"
+          className="flex items-start gap-3 rounded-2xl bg-accent-50 p-4 ring-1 ring-accent-100"
+        >
+          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-accent-100 text-accent-700">
+            <Sparkles size={16} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p id="onboarding-title" className="text-sm font-bold text-accent-800">
+              Empezá a recibir tus primeros canjes
+            </p>
+            <ol className="mt-1 list-decimal pl-4 text-xs leading-relaxed text-accent-800/90">
+              <li>{merchantCoupons.length === 0 ? 'Creá tu primer descuento desde "Mis cupones".' : 'Los vecinos ya pueden ver tus descuentos.'}</li>
+              <li>Cuando un cliente llegue al local, escaneá su QR o ingresá su código en "Validar".</li>
+              <li>Acá vas a ver el detalle del impacto: ahorro, ingresos y nuevos clientes.</li>
+            </ol>
+          </div>
+        </section>
+      )}
 
       {hasRedemptions && (
         <section className="flex flex-col gap-2.5">

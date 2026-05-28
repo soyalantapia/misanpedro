@@ -3,7 +3,7 @@ import { Tag, Ticket, CheckCircle2, User } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { OfflineBanner } from '@/components/OfflineBanner'
 import { RedemptionWatcher } from '@/components/RedemptionWatcher'
-import { useTenant } from '@/lib/tenant'
+import { useTenant, SUPPORT_EMAIL } from '@/lib/tenant'
 
 const links = [
   { to: '/', label: 'Descuentos', icon: Tag, end: true },
@@ -94,10 +94,10 @@ export function AppShell() {
           </Link>
           <span>·</span>
           <a
-            href="mailto:soporte@misanpedro.app"
+            href={`mailto:${SUPPORT_EMAIL}`}
             className="hover:text-neutral-700"
           >
-            soporte@misanpedro.app
+            {SUPPORT_EMAIL}
           </a>
         </footer>
       </main>

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   ChevronLeft,
@@ -24,6 +25,7 @@ export function CuponDetailPage() {
   const user = useUser()
   const navigate = useNavigate()
   const toast = useToast()
+  const [submitting, setSubmitting] = useState(false)
 
   // Fallback al API si no encontramos en el store local
   const apiCouponsRes = useApiCoupons()
@@ -105,6 +107,7 @@ export function CuponDetailPage() {
       return
     }
 
+    setSubmitting(true)
     // Activación contra el API. El couponId del API es ObjectId 24-hex.
     // Si no es un id válido para API, mostramos error en lugar de fallback local.
     const userToken = tokens.get('user').access
@@ -131,6 +134,7 @@ export function CuponDetailPage() {
         'No se pudo activar el cupón',
         err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
       )
+      setSubmitting(false)
     }
   }
 
@@ -225,9 +229,10 @@ export function CuponDetailPage() {
           <button
             type="button"
             onClick={handleActivate}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-4 text-base font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5 hover:from-accent-500 hover:to-accent-700 hover:shadow-floating active:translate-y-0 active:scale-[0.98]"
+            disabled={submitting}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-4 text-base font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5 hover:from-accent-500 hover:to-accent-700 hover:shadow-floating active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
           >
-            {existing ? 'Ver mi cupón activo' : 'Canjear descuento'}
+            {submitting ? 'Activando…' : existing ? 'Ver mi cupón activo' : 'Canjear descuento'}
             <ArrowRight size={18} />
           </button>
           {!user && (
