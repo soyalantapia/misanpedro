@@ -1,12 +1,50 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, ExternalLink, Receipt, Store, Ticket, Users } from 'lucide-react'
+import {
+  ArrowLeft,
+  ExternalLink,
+  Receipt,
+  Store,
+  Ticket,
+  Users,
+  Pencil,
+  Save,
+  X,
+} from 'lucide-react'
 import { owner } from '@/lib/api'
 import { fmtDate, fmtNumber } from '@/lib/format'
 import { PageHeader } from '@/components/PageHeader'
 import { StatCard } from '@/components/StatCard'
 import { StatusBadge } from '@/components/StatusBadge'
 import { DnsSetupCard } from '@/components/DnsSetupCard'
+
+type Draft = {
+  nombre: string
+  ciudad: string
+  provincia: string
+  status: 'pending' | 'active' | 'suspended' | 'archived'
+  customDomain: string
+  primaryColor: string
+  accentColor: string
+  heroEyebrow: string
+  heroHeadline: string
+  logoUrl: string
+}
+
+function draftFromApp(app: any): Draft {
+  return {
+    nombre: app.nombre ?? '',
+    ciudad: app.ciudad ?? '',
+    provincia: app.provincia ?? '',
+    status: app.status ?? 'pending',
+    customDomain: app.customDomain ?? '',
+    primaryColor: app.brand?.primaryColor ?? '#695ede',
+    accentColor: app.brand?.accentColor ?? '#4239a3',
+    heroEyebrow: app.brand?.heroEyebrow ?? '',
+    heroHeadline: app.brand?.heroHeadline ?? '',
+    logoUrl: app.brand?.logoUrl ?? '',
+  }
+}
 
 export function AppDetailPage() {
   const { id = '' } = useParams<{ id: string }>()
@@ -15,22 +53,80 @@ export function AppDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // OW4 (audit v7): edición de datos + branding desde el detalle (el wizard
+  // promete poder ajustarlo después; antes esta pantalla era read-only).
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState<Draft | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  async function load() {
+    try {
+      const [appRes, metricsRes] = await Promise.all([
+        owner.getApp(id),
+        owner.appMetrics(id),
+      ])
+      setApp(appRes.app)
+      setMetrics(metricsRes.metrics)
+    } catch (err: any) {
+      setError(err?.message ?? 'No pudimos cargar la app')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    void (async () => {
-      try {
-        const [appRes, metricsRes] = await Promise.all([
-          owner.getApp(id),
-          owner.appMetrics(id),
-        ])
-        setApp(appRes.app)
-        setMetrics(metricsRes.metrics)
-      } catch (err: any) {
-        setError(err?.message ?? 'No pudimos cargar la app')
-      } finally {
-        setLoading(false)
-      }
-    })()
+    void load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
+
+  function startEditing() {
+    if (!app) return
+    setDraft(draftFromApp(app))
+    setSaveError(null)
+    setEditing(true)
+  }
+
+  function cancelEditing() {
+    setEditing(false)
+    setDraft(null)
+    setSaveError(null)
+  }
+
+  async function handleSave() {
+    if (!draft) return
+    setSaving(true)
+    setSaveError(null)
+    // logoUrl vacío → no lo mandamos (el backend valida que sea URL válida).
+    const patch = {
+      nombre: draft.nombre,
+      ciudad: draft.ciudad,
+      provincia: draft.provincia || undefined,
+      status: draft.status,
+      customDomain: draft.customDomain || undefined,
+      brand: {
+        primaryColor: draft.primaryColor,
+        accentColor: draft.accentColor,
+        heroEyebrow: draft.heroEyebrow || undefined,
+        heroHeadline: draft.heroHeadline || undefined,
+        logoUrl: draft.logoUrl || undefined,
+      },
+    }
+    try {
+      const res = await owner.updateApp(id, patch)
+      if (res.ok && res.app) {
+        setApp(res.app)
+        setEditing(false)
+        setDraft(null)
+      } else {
+        setSaveError('No pudimos guardar los cambios')
+      }
+    } catch (err: any) {
+      setSaveError(err?.message ?? 'Error guardando los cambios')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -67,6 +163,15 @@ export function AppDetailPage() {
             >
               <ArrowLeft size={12} /> Volver
             </Link>
+            {!editing && (
+              <button
+                type="button"
+                onClick={startEditing}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
+              >
+                <Pencil size={12} /> Editar
+              </button>
+            )}
             <a
               href={`https://${app.subdomain}.misanpedro.app`}
               target="_blank"
@@ -100,6 +205,98 @@ export function AppDetailPage() {
           <p className="mt-0.5 text-xs text-neutral-400">Creada {fmtDate(app.createdAt)}</p>
         </div>
       </section>
+
+      {/* OW4: editor de datos + branding */}
+      {editing && draft && (
+        <section className="space-y-5 rounded-2xl bg-white p-6 ring-1 ring-neutral-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-neutral-900">Editar app</h2>
+            <button
+              type="button"
+              onClick={cancelEditing}
+              className="grid h-8 w-8 place-items-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+              aria-label="Cancelar edición"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField label="Nombre comercial" value={draft.nombre} onChange={(v) => setDraft({ ...draft, nombre: v })} />
+            <SelectField
+              label="Estado"
+              value={draft.status}
+              onChange={(v) => setDraft({ ...draft, status: v as Draft['status'] })}
+              options={[
+                { value: 'pending', label: 'Pendiente' },
+                { value: 'active', label: 'Activa' },
+                { value: 'suspended', label: 'Suspendida' },
+                { value: 'archived', label: 'Archivada' },
+              ]}
+            />
+            <TextField label="Ciudad" value={draft.ciudad} onChange={(v) => setDraft({ ...draft, ciudad: v })} />
+            <TextField label="Provincia" value={draft.provincia} onChange={(v) => setDraft({ ...draft, provincia: v })} />
+            <TextField
+              label="Dominio propio (opcional)"
+              value={draft.customDomain}
+              onChange={(v) => setDraft({ ...draft, customDomain: v })}
+              placeholder="ramallodescuentos.com.ar"
+            />
+            <TextField
+              label="Logo URL (opcional)"
+              value={draft.logoUrl}
+              onChange={(v) => setDraft({ ...draft, logoUrl: v })}
+              placeholder="https://…/logo.png"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ColorField label="Color primario" value={draft.primaryColor} onChange={(v) => setDraft({ ...draft, primaryColor: v })} />
+            <ColorField label="Color accent" value={draft.accentColor} onChange={(v) => setDraft({ ...draft, accentColor: v })} />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField
+              label="Hero eyebrow (opcional)"
+              value={draft.heroEyebrow}
+              onChange={(v) => setDraft({ ...draft, heroEyebrow: v })}
+              placeholder="Para comercios de San Pedro"
+            />
+            <TextField
+              label="Hero headline (opcional)"
+              value={draft.heroHeadline}
+              onChange={(v) => setDraft({ ...draft, heroHeadline: v })}
+              placeholder="Override del título del Hero"
+            />
+          </div>
+
+          {saveError && (
+            <div className="rounded-xl bg-danger-bg px-3 py-2 text-xs font-semibold text-danger">
+              {saveError}
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-2 border-t border-neutral-100 pt-4">
+            <button
+              type="button"
+              onClick={cancelEditing}
+              disabled={saving}
+              className="rounded-full px-4 py-2 text-xs font-semibold text-neutral-500 hover:bg-neutral-100 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || !draft.nombre.trim() || !draft.ciudad.trim()}
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-5 py-2 text-xs font-bold text-white shadow shadow-accent-500/30 transition-all hover:-translate-y-0.5 disabled:opacity-50"
+            >
+              <Save size={12} />
+              {saving ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+          </div>
+        </section>
+      )}
 
       {metrics && (
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -160,5 +357,89 @@ export function AppDetailPage() {
         </div>
       </section>
     </div>
+  )
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="rounded-xl bg-neutral-50 px-4 py-2.5 text-sm text-neutral-900 ring-1 ring-neutral-200 placeholder:text-neutral-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent-500"
+      />
+    </label>
+  )
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  options: Array<{ value: string; label: string }>
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-xl bg-neutral-50 px-4 py-2.5 text-sm font-semibold text-neutral-900 ring-1 ring-neutral-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent-500"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{label}</span>
+      <div className="flex items-center gap-2 rounded-xl bg-neutral-50 px-3 py-2 ring-1 ring-neutral-200 focus-within:ring-2 focus-within:ring-accent-500">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent p-0"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 bg-transparent text-sm uppercase tracking-wider text-neutral-900 focus:outline-none"
+        />
+      </div>
+    </label>
   )
 }

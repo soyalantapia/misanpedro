@@ -53,7 +53,7 @@
 | **OW1** | Logo mobile "c" → "M" | 🟡 Media | 🟢 Bajo | ✅ SÍ |
 | **OW3** | Tablas cortan en mobile (`overflow-hidden` → `overflow-x-auto`) | 🟡 Media | 🟢 Bajo | ✅ SÍ |
 | **OW2** | Fallbacks 'C' → 'M' | 🟢 Baja | 🟢 Bajo | ✅ SÍ |
-| **OW4** | AppDetail read-only vs promesa de edición | 🟡 Media | 🔴 Alto (feature) | ❌ (post-launch o ajustar copy) |
+| **OW4** | AppDetail read-only vs promesa de edición | 🟡 Media | 🟡 Medio | ✅ RESUELTO (editor implementado) |
 
 ---
 
@@ -68,9 +68,9 @@
 😖 En mobile la tabla excede el ancho y `overflow-hidden` la recorta sin permitir scroll. El owner no ve las columnas derechas.
 ✅ Cambiar `overflow-hidden` → `overflow-x-auto` en los 3 wrappers (mantener `rounded-2xl`). Las cards de AppsPage no tienen este problema (usan grid).
 
-### `[OW4]` AppDetail read-only vs promesa de edición
-📍 `NewAppPage.tsx` (StepBrand) promete edición posterior; `AppDetailPage.tsx` no la implementa.
-✅ Dos caminos: (a) implementar edición de branding/hero en AppDetail (feature, post-launch), o (b) ajustar el copy del wizard para no prometer lo que aún no existe. Para lanzar, (b) es el quick fix honesto.
+### `[OW4]` AppDetail read-only vs promesa de edición — ✅ RESUELTO
+📍 `NewAppPage.tsx` (StepBrand) prometía edición posterior; `AppDetailPage.tsx` era read-only.
+✅ **Implementado** un editor opt-in en AppDetail (botón "Editar"): nombre, ciudad, provincia, **status** (activar/suspender/archivar), dominio propio, logo, colores primario/accent y hero eyebrow/headline. Usa el endpoint que ya existía (`PATCH /owner/apps/:id`, validado con Zod). El modo lectura queda intacto; la edición es opt-in.
 
 ### `[OW2]` Fallbacks 'C' → 'M'
 📍 `NewAppPage.tsx:311` y `AppDetailPage.tsx:89` — `?? 'C'` / `?? 'C'` en el placeholder de inicial.
