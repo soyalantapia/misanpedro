@@ -119,10 +119,16 @@ export function defaultHorariosSemana(): HorariosSemana {
   return result as HorariosSemana
 }
 
-/** Convierte "1992-06-15" → "15 de junio de 1992" (es-AR). */
+/** Convierte "1992-06-15" → "15 de junio de 1992" (es-AR).
+ *  Importante: agregamos T12:00:00 para evitar bug de timezone — `new Date("1992-06-15")`
+ *  se interpreta como UTC midnight, que en zonas al oeste de UTC (ej. AR = UTC-3)
+ *  hace que `.getDate()` devuelva el día anterior. */
 export function formatBirthdate(iso: string): string {
   if (!iso) return '—'
-  const d = new Date(iso)
+  // Si ya viene con hora (ISO completo), usar tal cual. Si es solo "YYYY-MM-DD",
+  // anclamos al mediodía local para que el día renderizado sea siempre el correcto.
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso
+  const d = new Date(normalized)
   if (Number.isNaN(d.getTime())) return iso
   const meses = [
     'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',

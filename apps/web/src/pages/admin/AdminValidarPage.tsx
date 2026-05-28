@@ -4,6 +4,7 @@ import { ScanLine, Hash, AlertCircle, Camera, Keyboard } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useValidateByCode } from '@/lib/merchantQueries'
 import { useApiValidateByCode } from '@/lib/apiQueries'
+import { parseQrPayload } from '@/lib/qrPayload'
 import { cn } from '@/lib/cn'
 
 type Mode = 'qr' | 'code'
@@ -201,21 +202,8 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
     }
   }, [scanState])
 
-  // parse and validate payload
-  const codeFromPayload = (() => {
-    if (!scannedPayload) return ''
-    // Soporta payloads legacy JSON `{codigo:...}` y el nuevo formato `msp:act:CODE:COUPONID`
-    if (scannedPayload.startsWith('msp:act:')) {
-      const parts = scannedPayload.split(':')
-      return parts[2] ?? ''
-    }
-    try {
-      const parsed = JSON.parse(scannedPayload) as { codigo?: string }
-      return parsed.codigo ?? ''
-    } catch {
-      return ''
-    }
-  })()
+  // parse and validate payload (helper extraído para poder testearlo)
+  const codeFromPayload = parseQrPayload(scannedPayload)
   const localResult = useValidateByCode(codeFromPayload, merchantId)
   const { result: apiResult } = useApiValidateByCode(codeFromPayload)
   const result = (() => {
@@ -304,14 +292,14 @@ function toLegacyResult(
         couponId: v.couponId,
         userId: '',
         status: 'activo',
-        activatedAt: new Date().toISOString(),
+        activatedAt: v.activatedAt,
         expiresAt: v.expiresAt,
         qrPayload: '',
       },
       couponTitulo: v.couponTitulo,
       porcentaje: v.porcentaje,
       customerName: v.customerName,
-      isFirstVisit: false,
+      isFirstVisit: v.isFirstVisit,
     }
   }
   return {

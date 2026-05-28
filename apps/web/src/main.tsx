@@ -14,6 +14,17 @@ if (initialSlug) {
   void loadTenantConfig(initialSlug)
 }
 
+// Axe-core sólo en dev: loguea violaciones de accesibilidad en la consola
+// cada vez que el DOM cambia. No corre en prod (gracias al guard de import.meta.env
+// + dynamic import, no se incluye en el bundle de prod).
+if (import.meta.env.DEV) {
+  void import('@axe-core/react').then(({ default: axe }) =>
+    import('react').then((React) =>
+      import('react-dom').then((ReactDOM) => axe(React, ReactDOM, 1000)),
+    ),
+  )
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

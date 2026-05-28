@@ -13,17 +13,11 @@ import { activationActions, userActions } from '@/lib/stores'
 import { useToast } from '@/components/Toast'
 import { api, userApi, ApiError } from '@/lib/api'
 import { purgeDemoDataForApiUser } from '@/lib/demoSeeder'
+import { validateRegistro, type RegistroForm, type RegistroErrors } from '@/lib/validations/registro'
 
-type Errors = Partial<Record<keyof FormState, string>>
+type Errors = RegistroErrors
 
-type FormState = {
-  nombre: string
-  dni: string
-  email: string
-  whatsapp: string
-  fechaNacimiento: string
-  acceptedTc: boolean
-}
+type FormState = RegistroForm
 
 const initial: FormState = {
   nombre: '',
@@ -49,29 +43,7 @@ export function RegistroPage() {
   }
 
   function validate(): Errors {
-    const errs: Errors = {}
-    if (form.nombre.trim().length < 3) errs.nombre = 'Mínimo 3 caracteres'
-    else if (form.nombre.trim().length > 80) errs.nombre = 'Máximo 80 caracteres'
-
-    const dni = form.dni.replace(/\D/g, '')
-    if (dni.length < 7 || dni.length > 8) errs.dni = '7 u 8 dígitos sin puntos'
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Email inválido'
-
-    const wa = form.whatsapp.replace(/\D/g, '')
-    if (wa.length < 10) errs.whatsapp = 'Número con código de área'
-
-    if (!form.fechaNacimiento) {
-      errs.fechaNacimiento = 'Fecha requerida'
-    } else {
-      const dob = new Date(form.fechaNacimiento)
-      const minAge = new Date()
-      minAge.setFullYear(minAge.getFullYear() - 16)
-      if (dob > minAge) errs.fechaNacimiento = 'Tenés que ser mayor de 16'
-    }
-
-    if (!form.acceptedTc) errs.acceptedTc = 'Necesitamos que aceptes los términos'
-    return errs
+    return validateRegistro(form)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -368,7 +340,7 @@ function Field({
         {input}
       </div>
       {error ? (
-        <span className="text-xs font-semibold text-status-error-fg">{error}</span>
+        <span role="alert" className="text-xs font-semibold text-status-error-fg">{error}</span>
       ) : (
         help && <span className="text-[11px] text-neutral-400">{help}</span>
       )}
