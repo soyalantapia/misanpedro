@@ -319,6 +319,43 @@ function toLegacyResult(
   }
 }
 
+/**
+ * F3: errores específicos por `reason` con copy operativo (no solo "inválido").
+ * Antes el panel mostraba "No es un cupón válido · Cupón inválido" — redundante
+ * e inútil. Sandra no sabía si tipeó mal, si ya se canjeó, o si era de otro
+ * comercio. Ahora cada reason tiene su mensaje + acción sugerida.
+ */
+function errorCopy(reason: string): { title: string; hint: string } {
+  switch (reason) {
+    case 'already-redeemed':
+      return {
+        title: 'Este cupón ya fue canjeado',
+        hint: 'El cliente ya lo usó en una visita anterior. Cada cupón vale una sola vez.',
+      }
+    case 'wrong-merchant':
+      return {
+        title: 'Este cupón es de otro comercio',
+        hint: 'El código es válido pero corresponde a otro local adherido. Pedile al cliente uno de los tuyos.',
+      }
+    case 'expired':
+      return {
+        title: 'Este cupón venció',
+        hint: 'Pasó el tiempo de validez. El cliente puede reactivarlo desde su app.',
+      }
+    case 'cancelled':
+      return {
+        title: 'Este cupón fue cancelado',
+        hint: 'El cliente lo canceló desde su app. Puede reactivarlo si quiere usarlo.',
+      }
+    case 'not-found':
+    default:
+      return {
+        title: 'No encontramos este código',
+        hint: 'Revisá los dígitos con el cliente. Si sigue fallando, que abra el QR.',
+      }
+  }
+}
+
 function ResultPanel({
   result,
   onConfirm,
@@ -328,12 +365,13 @@ function ResultPanel({
   onConfirm?: () => void
 }) {
   if (!result.ok) {
+    const copy = errorCopy(result.reason)
     return (
       <div role="alert" className="flex items-start gap-3 rounded-3xl bg-status-error-bg p-5 text-status-error-fg ring-1 ring-status-error/20">
         <AlertCircle size={18} className="mt-0.5 shrink-0" />
         <div className="flex-1">
-          <p className="text-sm font-bold">No es un cupón válido</p>
-          <p className="mt-1 text-xs">{result.message}</p>
+          <p className="text-sm font-bold">{copy.title}</p>
+          <p className="mt-1 text-xs">{copy.hint}</p>
         </div>
       </div>
     )

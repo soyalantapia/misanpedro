@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Outlet, NavLink, Navigate, useNavigate, Link } from 'react-router-dom'
+import { Outlet, NavLink, Navigate, useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   LayoutDashboard,
   ScanLine,
@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   MessageCircle,
   HelpCircle,
+  CreditCard,
 } from 'lucide-react'
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
 import { useMerchant } from '@/lib/merchantsStore'
@@ -26,7 +27,9 @@ const links = [
   { to: '/admin/validar', label: 'Validar', icon: ScanLine, end: false },
   { to: '/admin/cupones', label: 'Cupones', icon: Tag, end: false },
   { to: '/admin/clientes', label: 'Clientes', icon: Users, end: false },
-  { to: '/admin/whatsapp', label: 'Promos', icon: MessageCircle, end: false },
+  // F17: "Promos" era ambiguo (¿ver promos disponibles? ¿gestionar mis promos?).
+  // "WhatsApp" describe exactamente la funcionalidad (campañas masivas).
+  { to: '/admin/whatsapp', label: 'WhatsApp', icon: MessageCircle, end: false },
   { to: '/admin/comercio', label: 'Comercio', icon: Store, end: false },
 ]
 
@@ -184,6 +187,11 @@ export function MerchantShell() {
       </header>
 
       <main className="flex-1 overflow-x-hidden pb-32 md:pb-0">
+        {/* F7: banner sticky pending_payment en TODAS las pantallas del admin.
+            Antes vivía solo en AdminDashboardPage → si Sandra entraba directo
+            a /admin/validar o /admin/cupones, no veía el aviso y trabajaba
+            creyendo que su comercio era visible. */}
+        <PendingPaymentBanner />
         <Outlet />
       </main>
 
@@ -216,3 +224,37 @@ export function MerchantShell() {
     </div>
   )
 }
+
+/**
+ * Banner sticky-top que se muestra en TODO el admin cuando el comercio está
+ * en `pending_payment`. Se oculta en /admin/comercio (donde el merchant ya
+ * está viendo el SubscriptionCard con detalle) para no duplicar el aviso.
+ *
+ * F7 — antes este aviso vivía solo en AdminDashboardPage, así que un
+ * comerciante que entraba directo a /admin/validar (por bookmark, o porque
+ * el cliente está en el mostrador) no veía el aviso y trabajaba creyendo
+ * que su comercio era visible.
+ */
+function PendingPaymentBanner() {
+  const sessionState = useMerchantSession()
+  const location = useLocation()
+  if (sessionState.apiMerchant?.estado !== 'pending_payment') return null
+  // En /admin/comercio el SubscriptionCard ya cuenta toda la historia, no
+  // queremos duplicar visualmente.
+  if (location.pathname.startsWith('/admin/comercio')) return null
+
+  return (
+    <Link
+      to="/admin/comercio"
+      role="alert"
+      className="sticky top-0 z-20 flex items-center justify-center gap-2 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-900 shadow-card ring-1 ring-amber-200 transition-colors hover:bg-amber-100 md:top-0"
+    >
+      <CreditCard size={13} aria-hidden="true" />
+      <span>
+        Suscripción pendiente · tu comercio <strong>no es visible</strong>.{' '}
+        <span className="underline underline-offset-2">Tocá para pagar</span>
+      </span>
+    </Link>
+  )
+}
+

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
-import { ChevronLeft, Store, X } from 'lucide-react'
+import { ChevronLeft, Store, X, Copy, Check } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/Toast'
 import { activationActions, useActivation } from '@/lib/stores'
@@ -160,9 +160,12 @@ export function CuponActivoPage() {
       <div className="flex flex-col items-center gap-4">
         <QRDisplay payload={activation.qrPayload} />
         <Divider label="o usá el código" />
-        <p className="font-mono text-4xl font-bold tracking-[0.25em] tabular-nums text-neutral-900">
-          {formatCode(activation.codigoNumerico)}
-        </p>
+        <div className="flex flex-col items-center gap-2">
+          <p className="font-mono text-4xl font-bold tracking-[0.25em] tabular-nums text-neutral-900">
+            {formatCode(activation.codigoNumerico)}
+          </p>
+          <CopyCodeButton code={activation.codigoNumerico} />
+        </div>
         <p className="max-w-xs text-center text-xs text-neutral-500">
           Mostrá este código en {merchant.nombre}. Se canjea una sola vez.
         </p>
@@ -226,12 +229,17 @@ function QRDisplay({ payload }: { payload: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // MO13: QR a 320px (~30% más grande que los 240 anteriores). El comerciante
+  // escanea desde ~30-50cm; en mobile chico (320px viewport) ocupa ~75%, OK.
+  // En desktop el `max-w-md` de la página lo contiene.
+  const QR_PIXELS = 320
+
   useEffect(() => {
     if (!canvasRef.current) return
     QRCode.toCanvas(
       canvasRef.current,
       payload,
-      { width: 240, margin: 1, color: { dark: '#14211B', light: '#ffffff' } },
+      { width: QR_PIXELS, margin: 1, color: { dark: '#14211B', light: '#ffffff' } },
       (err) => {
         if (err) setError(err.message)
       },
@@ -246,14 +254,49 @@ function QRDisplay({ payload }: { payload: string }) {
     )
   }
   return (
-    <div className="rounded-3xl bg-white p-6 shadow-floating ring-1 ring-neutral-100">
+    <div className="rounded-3xl bg-white p-4 shadow-floating ring-1 ring-neutral-100 sm:p-6">
       <canvas
         ref={canvasRef}
         role="img"
         aria-label="Código QR para canje del cupón"
-        className="block"
+        // max-w-full evita overflow horizontal en mobile chico
+        className="block h-auto max-w-full"
       />
     </div>
+  )
+}
+
+function CopyCodeButton({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback: seleccionar el texto si clipboard no está disponible
+      // (Safari sin HTTPS, embedded webviews viejos, etc.)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      aria-label={copied ? 'Código copiado' : 'Copiar código'}
+      className="inline-flex items-center gap-1.5 rounded-full bg-primary-100 px-3 py-1.5 text-[11px] font-bold text-neutral-700 transition-all hover:bg-accent-50 hover:text-accent-700"
+    >
+      {copied ? (
+        <>
+          <Check size={12} /> Copiado
+        </>
+      ) : (
+        <>
+          <Copy size={12} /> Copiar código
+        </>
+      )}
+    </button>
   )
 }
 

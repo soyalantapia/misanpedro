@@ -61,7 +61,18 @@ export function LoginPage() {
 
   async function handleRequestOtp(e: React.FormEvent) {
     e.preventDefault()
-    if (!email.trim()) return
+    // F10: validación in-app en vez de `required` nativo del browser, que
+    // mostraba un tooltip "Completa este campo" en el idioma del SO (a veces
+    // inglés) y rompía el look-and-feel de la app.
+    const trimmed = email.trim()
+    if (!trimmed) {
+      setError('Ingresá tu email para que te mandemos el código.')
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setError('Email inválido. Revisalo y volvé a intentar.')
+      return
+    }
     setError(null)
     setSubmitting(true)
     try {
@@ -142,7 +153,7 @@ export function LoginPage() {
         to="/"
         className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-neutral-500 hover:text-neutral-900"
       >
-        <ChevronLeft size={16} /> Cancelar
+        <ChevronLeft size={16} /> Volver
       </Link>
 
       <header className="flex flex-col gap-1.5">
@@ -179,7 +190,7 @@ export function LoginPage() {
                   }}
                   placeholder="vos@ejemplo.com"
                   className={`${inputCls} pl-10`}
-                  required
+                  aria-invalid={!!error}
                 />
               </div>
             }
@@ -232,7 +243,7 @@ export function LoginPage() {
                   placeholder="000000"
                   maxLength={6}
                   className={`${inputCls} pl-10 font-mono text-center text-2xl tracking-[0.3em] tabular-nums`}
-                  required
+                  aria-invalid={!!error}
                 />
               </div>
             }

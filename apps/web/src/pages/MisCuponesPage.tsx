@@ -155,8 +155,12 @@ export function MisCuponesPage() {
           Mis cupones
         </h1>
         <p className="text-sm text-neutral-500">
-          Cada cupón activo tiene 30 minutos antes de expirar. Lo podés reactivar las veces que
-          quieras.
+          {/* F6: antes decía "Cada cupón activo tiene 30 minutos antes de expirar"
+              pero el backend no siempre setea expiresAt — la verdad real está en
+              CuponActivoPage (con ExpiryHint que muestra countdown o "Sin tiempo límite").
+              Acá quitamos el "30 minutos" y dejamos copy neutral consistente. */}
+          Acá ves los descuentos que activaste y todavía no canjeaste. Si alguno expiró, lo
+          podés reactivar.
         </p>
       </header>
 

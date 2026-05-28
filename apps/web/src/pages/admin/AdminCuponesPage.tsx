@@ -110,12 +110,18 @@ export function AdminCuponesPage() {
             Crear, editar, pausar o eliminar los descuentos que ofrecés a los vecinos.
           </p>
         </div>
-        <Link
-          to="/admin/cupones/nuevo"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-2.5 text-xs font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5"
-        >
-          <Plus size={14} /> Crear nuevo
-        </Link>
+        {/* F8: el botón "Crear nuevo" del header se oculta cuando hay empty state
+            (el EmptyState ya tiene su propio CTA grande "Crear primer cupón"),
+            evitando dos botones que hacen lo mismo. Sólo se muestra cuando hay
+            cupones cargados. */}
+        {cupones.length > 0 && (
+          <Link
+            to="/admin/cupones/nuevo"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-2.5 text-xs font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5"
+          >
+            <Plus size={14} /> Crear nuevo
+          </Link>
+        )}
       </header>
 
       {apiCupones.loading && localCupones.length === 0 ? (

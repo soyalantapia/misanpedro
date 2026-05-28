@@ -21,10 +21,12 @@ const STORAGE_KEY = 'cuponcito.tenant.slug'
 /**
  * Email de soporte mostrado en footers y CTAs de ayuda.
  * Se puede sobrescribir con VITE_SUPPORT_EMAIL en build time.
- * Default: `soporte@misanpedro.app` (la dirección que está hoy en prod).
+ * Default: `soporte@cuponcito.app` (alineado con la marca paraguas; antes
+ * estaba hardcodeado a `misanpedro.app` lo cual era inconsistente con el
+ * branding "Cuponcito" del header).
  */
 export const SUPPORT_EMAIL =
-  (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined) ?? 'soporte@misanpedro.app'
+  (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined) ?? 'soporte@cuponcito.app'
 
 export type TenantConfig = {
   slug: string

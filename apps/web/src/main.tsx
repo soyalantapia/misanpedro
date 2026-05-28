@@ -11,7 +11,13 @@ const initialSlug = getTenantSnapshot().slug
 if (initialSlug) {
   // No bloqueamos render — si la config tarda, la UI muestra primero el
   // branding default y se re-pinta cuando llega.
-  void loadTenantConfig(initialSlug)
+  void loadTenantConfig(initialSlug).then((config) => {
+    // MO03: actualizamos el <title> del browser con el nombre real del tenant
+    // (ej. "Mi San Pedro · Descuentos vecinales"). Fallback "Cuponcito".
+    if (config?.nombre) {
+      document.title = `${config.nombre} · Descuentos vecinales`
+    }
+  })
 }
 
 // Axe-core sólo en dev: loguea violaciones de accesibilidad en la consola

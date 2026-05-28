@@ -123,13 +123,21 @@ export function CardImage({
   const iconSize = size === 'lg' ? 64 : size === 'sm' ? 28 : 44
 
   if (coverImageUrl) {
+    // MO16: width/height intrínsecos para reservar layout y evitar CLS.
+    // El contenedor maneja el tamaño real vía `className` (h-32, h-56, etc.),
+    // pero el browser necesita los attrs para calcular el aspect ratio antes
+    // de que la imagen se baje.
+    const intrinsic = size === 'lg' ? { w: 800, h: 400 } : size === 'sm' ? { w: 320, h: 200 } : { w: 600, h: 300 }
     return (
       <div className={cn('relative overflow-hidden', className)}>
         <img
           src={coverImageUrl}
           alt=""
+          width={intrinsic.w}
+          height={intrinsic.h}
           className="absolute inset-0 h-full w-full object-cover"
           loading="lazy"
+          decoding="async"
         />
       </div>
     )

@@ -117,8 +117,10 @@ export function AdminDashboardPage() {
           </span>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-amber-900">Suscripción pendiente de pago</p>
+            {/* F14: CTA accionable, no consulta pasiva. */}
             <p className="mt-0.5 text-xs text-amber-700">
-              Completá el pago para que tu comercio sea visible para los vecinos. Tocá para ver el estado.
+              Mientras no completes el pago, tu comercio NO es visible para los vecinos.
+              <span className="ml-1 font-bold underline-offset-2">Tocá para pagar.</span>
             </p>
           </div>
           <ArrowRight size={14} className="mt-1 shrink-0 text-amber-600" />
@@ -196,7 +198,17 @@ export function AdminDashboardPage() {
         <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
           Acción rápida
         </p>
-        {merchantCoupons.length === 0 ? (
+        {/* F2: cuando pending_payment, la acción rápida es completar el pago.
+            Antes promovíamos "Creá tu primer cupón" o "Validar cupón" sin
+            avisar que el comercio NO era visible aún → Sandra trabajaba en falso. */}
+        {pendingPayment ? (
+          <PrimaryAction
+            to="/admin/comercio"
+            title="Activá tu pago para empezar"
+            description="Tu comercio no es visible para vecinos hasta que completes el pago."
+            icon={CreditCard}
+          />
+        ) : merchantCoupons.length === 0 ? (
           <PrimaryAction
             to="/admin/cupones/nuevo"
             title="Creá tu primer cupón"

@@ -133,7 +133,7 @@ export function RegistroPage() {
         to="/"
         className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-neutral-500 hover:text-neutral-900"
       >
-        <ChevronLeft size={16} /> Cancelar
+        <ChevronLeft size={16} /> Volver
       </Link>
 
       <header className="flex flex-col gap-1.5">
@@ -214,7 +214,7 @@ export function RegistroPage() {
           label="WhatsApp"
           required
           icon={Phone}
-          help="Con código de área. Ej: +54 9 3329…"
+          help="Formato internacional: +54 9 [código área] [número] · Ej: +54 9 3329 555444"
           error={errors.whatsapp}
           input={
             <input
@@ -223,7 +223,7 @@ export function RegistroPage() {
               autoComplete="tel"
               value={form.whatsapp}
               onChange={(e) => update('whatsapp', e.target.value)}
-              placeholder="+54 9 3329 …"
+              placeholder="+54 9 3329 555444"
               className={iconInputCls}
             />
           }

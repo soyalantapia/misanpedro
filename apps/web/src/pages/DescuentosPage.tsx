@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Search, MapPin, Sparkles, X } from 'lucide-react'
 import { MERCHANTS, getMerchant } from '@/data/mockData'
 import { useCoupons } from '@/lib/couponsStore'
@@ -56,6 +56,9 @@ export function DescuentosPage() {
     return (window.localStorage.getItem(VIEW_KEY) as View) ?? 'descuento'
   })
   const [search, setSearch] = useState('')
+  // MO18: useDeferredValue para que el typing siga fluido aunque haya 200+
+  // cupones filtrándose. React prioriza el render del input sobre el filter.
+  const deferredSearch = useDeferredValue(search)
   const [categoria, setCategoria] = useState<Categoria | null>(null)
   const { state: geo, request: requestGeo } = useGeolocation()
   const localCoupons = useCoupons()
@@ -96,7 +99,7 @@ export function DescuentosPage() {
   const userCoords = geo.status === 'granted' ? geo.coords : null
 
   const filteredCoupons = useMemo(() => {
-    const q = search.trim().toLowerCase()
+    const q = deferredSearch.trim().toLowerCase()
     return COUPONS.filter((c) => {
       if (c.estado !== 'activo') return false
       const m = getMerchantById(c.merchantId)
@@ -110,10 +113,10 @@ export function DescuentosPage() {
         (CATEGORIAS.find((cat) => cat.id === m.categoria)?.label.toLowerCase().includes(q) ?? false)
       )
     })
-  }, [search, categoria, COUPONS, getMerchantById])
+  }, [deferredSearch, categoria, COUPONS, getMerchantById])
 
   const filteredMerchants = useMemo(() => {
-    const q = search.trim().toLowerCase()
+    const q = deferredSearch.trim().toLowerCase()
     return merchants.filter((m) => {
       if (categoria && m.categoria !== categoria) return false
       if (!q) return true
@@ -133,7 +136,7 @@ export function DescuentosPage() {
       )
       return matchNombre || !!matchRubro || matchCupones
     })
-  }, [search, categoria, merchants, COUPONS])
+  }, [deferredSearch, categoria, merchants, COUPONS])
 
   const isLoading = apiMerchantsRes.loading || apiCouponsRes.loading
 
@@ -166,10 +169,23 @@ export function DescuentosPage() {
             `Descubrí descuentos en ${tenant.config?.nombre ?? 'tu ciudad'}`}
         </h1>
         <p className="text-base text-neutral-500">
-          {merchants.length} {merchants.length === 1 ? 'comercio adherido' : 'comercios adheridos'}
-          {' · '}
-          {COUPONS.filter((c) => c.estado === 'activo').length}{' '}
-          {COUPONS.filter((c) => c.estado === 'activo').length === 1 ? 'cupón activo' : 'cupones activos'}.
+          {/* F1: contamos sólo cupones cuyo merchant también existe en el store.
+              Antes mostrábamos `COUPONS.filter(c.estado === 'activo').length`
+              que producía contradicciones tipo "11 cupones activos · No
+              encontramos descuentos" si los merchants no se cargaban (data
+              huérfana). Ahora el número del header siempre coincide con
+              lo que el usuario realmente puede ver. */}
+          {(() => {
+            const visibleCoupons = COUPONS.filter(
+              (c) => c.estado === 'activo' && !!getMerchantById(c.merchantId),
+            )
+            const m = merchants.length
+            const c = visibleCoupons.length
+            if (m === 0 && c === 0) {
+              return 'Pronto vamos a sumar más comercios a tu ciudad.'
+            }
+            return `${m} ${m === 1 ? 'comercio adherido' : 'comercios adheridos'} · ${c} ${c === 1 ? 'cupón activo' : 'cupones activos'}.`
+          })()}
         </p>
       </div>
 

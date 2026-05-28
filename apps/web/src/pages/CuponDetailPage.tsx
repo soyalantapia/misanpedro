@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   ChevronLeft,
@@ -7,6 +7,7 @@ import {
   Clock,
   ExternalLink,
   ArrowRight,
+  Share2,
 } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
 import { useCoupon } from '@/lib/couponsStore'
@@ -160,6 +161,10 @@ export function CuponDetailPage() {
         >
           <ChevronLeft size={20} />
         </Link>
+        <ShareButton
+          title={`${coupon.porcentaje}% off en ${merchant.nombre}`}
+          text={`Mirá este descuento: ${coupon.titulo}`}
+        />
         <div className="absolute -bottom-5 left-4 inline-flex items-center rounded-full bg-white px-4 py-2 shadow-floating">
           <span className="font-bold text-accent-700 tabular-nums">
             <span className="text-2xl">{coupon.porcentaje}%</span>
@@ -243,6 +248,50 @@ export function CuponDetailPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function ShareButton({ title, text }: { title: string; text: string }) {
+  const [supported, setSupported] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const toast = useToast()
+
+  useEffect(() => {
+    // navigator.share solo existe en mobile (Android/iOS) y algunos browsers desktop.
+    // En desktop sin Share API caemos a clipboard.
+    setSupported(typeof navigator !== 'undefined' && typeof navigator.share === 'function')
+  }, [])
+
+  async function handleShare() {
+    const url = typeof window !== 'undefined' ? window.location.href : ''
+    if (supported) {
+      try {
+        await navigator.share({ title, text, url })
+      } catch {
+        // user canceló — silencioso
+      }
+      return
+    }
+    // Fallback: copiar URL al clipboard
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      toast.success('Link copiado', 'Pegalo donde quieras compartir el descuento.')
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('No se pudo copiar', 'Copialo manualmente desde la barra del browser.')
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleShare}
+      aria-label="Compartir descuento"
+      className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/95 text-neutral-700 shadow-card backdrop-blur transition-all hover:-translate-y-0.5 hover:text-accent-700"
+    >
+      {copied ? <span className="text-xs font-bold">✓</span> : <Share2 size={18} />}
+    </button>
   )
 }
 
