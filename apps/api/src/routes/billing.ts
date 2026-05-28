@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
+import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
 import { env } from '@/env'
 import { App, Merchant, MerchantUser, Subscription } from '@/models'
@@ -7,12 +7,18 @@ import { requireMerchantAuth } from '@/middleware/auth'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { createPreapproval, getPreapproval } from '@/services/mp.service'
 import { sendSubscriptionReceipt } from '@/services/email.service'
+import { verifyMpSignature, mapMpStatus } from '@/services/mp-signature'
 
 export const billingRoutes = new Hono()
 
 const PLAN_AMOUNT_ARS = Number(env.PLAN_AMOUNT_ARS ?? 25_000)
-const IVA_RATE = 0.21
 
+/**
+ * B1: precio FINAL al comercio. Primera etapa = monotributo personal del
+ * responsable → factura C, sin IVA discriminado. El amount enviado a MP y
+ * el del receipt es el mismo valor sin recargos. Cuando migremos a SaaS
+ * inscripto (S.A.S./S.A.), discriminamos IVA y la factura pasa a A.
+ */
 async function sendReceiptForSubscription(sub: any) {
   try {
     const merchant = await Merchant.findById(sub.merchantId)
@@ -23,7 +29,7 @@ async function sendReceiptForSubscription(sub: any) {
     await sendSubscriptionReceipt({
       to: user.email,
       comercio: merchant.nombre,
-      amount: Math.round(sub.amountARS * (1 + IVA_RATE)),
+      amount: sub.amountARS, // monto final, sin recargo de IVA
       periodFrom: periodFrom.toLocaleDateString('es-AR'),
       periodTo: periodTo.toLocaleDateString('es-AR'),
       externalReference: sub.externalReference,
@@ -37,63 +43,38 @@ async function sendReceiptForSubscription(sub: any) {
 // WEBHOOK — MercadoPago llama desde sus servidores. NO debe pasar por
 // tenantContext porque MP no manda X-Tenant-Slug. Lo resolvemos por
 // el externalReference / subscription.appId.
+//
+// La firma se valida con `verifyMpSignature` (services/mp-signature.ts).
+// Helper extraído para poder testearlo unitariamente.
 // ════════════════════════════════════════════════════════════════════
-
-function verifyMpSignature(
-  signatureHeader: string | undefined,
-  requestId: string | undefined,
-  dataId: string,
-): boolean {
-  if (!env.MP_WEBHOOK_SECRET) {
-    // En PRODUCTION, exigir el secret. Sin él cualquiera puede falsificar
-    // webhooks y marcar suscripciones como pagas. Mejor fallar cerrado.
-    if (env.NODE_ENV === 'production') return false
-    // En development sin secret, aceptamos cualquier llamada (para testing).
-    return true
-  }
-  if (!signatureHeader || !requestId) return false
-
-  const parts = Object.fromEntries(
-    signatureHeader.split(',').map((kv) => {
-      const [k, v] = kv.split('=').map((s) => s.trim())
-      return [k, v ?? '']
-    }),
-  )
-  const ts = parts['ts']
-  const v1 = parts['v1']
-  if (!ts || !v1) return false
-
-  const tsMs = parseInt(ts, 10)
-  if (!Number.isFinite(tsMs) || Math.abs(Date.now() - tsMs) > 5 * 60 * 1000) {
-    return false
-  }
-
-  const manifest = `id:${dataId.toLowerCase()};request-id:${requestId};ts:${ts};`
-  const expected = createHmac('sha256', env.MP_WEBHOOK_SECRET)
-    .update(manifest)
-    .digest('hex')
-
-  try {
-    return timingSafeEqual(Buffer.from(expected), Buffer.from(v1))
-  } catch {
-    return false
-  }
-}
 
 billingRoutes.post('/webhook', async (c) => {
   const body = await c.req.json().catch(() => ({}))
-  console.log('[mp-webhook]', JSON.stringify(body))
 
   const type = body.type ?? body.topic
   const dataId = body.data?.id ?? body.id ?? c.req.query('data.id')
   const externalReference = body.external_reference ?? c.req.query('external_reference')
 
+  // O4: log ÚNICAMENTE los campos no-PII. El body completo de MP incluye
+  // email del pagador, payer_id, last4 de tarjeta, etc. Para debug profundo
+  // usar Sentry breadcrumbs (con scrubbing PII automático) en vez de
+  // CloudWatch/Railway logs.
+  console.log('[mp-webhook]', {
+    type,
+    dataId,
+    externalReference,
+    action: body.action,
+    apiVersion: body.api_version,
+  })
+
   if (dataId) {
-    const ok = verifyMpSignature(
-      c.req.header('x-signature'),
-      c.req.header('x-request-id'),
-      String(dataId),
-    )
+    const ok = verifyMpSignature({
+      signatureHeader: c.req.header('x-signature'),
+      requestId: c.req.header('x-request-id'),
+      dataId: String(dataId),
+      secret: env.MP_WEBHOOK_SECRET,
+      isProduction: env.NODE_ENV === 'production',
+    })
     if (!ok) {
       console.warn('[mp-webhook] firma inválida; rechazo')
       return c.json({ ok: false, error: 'invalid signature' }, 401)
@@ -131,21 +112,6 @@ billingRoutes.post('/webhook', async (c) => {
 
   return c.json({ ok: true })
 })
-
-function mapMpStatus(s: string): 'pending' | 'authorized' | 'paused' | 'cancelled' | 'rejected' {
-  switch (s) {
-    case 'authorized':
-      return 'authorized'
-    case 'paused':
-      return 'paused'
-    case 'cancelled':
-      return 'cancelled'
-    case 'rejected':
-      return 'rejected'
-    default:
-      return 'pending'
-  }
-}
 
 billingRoutes.get('/return', async (c) => {
   return c.json({ ok: true })
@@ -251,6 +217,11 @@ billingRoutes.post('/cancel', requireMerchantAuth, async (c) => {
   if (!merchant) return c.json({ ok: false, error: 'merchant not found' }, 404)
 
   const ahora = new Date()
+  // O5: comercios creados ANTES de que existiera este campo no tienen
+  // arrepentimientoExpiraEn → se tratan como "fuera del período" (epoch 0,
+  // siempre vencido). Comercios nuevos lo tienen seteado en signup
+  // (merchant-auth.ts:70) a now + 10 días, por lo que el flow funciona
+  // correctamente para todos los casos válidos post-feature.
   const expiraArrepentimientoEn = merchant.arrepentimientoExpiraEn ?? new Date(0)
   const dentroDe10Dias = ahora.getTime() <= expiraArrepentimientoEn.getTime()
 

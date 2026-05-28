@@ -22,9 +22,37 @@ export function PrivacidadPage() {
       <article className="prose-sm flex flex-col gap-4 text-sm leading-relaxed text-neutral-700">
         <Section title="1. Responsable del tratamiento">
           <p>
-            <strong>Mi San Pedro</strong>, con domicilio en San Pedro, Buenos Aires, Argentina. La
-            base de datos personales está registrada conforme a la <strong>Ley 25.326</strong> de
-            Protección de Datos Personales y su decreto reglamentario.
+            <strong>Responsable de la base de datos personales</strong> conforme a la{' '}
+            <strong>Ley 25.326</strong> de Protección de Datos Personales (art. 22) y su decreto
+            reglamentario:
+          </p>
+          <ul>
+            <li>
+              <strong>Nombre / Razón social:</strong> Alan Naim Tapia
+            </li>
+            <li>
+              <strong>CUIT:</strong> 20-43316638-9
+            </li>
+            <li>
+              <strong>Condición fiscal:</strong> Monotributista (Régimen Simplificado AFIP)
+            </li>
+            <li>
+              <strong>Domicilio:</strong> [PENDIENTE_DOMICILIO_FISCAL] · San Pedro, Provincia de
+              Buenos Aires, Argentina
+            </li>
+            <li>
+              <strong>Email para ejercicio de derechos:</strong>{' '}
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-accent-700">
+                {SUPPORT_EMAIL}
+              </a>
+            </li>
+            <li>
+              <strong>Marca comercial:</strong> Cuponcito (implementación inicial: Mi San Pedro)
+            </li>
+          </ul>
+          <p className="text-xs text-neutral-500">
+            La base de datos será registrada ante la Agencia de Acceso a la Información Pública
+            (AAIP) cuando corresponda según los umbrales reglamentarios.
           </p>
         </Section>
 

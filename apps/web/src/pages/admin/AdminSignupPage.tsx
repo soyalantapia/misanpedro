@@ -23,9 +23,16 @@ import { validateCuit } from '@/lib/validations/cuit'
 import { evaluatePassword } from '@/lib/validations/password'
 
 /**
- * Precio único $25.000/mes para el comercio. Es el precio FINAL que ve
- * el usuario en la landing comercial — no se le suma IVA arriba.
- * El backoffice maneja el IVA dentro de la factura.
+ * Precio único $25.000/mes FINAL para el comercio.
+ *
+ * Primera etapa (monotributo): factura C, sin IVA discriminado. El monto
+ * que ve el comercio = el monto que cobra MP = el monto del recibo.
+ *
+ * Más adelante (SaaS S.A.S./responsable inscripto): factura A con IVA 21%
+ * discriminado dentro del mismo $25.000 (el precio público no cambia).
+ *
+ * Cambio asociado: T&C sección 5 + .env.example.PLAN_AMOUNT_ARS + billing.ts
+ * sendReceiptForSubscription (sin recargo IVA en email).
  */
 const PRECIO_TOTAL = 25_000
 

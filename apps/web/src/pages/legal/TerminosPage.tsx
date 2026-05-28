@@ -20,12 +20,38 @@ export function TerminosPage() {
       <p className="text-sm text-neutral-500">Vigencia desde el {FECHA_VIGENCIA}</p>
 
       <article className="prose-sm flex flex-col gap-4 text-sm leading-relaxed text-neutral-700">
-        <Section title="1. Quiénes somos">
+        <Section title="1. Quiénes somos · Responsable">
           <p>
-            <strong>Mi San Pedro</strong> es una plataforma operada con domicilio en San Pedro,
-            Provincia de Buenos Aires, República Argentina. Conecta vecinos con comercios adheridos
-            de la ciudad para acceder a descuentos y promociones.
+            <strong>Cuponcito</strong> es una plataforma SaaS multi-tenant de descuentos
+            vecinales. La primera implementación ("Mi San Pedro") opera en San Pedro, Provincia
+            de Buenos Aires, República Argentina, y conecta vecinos con comercios adheridos para
+            acceder a descuentos y promociones.
           </p>
+          <p>
+            <strong>Responsable del servicio y del tratamiento de datos personales</strong> (Ley
+            25.326 art. 22):
+          </p>
+          <ul>
+            <li>
+              <strong>Nombre / Razón social:</strong> Alan Naim Tapia
+            </li>
+            <li>
+              <strong>CUIT:</strong> 20-43316638-9
+            </li>
+            <li>
+              <strong>Condición fiscal:</strong> Monotributista (Régimen Simplificado AFIP)
+            </li>
+            <li>
+              <strong>Domicilio fiscal:</strong> [PENDIENTE_DOMICILIO_FISCAL] · San Pedro,
+              Provincia de Buenos Aires, Argentina
+            </li>
+            <li>
+              <strong>Email de contacto y reclamos:</strong>{' '}
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-accent-700">
+                {SUPPORT_EMAIL}
+              </a>
+            </li>
+          </ul>
         </Section>
 
         <Section title="2. Aceptación">
@@ -44,8 +70,8 @@ export function TerminosPage() {
             <li>Brindar información veraz sobre su identidad, dirección y datos fiscales.</li>
             <li>Honrar todos los cupones activos publicados en la plataforma.</li>
             <li>
-              Pagar la suscripción mensual ($25.000 + IVA, sin permanencia) por adelantado vía
-              Mercado Pago.
+              Pagar la suscripción mensual de <strong>$25.000 ARS finales</strong> (sin
+              permanencia, sin cargos adicionales) por adelantado vía Mercado Pago.
             </li>
             <li>
               Mantener actualizada su información (horarios, dirección, datos fiscales para
@@ -69,14 +95,18 @@ export function TerminosPage() {
 
         <Section title="5. Plan y pagos">
           <p>
-            El plan estándar tiene un costo de <strong>$25.000 ARS netos + IVA 21%</strong> ={' '}
-            <strong>$30.250 ARS finales por mes</strong>. La suscripción es mensual y se renueva
-            automáticamente vía Mercado Pago hasta que el comercio la cancele desde su panel.
+            El plan estándar tiene un costo final de <strong>$25.000 ARS por mes</strong> (sin
+            IVA discriminado adicional, sin cargos por permanencia). La suscripción es mensual y
+            se renueva automáticamente vía Mercado Pago hasta que el comercio la cancele desde
+            su panel.
           </p>
           <p>
-            Mi San Pedro emite factura A (a Responsables Inscriptos) o C (a Monotributistas /
-            Consumidores Finales) por cada período cobrado. La factura se envía al email registrado
-            dentro de las 48hs de confirmado el pago.
+            En esta primera etapa, el responsable opera bajo el <strong>Régimen Simplificado para
+            Pequeños Contribuyentes (Monotributo)</strong> y emite <strong>factura C</strong> por
+            cada período cobrado. La factura se envía al email registrado dentro de las 48hs de
+            confirmado el pago. Cuando el servicio escale a Sociedad por Acciones Simplificada
+            (S.A.S.) o forma equivalente, pasaremos a emitir factura A o B según la condición
+            fiscal del comercio adherido, sin cambios en el precio público.
           </p>
         </Section>
 
@@ -90,7 +120,7 @@ export function TerminosPage() {
         </Section>
 
         <Section title="7. Suspensión y cancelación">
-          <p>Mi San Pedro puede suspender o cancelar la cuenta de un comercio en caso de:</p>
+          <p>El responsable de Cuponcito puede suspender o cancelar la cuenta de un comercio en caso de:</p>
           <ul>
             <li>Falta de pago de la suscripción.</li>
             <li>Cupones no respetados o promociones engañosas.</li>
@@ -106,9 +136,10 @@ export function TerminosPage() {
 
         <Section title="8. Responsabilidad">
           <p>
-            Mi San Pedro es un intermediario tecnológico. La relación contractual del descuento es
-            entre el comercio y el vecino. Mi San Pedro no es responsable por la calidad de los
-            productos/servicios ofrecidos por los comercios.
+            Cuponcito es un <strong>intermediario tecnológico</strong>. La relación contractual
+            del descuento es entre el comercio y el vecino. El responsable de Cuponcito no es
+            responsable por la calidad de los productos/servicios ofrecidos por los comercios
+            adheridos.
           </p>
         </Section>
 
@@ -130,16 +161,18 @@ export function TerminosPage() {
 
         <Section title="10. Propiedad intelectual">
           <p>
-            La plataforma, su código, diseño, marcas y contenidos son propiedad de Mi San Pedro o
-            sus licenciantes. Queda prohibida la reproducción sin autorización expresa.
+            La plataforma, su código, diseño, marcas (Cuponcito, Mi San Pedro y futuras
+            implementaciones por ciudad) y contenidos son propiedad del responsable identificado
+            en la sección 1 o sus licenciantes. Queda prohibida la reproducción sin autorización
+            expresa.
           </p>
         </Section>
 
         <Section title="11. Modificaciones">
           <p>
-            Mi San Pedro puede modificar estos Términos avisando con al menos 30 días de
-            anticipación al email registrado. Si no estás de acuerdo, podés cancelar tu cuenta sin
-            costo dentro de ese período.
+            El responsable puede modificar estos Términos avisando con al menos 30 días de
+            anticipación al email registrado. Si no estás de acuerdo, podés cancelar tu cuenta
+            sin costo dentro de ese período.
           </p>
         </Section>
 

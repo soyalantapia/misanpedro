@@ -838,7 +838,7 @@ function SubscriptionCard({
       </p>
 
       <div className="mt-2 flex flex-col gap-1 text-sm">
-        <Row label="Plan" value="Estándar · $25.000 + IVA" />
+        <Row label="Plan" value="Estándar · $25.000 final / mes" />
         <Row
           label="Estado"
           value={
