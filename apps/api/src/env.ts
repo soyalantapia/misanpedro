@@ -22,7 +22,7 @@ const schema = z.object({
 
   WHATSAPP_SESSIONS_DIR: z.string().default('/tmp/wa-sessions'),
 
-  /** Plan mensual en ARS (con IVA). Default $25.000 = $30.250 con 21% IVA. */
+  /** Plan mensual en ARS — precio FINAL al comercio (monotributo emite factura C sin IVA discriminado). NO sumar IVA encima. */
   PLAN_AMOUNT_ARS: z.coerce.number().default(25_000),
 
   /** Email de soporte (visible en TyC y panel ayuda). */

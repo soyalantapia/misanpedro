@@ -318,7 +318,7 @@ export function AdminSignupPage() {
             </h1>
             <p className="mt-1 text-sm text-neutral-500">
               {step === 'datos' && '3 minutos · Sin permanencia'}
-              {step === 'fiscal' && 'Para emitir tu factura A o C'}
+              {step === 'fiscal' && 'Para emitir tu factura C'}
               {step === 'pago' && `${PRECIO_TOTAL.toLocaleString('es-AR')} ARS / mes · Precio congelado de por vida`}
               {step === 'listo' && 'Te estamos llevando al panel…'}
             </p>
@@ -635,7 +635,7 @@ function FiscalStep({
     <div className="flex flex-col gap-4 rounded-3xl bg-white p-5 shadow-floating ring-1 ring-neutral-100">
       <p className="rounded-xl bg-status-info-bg p-3 text-xs leading-snug text-status-info-fg">
         <Receipt className="mb-1 inline" size={14} /> Necesitamos estos datos para emitirte la factura
-        A o C de la suscripción mensual. Si no facturás, podés poner tus datos personales.
+        C de la suscripción mensual. Si no facturás, podés poner tus datos personales.
       </p>
       <Field
         label="CUIT"

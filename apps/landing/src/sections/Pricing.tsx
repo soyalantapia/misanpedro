@@ -89,6 +89,9 @@ export function Pricing() {
                 </span>
                 <span className="text-base font-medium text-neutral-500">/mes</span>
               </p>
+              <p className="mt-1 text-xs font-medium text-neutral-500">
+                Precio FINAL — sin IVA adicional (factura C de monotributo)
+              </p>
 
               <p className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-accent-700">
                 <span aria-hidden>🔒</span> Congelado de por vida

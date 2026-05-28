@@ -241,7 +241,7 @@ export async function sendSubscriptionReceipt(input: {
           <p style="margin:4px 0 0;font-family:monospace;font-size:12px">${escapeHtml(input.externalReference)}</p>
         </div>
         <p style="font-size:13px;color:#8b8589">
-          La factura A o C se envía por separado. Si no la recibís en 48h, escribinos a
+          La factura C se envía por separado. Si no la recibís en 48h, escribinos a
           <a href="mailto:${env.SUPPORT_EMAIL}" style="color:#695ede">${env.SUPPORT_EMAIL}</a>.
         </p>
       `,

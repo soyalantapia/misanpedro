@@ -19,6 +19,13 @@ export function TenantSelectorPage() {
     void (async () => {
       try {
         const list = await listAvailableTenants()
+        // M2: auto-skip si hay un solo tenant activo (caso lanzamiento de una ciudad
+        // sola — San Pedro al inicio). Evita fricción de "elegir" la única opción.
+        if (list.length === 1) {
+          setTenantSlug(list[0].slug)
+          window.location.reload()
+          return
+        }
         setTenants(list)
       } catch (err: any) {
         setError(err?.message ?? 'No pudimos conectar con el servidor')
@@ -110,7 +117,11 @@ export function TenantSelectorPage() {
         )}
 
         <p className="mt-10 text-center text-[11px] text-neutral-400">
-          Si llegaste por un link específico, refrescá la pestaña.
+          ¿Tu ciudad no está? Probablemente todavía no llegamos. Escribinos a{' '}
+          <a href="mailto:hola@misanpedro.app" className="font-semibold text-accent-700 underline-offset-2 hover:underline">
+            hola@misanpedro.app
+          </a>
+          .
         </p>
       </div>
     </div>

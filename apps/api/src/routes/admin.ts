@@ -133,7 +133,15 @@ adminRoutes.post('/merchants/:id/refund', requireSuperAdmin, async (c) => {
   sub.rawLast = { ...(sub.rawLast as any), refundedAt: new Date().toISOString() }
   await sub.save()
   await Merchant.updateOne({ _id: id }, { estado: 'cancelado' })
-  // TODO: dispara refund real en MP cuando hay credenciales
+  // ⚠️ IMPORTANTE — A2 audit v4 (2026-05-28):
+  // Esta ruta marca la suscripción como cancelada y deja un timestamp `refundedAt`
+  // en `rawLast`, pero NO dispara el refund real contra la API de MercadoPago.
+  // Hasta implementar `mp.service.refundPreapproval(externalReference)`, el operador
+  // (Alan, CUIT 20-43316638-9) DEBE entrar a panel.mercadopago.com.ar y hacer el
+  // refund manualmente dentro de las 48h posteriores a este POST, para cumplir con
+  // los 10 días de arrepentimiento que promete la TyC (Ley 24.240).
+  // Workaround documentado en runbook hasta primera versión del refund automático.
+  // TODO(A2): implementar refund automático vía POST /v1/payments/:id/refunds
   return c.json({ ok: true })
 })
 

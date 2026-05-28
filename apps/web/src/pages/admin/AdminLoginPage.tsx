@@ -110,13 +110,13 @@ export function AdminLoginPage() {
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-white/70 ring-1 ring-white/10">
-                $25.000 + IVA · sin permanencia
+                $25.000 final / mes · sin permanencia
               </span>
               <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-white/70 ring-1 ring-white/10">
                 10 días de arrepentimiento
               </span>
               <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-white/70 ring-1 ring-white/10">
-                Factura A o C
+                Factura C (monotributo)
               </span>
             </div>
           </div>
@@ -212,7 +212,7 @@ export function AdminLoginPage() {
                 <p className="text-sm font-bold text-neutral-900">Registrar mi comercio</p>
                 <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-neutral-500">
                   <CreditCard size={10} className="shrink-0" />
-                  Plan estándar · $25.000 + IVA · sin permanencia
+                  Plan estándar · $25.000 final / mes · sin permanencia
                 </p>
               </div>
               <ArrowRight
