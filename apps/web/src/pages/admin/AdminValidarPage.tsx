@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ScanLine, Hash, AlertCircle, Camera, Keyboard } from 'lucide-react'
+import { ScanLine, Hash, AlertCircle, Camera, Keyboard, ArrowRight } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useValidateByCode } from '@/lib/merchantQueries'
 import { useApiValidateByCode } from '@/lib/apiQueries'
@@ -92,16 +92,10 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
   })()
   const ready = trimmed.length === 6
 
-  // Auto-navega al confirmar canje cuando el cupón es válido (con un toque
-  // de delay para que el encargado alcance a ver el feedback verde).
+  // Sandra controla el ritmo: ya NO auto-navegamos a /admin/canje a los 500ms
+  // (cambio VP03). En su lugar mostramos un CTA explícito "Confirmar canje" en
+  // el ResultPanel para que pueda comparar datos con el cliente antes de avanzar.
   const okActivationId = result && result.ok ? result.activation.id : null
-  useEffect(() => {
-    if (!okActivationId) return
-    const t = setTimeout(() => {
-      navigate(`/admin/canje/${okActivationId}`)
-    }, 500)
-    return () => clearTimeout(t)
-  }, [okActivationId, navigate])
 
   return (
     <div className="flex flex-col gap-4">
@@ -133,7 +127,14 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
         </div>
       </div>
 
-      {ready && result && <ResultPanel result={result} />}
+      {ready && result && (
+        <ResultPanel
+          result={result}
+          onConfirm={
+            okActivationId ? () => navigate(`/admin/canje/${okActivationId}`) : undefined
+          }
+        />
+      )}
 
       {!ready && (
         <>
@@ -214,13 +215,8 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
     return toLegacyResult(apiResult)
   })()
 
-  // Auto-navega cuando el QR es válido
+  // VP03: sin auto-nav. El comerciante avanza con el CTA del ResultPanel.
   const okActivationId = result && result.ok ? result.activation.id : null
-  useEffect(() => {
-    if (!okActivationId) return
-    const t = setTimeout(() => navigate(`/admin/canje/${okActivationId}`), 500)
-    return () => clearTimeout(t)
-  }, [okActivationId, navigate])
 
   return (
     <div className="flex flex-col gap-4">
@@ -274,7 +270,14 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
         </p>
       )}
 
-      {scannedPayload && result && <ResultPanel result={result} />}
+      {scannedPayload && result && (
+        <ResultPanel
+          result={result}
+          onConfirm={
+            okActivationId ? () => navigate(`/admin/canje/${okActivationId}`) : undefined
+          }
+        />
+      )}
     </div>
   )
 }
@@ -318,12 +321,15 @@ function toLegacyResult(
 
 function ResultPanel({
   result,
+  onConfirm,
 }: {
   result: NonNullable<ReturnType<typeof useValidateByCode>>
+  /** Si está, muestra CTA "Confirmar canje →". Si no, solo el panel. */
+  onConfirm?: () => void
 }) {
   if (!result.ok) {
     return (
-      <div className="flex items-start gap-3 rounded-3xl bg-status-error-bg p-5 text-status-error-fg ring-1 ring-status-error/20">
+      <div role="alert" className="flex items-start gap-3 rounded-3xl bg-status-error-bg p-5 text-status-error-fg ring-1 ring-status-error/20">
         <AlertCircle size={18} className="mt-0.5 shrink-0" />
         <div className="flex-1">
           <p className="text-sm font-bold">No es un cupón válido</p>
@@ -333,16 +339,27 @@ function ResultPanel({
     )
   }
   return (
-    <div className="flex items-center gap-3 rounded-3xl bg-status-success-bg p-5 text-status-success-fg ring-1 ring-status-success/20">
-      <div className="grid h-10 w-10 place-items-center rounded-full bg-status-success text-white animate-pulse-soft">
-        ✓
+    <div className="flex flex-col gap-3 rounded-3xl bg-status-success-bg p-5 text-status-success-fg ring-1 ring-status-success/20">
+      <div className="flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-status-success text-white animate-pulse-soft">
+          ✓
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-bold">Cupón válido</p>
+          <p className="text-xs">
+            {result.porcentaje}% off · {result.couponTitulo}
+          </p>
+        </div>
       </div>
-      <div className="flex-1">
-        <p className="text-sm font-bold">Cupón válido</p>
-        <p className="text-xs">
-          {result.porcentaje}% off · {result.couponTitulo}
-        </p>
-      </div>
+      {onConfirm && (
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-status-success px-5 py-3 text-sm font-bold text-white shadow-cta-success transition-all hover:-translate-y-0.5"
+        >
+          Confirmar canje <ArrowRight size={14} />
+        </button>
+      )}
     </div>
   )
 }

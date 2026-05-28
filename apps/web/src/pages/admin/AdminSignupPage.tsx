@@ -19,6 +19,8 @@ import { useToast } from '@/components/Toast'
 import { Select } from '@/components/Select'
 import { cn } from '@/lib/cn'
 import { billing } from '@/lib/api'
+import { validateCuit } from '@/lib/validations/cuit'
+import { evaluatePassword } from '@/lib/validations/password'
 
 /**
  * Precio único $25.000/mes para el comercio. Es el precio FINAL que ve
@@ -164,25 +166,33 @@ export function AdminSignupPage() {
   }
 
   function validateFiscal(): string | null {
-    // CUIT como texto libre — sin validación de formato. Solo pedimos
-    // que esté presente porque es necesario para emitir la factura.
-    if (form.cuit.trim().length < 3) return 'Falta el CUIT'
+    // Validación AFIP del CUIT: 11 dígitos, prefijo válido (20,23,24,27,30...),
+    // dígito verificador correcto. Bloquea typos que generarían facturas mal.
+    const cuitCheck = validateCuit(form.cuit)
+    if (!cuitCheck.ok) return cuitCheck.error
     if (form.razonSocial.trim().length < 3) return 'Falta la razón social'
     if (form.direccionFiscal.trim().length < 5) return 'Falta la dirección fiscal'
     return null
+  }
+
+  // setStep wrapper: limpia errores acumulados de pasos previos para que no
+  // queden "colgados" en la UI cuando el usuario navega entre steps.
+  function goToStep(next: Step) {
+    setError(null)
+    setStep(next)
   }
 
   function goNext() {
     if (step === 'datos') {
       const err = validateDatos()
       if (err) return setError(err)
-      setStep('fiscal')
+      goToStep('fiscal')
       return
     }
     if (step === 'fiscal') {
       const err = validateFiscal()
       if (err) return setError(err)
-      setStep('pago')
+      goToStep('pago')
       return
     }
   }
@@ -237,20 +247,26 @@ export function AdminSignupPage() {
           setTimeout(() => navigate('/admin', { replace: true }), 1500)
           return
         }
-        // Producción real: redirigir al checkout de MP
+        // Producción real: redirigir al checkout de MP.
+        // setSubmitting(false) ANTES del location.href — si el browser bloquea
+        // el redirect (popup blocker, CSP), el botón vuelve a ser usable.
         toast.info('Te llevamos a Mercado Pago…')
+        setSubmitting(false)
         window.location.href = initPoint
         return
       } catch {
         // Si el billing falla, igual dejamos al comercio entrar al panel
-        // (queda pending_payment y desde Mi Comercio puede reintentar)
+        // (queda pending_payment y desde Mi Comercio puede reintentar).
+        // IMPORTANTE: el comercio NO es visible para vecinos hasta que pague,
+        // así que el toast tiene que comunicar urgencia (NO éxito) y
+        // redirigimos directo a /admin/comercio donde puede reintentar el pago.
         setSubmitting(false)
         setStep('listo')
-        toast.success(
-          '¡Comercio creado!',
-          'No pudimos iniciar el cobro automático. Probá desde "Mi Comercio".',
+        toast.warning(
+          'Pago pendiente',
+          'Tu comercio quedó creado pero NO es visible aún. Completá el pago desde "Mi Comercio".',
         )
-        setTimeout(() => navigate('/admin', { replace: true }), 1500)
+        setTimeout(() => navigate('/admin/comercio', { replace: true }), 1500)
         return
       }
     }
@@ -430,26 +446,29 @@ export function AdminSignupPage() {
               label="Contraseña"
               required
               input={
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    value={form.password}
-                    onChange={(e) => update('password', e.target.value)}
-                    placeholder="Mínimo 8 caracteres"
-                    className={cn(inputCls, 'pr-11')}
-                    minLength={8}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    aria-pressed={showPassword}
-                    className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-                  >
-                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                </div>
+                <>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      value={form.password}
+                      onChange={(e) => update('password', e.target.value)}
+                      placeholder="Mínimo 8 caracteres"
+                      className={cn(inputCls, 'pr-11')}
+                      minLength={8}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      aria-pressed={showPassword}
+                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
+                    >
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                  <PasswordStrengthBar password={form.password} />
+                </>
               }
             />
 
@@ -474,7 +493,7 @@ export function AdminSignupPage() {
             form={form}
             update={update}
             error={error}
-            onBack={() => setStep('datos')}
+            onBack={() => goToStep('datos')}
             onNext={goNext}
           />
         )}
@@ -486,12 +505,59 @@ export function AdminSignupPage() {
             acceptedTc={form.acceptedTc}
             onAcceptTc={(v) => update('acceptedTc', v)}
             onPay={handlePay}
-            onBack={() => setStep('fiscal')}
+            onBack={() => goToStep('fiscal')}
           />
         )}
 
         {step === 'listo' && <ListoStep form={form} />}
       </div>
+    </div>
+  )
+}
+
+function PasswordStrengthBar({ password }: { password: string }) {
+  const strength = evaluatePassword(password)
+  if (strength.score === 0) return null
+  const colors = [
+    '',
+    'bg-status-error',
+    'bg-status-warning',
+    'bg-status-success',
+    'bg-status-success',
+  ] as const
+  const textColors = [
+    '',
+    'text-status-error-fg',
+    'text-status-warning-fg',
+    'text-status-success-fg',
+    'text-status-success-fg',
+  ] as const
+  return (
+    <div className="mt-1 flex flex-col gap-1">
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={4}
+        aria-valuenow={strength.score}
+        aria-valuetext={`Fortaleza de la contraseña: ${strength.label}`}
+        className="flex gap-1"
+      >
+        {[1, 2, 3, 4].map((i) => (
+          <span
+            key={i}
+            className={cn(
+              'h-1 flex-1 rounded-full transition-colors',
+              i <= strength.score ? colors[strength.score] : 'bg-neutral-200',
+            )}
+          />
+        ))}
+      </div>
+      <p className={cn('text-[11px] font-semibold', textColors[strength.score])}>
+        {strength.label}
+        {strength.hint && (
+          <span className="ml-1 font-normal text-neutral-500">· {strength.hint}</span>
+        )}
+      </p>
     </div>
   )
 }
@@ -505,10 +571,19 @@ function Stepper({ step }: { step: Step }) {
   ]
   const activeIdx = steps.findIndex((s) => s.id === step)
   return (
-    <div className="flex items-center justify-center gap-2">
+    <div
+      role="progressbar"
+      aria-valuemin={1}
+      aria-valuemax={steps.length}
+      aria-valuenow={activeIdx + 1}
+      aria-valuetext={`Paso ${activeIdx + 1} de ${steps.length}: ${steps[activeIdx]?.label ?? ''}`}
+      aria-label="Progreso del registro"
+      className="flex items-center justify-center gap-2"
+    >
       {steps.map((s, i) => (
         <div key={s.id} className="flex items-center gap-2">
           <div
+            aria-current={i === activeIdx ? 'step' : undefined}
             className={cn(
               'flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-widest',
               i < activeIdx
@@ -518,11 +593,12 @@ function Stepper({ step }: { step: Step }) {
                   : 'bg-white text-neutral-400 ring-1 ring-neutral-200',
             )}
           >
-            {i < activeIdx ? <CheckCircle2 size={11} /> : <span>{i + 1}</span>}
+            {i < activeIdx ? <CheckCircle2 size={11} aria-hidden="true" /> : <span>{i + 1}</span>}
             {s.label}
           </div>
           {i < steps.length - 1 && (
             <span
+              aria-hidden="true"
               className={cn(
                 'h-0.5 w-6 rounded',
                 i < activeIdx ? 'bg-status-success' : 'bg-neutral-200',

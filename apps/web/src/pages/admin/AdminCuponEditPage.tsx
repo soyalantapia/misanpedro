@@ -285,7 +285,7 @@ export function AdminCuponEditPage() {
             ))}
           </div>
           {/* Custom percentage */}
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-[11px] text-neutral-400">Otro:</span>
             <div className="relative">
               <input
@@ -303,7 +303,15 @@ export function AdminCuponEditPage() {
               />
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400">%</span>
             </div>
+            {(form.porcentaje < 5 || form.porcentaje > 50) && (
+              <span className="text-[11px] font-semibold text-status-warning-fg">
+                {form.porcentaje < 5
+                  ? '⚠ Muy bajo — los vecinos pueden no notarlo'
+                  : '⚠ Muy alto — revisá que sea viable para tu margen'}
+              </span>
+            )}
           </div>
+          <p className="mt-1 text-[11px] text-neutral-400">Recomendado: entre 10% y 30%.</p>
         </div>
 
         <Field
