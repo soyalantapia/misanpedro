@@ -207,7 +207,14 @@ export const confirmRedemptionSchema = z.object({
   // las stats del comercio quedan contaminadas (canje cuenta pero ahorro
   // e ingresos=0). Mejor forzar a que lo ingrese — son 2 segundos extras
   // de typing y la data del comercio queda limpia.
-  montoTicket: z.number().positive('El monto del ticket es obligatorio'),
+  // Tope máximo $10M: el frontend ya lo valida (AdminConfirmarCanjePage), pero
+  // el backend es la fuente de verdad — sin este .max() un request directo al
+  // API (o un typo de ceros) registra montos absurdos que inflan las métricas
+  // del comercio (ingresos/ahorro). Audit v11: encontrado probando $999.999.999.
+  montoTicket: z
+    .number()
+    .positive('El monto del ticket es obligatorio')
+    .max(10_000_000, 'El monto parece demasiado alto — revisalo'),
 })
 
 // ─── Merchant edit ────────────────────────────────────────────────────
