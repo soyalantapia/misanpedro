@@ -282,6 +282,12 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
           onConfirm={
             okActivationId ? () => navigate(`/admin/canje/${okActivationId}`) : undefined
           }
+          onRetry={() => {
+            // C2: tras un QR inválido/ya canjeado, re-arrancar la cámara para
+            // escanear de nuevo sin tener que cambiar a modo manual y volver.
+            setScannedPayload(null)
+            setScanState('starting')
+          }}
         />
       )}
     </div>

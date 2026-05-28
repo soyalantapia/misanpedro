@@ -15,13 +15,21 @@ import {
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { cn } from '@/lib/cn'
+import { SUPPORT_EMAIL } from '@/lib/tenant'
 import { NotificationsBell } from '@/components/NotificationsBell'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useState } from 'react'
 
-const SUPPORT_WHATSAPP = (import.meta.env.VITE_SUPPORT_WHATSAPP as string) ?? '5493329000000'
+// C3: el placeholder (…000000) no es un número real. Normalizamos a dígitos y,
+// si el env no está seteado o sigue siendo el placeholder, derivamos el soporte
+// al email en vez de mandar al comercio a un WhatsApp muerto.
+const SUPPORT_WHATSAPP = ((import.meta.env.VITE_SUPPORT_WHATSAPP as string) ?? '').replace(/\D/g, '')
+const SUPPORT_WA_AVAILABLE = SUPPORT_WHATSAPP.length > 0 && SUPPORT_WHATSAPP !== '5493329000000'
 const SUPPORT_WA_LINK = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
   'Hola, soy comercio adherido a Mi San Pedro y necesito ayuda.',
+)}`
+const SUPPORT_EMAIL_LINK = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+  'Soporte comercio Mi San Pedro',
 )}`
 
 // F13 glosario: del lado del comercio usamos "Descuentos" (lo que crea).
@@ -42,6 +50,11 @@ export function MerchantShell() {
   const { session } = sessionState
   const navigate = useNavigate()
   const localMerchant = useMerchant(session?.merchantId)
+  // N7: confirmación antes de logout para evitar mistap en mobile (el icono de
+  // salida es un círculo chico en el header, sin label visible). Declarado acá
+  // arriba (antes de los returns condicionales de abajo) para no violar las
+  // Rules of Hooks de React — C1 audit v5.
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   // Si en cualquier momento se pierde la sesión (refresh token falló, etc.),
   // el cliente HTTP dispara `msp:session-expired`. Limpiamos sesión local y
@@ -82,11 +95,6 @@ export function MerchantShell() {
       </div>
     )
   }
-
-  // N7: confirmación antes de logout para evitar mistap en mobile (el icono
-  // de salida es un círculo chico en el header, sin label visible — antes
-  // tocarlo por accidente te sacaba sin warning).
-  const [confirmLogout, setConfirmLogout] = useState(false)
 
   function handleLogout() {
     merchantAuth.logout()
@@ -145,12 +153,12 @@ export function MerchantShell() {
         </nav>
         <div className="mt-auto flex flex-col gap-1 p-3">
           <a
-            href={SUPPORT_WA_LINK}
-            target="_blank"
+            href={SUPPORT_WA_AVAILABLE ? SUPPORT_WA_LINK : SUPPORT_EMAIL_LINK}
+            target={SUPPORT_WA_AVAILABLE ? '_blank' : undefined}
             rel="noreferrer noopener"
             className="flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold text-neutral-500 hover:bg-status-success-bg/60 hover:text-status-success-fg"
           >
-            <HelpCircle size={14} /> Soporte por WhatsApp
+            <HelpCircle size={14} /> {SUPPORT_WA_AVAILABLE ? 'Soporte por WhatsApp' : 'Soporte por email'}
           </a>
           <Link
             to="/legal/terminos"
