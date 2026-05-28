@@ -138,6 +138,21 @@ export function DescuentosPage() {
     })
   }, [deferredSearch, categoria, merchants, COUPONS])
 
+  // V4: empty state global (sin merchants ni cupones visibles) para ocultar
+  // search/toggle/geo/categorías. Declarado ANTES del early return de loading
+  // para no violar las Rules of Hooks — el useMemo debe ejecutarse en TODOS los
+  // renders, no solo cuando ya hay datos. (Bug detectado corriendo contra el API
+  // real: con la DB sin seed local, el render loading cortaba antes de este hook
+  // y el siguiente render lo agregaba → "change in the order of Hooks" → crash.)
+  const visibleCouponsCount = useMemo(
+    () =>
+      COUPONS.filter(
+        (c) => c.estado === 'activo' && !!getMerchantById(c.merchantId),
+      ).length,
+    [COUPONS, getMerchantById],
+  )
+  const isGlobalEmpty = merchants.length === 0 && visibleCouponsCount === 0
+
   const isLoading = apiMerchantsRes.loading || apiCouponsRes.loading
 
   if (isLoading && localCoupons.length === 0) {
@@ -157,19 +172,6 @@ export function DescuentosPage() {
       </div>
     )
   }
-
-  // V4: detectamos empty state global (sin merchants y sin cupones visibles)
-  // para ocultar search/toggle/geo/categorías → no mostramos controles que
-  // no se pueden usar todavía. Mejora la primera impresión cuando aún no
-  // hay comercios cargados en la ciudad.
-  const visibleCouponsCount = useMemo(
-    () =>
-      COUPONS.filter(
-        (c) => c.estado === 'activo' && !!getMerchantById(c.merchantId),
-      ).length,
-    [COUPONS, getMerchantById],
-  )
-  const isGlobalEmpty = merchants.length === 0 && visibleCouponsCount === 0
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
