@@ -27,8 +27,8 @@ function generateTotpCode(secret: string): string {
 }
 
 const API = 'http://localhost:3002'
-const EMAIL = 'alan@cuponcito.app'
-const PASSWORD = 'alan-cuponcito-2026!'
+const EMAIL = 'alan@misanpedro.app'
+const PASSWORD = 'alan-misanpedro-2026!'
 
 async function main() {
   console.log('\n=== Demo E2E del Owner flow ===\n')

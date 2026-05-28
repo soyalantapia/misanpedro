@@ -7,7 +7,7 @@
 process.env.NODE_ENV = process.env.NODE_ENV ?? 'test'
 process.env.PORT = process.env.PORT ?? '3001'
 process.env.MONGODB_URI =
-  process.env.MONGODB_URI ?? 'mongodb://localhost:27017/cuponcito-test'
+  process.env.MONGODB_URI ?? 'mongodb://localhost:27017/misanpedro-test'
 process.env.JWT_SECRET =
   process.env.JWT_SECRET ?? 'test-jwt-secret-32-chars-minimum-padding-padding'
 process.env.JWT_REFRESH_SECRET =

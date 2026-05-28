@@ -76,7 +76,7 @@ ownerRoutes.post('/auth/login', async (c) => {
   if (env.OWNER_2FA_REQUIRED) {
     if (!owner.totpEnabled || !owner.totpSecret) {
       const secret = generateTotpSecret()
-      const uri = buildTotpUri({ email: owner.email, secret, issuer: 'Cuponcito' })
+      const uri = buildTotpUri({ email: owner.email, secret, issuer: 'Mi San Pedro' })
       owner.totpSecret = secret
       await owner.save()
       return c.json({

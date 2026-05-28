@@ -5,7 +5,7 @@ export const tenantRoutes = new Hono()
 
 /**
  * Endpoint público (sin auth) que devuelve la config de un tenant.
- * El frontend lo consume al detectar el subdomain (sanpedro.cuponcito.app)
+ * El frontend lo consume al detectar el subdomain (sanpedro.misanpedro.app)
  * para aplicar branding (logo, colores, nombre).
  *
  * NO devuelve datos sensibles. Es público porque el subdomain ya es público.

@@ -11,7 +11,7 @@ import { generateSecret, generateURI, verifySync } from 'otplib'
  * Defaults: SHA1, 6 dígitos, 30s, ±1 ventana de tolerancia (~30s drift).
  */
 
-const DEFAULT_ISSUER = 'Cuponcito'
+const DEFAULT_ISSUER = 'Mi San Pedro'
 
 /**
  * Genera un secret base32 para TOTP. Se guarda en Owner.totpSecret y se
@@ -25,7 +25,7 @@ export function generateTotpSecret(): string {
  * Construye el otpauth:// URI que se codifica como QR.
  * El usuario escanea el QR y su app guarda el secret.
  *
- * Ej: otpauth://totp/Cuponcito:hola@misanpedro.app?secret=XXX&issuer=Cuponcito
+ * Ej: otpauth://totp/Mi%20San%20Pedro:hola@misanpedro.app?secret=XXX&issuer=Mi%20San%20Pedro
  */
 export function buildTotpUri(opts: {
   email: string

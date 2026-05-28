@@ -280,7 +280,7 @@ export async function sendOwnerNewAppNotice(input: {
     html: wrap(
       `Nueva app: ${escapeHtml(input.appNombre)}`,
       `
-        <p>Acabás de crear una app nueva en Cuponcito:</p>
+        <p>Acabás de crear una app nueva en Mi San Pedro:</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
           <tr>
             <td style="padding:6px 0;color:#8b8589;font-size:13px">Slug</td>
@@ -292,7 +292,7 @@ export async function sendOwnerNewAppNotice(input: {
           </tr>
           <tr>
             <td style="padding:6px 0;color:#8b8589;font-size:13px">Subdomain</td>
-            <td style="padding:6px 0;font-family:monospace;font-size:13px">${escapeHtml(input.subdomain)}.cuponcito.app</td>
+            <td style="padding:6px 0;font-family:monospace;font-size:13px">${escapeHtml(input.subdomain)}.misanpedro.app</td>
           </tr>
           <tr>
             <td style="padding:6px 0;color:#8b8589;font-size:13px">Creada por</td>
@@ -301,7 +301,7 @@ export async function sendOwnerNewAppNotice(input: {
         </table>
         <h3 style="margin:24px 0 8px;font-size:15px">Próximos pasos</h3>
         <ol style="font-size:13px;color:#605a5e;padding-left:20px;line-height:1.7">
-          <li>Configurar DNS: A/CNAME para <code>${escapeHtml(input.subdomain)}.cuponcito.app</code> apuntando al deploy.</li>
+          <li>Configurar DNS: A/CNAME para <code>${escapeHtml(input.subdomain)}.misanpedro.app</code> apuntando al deploy.</li>
           <li>(Opcional) Sumar comercios pioneros desde el panel.</li>
           <li>Compartir el subdomain con el operador local.</li>
         </ol>

@@ -153,7 +153,7 @@ billingRoutes.post('/preapproval', requireMerchantAuth, async (c) => {
   })
 
   const preapproval = await createPreapproval({
-    reason: `Cuponcito · ${merchant.nombre}`,
+    reason: `Mi San Pedro · ${merchant.nombre}`,
     externalReference,
     payerEmail: user.email,
     amountARS: PLAN_AMOUNT_ARS,

@@ -4,10 +4,10 @@ import { useSyncExternalStore } from 'react'
  * Tenant resolution para la LANDING comercial.
  *
  * La landing puede operar en 2 modos:
- *   a) Marca paraguas (cuponcito.app):
+ *   a) Marca paraguas (misanpedro.app):
  *        muestra branding genérico + "Para todas las ciudades"
  *        link de signup va a app principal
- *   b) Tenant-specific (sanpedro.cuponcito.app/comercios):
+ *   b) Tenant-specific (sanpedro.misanpedro.app/comercios):
  *        muestra branding del tenant + hero copy override
  *        signup link → URL con tenant slug
  *

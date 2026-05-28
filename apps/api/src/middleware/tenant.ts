@@ -13,7 +13,7 @@ declare module 'hono' {
 /**
  * Resuelve el tenant del request en este orden:
  *   1. Header `X-Tenant-Slug: sanpedro`    (cliente explícito)
- *   2. Subdomain del Host header           (sanpedro.cuponcito.app)
+ *   2. Subdomain del Host header           (sanpedro.misanpedro.app)
  *   3. Custom domain en `customDomain`      (misanpedro.app)
  *   4. Query string `?tenant=sanpedro`     (debug/preview)
  *   5. Si nada: en development → fallback a primer App active.
@@ -95,7 +95,7 @@ function resolveTenantSlug(c: Context): string | null {
     // Si el host es un dominio de PaaS (Railway, Render, Fly, etc.) o
     // localhost, NO interpretamos el primer label como slug — porque
     // `api-production-43c52.up.railway.app` no es un tenant válido.
-    const TENANT_HOST_SUFFIXES = ['.cuponcito.app', '.misanpedro.app']
+    const TENANT_HOST_SUFFIXES = ['.misanpedro.app']
     const isTenantDomain = TENANT_HOST_SUFFIXES.some((s) => host.endsWith(s))
     if (isTenantDomain) {
       const parts = host.split('.')

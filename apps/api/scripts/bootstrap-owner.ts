@@ -2,7 +2,7 @@
  * Crea el primer Owner del SaaS.
  *
  * Uso:
- *   OWNER_EMAIL=alan@cuponcito.app \
+ *   OWNER_EMAIL=alan@misanpedro.app \
  *   OWNER_PASSWORD='mi-password-segura' \
  *   OWNER_NOMBRE='Alan Tapia' \
  *   pnpm --filter @misanpedro/api exec tsx scripts/bootstrap-owner.ts

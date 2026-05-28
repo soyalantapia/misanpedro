@@ -11,8 +11,8 @@ import { Schema, model, type InferSchemaType } from 'mongoose'
  * (ref a App) y se usa para filtrar queries por tenant.
  *
  * En el frontend, el subdomain identifica al tenant:
- *   sanpedro.cuponcito.app → slug 'sanpedro'
- *   ramallo.cuponcito.app  → slug 'ramallo'
+ *   sanpedro.misanpedro.app → slug 'sanpedro'
+ *   ramallo.misanpedro.app  → slug 'ramallo'
  */
 const appSchema = new Schema(
   {
@@ -26,7 +26,7 @@ const appSchema = new Schema(
       match: /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/,
     },
 
-    /** Nombre comercial visible: "Mi San Pedro", "Cuponcito Ramallo". */
+    /** Nombre comercial visible: "Mi San Pedro", "Mi Ramallo", etc. */
     nombre: { type: String, required: true },
 
     /** Ciudad + Provincia + País para mostrar / SEO. */
@@ -34,10 +34,10 @@ const appSchema = new Schema(
     provincia: { type: String, default: 'Buenos Aires' },
     pais: { type: String, default: 'Argentina' },
 
-    /** Subdominio dentro de cuponcito.app. Default = slug. */
+    /** Subdominio dentro de misanpedro.app. Default = slug. */
     subdomain: { type: String, required: true, unique: true, index: true },
 
-    /** Custom domain opcional (ej: misanpedro.app si el cliente lo compra). */
+    /** Custom domain opcional (ej: ramallodescuentos.com.ar si lo compra). */
     customDomain: { type: String, index: true, sparse: true, unique: true },
 
     /** Branding tenant-specific (logo, colores, hero copy override). */

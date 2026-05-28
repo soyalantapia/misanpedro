@@ -5,7 +5,7 @@ import path from 'node:path'
 
 /**
  * Owner Panel — admin del SaaS.
- * En prod: admin.cuponcito.app (subdomain reservado, NO se resuelve como tenant).
+ * En prod: admin.misanpedro.app (subdomain reservado, NO se resuelve como tenant).
  *
  * Override base con VITE_BASE=/ para deploy a dominio propio.
  */
