@@ -229,6 +229,11 @@ export function useApiWhatsappStatus() {
   return useAsync(() => api.whatsapp.status(), [])
 }
 
+/** Historial real de campañas (GET /wa/campaigns, agregado desde Mongo WaSend). */
+export function useApiWhatsappCampaigns() {
+  return useAsync(() => api.whatsapp.campaigns(), [])
+}
+
 // ─── Tipos re-export ─────────────────────────────────────────────────
 
 export type { ApiMerchant, ApiCoupon, ApiActivation }

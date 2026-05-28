@@ -14,17 +14,12 @@ import {
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useClientsForMerchant } from '@/lib/merchantQueries'
-import {
-  whatsappActions,
-  useWhatsappCampaigns,
-  useWhatsappConnection,
-} from '@/lib/whatsappStore'
 import { useToast } from '@/components/Toast'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { formatRedeemedDate } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { api, ApiError } from '@/lib/api'
-import { useApiWhatsappStatus } from '@/lib/apiQueries'
+import { useApiWhatsappStatus, useApiWhatsappCampaigns } from '@/lib/apiQueries'
 import { useWhatsappStream } from '@/lib/useWhatsappStream'
 
 const MAX_PER_MONTH = 4
@@ -73,21 +68,34 @@ export function AdminWhatsappPage() {
   const { session } = sessionState
   const merchantId = session?.merchantId ?? ''
   const merchantNombre = sessionState.apiMerchant?.nombre ?? ''
-  const connection = useWhatsappConnection(merchantId)
+  // El estado de conexión es la VERDAD del backend (GET /wa/status), no
+  // localStorage. ConnectionScreen dispara onConnected → refetch para pasar
+  // al composer cuando el QR se escanea (estado 'ready').
+  const status = useApiWhatsappStatus()
 
-  if (!connection) {
-    return <ConnectionScreen merchantId={merchantId} />
+  if (status.loading && !status.data) {
+    return (
+      <div className="grid min-h-[40svh] place-items-center" role="status" aria-live="polite">
+        <RefreshCw size={20} className="animate-spin text-accent-500" aria-hidden="true" />
+        <span className="sr-only">Cargando estado de WhatsApp…</span>
+      </div>
+    )
+  }
+
+  const connected = status.data?.status === 'ready'
+  if (!connected) {
+    return <ConnectionScreen onConnected={status.refetch} />
   }
   return (
     <ComposerScreen
       merchantId={merchantId}
       merchantNombre={merchantNombre}
-      connectedAt={connection.connectedAt}
+      onDisconnected={status.refetch}
     />
   )
 }
 
-function ConnectionScreen({ merchantId }: { merchantId: string }) {
+function ConnectionScreen({ onConnected }: { onConnected: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const toast = useToast()
   const [connecting, setConnecting] = useState(false)
@@ -116,10 +124,10 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
   useEffect(() => {
     if (wa.status === 'ready' && !wasReadyRef.current) {
       wasReadyRef.current = true
-      whatsappActions.connect(merchantId)
       toast.success('WhatsApp conectado', 'Ya podés mandar campañas masivas.')
+      onConnected()
     }
-  }, [wa.status, merchantId, toast])
+  }, [wa.status, toast, onConnected])
 
   // Renderizamos el QR real que viene del backend. Si todavía no llegó,
   // el canvas queda vacío (mostramos un placeholder textual).
@@ -139,8 +147,8 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
     try {
       const data = await api.whatsapp.status()
       if (data.status === 'ready') {
-        whatsappActions.connect(merchantId)
         toast.success('WhatsApp conectado', 'Ya podés mandar campañas masivas.')
+        onConnected()
       } else {
         toast.warning('Todavía no se conectó', 'Escaneá el QR primero desde tu WhatsApp.')
       }
@@ -246,7 +254,7 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
             )}
           </button>
           <p className="text-center text-[11px] text-neutral-400">
-            Demo: el escaneo está simulado. En producción se valida con la API de WhatsApp Business.
+            El QR y el estado de conexión se sincronizan con el servidor en tiempo real.
           </p>
         </div>
       </div>
@@ -279,31 +287,23 @@ type SendingPhase =
 function ComposerScreen({
   merchantId,
   merchantNombre,
-  connectedAt,
+  onDisconnected,
 }: {
   merchantId: string
   merchantNombre: string
-  connectedAt: string
+  onDisconnected: () => void
 }) {
   const clients = useClientsForMerchant(merchantId)
-  const campaigns = useWhatsappCampaigns()
+  const apiCampaigns = useApiWhatsappCampaigns()
   const apiStatus = useApiWhatsappStatus()
   const toast = useToast()
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
 
-  const sentThisMonth = useMemo(() => {
-    if (apiStatus.data?.quota) return apiStatus.data.quota.used
-    const startMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime()
-    return campaigns.filter(
-      (c) => c.merchantId === merchantId && new Date(c.sentAt).getTime() >= startMonth,
-    ).length
-  }, [campaigns, merchantId, apiStatus.data])
-
-  const remaining = apiStatus.data?.quota
-    ? apiStatus.data.quota.remaining
-    : Math.max(0, MAX_PER_MONTH - sentThisMonth)
+  // Cupo mensual: fuente de verdad = backend (cuenta campañas reales en Mongo).
+  const sentThisMonth = apiStatus.data?.quota?.used ?? 0
+  const remaining = apiStatus.data?.quota?.remaining ?? MAX_PER_MONTH
   const maxThisMonth = apiStatus.data?.quota?.max ?? MAX_PER_MONTH
-  const percent = Math.round((sentThisMonth / maxThisMonth) * 100)
+  const percent = maxThisMonth === 0 ? 0 : Math.round((sentThisMonth / maxThisMonth) * 100)
 
   // `nowMs` se actualiza cada 60s para que el bucket "nuevos (últimos 7 días)"
   // no quede stale cuando la tab queda abierta. Sacar Date.now() del useMemo
@@ -338,7 +338,6 @@ function ComposerScreen({
   const [confirmSend, setConfirmSend] = useState(false)
 
   const template = TEMPLATES.find((t) => t.id === templateId) ?? TEMPLATES[0]
-  const audienceItem = AUDIENCIAS.find((a) => a.id === audiencia)!
   const recipients = audienceBuckets[audiencia]
 
   const previewName = recipients[0]?.user.nombre.split(' ')[0] ?? 'vecin@'
@@ -371,13 +370,6 @@ function ComposerScreen({
     // (ver el useEffect inferior que escucha wa.campaign).
     try {
       const data = await api.whatsapp.campaign(recipientNumbers, rendered)
-      whatsappActions.send({
-        merchantId,
-        templateId,
-        audiencia: audienceItem.label,
-        rendered,
-        sentCount: data.campaign.sentCount,
-      })
       setPhase({
         kind: 'done',
         sentCount: data.campaign.sentCount,
@@ -391,7 +383,9 @@ function ComposerScreen({
         'Campaña enviada',
         `${data.campaign.sentCount} entregados${data.campaign.failedCount ? ` · ${data.campaign.failedCount} fallaron` : ''}.`,
       )
+      // Refrescamos quota e historial desde el backend (fuente de verdad).
       apiStatus.refetch()
+      apiCampaigns.refetch()
     } catch (err) {
       if (err instanceof ApiError && err.status === 429) {
         toast.error('Cupo agotado', err.message ?? 'Llegaste al límite mensual.')
@@ -433,23 +427,17 @@ function ComposerScreen({
 
   async function handleDisconnect() {
     setConfirmDisconnect(false)
-    // Limpiamos local primero para feedback inmediato. Si el API falla, el
-    // store ya quedó disconnected → próximo refresh el status del API va a
-    // estar fuera de sync, pero al menos no quedamos con sesión zombie.
-    whatsappActions.disconnect(merchantId)
     try {
       await api.whatsapp.stop()
       toast.info('WhatsApp desconectado')
     } catch (err) {
-      // El estado local ya está desconectado; informamos pero no es bloqueante
       toast.warning(
-        'Desconectado localmente',
-        err instanceof ApiError
-          ? 'El servidor no respondió: '
-            .concat(err.message)
-            .concat(' · refrescá para sincronizar.')
-          : 'No pudimos confirmar con el servidor. Refrescá para sincronizar.',
+        'No pudimos confirmar la desconexión',
+        err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
       )
+    } finally {
+      // Releemos el estado real del backend → vuelve a ConnectionScreen.
+      onDisconnected()
     }
   }
 
@@ -475,14 +463,7 @@ function ComposerScreen({
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold">WhatsApp conectado</p>
           <p className="text-[11px]">
-            Vinculado{' '}
-            {new Date(connectedAt).toLocaleString('es-AR', {
-              day: 'numeric',
-              month: 'short',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}{' '}
-            · Mantené WhatsApp Web abierto en una pestaña
+            Mantené WhatsApp Web abierto en una pestaña mientras enviás campañas
           </p>
         </div>
         <button
@@ -637,32 +618,30 @@ function ComposerScreen({
         />
       )}
 
-      {campaigns.filter((c) => c.merchantId === merchantId).length > 0 && phase.kind === 'idle' && (
+      {apiCampaigns.data && apiCampaigns.data.campaigns.length > 0 && phase.kind === 'idle' && (
         <div>
           <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
             Historial
           </p>
           <div className="flex flex-col gap-2">
-            {campaigns
-              .filter((c) => c.merchantId === merchantId)
-              .slice(0, 5)
-              .map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-card ring-1 ring-neutral-100"
-                >
-                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-status-success-bg text-status-success-fg">
-                    <Send size={14} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-bold text-neutral-900">{c.audiencia}</p>
-                    <p className="text-[11px] text-neutral-500">
-                      {formatRedeemedDate(c.sentAt)} · {c.sentCount}{' '}
-                      {c.sentCount === 1 ? 'envío' : 'envíos'} · {c.readCount} leídos
-                    </p>
-                  </div>
+            {apiCampaigns.data.campaigns.slice(0, 5).map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-card ring-1 ring-neutral-100"
+              >
+                <div className="grid h-9 w-9 place-items-center rounded-xl bg-status-success-bg text-status-success-fg">
+                  <Send size={14} />
                 </div>
-              ))}
+                <div className="flex-1 min-w-0">
+                  <p className="truncate text-sm font-bold text-neutral-900">{c.text}</p>
+                  <p className="text-[11px] text-neutral-500">
+                    {formatRedeemedDate(c.sentAt)} · {c.sentCount}{' '}
+                    {c.sentCount === 1 ? 'enviado' : 'enviados'}
+                    {c.failedCount > 0 ? ` · ${c.failedCount} fallaron` : ''}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -670,8 +649,8 @@ function ComposerScreen({
       <div className="flex items-start gap-2.5 rounded-2xl bg-status-info-bg p-4 text-status-info-fg">
         <ShieldCheck size={14} className="mt-0.5 shrink-0" />
         <p className="text-xs font-medium">
-          Demo: el envío está simulado. En producción cada mensaje pasa por la API oficial de
-          WhatsApp Business y respeta las plantillas aprobadas por Meta.
+          Los mensajes salen desde tu sesión de WhatsApp vinculada, con una pausa entre cada uno
+          para cuidar tu número. Mantené WhatsApp Web abierto durante el envío.
         </p>
       </div>
 
