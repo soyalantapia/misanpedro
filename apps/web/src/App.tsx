@@ -159,19 +159,22 @@ export default function App() {
             <Route path="legal/terminos" element={<TerminosPage />} />
             <Route path="legal/privacidad" element={<PrivacidadPage />} />
 
-            {/* Panel comercio */}
+            {/* Panel comercio — rutas SIN shell (auth/password reset) */}
             <Route path="admin/login" element={<AdminLoginPage />} />
             <Route path="admin/registro" element={<AdminSignupPage />} />
             <Route path="admin/forgot-password" element={<AdminForgotPasswordPage />} />
             <Route path="admin/reset-password" element={<AdminResetPasswordPage />} />
             <Route path="admin/canje/:activationId" element={<AdminConfirmarCanjePage />} />
-            <Route path="admin/cupones/nuevo" element={<AdminCuponEditPage />} />
-            <Route path="admin/cupones/:id/editar" element={<AdminCuponEditPage />} />
 
+            {/* N2: editor de cupón AHORA dentro del MerchantShell → hereda
+                el PendingPaymentBanner sticky y el bottom nav del panel.
+                Antes estaba fuera (regresión silenciosa del fix F7). */}
             <Route path="admin" element={<MerchantShell />}>
               <Route index element={<AdminDashboardPage />} />
               <Route path="validar" element={<AdminValidarPage />} />
               <Route path="cupones" element={<AdminCuponesPage />} />
+              <Route path="cupones/nuevo" element={<AdminCuponEditPage />} />
+              <Route path="cupones/:id/editar" element={<AdminCuponEditPage />} />
               <Route path="clientes" element={<AdminClientesPage />} />
               <Route path="clientes/:userId" element={<AdminClienteDetailPage />} />
               <Route path="whatsapp" element={<AdminWhatsappPage />} />

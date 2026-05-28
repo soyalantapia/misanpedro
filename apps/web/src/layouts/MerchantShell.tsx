@@ -16,16 +16,20 @@ import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { cn } from '@/lib/cn'
 import { NotificationsBell } from '@/components/NotificationsBell'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useState } from 'react'
 
 const SUPPORT_WHATSAPP = (import.meta.env.VITE_SUPPORT_WHATSAPP as string) ?? '5493329000000'
 const SUPPORT_WA_LINK = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
   'Hola, soy comercio adherido a Cuponcito y necesito ayuda.',
 )}`
 
+// F13 glosario: del lado del comercio usamos "Descuentos" (lo que crea).
+// "Cupones" queda reservado para el lado del vecino (lo que activa).
 const links = [
   { to: '/admin', label: 'Inicio', icon: LayoutDashboard, end: true },
   { to: '/admin/validar', label: 'Validar', icon: ScanLine, end: false },
-  { to: '/admin/cupones', label: 'Cupones', icon: Tag, end: false },
+  { to: '/admin/cupones', label: 'Descuentos', icon: Tag, end: false },
   { to: '/admin/clientes', label: 'Clientes', icon: Users, end: false },
   // F17: "Promos" era ambiguo (¿ver promos disponibles? ¿gestionar mis promos?).
   // "WhatsApp" describe exactamente la funcionalidad (campañas masivas).
@@ -78,6 +82,11 @@ export function MerchantShell() {
       </div>
     )
   }
+
+  // N7: confirmación antes de logout para evitar mistap en mobile (el icono
+  // de salida es un círculo chico en el header, sin label visible — antes
+  // tocarlo por accidente te sacaba sin warning).
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   function handleLogout() {
     merchantAuth.logout()
@@ -151,7 +160,7 @@ export function MerchantShell() {
           </Link>
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => setConfirmLogout(true)}
             className="flex w-full items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold text-neutral-500 hover:bg-primary-100/60 hover:text-neutral-900"
           >
             <LogOut size={14} /> Cerrar sesión
@@ -177,8 +186,9 @@ export function MerchantShell() {
           <NotificationsBell compact />
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => setConfirmLogout(true)}
             aria-label="Cerrar sesión"
+            title="Cerrar sesión"
             className="grid h-9 w-9 place-items-center rounded-full bg-primary-100 text-neutral-500 hover:text-neutral-900"
           >
             <LogOut size={14} />
@@ -195,9 +205,15 @@ export function MerchantShell() {
         <Outlet />
       </main>
 
+      {/* F9: 6 ítems en bottom nav. En mobile chico (375px) cada uno tiene
+          ~62px → tap targets apretados (borderline WCAG 44x44). Solución:
+          inset lateral reducido (`inset-x-2` en lugar de `inset-x-3`) para
+          ganar 8px, y label `text-[9px]` con icono `size={20}` para mejor
+          ratio visual/tappable. Si en el futuro la cantidad sube a 7+,
+          conviene migrar a "Más" menú. */}
       <nav
         aria-label="Navegación móvil"
-        className="fixed inset-x-3 bottom-3 z-30 rounded-3xl bg-white p-1.5 shadow-floating md:hidden"
+        className="fixed inset-x-2 bottom-3 z-30 rounded-3xl bg-white p-1 shadow-floating md:hidden"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-center justify-around">
@@ -208,19 +224,37 @@ export function MerchantShell() {
               end={end}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-2 text-[10px] font-semibold transition-all duration-200',
+                  'flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-2 text-[9px] font-semibold transition-all duration-200',
+                  // min-h asegura tap target ≥44px (WCAG 2.1 SC 2.5.5)
+                  'min-h-[44px] justify-center',
                   isActive
                     ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta'
-                    : 'text-neutral-500',
+                    : 'text-neutral-500 active:bg-primary-100',
                 )
               }
             >
               <Icon size={18} />
-              <span className="truncate">{label}</span>
+              <span className="truncate px-0.5">{label}</span>
             </NavLink>
           ))}
         </div>
       </nav>
+
+      {/* N7: ConfirmDialog para evitar mistap del icono logout en mobile.
+          Antes un toque accidental te sacaba sin warning. */}
+      <ConfirmDialog
+        open={confirmLogout}
+        title="¿Cerrar sesión?"
+        description="Vas a tener que volver a ingresar email + contraseña para entrar al panel."
+        confirmLabel="Sí, cerrar sesión"
+        cancelLabel="Volver"
+        variant="warning"
+        onCancel={() => setConfirmLogout(false)}
+        onConfirm={() => {
+          setConfirmLogout(false)
+          handleLogout()
+        }}
+      />
     </div>
   )
 }

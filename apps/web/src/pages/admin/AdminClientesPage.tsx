@@ -278,14 +278,17 @@ export function AdminClientesPage() {
 function LockedState() {
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-md flex-col items-center gap-5 px-4 pt-12 pb-8 text-center sm:px-6 sm:pt-16">
+      {/* N8: chip ARRIBA del candado para seguir la convención visual del
+          resto del panel (chip → ícono → título → descripción → CTA). Antes
+          el chip estaba debajo del candado, rompiendo la jerarquía esperada. */}
+      <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+        <Users size={12} /> Mis clientes
+      </div>
       <div className="grid h-20 w-20 place-items-center rounded-3xl bg-primary-100 text-neutral-500 shadow-card">
         <Lock size={36} />
       </div>
       <div>
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
-          <Users size={12} /> Mis clientes
-        </div>
-        <h1 className="mt-3 text-2xl font-bold leading-tight tracking-tight text-neutral-900 sm:text-3xl">
+        <h1 className="text-2xl font-bold leading-tight tracking-tight text-neutral-900 sm:text-3xl">
           Acá vas a ver a tus clientes Cuponcito
         </h1>
         <p className="mt-2 text-sm text-neutral-500">

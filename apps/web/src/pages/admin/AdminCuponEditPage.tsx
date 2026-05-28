@@ -207,13 +207,22 @@ export function AdminCuponEditPage() {
       <header className="flex flex-col gap-1.5">
         <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
           {isEdit ? <Tag size={12} /> : <Sparkles size={12} />}{' '}
-          {isEdit ? 'Editar cupón' : 'Nuevo descuento'}
+          {isEdit ? 'Editar descuento' : 'Nuevo descuento'}
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
-          {isEdit ? form.titulo || 'Editar cupón' : 'Crear un descuento'}
+          {isEdit ? form.titulo || 'Editar descuento' : 'Crear un descuento'}
         </h1>
+        {/* N9: copy condicional según merchant.estado. Antes decía siempre
+            "los vecinos lo van a ver al instante" — promesa engañosa cuando
+            el comercio está pending_payment / suspendido (los cupones no se
+            publican hasta activación). */}
         <p className="text-sm text-neutral-500">
-          Para {merchant.nombre}. Completá los datos y los vecinos lo van a ver al instante.
+          {sessionState.apiMerchant?.estado === 'pending_payment'
+            ? `Para ${merchant.nombre}. Lo guardás ahora y se publica automáticamente cuando completes el pago.`
+            : sessionState.apiMerchant?.estado === 'suspendido' ||
+                sessionState.apiMerchant?.estado === 'cancelado'
+              ? `Para ${merchant.nombre}. Tu cuenta está ${sessionState.apiMerchant.estado} — los cupones que crees no se van a publicar hasta reactivar.`
+              : `Para ${merchant.nombre}. Completá los datos y los vecinos lo van a ver al instante.`}
         </p>
       </header>
 

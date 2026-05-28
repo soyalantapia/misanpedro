@@ -133,6 +133,12 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
           onConfirm={
             okActivationId ? () => navigate(`/admin/canje/${okActivationId}`) : undefined
           }
+          onRetry={() => {
+            // N3: limpiar el código y volver a enfocar el input para que
+            // Sandra pueda tipear el siguiente sin borrar dígito por dígito.
+            setCode('')
+            inputRef.current?.focus()
+          }}
         />
       )}
 
@@ -359,20 +365,34 @@ function errorCopy(reason: string): { title: string; hint: string } {
 function ResultPanel({
   result,
   onConfirm,
+  onRetry,
 }: {
   result: NonNullable<ReturnType<typeof useValidateByCode>>
   /** Si está, muestra CTA "Confirmar canje →". Si no, solo el panel. */
   onConfirm?: () => void
+  /** N3: en caso de error, ofrece "Probar otro código" que limpia el input. */
+  onRetry?: () => void
 }) {
   if (!result.ok) {
     const copy = errorCopy(result.reason)
     return (
-      <div role="alert" className="flex items-start gap-3 rounded-3xl bg-status-error-bg p-5 text-status-error-fg ring-1 ring-status-error/20">
-        <AlertCircle size={18} className="mt-0.5 shrink-0" />
-        <div className="flex-1">
-          <p className="text-sm font-bold">{copy.title}</p>
-          <p className="mt-1 text-xs">{copy.hint}</p>
+      <div role="alert" className="flex flex-col gap-3 rounded-3xl bg-status-error-bg p-5 text-status-error-fg ring-1 ring-status-error/20">
+        <div className="flex items-start gap-3">
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-bold">{copy.title}</p>
+            <p className="mt-1 text-xs">{copy.hint}</p>
+          </div>
         </div>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="self-start rounded-full bg-white px-4 py-2 text-xs font-bold text-status-error-fg shadow-card ring-1 ring-status-error/20 transition-all hover:-translate-y-0.5"
+          >
+            Probar otro código
+          </button>
+        )}
       </div>
     )
   }

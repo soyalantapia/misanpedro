@@ -100,8 +100,15 @@ export function AdminCuponesPage() {
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
       <header className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1.5">
+          {/* F13 — Glosario consistente:
+              · "Descuento" = lo que el comercio crea (panel)
+              · "Cupón"     = lo que el vecino activa (app vecino)
+              · "Campaña"   = WhatsApp masivo
+              Antes el chip decía "MIS CUPONES" pero el h1 "Descuentos del
+              comercio" → dos palabras para lo mismo en la misma pantalla.
+              Ahora ambos dicen "Descuentos" (palabra del lado comercio). */}
           <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
-            <Tag size={12} /> Mis cupones
+            <Tag size={12} /> Mis descuentos
           </div>
           <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
             Descuentos del comercio

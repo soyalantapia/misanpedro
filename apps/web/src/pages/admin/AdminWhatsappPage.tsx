@@ -157,8 +157,11 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
       <header className="flex flex-col gap-1.5">
+        {/* N5: chip "Promociones" → "WhatsApp" para coincidir con el label
+            del nav (post-F17). Antes había dos palabras distintas para la
+            misma sección, lo cual confundía. */}
         <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
-          <MessageCircle size={12} /> Promociones
+          <MessageCircle size={12} /> WhatsApp
         </div>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
           Conectá WhatsApp Business
@@ -172,7 +175,23 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
       <div className="rounded-3xl bg-white p-6 shadow-floating ring-1 ring-neutral-100">
         <div className="flex flex-col items-center gap-4">
           <div className="rounded-3xl bg-white p-3 ring-2 ring-accent-100">
-            <canvas ref={canvasRef} role="img" aria-label="Código QR para vincular WhatsApp Business" className="block" />
+            {/* N4: si el QR todavía no llegó del backend (stream SSE),
+                mostramos un placeholder con spinner para no dejar al usuario
+                en limbo. Antes el canvas quedaba vacío sin feedback. */}
+            {!wa.qr || wa.qr === 'STUB_QR_PLACEHOLDER' ? (
+              <div
+                className="grid h-60 w-60 place-items-center text-xs text-neutral-400"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <RefreshCw size={20} className="animate-spin text-accent-500" aria-hidden="true" />
+                  <span>Generando QR…</span>
+                </div>
+              </div>
+            ) : (
+              <canvas ref={canvasRef} role="img" aria-label="Código QR para vincular WhatsApp Business" className="block" />
+            )}
           </div>
           <div className="text-center">
             <p className="text-xs font-bold uppercase tracking-widest text-accent-700">
@@ -202,9 +221,12 @@ function ConnectionScreen({ merchantId }: { merchantId: string }) {
         </p>
       </div>
 
+      {/* N6: subido 96px arriba del fondo (bottom-24) para no quedar tapado
+          por el bottom nav floating del MerchantShell (que vive en bottom-3
+          con ~68px de altura). Antes este CTA quedaba invisible en mobile. */}
       <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className="fixed inset-x-0 bottom-24 z-30 border-t border-neutral-100 bg-white shadow-floating md:bottom-0"
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">
           <button
@@ -434,8 +456,9 @@ function ComposerScreen({
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
       <header className="flex flex-col gap-1.5">
+        {/* N5: chip alineado con el nav. */}
         <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
-          <MessageCircle size={12} /> Promociones
+          <MessageCircle size={12} /> WhatsApp
         </div>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
           WhatsApp masivo

@@ -106,26 +106,11 @@ export function AdminDashboardPage() {
         </p>
       </header>
 
-      {pendingPayment && (
-        <Link
-          to="/admin/comercio"
-          role="alert"
-          className="flex items-start gap-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 transition-all hover:ring-amber-300"
-        >
-          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700">
-            <CreditCard size={16} />
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-amber-900">Suscripción pendiente de pago</p>
-            {/* F14: CTA accionable, no consulta pasiva. */}
-            <p className="mt-0.5 text-xs text-amber-700">
-              Mientras no completes el pago, tu comercio NO es visible para los vecinos.
-              <span className="ml-1 font-bold underline-offset-2">Tocá para pagar.</span>
-            </p>
-          </div>
-          <ArrowRight size={14} className="mt-1 shrink-0 text-amber-600" />
-        </Link>
-      )}
+      {/* N1: card amarillo eliminado — el PendingPaymentBanner sticky-top del
+          MerchantShell ya muestra el aviso en TODAS las pantallas del admin,
+          incluyendo este Dashboard. Tener AMBOS resulta saturador (3 avisos
+          del mismo mensaje en una pantalla: sticky + card + Acción rápida).
+          La Acción rápida violeta de abajo ya cumple como CTA accionable. */}
 
       <section className="grid grid-cols-3 gap-2.5">
         <Kpi label="Canjes hoy" value={kpis.hoy} />
