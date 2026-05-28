@@ -77,8 +77,35 @@ export const merchantAuth = {
       }))
       return { ok: true }
     } catch (apiErr) {
-      if (apiErr instanceof ApiError && (apiErr.status === 401 || apiErr.status === 403)) {
+      if (apiErr instanceof ApiError && apiErr.status === 401) {
         return { ok: false, error: 'Email o contraseña incorrectos. Verificá los datos e intentá de nuevo.' }
+      }
+      // 403 → backend devuelve esto cuando el comercio está suspendido o
+      // cancelado (no es problema de credenciales). Mostrar mensaje específico
+      // para que Sandra NO pierda tiempo reseteando password.
+      if (apiErr instanceof ApiError && apiErr.status === 403) {
+        const estado = (apiErr.payload?.estado ?? '').toString().toLowerCase()
+        if (estado === 'suspendido') {
+          return {
+            ok: false,
+            error:
+              'Tu cuenta está suspendida. Escribinos a soporte para reactivarla.',
+          }
+        }
+        if (estado === 'cancelado') {
+          return {
+            ok: false,
+            error:
+              'Tu cuenta fue cancelada. Si querés volver a usar Cuponcito, escribinos a soporte.',
+          }
+        }
+        // 403 sin estado conocido — fallback con mensaje claro
+        return {
+          ok: false,
+          error:
+            apiErr.message ||
+            'Tu cuenta tiene un problema de acceso. Escribinos a soporte.',
+        }
       }
       const msg = (apiErr as Error)?.message ?? ''
       const isNetwork = /fetch|network|connect/i.test(msg)

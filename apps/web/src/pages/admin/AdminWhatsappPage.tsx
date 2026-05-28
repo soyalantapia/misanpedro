@@ -29,6 +29,19 @@ import { useWhatsappStream } from '@/lib/useWhatsappStream'
 
 const MAX_PER_MONTH = 4
 
+/**
+ * Convierte "YYYY-MM-DD" a "30 de junio" para el mensaje de WhatsApp.
+ * Si la fecha es inválida o vacía, devuelve string vacío (el guard de
+ * "Montar campaña" se encarga de bloquear envío).
+ */
+function formatVigenciaDate(iso: string): string {
+  if (!iso) return ''
+  // Anchor T12 evita el bug de timezone (mismo patrón que formatBirthdate).
+  const d = new Date(`${iso}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
+}
+
 const TEMPLATES = [
   {
     id: 'tpl-promo',
@@ -237,7 +250,8 @@ type SendingPhase =
       kind: 'done'
       sentCount: number
       deliveredCount: number
-      readCount: number
+      /** null = todavía no podemos medir (sin WhatsApp Business API oficial). */
+      readCount: number | null
     }
 
 function ComposerScreen({
@@ -290,11 +304,14 @@ function ComposerScreen({
   const [audiencia, setAudiencia] = useState<AudienciaId>('todos')
   const [templateId, setTemplateId] = useState<string>(TEMPLATES[0].id)
   const [porcentaje, setPorcentaje] = useState('20')
-  const [vigencia, setVigencia] = useState(() => {
+  // WA06: vigencia ahora es un date input (YYYY-MM-DD) en lugar de texto libre.
+  // Default: hoy + 14 días. Se formatea legible para el preview/envío.
+  const [vigenciaDate, setVigenciaDate] = useState(() => {
     const d = new Date()
     d.setDate(d.getDate() + 14)
-    return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
+    return d.toISOString().slice(0, 10)
   })
+  const vigencia = formatVigenciaDate(vigenciaDate)
   const [phase, setPhase] = useState<SendingPhase>({ kind: 'idle' })
   const [confirmSend, setConfirmSend] = useState(false)
 
@@ -343,7 +360,10 @@ function ComposerScreen({
         kind: 'done',
         sentCount: data.campaign.sentCount,
         deliveredCount: data.campaign.sentCount,
-        readCount: Math.round(data.campaign.sentCount * 0.7),
+        // readCount NO se mide hoy. Cuando se integre la WhatsApp Business API
+        // oficial de Meta, vamos a recibir read receipts vía webhook. Hasta
+        // entonces NO inventamos un número — mejor mostrar "—" que mentir.
+        readCount: null,
       })
       toast.success(
         'Campaña enviada',
@@ -389,10 +409,26 @@ function ComposerScreen({
     })
   }, [wa.campaign])
 
-  function handleDisconnect() {
-    whatsappActions.disconnect(merchantId)
-    toast.info('WhatsApp desconectado')
+  async function handleDisconnect() {
     setConfirmDisconnect(false)
+    // Limpiamos local primero para feedback inmediato. Si el API falla, el
+    // store ya quedó disconnected → próximo refresh el status del API va a
+    // estar fuera de sync, pero al menos no quedamos con sesión zombie.
+    whatsappActions.disconnect(merchantId)
+    try {
+      await api.whatsapp.stop()
+      toast.info('WhatsApp desconectado')
+    } catch (err) {
+      // El estado local ya está desconectado; informamos pero no es bloqueante
+      toast.warning(
+        'Desconectado localmente',
+        err instanceof ApiError
+          ? 'El servidor no respondió: '
+            .concat(err.message)
+            .concat(' · refrescá para sincronizar.')
+          : 'No pudimos confirmar con el servidor. Refrescá para sincronizar.',
+      )
+    }
   }
 
   return (
@@ -536,14 +572,15 @@ function ComposerScreen({
             }
           />
           <Field
-            label="Vigencia"
+            label="Vigencia hasta"
             input={
               <input
-                type="text"
-                value={vigencia}
-                onChange={(e) => setVigencia(e.target.value)}
-                placeholder="Ej: 30 de junio"
+                type="date"
+                value={vigenciaDate}
+                onChange={(e) => setVigenciaDate(e.target.value)}
+                min={new Date().toISOString().slice(0, 10)}
                 className={inputCls}
+                aria-label="Fecha hasta la que vale el descuento"
               />
             }
           />
@@ -624,7 +661,12 @@ function ComposerScreen({
             <button
               type="button"
               onClick={() => setConfirmSend(true)}
-              disabled={remaining === 0 || recipients.length === 0}
+              disabled={
+                remaining === 0 ||
+                recipients.length === 0 ||
+                porcentaje.trim().length === 0 ||
+                vigencia.trim().length === 0
+              }
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5 hover:from-accent-500 hover:to-accent-700 active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send size={16} />
@@ -632,7 +674,11 @@ function ComposerScreen({
                 ? 'Cupo del mes agotado'
                 : recipients.length === 0
                   ? 'Sin destinatarios'
-                  : `Montar campaña ahora · ${recipients.length} ${recipients.length === 1 ? 'cliente' : 'clientes'}`}
+                  : porcentaje.trim().length === 0
+                    ? 'Completá el % de descuento'
+                    : vigencia.trim().length === 0
+                      ? 'Completá la vigencia'
+                      : `Montar campaña ahora · ${recipients.length} ${recipients.length === 1 ? 'cliente' : 'clientes'}`}
             </button>
             <Link
               to="/admin"
@@ -709,7 +755,7 @@ function SendingDoneSummary({
 }: {
   sentCount: number
   deliveredCount: number
-  readCount: number
+  readCount: number | null
   onReset: () => void
 }) {
   return (
@@ -726,7 +772,11 @@ function SendingDoneSummary({
       <div className="grid grid-cols-3 gap-2">
         <SmallStat label="Enviados" value={sentCount} />
         <SmallStat label="Entregados" value={deliveredCount} />
-        <SmallStat label="Leídos" value={readCount} />
+        <SmallStat
+          label="Leídos"
+          value={readCount}
+          tooltip="Disponible cuando se integre la WhatsApp Business API oficial"
+        />
       </div>
       <button
         type="button"
@@ -739,10 +789,18 @@ function SendingDoneSummary({
   )
 }
 
-function SmallStat({ label, value }: { label: string; value: number }) {
+function SmallStat({
+  label,
+  value,
+  tooltip,
+}: {
+  label: string
+  value: number | null
+  tooltip?: string
+}) {
   return (
-    <div className="rounded-xl bg-white/60 p-2 text-center">
-      <p className="text-lg font-bold tabular-nums">{value}</p>
+    <div className="rounded-xl bg-white/60 p-2 text-center" title={tooltip}>
+      <p className="text-lg font-bold tabular-nums">{value ?? '—'}</p>
       <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">{label}</p>
     </div>
   )

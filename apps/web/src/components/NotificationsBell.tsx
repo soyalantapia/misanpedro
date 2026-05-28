@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Bell, ScanLine, Tag, X } from 'lucide-react'
 import { useMerchantNotifications, type MerchantNotifEvent } from '@/lib/useMerchantNotifications'
 import { useNavigate } from 'react-router-dom'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 function timeAgo(ts: number) {
   const seconds = Math.floor((Date.now() - ts) / 1000)
@@ -25,6 +26,7 @@ function eventLine(e: MerchantNotifEvent) {
 export function NotificationsBell({ compact = false }: { compact?: boolean }) {
   const { events, unread, markAllRead, clearAll } = useMerchantNotifications()
   const [open, setOpen] = useState(false)
+  const [confirmClear, setConfirmClear] = useState(false)
   const ref = useRef<HTMLDivElement | null>(null)
   const navigate = useNavigate()
 
@@ -76,7 +78,7 @@ export function NotificationsBell({ compact = false }: { compact?: boolean }) {
               {events.length > 0 && (
                 <button
                   type="button"
-                  onClick={clearAll}
+                  onClick={() => setConfirmClear(true)}
                   className="text-[11px] font-semibold text-neutral-400 hover:text-neutral-700"
                 >
                   Limpiar
@@ -141,6 +143,20 @@ export function NotificationsBell({ compact = false }: { compact?: boolean }) {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmClear}
+        title={`¿Limpiar ${events.length} ${events.length === 1 ? 'notificación' : 'notificaciones'}?`}
+        description="Vas a perder el historial de actividad reciente. Esto no se puede deshacer."
+        confirmLabel="Sí, limpiar"
+        cancelLabel="Volver"
+        variant="warning"
+        onCancel={() => setConfirmClear(false)}
+        onConfirm={() => {
+          clearAll()
+          setConfirmClear(false)
+        }}
+      />
     </div>
   )
 }

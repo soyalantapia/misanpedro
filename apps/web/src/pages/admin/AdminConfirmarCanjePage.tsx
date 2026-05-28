@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, CheckCircle2, X } from 'lucide-react'
+import { ChevronLeft, CheckCircle2 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { confirmRedemption } from '@/lib/merchantQueries'
 import { useActivation, useUserById } from '@/lib/stores'
@@ -75,6 +75,15 @@ export function AdminConfirmarCanjePage() {
       )
       return
     }
+    // Cap razonable de plausibilidad: un ticket de >$10M ARS en un comercio
+    // de barrio casi seguro es un typo. Bloqueamos para no contaminar LTV.
+    if (monto_n > 10_000_000) {
+      toast.error(
+        'Monto demasiado alto',
+        '¿Seguro que el ticket es de más de $10.000.000? Revisá el número.',
+      )
+      return
+    }
     setSubmitting(true)
 
     if (view.source === 'api') {
@@ -116,7 +125,7 @@ export function AdminConfirmarCanjePage() {
         to="/admin/validar"
         className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-neutral-500 hover:text-neutral-900"
       >
-        <ChevronLeft size={16} /> Cancelar
+        <ChevronLeft size={16} /> Volver a Validar
       </Link>
 
       <header className="flex flex-col gap-1.5">
@@ -159,8 +168,13 @@ export function AdminConfirmarCanjePage() {
             type="text"
             inputMode="numeric"
             value={monto}
-            onChange={(e) => setMonto(e.target.value.replace(/\D/g, ''))}
+            onChange={(e) => {
+              // Cap a 8 dígitos (max 99.999.999 ARS) para evitar typos de zeros
+              const cleaned = e.target.value.replace(/\D/g, '').slice(0, 8)
+              setMonto(cleaned)
+            }}
             placeholder="0"
+            maxLength={8}
             className="w-full rounded-2xl bg-white py-3.5 pl-8 pr-4 text-sm text-neutral-900 shadow-card ring-1 ring-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400"
           />
         </div>
@@ -181,10 +195,10 @@ export function AdminConfirmarCanjePage() {
         <div className="mx-auto flex w-full max-w-2xl items-stretch gap-2 px-4 py-3 sm:px-6">
           <Link
             to="/admin/validar"
-            aria-label="Cancelar"
-            className="flex shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-status-error-bg px-4 py-3.5 text-sm font-bold text-status-error-fg ring-1 ring-status-error/20 transition-all hover:-translate-y-0.5 hover:bg-status-error/10"
+            aria-label="Volver a Validar"
+            className="flex shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-primary-100 px-4 py-3.5 text-sm font-bold text-neutral-700 ring-1 ring-neutral-200 transition-all hover:-translate-y-0.5 hover:bg-primary-200"
           >
-            <X size={16} /> Cancelar
+            <ChevronLeft size={16} /> Volver
           </Link>
           <button
             type="button"
