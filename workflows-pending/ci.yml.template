@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancelar workflows en curso si llega un push nuevo a la misma branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: typecheck · lint · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Typecheck en TODO el monorepo (web + api + owner + landing + shared)
+      - name: Typecheck (all workspaces)
+        run: pnpm -r typecheck
+
+      # Lint web — señal informativa, NO bloquea merge mientras se limpia
+      # tech-debt acumulada (~60 errores `any` y rules-of-hooks legacy).
+      # Quitar `continue-on-error: true` cuando todos esos warnings estén
+      # resueltos (objetivo: primer mes post-launch).
+      - name: Lint web (informativo)
+        run: pnpm --filter @misanpedro/web lint
+        continue-on-error: true
+
+      # Tests Vitest — web (helpers/validations) + api (jwt + mp signature)
+      - name: Tests web
+        run: pnpm --filter @misanpedro/web test
+
+      - name: Tests api
+        run: pnpm --filter @misanpedro/api test
+
+      # Build de todo: si rompe build, no llega a prod
+      - name: Build all
+        run: pnpm -r build
