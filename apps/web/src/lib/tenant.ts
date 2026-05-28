@@ -5,8 +5,8 @@ import { useSyncExternalStore } from 'react'
  *
  * Orden de resolución del slug:
  *   1. Query string ?tenant=  (override manual para preview)
- *   2. localStorage 'cuponcito.tenant.slug' (selección previa)
- *   3. Subdomain del host: sanpedro.cuponcito.app → 'sanpedro'
+ *   2. localStorage 'misanpedro.tenant.slug' (selección previa)
+ *   3. Subdomain del host: ramallo.misanpedro.app → 'ramallo'
  *   4. Variable build VITE_TENANT_SLUG (deploy single-tenant)
  *   5. null → muestra selector de ciudades
  *
@@ -16,17 +16,15 @@ import { useSyncExternalStore } from 'react'
 
 const RESERVED_SUBDOMAINS = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios'])
 
-const STORAGE_KEY = 'cuponcito.tenant.slug'
+const STORAGE_KEY = 'misanpedro.tenant.slug'
 
 /**
  * Email de soporte mostrado en footers y CTAs de ayuda.
  * Se puede sobrescribir con VITE_SUPPORT_EMAIL en build time.
- * Default: `soporte@cuponcito.app` (alineado con la marca paraguas; antes
- * estaba hardcodeado a `misanpedro.app` lo cual era inconsistente con el
- * branding "Cuponcito" del header).
+ * Default: `soporte@misanpedro.app` (marca productiva del proyecto).
  */
 export const SUPPORT_EMAIL =
-  (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined) ?? 'soporte@cuponcito.app'
+  (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined) ?? 'soporte@misanpedro.app'
 
 export type TenantConfig = {
   slug: string
@@ -134,7 +132,7 @@ function detectInitialSlug(): string | null {
   //    hosts el primer label no es un tenant slug válido (sería 'soyalantapia',
   //    'vercel', etc.) y cae a la fallback.
   const host = window.location.hostname
-  const TENANT_HOSTS = ['cuponcito.app', 'misanpedro.app']
+  const TENANT_HOSTS = ['misanpedro.app']
   const isTenantHost = TENANT_HOSTS.some(
     (h) => host === h || host.endsWith(`.${h}`),
   )
@@ -150,10 +148,10 @@ function detectInitialSlug(): string | null {
   const buildTime = import.meta.env.VITE_TENANT_SLUG as string | undefined
   if (buildTime) return buildTime
 
-  // 5. Default para deploys "single-tenant" (ej. GH Pages con el producto
-  //    Mi San Pedro): apuntamos al tenant 'sanpedro' por compatibilidad.
-  //    Cuando se compre cuponcito.app y se sirvan subdominios reales, este
-  //    fallback se vuelve irrelevante.
+  // 5. Default para deploys "single-tenant" (Mi San Pedro):
+  //    apuntamos al tenant 'sanpedro' por compatibilidad. Cuando se sirvan
+  //    múltiples ciudades vía subdominios reales, este fallback aplica sólo
+  //    al deploy de GH Pages de la PWA principal.
   return 'sanpedro'
 }
 

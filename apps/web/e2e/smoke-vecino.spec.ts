@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Vecino · smoke E2E', () => {
-  test('home carga con branding Cuponcito y nav mobile', async ({ page }) => {
+  test('home carga con branding Mi San Pedro y nav mobile', async ({ page }) => {
     await page.goto('/')
     // Branding
-    await expect(page).toHaveTitle(/Cuponcito/)
-    await expect(page.getByText('Cuponcito', { exact: true })).toBeVisible()
+    await expect(page).toHaveTitle(/Mi San Pedro/)
+    await expect(page.getByText('Mi San Pedro', { exact: true })).toBeVisible()
     // Header
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     // Bottom nav presente con 4 items

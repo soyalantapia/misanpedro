@@ -42,7 +42,7 @@ export function TenantSelectorPage() {
         <header className="mb-10 text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-accent-700 shadow-sm ring-1 ring-accent-100">
             <MapPin size={12} />
-            Cuponcito
+            Mi San Pedro
           </div>
           <h1 className="mt-5 text-balance text-3xl font-bold leading-tight tracking-tight text-neutral-900 sm:text-4xl">
             Elegí tu ciudad
@@ -71,7 +71,7 @@ export function TenantSelectorPage() {
               <h3 className="font-bold text-neutral-900">Todavía no hay ciudades</h3>
               <p className="mt-1 max-w-sm text-sm text-neutral-500">
                 Estamos sumando comercios. Volvé pronto o seguinos para enterarte cuándo
-                Cuponcito llega a tu ciudad.
+                Mi San Pedro llega a tu ciudad.
               </p>
             </div>
           </div>

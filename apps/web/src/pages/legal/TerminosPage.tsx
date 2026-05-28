@@ -22,10 +22,9 @@ export function TerminosPage() {
       <article className="prose-sm flex flex-col gap-4 text-sm leading-relaxed text-neutral-700">
         <Section title="1. Quiénes somos · Responsable">
           <p>
-            <strong>Cuponcito</strong> es una plataforma SaaS multi-tenant de descuentos
-            vecinales. La primera implementación ("Mi San Pedro") opera en San Pedro, Provincia
-            de Buenos Aires, República Argentina, y conecta vecinos con comercios adheridos para
-            acceder a descuentos y promociones.
+            <strong>Mi San Pedro</strong> es una plataforma de descuentos vecinales que opera
+            en San Pedro, Provincia de Buenos Aires, República Argentina. Conecta vecinos con
+            comercios adheridos para acceder a descuentos y promociones.
           </p>
           <p>
             <strong>Responsable del servicio y del tratamiento de datos personales</strong> (Ley
@@ -120,7 +119,7 @@ export function TerminosPage() {
         </Section>
 
         <Section title="7. Suspensión y cancelación">
-          <p>El responsable de Cuponcito puede suspender o cancelar la cuenta de un comercio en caso de:</p>
+          <p>El responsable de Mi San Pedro puede suspender o cancelar la cuenta de un comercio en caso de:</p>
           <ul>
             <li>Falta de pago de la suscripción.</li>
             <li>Cupones no respetados o promociones engañosas.</li>
@@ -136,10 +135,10 @@ export function TerminosPage() {
 
         <Section title="8. Responsabilidad">
           <p>
-            Cuponcito es un <strong>intermediario tecnológico</strong>. La relación contractual
-            del descuento es entre el comercio y el vecino. El responsable de Cuponcito no es
-            responsable por la calidad de los productos/servicios ofrecidos por los comercios
-            adheridos.
+            Mi San Pedro es un <strong>intermediario tecnológico</strong>. La relación
+            contractual del descuento es entre el comercio y el vecino. El responsable de Mi
+            San Pedro no es responsable por la calidad de los productos/servicios ofrecidos
+            por los comercios adheridos.
           </p>
         </Section>
 
@@ -161,10 +160,9 @@ export function TerminosPage() {
 
         <Section title="10. Propiedad intelectual">
           <p>
-            La plataforma, su código, diseño, marcas (Cuponcito, Mi San Pedro y futuras
-            implementaciones por ciudad) y contenidos son propiedad del responsable identificado
-            en la sección 1 o sus licenciantes. Queda prohibida la reproducción sin autorización
-            expresa.
+            La plataforma, su código, diseño, marca "Mi San Pedro" y contenidos son propiedad
+            del responsable identificado en la sección 1 o sus licenciantes. Queda prohibida la
+            reproducción sin autorización expresa.
           </p>
         </Section>
 

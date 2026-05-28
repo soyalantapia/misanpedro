@@ -14,10 +14,10 @@ export function DnsSetupCard({
   customDomain?: string
   status: 'pending' | 'active' | 'suspended' | 'archived'
 }) {
-  const fullHostname = `${subdomain}.cuponcito.app`
+  const fullHostname = `${subdomain}.misanpedro.app`
   // En prod este target lo da Railway/Vercel. Por ahora documentamos placeholder
   // — el owner reemplaza con el target real una vez configurado el deploy.
-  const target = 'cuponcito-web-production.up.railway.app'
+  const target = 'misanpedro-web-production.up.railway.app'
 
   return (
     <article className="rounded-2xl bg-white p-6 ring-1 ring-neutral-200">
@@ -55,7 +55,7 @@ export function DnsSetupCard({
         <div className="mt-3 space-y-2">
           <CodeBlock>{`dig ${fullHostname} +short`}</CodeBlock>
           <CodeBlock>{`curl -I https://${fullHostname}`}</CodeBlock>
-          <CodeBlock>{`curl https://api.cuponcito.app/api/v1/tenant/${subdomain}/config`}</CodeBlock>
+          <CodeBlock>{`curl https://api.misanpedro.app/api/v1/tenant/${subdomain}/config`}</CodeBlock>
         </div>
       </details>
 

@@ -97,7 +97,7 @@ export function InstallPrompt() {
       </div>
       <div className="flex flex-1 flex-col gap-1">
         <p id="install-prompt-title" className="text-sm font-bold text-neutral-900">
-          Instalá Cuponcito
+          Instalá Mi San Pedro
         </p>
         {mode === 'native' ? (
           <>

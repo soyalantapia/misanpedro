@@ -68,7 +68,7 @@ export function AppDetailPage() {
               <ArrowLeft size={12} /> Volver
             </Link>
             <a
-              href={`https://${app.subdomain}.cuponcito.app`}
+              href={`https://${app.subdomain}.misanpedro.app`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-neutral-800"
@@ -94,7 +94,7 @@ export function AppDetailPage() {
             <span className="text-xs text-neutral-500">Plan {app.plan}</span>
           </div>
           <p className="mt-1 text-sm text-neutral-600">
-            <strong>{app.subdomain}.cuponcito.app</strong>
+            <strong>{app.subdomain}.misanpedro.app</strong>
             {app.customDomain && ` · custom: ${app.customDomain}`}
           </p>
           <p className="mt-0.5 text-xs text-neutral-400">Creada {fmtDate(app.createdAt)}</p>

@@ -48,10 +48,10 @@ export function ShellLayout() {
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-neutral-200 bg-white lg:flex">
         <div className="flex h-16 shrink-0 items-center gap-2 border-b border-neutral-200 px-6">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 text-white shadow">
-            <span className="text-xs font-black">c</span>
+            <span className="text-xs font-black">M</span>
           </span>
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-bold tracking-tight">Cuponcito</span>
+            <span className="text-sm font-bold tracking-tight">Mi San Pedro</span>
             <span className="text-[10px] font-semibold uppercase tracking-widest text-accent-700">
               Owner
             </span>

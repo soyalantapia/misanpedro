@@ -144,7 +144,7 @@ export function RegistroPage() {
           Creá tu cuenta para canjear
         </h1>
         <p className="text-sm text-neutral-500">
-          Solo te lo pedimos esta vez. Después usás todos los descuentos sin volver a registrarte.
+          Dos minutos, una sola vez. Después es un tap para canjear cualquier descuento.
         </p>
         <p className="mt-1 text-xs text-neutral-500">
           ¿Ya tenés cuenta?{' '}
@@ -272,7 +272,7 @@ export function RegistroPage() {
             >
               política de privacidad
             </Link>{' '}
-            de Cuponcito. Mis datos quedan protegidos por la Ley 25.326.
+            de Mi San Pedro. Mis datos quedan protegidos por la Ley 25.326.
           </span>
         </label>
         {errors.acceptedTc && (

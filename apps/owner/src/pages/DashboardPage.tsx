@@ -69,7 +69,7 @@ export function DashboardPage() {
       <PageHeader
         eyebrow="Vista general"
         title="Dashboard"
-        subtitle="KPIs cross-tenant del SaaS Cuponcito"
+        subtitle="KPIs cross-tenant de Mi San Pedro"
         actions={
           <button
             type="button"

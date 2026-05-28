@@ -100,7 +100,7 @@ export function NewAppPage() {
       <PageHeader
         eyebrow="Onboarding"
         title="Nueva app"
-        subtitle="Creá una nueva ciudad bajo Cuponcito en 3 pasos"
+        subtitle="Creá una nueva ciudad en 3 pasos"
         actions={
           <Link
             to="/apps"
@@ -222,7 +222,7 @@ function StepLocation({
       <h2 className="text-lg font-bold text-neutral-900">¿Cómo se llama y dónde vive?</h2>
       <TextField
         label="Nombre comercial"
-        hint="Lo que ven los vecinos: 'Mi San Pedro', 'Cuponcito Ramallo'"
+        hint="Lo que ven los vecinos: 'Mi San Pedro', 'Mi Ramallo', etc."
         value={form.nombre}
         onChange={(v) => update('nombre', v)}
         placeholder="Mi Ramallo"
@@ -273,11 +273,11 @@ function StepDomain({
             className="flex-1 bg-transparent py-3 pl-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
           />
           <span className="flex items-center pr-4 text-sm text-neutral-500">
-            .cuponcito.app
+            .misanpedro.app
           </span>
         </div>
         <p className="mt-1.5 text-[11px] text-neutral-500">
-          La PWA del vecino va a vivir en <strong>{form.subdomain || 'subdomain'}.cuponcito.app</strong>
+          La PWA del vecino va a vivir en <strong>{form.subdomain || 'subdomain'}.misanpedro.app</strong>
         </p>
       </div>
     </div>

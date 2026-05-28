@@ -14,7 +14,7 @@ const links = [
 
 export function AppShell() {
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Cuponcito'
+  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
   return (
     <div className="flex min-h-[100svh] flex-col bg-primary-50 text-neutral-900 md:flex-row">
       {/* Sidebar (md+) */}

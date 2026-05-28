@@ -59,7 +59,7 @@ export function AdminLoginPage() {
               <Store size={18} className="text-white" />
             </div>
             <div>
-              <p className="text-sm font-bold leading-tight text-white">Cuponcito</p>
+              <p className="text-sm font-bold leading-tight text-white">Mi San Pedro</p>
               <p className="text-[10px] font-medium uppercase tracking-widest text-white/60">
                 Panel del comercio
               </p>

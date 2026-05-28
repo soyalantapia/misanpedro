@@ -96,7 +96,7 @@ export const merchantAuth = {
           return {
             ok: false,
             error:
-              'Tu cuenta fue cancelada. Si querés volver a usar Cuponcito, escribinos a soporte.',
+              'Tu cuenta fue cancelada. Si querés volver a usar Mi San Pedro, escribinos a soporte.',
           }
         }
         // 403 sin estado conocido — fallback con mensaje claro

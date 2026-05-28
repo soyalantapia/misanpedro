@@ -176,7 +176,7 @@ export function AdminClienteDetailPage() {
             {user.nombre}
           </h1>
           <p className="text-xs text-neutral-500">
-            Cliente Cuponcito · desde {formatRedeemedDate(firstRedeemedAt)}
+            Cliente Mi San Pedro · desde {formatRedeemedDate(firstRedeemedAt)}
           </p>
         </div>
       </header>

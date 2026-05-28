@@ -8,9 +8,9 @@ export function Footer() {
         {/* Brand minimal */}
         <div className="flex items-center gap-2 font-bold tracking-tight">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 text-white">
-            <span className="text-xs font-black">m</span>
+            <span className="text-xs font-black">M</span>
           </span>
-          <span className="text-sm text-neutral-900">misanpedro</span>
+          <span className="text-sm text-neutral-900">Mi San Pedro</span>
           <span className="ml-2 text-xs text-neutral-400">
             © {year} · Hecho en San Pedro
           </span>

@@ -13,7 +13,7 @@ if (initialSlug) {
   // branding default y se re-pinta cuando llega.
   void loadTenantConfig(initialSlug).then((config) => {
     // MO03: actualizamos el <title> del browser con el nombre real del tenant
-    // (ej. "Mi San Pedro · Descuentos vecinales"). Fallback "Cuponcito".
+    // (default y fallback: "Mi San Pedro").
     if (config?.nombre) {
       document.title = `${config.nombre} · Descuentos vecinales`
     }

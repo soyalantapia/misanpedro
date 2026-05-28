@@ -36,7 +36,7 @@ export function AppsPage() {
       <PageHeader
         eyebrow="Tenants"
         title="Apps"
-        subtitle={`${apps.length} ${apps.length === 1 ? 'ciudad' : 'ciudades'} bajo Cuponcito`}
+        subtitle={`${apps.length} ${apps.length === 1 ? 'ciudad' : 'ciudades'} en operación`}
         actions={
           <Link
             to="/apps/nueva"

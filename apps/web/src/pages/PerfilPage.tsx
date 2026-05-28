@@ -200,7 +200,7 @@ export function PerfilPage() {
           </Link>
           <a
             href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
-              'Hola, necesito ayuda con mi cuenta Cuponcito.',
+              'Hola, necesito ayuda con mi cuenta de Mi San Pedro.',
             )}`}
             target="_blank"
             rel="noreferrer noopener"

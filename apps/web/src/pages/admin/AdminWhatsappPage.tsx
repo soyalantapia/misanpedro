@@ -56,7 +56,7 @@ const TEMPLATES = [
   {
     id: 'tpl-evento',
     name: 'Invitación a evento',
-    body: '{{nombre}}, este {{vigencia}} hacemos evento especial en {{comercio}} con {{porcentaje}}% off para clientes Cuponcito. Te esperamos. {{link}}',
+    body: '{{nombre}}, este {{vigencia}} hacemos evento especial en {{comercio}} con {{porcentaje}}% off para clientes de Mi San Pedro. Te esperamos. {{link}}',
   },
 ] as const
 
@@ -348,7 +348,7 @@ function ComposerScreen({
     .replace('{{comercio}}', nombreComercio)
     .replace('{{porcentaje}}', porcentaje)
     .replace('{{vigencia}}', vigencia)
-    .replace('{{link}}', 'cuponcito.app')
+    .replace('{{link}}', 'misanpedro.app')
 
   async function handleStartSend() {
     if (recipients.length === 0) {

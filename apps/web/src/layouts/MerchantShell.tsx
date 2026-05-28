@@ -21,7 +21,7 @@ import { useState } from 'react'
 
 const SUPPORT_WHATSAPP = (import.meta.env.VITE_SUPPORT_WHATSAPP as string) ?? '5493329000000'
 const SUPPORT_WA_LINK = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
-  'Hola, soy comercio adherido a Cuponcito y necesito ayuda.',
+  'Hola, soy comercio adherido a Mi San Pedro y necesito ayuda.',
 )}`
 
 // F13 glosario: del lado del comercio usamos "Descuentos" (lo que crea).

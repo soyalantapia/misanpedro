@@ -52,13 +52,13 @@ export function Nav() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
         <a
           href="/"
-          aria-label="misanpedro · inicio"
+          aria-label="Mi San Pedro · inicio"
           className="flex shrink-0 items-center gap-2 font-bold tracking-tight"
         >
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 text-white shadow-sm">
-            <span className="text-xs font-black">m</span>
+            <span className="text-xs font-black">M</span>
           </span>
-          <span className="text-base text-neutral-900">misanpedro</span>
+          <span className="text-base text-neutral-900">Mi San Pedro</span>
         </a>
 
         <nav aria-label="Principal" className="hidden gap-6 text-sm font-medium text-neutral-600 lg:flex">

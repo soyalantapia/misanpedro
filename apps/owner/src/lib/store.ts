@@ -19,7 +19,7 @@ export type AuthState = {
   owner: OwnerProfile | null
 }
 
-const STORAGE_KEY = 'cuponcito.owner.auth.v1'
+const STORAGE_KEY = 'misanpedro.owner.auth.v1'
 const EMPTY: AuthState = { access: null, refresh: null, refreshExpiresAt: null, owner: null }
 
 function load(): AuthState {

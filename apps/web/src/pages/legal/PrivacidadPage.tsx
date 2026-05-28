@@ -47,7 +47,7 @@ export function PrivacidadPage() {
               </a>
             </li>
             <li>
-              <strong>Marca comercial:</strong> Cuponcito (implementación inicial: Mi San Pedro)
+              <strong>Marca comercial:</strong> Mi San Pedro
             </li>
           </ul>
           <p className="text-xs text-neutral-500">
