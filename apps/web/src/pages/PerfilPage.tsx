@@ -18,9 +18,11 @@ import { habeasData, userApi, ApiError } from '@/lib/api'
 import { useUser, userActions, demoStoreActions } from '@/lib/stores'
 import { formatBirthdate } from '@/lib/format'
 import { useToast } from '@/components/Toast'
-import { SUPPORT_EMAIL } from '@/lib/tenant'
+import { SUPPORT_EMAIL, getSupportLink } from '@/lib/tenant'
 
-const SUPPORT_WHATSAPP = (import.meta.env.VITE_SUPPORT_WHATSAPP as string) ?? '5493329000000'
+// V1: soporte con fallback a email si el WhatsApp es placeholder o no está
+// seteado (mismo helper que usa el panel del comercio).
+const SUPPORT = getSupportLink('Hola, necesito ayuda con mi cuenta de Mi San Pedro.')
 
 export function PerfilPage() {
   const user = useUser()
@@ -199,14 +201,12 @@ export function PerfilPage() {
             <ShieldCheck size={14} className="text-neutral-400" /> Política de Privacidad
           </Link>
           <a
-            href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
-              'Hola, necesito ayuda con mi cuenta de Mi San Pedro.',
-            )}`}
-            target="_blank"
+            href={SUPPORT.href}
+            target={SUPPORT.isWhatsapp ? '_blank' : undefined}
             rel="noreferrer noopener"
             className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-primary-100"
           >
-            <Phone size={14} className="text-neutral-400" /> Soporte por WhatsApp
+            <Phone size={14} className="text-neutral-400" /> {SUPPORT.label}
           </a>
           <button
             type="button"

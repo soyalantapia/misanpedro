@@ -50,7 +50,16 @@ export function RegistroPage() {
     e.preventDefault()
     const errs = validate()
     setErrors(errs)
-    if (Object.keys(errs).length > 0) return
+    if (Object.keys(errs).length > 0) {
+      // V2: scroll al primer campo con error. En mobile el error podía quedar
+      // fuera de vista y el usuario creía que el botón no respondía. Mismo
+      // patrón que AdminCuponEditPage.
+      const firstKey = Object.keys(errs)[0]
+      document
+        .querySelector(`[data-field="${firstKey}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
 
     setSubmitting(true)
     const payload = {
@@ -161,6 +170,7 @@ export function RegistroPage() {
         <Field
           label="Nombre completo"
           required
+          fieldKey="nombre"
           icon={UserIcon}
           error={errors.nombre}
           input={
@@ -177,6 +187,7 @@ export function RegistroPage() {
         <Field
           label="DNI"
           required
+          fieldKey="dni"
           icon={IdCard}
           help="Sólo números, sin puntos"
           error={errors.dni}
@@ -196,6 +207,7 @@ export function RegistroPage() {
         <Field
           label="Email"
           required
+          fieldKey="email"
           icon={Mail}
           help="Te enviamos un código por email para iniciar sesión"
           error={errors.email}
@@ -213,6 +225,7 @@ export function RegistroPage() {
         <Field
           label="WhatsApp"
           required
+          fieldKey="whatsapp"
           icon={Phone}
           help="Formato internacional: +54 9 [código área] [número] · Ej: +54 9 3329 555444"
           error={errors.whatsapp}
@@ -231,6 +244,7 @@ export function RegistroPage() {
         <Field
           label="Fecha de nacimiento"
           required
+          fieldKey="fechaNacimiento"
           help="Tenés que ser mayor de 16"
           error={errors.fechaNacimiento}
           input={
@@ -244,7 +258,10 @@ export function RegistroPage() {
           }
         />
 
-        <label className="mt-2 flex items-start gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100">
+        <label
+          data-field="acceptedTc"
+          className="mt-2 flex items-start gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100"
+        >
           <input
             type="checkbox"
             checked={form.acceptedTc}
@@ -313,6 +330,7 @@ function Field({
   help,
   required,
   icon: Icon,
+  fieldKey,
 }: {
   label: string
   input: React.ReactNode
@@ -323,9 +341,11 @@ function Field({
   required?: boolean
   /** Icono lucide-react que se renderiza dentro del input (izquierda). */
   icon?: typeof Mail
+  /** V2: usado para el scroll-to del primer campo inválido al enviar. */
+  fieldKey?: string
 }) {
   return (
-    <label className="flex flex-col gap-1.5">
+    <label className="flex flex-col gap-1.5" data-field={fieldKey}>
       <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
         {label}
         {required && <span className="ml-1 text-status-error">*</span>}

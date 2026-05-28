@@ -71,7 +71,7 @@ export function AdminConfirmarCanjePage() {
     if (!Number.isFinite(monto_n) || monto_n <= 0) {
       toast.error(
         'Falta el monto',
-        'Ingresá el monto del ticket para que el canje quede registrado bien.',
+        'Ingresá el monto sin descuento para que el canje quede registrado bien.',
       )
       return
     }
@@ -158,7 +158,7 @@ export function AdminConfirmarCanjePage() {
 
       <label className="flex flex-col gap-1.5">
         <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
-          Monto del ticket <span className="text-status-error-fg">*</span>
+          Monto sin descuento <span className="text-status-error-fg">*</span>
         </span>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">
@@ -179,7 +179,7 @@ export function AdminConfirmarCanjePage() {
           />
         </div>
         <p className="text-[11px] text-neutral-400">
-          Necesario para registrar el canje y calcular estadísticas precisas.
+          Precio de lista antes del {view.porcentaje}% — lo usamos para calcular cuánto ahorró el cliente.
           {ahorroPreview !== null && (
             <span className="ml-1 font-bold text-status-success-fg">
               Ahorro estimado: {formatMoney(ahorroPreview)}

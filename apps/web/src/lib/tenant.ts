@@ -26,6 +26,43 @@ const STORAGE_KEY = 'misanpedro.tenant.slug'
 export const SUPPORT_EMAIL =
   (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined) ?? 'soporte@misanpedro.app'
 
+/** Número placeholder de soporte — NO es real. Si el env no se setea, el link
+ *  de WhatsApp caería en este número muerto, así que lo detectamos para hacer
+ *  fallback a email. */
+const SUPPORT_WHATSAPP_PLACEHOLDER = '5493329000000'
+const SUPPORT_WHATSAPP_DIGITS = (
+  (import.meta.env.VITE_SUPPORT_WHATSAPP as string | undefined) ?? ''
+).replace(/\D/g, '')
+
+/**
+ * Devuelve el link de soporte correcto y su label. Usa WhatsApp si hay un
+ * número real configurado; si el env no está seteado o sigue siendo el
+ * placeholder, cae a `mailto:` para no mandar al usuario a un número muerto.
+ *
+ * Compartido entre el panel del comercio (MerchantShell) y el perfil del
+ * vecino (PerfilPage) para no duplicar la lógica del placeholder.
+ */
+export function getSupportLink(
+  whatsappMessage: string,
+  emailSubject = 'Soporte Mi San Pedro',
+): { href: string; label: string; isWhatsapp: boolean } {
+  const hasWhatsapp =
+    SUPPORT_WHATSAPP_DIGITS.length > 0 &&
+    SUPPORT_WHATSAPP_DIGITS !== SUPPORT_WHATSAPP_PLACEHOLDER
+  if (hasWhatsapp) {
+    return {
+      href: `https://wa.me/${SUPPORT_WHATSAPP_DIGITS}?text=${encodeURIComponent(whatsappMessage)}`,
+      label: 'Soporte por WhatsApp',
+      isWhatsapp: true,
+    }
+  }
+  return {
+    href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(emailSubject)}`,
+    label: 'Soporte por email',
+    isWhatsapp: false,
+  }
+}
+
 export type TenantConfig = {
   slug: string
   nombre: string
