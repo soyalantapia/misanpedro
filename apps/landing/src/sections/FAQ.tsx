@@ -23,8 +23,8 @@ const FAQS = [
     a: 'Vos cobrás directo al cliente en tu caja, en efectivo, débito, crédito o como quieras. Nosotros no nos quedamos con ningún porcentaje del ticket. Sólo cobramos la mensualidad fija.',
   },
   {
-    q: '¿Funciona con WhatsApp de verdad o es un link?',
-    a: 'WhatsApp Business integrado de verdad: usás tu propio número, mandás mensajes desde la plataforma, ves quién leyó y quién respondió. No es un "compartir por WhatsApp" — es una herramienta de campaña real.',
+    q: '¿Puedo mandar campañas por WhatsApp a mis clientes?',
+    a: 'Es la próxima función que estamos integrando, con la API oficial de WhatsApp Business. Mientras tanto ya construís tu base de clientes (nombre, cumpleaños, frecuencia de visita), que queda lista para usar el día que se active.',
   },
   {
     q: '¿El precio de $25.000/mes es para siempre?',

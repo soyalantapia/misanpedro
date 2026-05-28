@@ -73,7 +73,7 @@ export function ShellLayout() {
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-4 lg:hidden">
         <Link to="/" className="flex items-center gap-2 font-bold">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 text-white">
-            <span className="text-xs font-black">c</span>
+            <span className="text-xs font-black">M</span>
           </span>
           <span>Owner</span>
         </Link>

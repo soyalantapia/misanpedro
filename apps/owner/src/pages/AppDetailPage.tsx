@@ -86,7 +86,7 @@ export function AppDetailPage() {
             background: `linear-gradient(135deg, ${app.brand?.primaryColor ?? '#695ede'}, ${app.brand?.accentColor ?? '#4239a3'})`,
           }}
         >
-          {app.ciudad?.[0]?.toUpperCase() ?? 'C'}
+          {app.ciudad?.[0]?.toUpperCase() ?? 'M'}
         </span>
         <div className="flex-1">
           <div className="flex items-center gap-2">

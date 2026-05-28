@@ -26,8 +26,8 @@ const FEATURES = [
   },
   {
     icon: MessageCircle,
-    title: 'WhatsApp Business integrado',
-    body: 'Mandá campañas desde la plataforma. Sin Meta bloqueándote.',
+    title: 'WhatsApp Business (pronto)',
+    body: 'Campañas a tus clientes desde la plataforma. Lo estamos integrando con la API oficial de Meta.',
   },
   {
     icon: Smartphone,

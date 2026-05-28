@@ -93,7 +93,7 @@ export function MerchantsPage() {
           description="Probá cambiar los filtros o sumar comercios desde el panel de cada app."
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-neutral-200">
+        <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-neutral-200">
           <table className="min-w-full text-sm">
             <thead className="bg-neutral-50 text-xs font-bold uppercase tracking-widest text-neutral-500">
               <tr>

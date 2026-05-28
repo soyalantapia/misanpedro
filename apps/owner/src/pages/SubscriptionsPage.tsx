@@ -83,7 +83,7 @@ export function SubscriptionsPage() {
       ) : subs.length === 0 ? (
         <EmptyState icon={CreditCard} title="Sin suscripciones" />
       ) : (
-        <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-neutral-200">
+        <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-neutral-200">
           <table className="min-w-full text-sm">
             <thead className="bg-neutral-50 text-xs font-bold uppercase tracking-widest text-neutral-500">
               <tr>

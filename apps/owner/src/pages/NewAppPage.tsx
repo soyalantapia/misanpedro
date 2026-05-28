@@ -308,7 +308,7 @@ function StepBrand({
               background: `linear-gradient(135deg, ${form.primaryColor}, ${form.accentColor})`,
             }}
           >
-            <span className="text-sm font-black">{(form.ciudad?.[0] ?? 'C').toUpperCase()}</span>
+            <span className="text-sm font-black">{(form.ciudad?.[0] ?? 'M').toUpperCase()}</span>
           </span>
           <div>
             <p className="font-bold text-neutral-900">{form.nombre || 'Tu app'}</p>

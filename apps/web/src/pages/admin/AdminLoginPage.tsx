@@ -81,8 +81,8 @@ export function AdminLoginPage() {
           </h1>
 
           <p className="max-w-xl text-base leading-relaxed text-white/75 sm:text-lg">
-            Validá cupones, construí tu base de clientes propia y mandá campañas
-            de WhatsApp masivos en minutos. Hasta 4 envíos por mes.
+            Validá cupones y construí tu base de clientes propia. Pronto vas a poder
+            mandar campañas de WhatsApp directo desde la plataforma.
           </p>
 
           <ul className="flex flex-col gap-2.5 pt-2">
@@ -96,7 +96,7 @@ export function AdminLoginPage() {
             </Bullet>
             <Bullet icon={MessageCircle}>
               <span className="font-semibold text-white">WhatsApp masivo</span>{' '}
-              <span className="text-white/70">vía API oficial de Meta</span>
+              <span className="text-white/70">— próximamente, vía API oficial</span>
             </Bullet>
             <Bullet icon={TrendingUp}>
               <span className="font-semibold text-white">Estadísticas reales</span>{' '}
@@ -223,7 +223,7 @@ export function AdminLoginPage() {
           </div>
 
           <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-white/60">
-            <ShieldCheck size={12} /> Cumplimiento Ley 25.326 · API oficial de WhatsApp Business
+            <ShieldCheck size={12} /> Cumplimiento Ley 25.326 · Tus datos protegidos
           </p>
         </section>
       </div>

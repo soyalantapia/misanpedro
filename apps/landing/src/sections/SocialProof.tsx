@@ -1,13 +1,25 @@
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Lock, BadgeCheck, Headphones } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
 
-const PIONEROS = [
-  { id: 'la-frutilla', name: 'Heladería La Frutilla' },
-  { id: 'la-esquina', name: 'La Esquina' },
-  { id: 'carmen-vintage', name: 'Carmen Vintage' },
-  { id: 'pampero', name: 'Vivero Pampero' },
-  { id: 'almendra', name: 'Almendra Belleza' },
-  { id: 'estacion-25', name: 'Estación 25' },
+// LA1 (audit v8): reemplazamos los "logos de pioneros" inventados por los
+// beneficios reales del programa fundador. No fabricamos clientes — la prueba
+// social verdadera la sumamos cuando haya comercios adheridos con su permiso.
+const BENEFICIOS = [
+  {
+    icon: Lock,
+    title: 'Precio congelado',
+    text: '$25.000/mes de por vida, aunque después suba para nuevos comercios.',
+  },
+  {
+    icon: BadgeCheck,
+    title: 'Sin permanencia',
+    text: 'Cancelás cuando quieras desde tu panel, sin penalidad.',
+  },
+  {
+    icon: Headphones,
+    title: 'Soporte directo',
+    text: 'Hablás con nosotros, gente de San Pedro. No con un bot.',
+  },
 ] as const
 
 export function SocialProof() {
@@ -17,26 +29,32 @@ export function SocialProof() {
         <AnimatedSection className="flex flex-col items-center gap-2 text-center">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-accent-700">
             <Sparkles size={11} />
-            Programa fundador · Primeros 20 comercios
+            Programa fundador · Primeros 20 comercios de San Pedro
           </span>
           <h2 className="text-balance text-base font-semibold leading-snug text-neutral-700 sm:text-lg">
-            Precio fundador <strong className="text-neutral-900">$25.000/mes</strong>{' '}
-            congelado de por vida
+            Sé de los primeros en sumarte y quedate con el{' '}
+            <strong className="text-neutral-900">precio fundador $25.000/mes congelado de por vida</strong>
           </h2>
         </AnimatedSection>
 
-        <AnimatedSection
-          delay={120}
-          className="mt-10 grid grid-cols-2 items-center gap-x-8 gap-y-6 sm:grid-cols-3 md:grid-cols-6"
-        >
-          {PIONEROS.map((p) => (
-            <PioneroLogo key={p.id} name={p.name} />
+        <AnimatedSection delay={120} className="mt-10 grid gap-4 sm:grid-cols-3">
+          {BENEFICIOS.map((b) => (
+            <div
+              key={b.title}
+              className="flex flex-col items-center gap-2 rounded-2xl bg-white p-5 text-center ring-1 ring-neutral-200"
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-50 text-accent-700">
+                <b.icon size={18} />
+              </span>
+              <p className="text-sm font-bold text-neutral-900">{b.title}</p>
+              <p className="text-xs leading-relaxed text-neutral-500">{b.text}</p>
+            </div>
           ))}
         </AnimatedSection>
 
         <div className="mt-8 flex flex-col items-center gap-2 text-center">
           <p className="text-xs text-neutral-500">
-            Programa cerrado al cupo 20. Después el precio sube para nuevos comercios.
+            El cupo fundador es para los primeros 20. Después el precio sube para nuevos comercios.
           </p>
           <a
             href="#precios"
@@ -47,25 +65,5 @@ export function SocialProof() {
         </div>
       </div>
     </section>
-  )
-}
-
-function PioneroLogo({ name }: { name: string }) {
-  const initials = name
-    .split(' ')
-    .filter((w) => w.length > 2)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-
-  return (
-    <div className="flex flex-col items-center gap-2 opacity-60 grayscale transition-all hover:opacity-100 hover:grayscale-0">
-      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-sm font-black text-neutral-700 ring-1 ring-neutral-200">
-        {initials.toUpperCase()}
-      </span>
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-        {name}
-      </span>
-    </div>
   )
 }

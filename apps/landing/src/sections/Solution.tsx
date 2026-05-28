@@ -11,7 +11,7 @@ export function Solution() {
             La solución
           </span>
           <h2 className="mt-3 text-balance text-4xl font-bold leading-[1.1] tracking-tight text-neutral-900 sm:text-5xl">
-            misanpedro es el contacto directo con tu cliente
+Mi San Pedro es el contacto directo con tu cliente
           </h2>
 
           <div className="mt-7 space-y-5 text-pretty text-lg leading-relaxed text-neutral-700">
