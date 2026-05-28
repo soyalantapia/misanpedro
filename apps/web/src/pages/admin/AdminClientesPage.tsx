@@ -289,7 +289,7 @@ function LockedState() {
       </div>
       <div>
         <h1 className="text-2xl font-bold leading-tight tracking-tight text-neutral-900 sm:text-3xl">
-          Acá vas a ver a tus clientes Mi San Pedro
+          Acá vas a ver a tus clientes de Mi San Pedro
         </h1>
         <p className="mt-2 text-sm text-neutral-500">
           Esta sección se desbloquea cuando valides tu primer cupón. Cada cliente que canjee en tu

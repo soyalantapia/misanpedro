@@ -202,6 +202,9 @@ merchantAuthRoutes.post('/login', loginLimiter, async (c) => {
       slug: merchantPre.slug,
       nombre: merchantPre.nombre,
       categoria: merchantPre.categoria,
+      // E1 (audit v9): incluir estado para que el panel sepa si está
+      // pending_payment al re-loguear (banner, dashboard, copy del editor).
+      estado: merchantPre.estado,
     },
   })
 })

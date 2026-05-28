@@ -802,6 +802,7 @@ function SubscriptionCard({
 }) {
   const [confirming, setConfirming] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [paying, setPaying] = useState(false)
   const toast = useToast()
 
   const estado: string = merchant.estado ?? 'activo'
@@ -810,6 +811,28 @@ function SubscriptionCard({
     : null
   const dentroArrepentimiento =
     arrepentimientoExpiraEn !== null && arrepentimientoExpiraEn.getTime() > Date.now()
+
+  // E2 (audit v9): permitir iniciar/retomar el pago desde Mi Comercio cuando el
+  // comercio está pending_payment. Antes solo se podía pagar en el signup; si
+  // abandonabas ese paso, quedabas sin forma de activarte desde el panel.
+  async function handlePay() {
+    setPaying(true)
+    try {
+      const res = await api.billing.createPreapproval()
+      if (res.ok && res.subscription?.initPoint) {
+        window.location.href = res.subscription.initPoint
+        return
+      }
+      toast.error('No se pudo iniciar el pago', 'Reintentá en un momento.')
+    } catch (err) {
+      toast.error(
+        'No se pudo iniciar el pago',
+        err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
+      )
+    } finally {
+      setPaying(false)
+    }
+  }
 
   async function handleCancel() {
     setSubmitting(true)
@@ -869,6 +892,18 @@ function SubscriptionCard({
             devolvemos el 100% del primer pago.
           </span>
         </div>
+      )}
+
+      {estado === 'pending_payment' && !confirming && (
+        <button
+          type="button"
+          onClick={handlePay}
+          disabled={paying}
+          className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-3 text-sm font-bold text-white shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60"
+        >
+          <CreditCard size={14} />
+          {paying ? 'Redirigiendo a MercadoPago…' : 'Pagar suscripción'}
+        </button>
       )}
 
       {estado === 'activo' || estado === 'pending_payment' ? (
