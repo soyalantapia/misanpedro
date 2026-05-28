@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Lock, Mail, ShieldCheck, AlertCircle } from 'lucide-react'
 import QRCode from 'qrcode'
 import { owner } from '@/lib/api'
@@ -124,7 +124,7 @@ export function LoginPage() {
             type="email"
             value={email}
             onChange={setEmail}
-            placeholder="vos@cuponcito.app"
+            placeholder="vos@misanpedro.app"
             label="Email"
             autoFocus
           />
@@ -139,6 +139,14 @@ export function LoginPage() {
           <SubmitButton submitting={submitting} disabled={!email || !password}>
             Continuar
           </SubmitButton>
+          {/* O1: link a forgot-password — antes no había recovery y un owner
+              que perdía password quedaba lockout hasta reset manual en DB. */}
+          <Link
+            to="/forgot-password"
+            className="self-center text-xs font-semibold text-neutral-500 hover:text-neutral-700"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
         </form>
       )}
 
@@ -296,11 +304,15 @@ function SubmitButton({
   disabled?: boolean
   children: React.ReactNode
 }) {
+  // O2: opacity disabled subida de 50% → 70% + cursor-not-allowed para que
+  // el botón se vea "bloqueado pero presente" en lugar de "apagado y muerto".
+  // Antes Marina llegaba al login y el botón se veía tan translucido que
+  // dudaba si estaba habilitado o roto.
   return (
     <button
       type="submit"
       disabled={disabled || submitting}
-      className="group mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent-500/40 disabled:opacity-50 disabled:hover:translate-y-0"
+      className="group mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent-500/40 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
     >
       {submitting ? 'Procesando…' : children}
       {!submitting && (

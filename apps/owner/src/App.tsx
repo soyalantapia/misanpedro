@@ -2,6 +2,8 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthLayout } from './layouts/AuthLayout'
 import { ShellLayout } from './layouts/ShellLayout'
 import { LoginPage } from './pages/LoginPage'
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { AppsPage } from './pages/AppsPage'
 import { NewAppPage } from './pages/NewAppPage'
@@ -20,6 +22,23 @@ export function App() {
           element={
             <AuthLayout>
               <LoginPage />
+            </AuthLayout>
+          }
+        />
+        {/* O1: password recovery — forgot pide email, reset cambia contraseña con token */}
+        <Route
+          path="/forgot-password"
+          element={
+            <AuthLayout>
+              <ForgotPasswordPage />
+            </AuthLayout>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <AuthLayout>
+              <ResetPasswordPage />
             </AuthLayout>
           }
         />

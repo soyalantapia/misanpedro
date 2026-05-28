@@ -149,6 +149,23 @@ export const owner = {
     })
   },
 
+  // O1: password recovery del owner.
+  // forgotPassword devuelve { ok: true } siempre (anti-enumeration).
+  // resetPassword necesita el token del email.
+  async forgotPassword(email: string) {
+    return api<{ ok: true } | { ok: false; error: string }>(
+      '/api/v1/owner/auth/forgot-password',
+      { method: 'POST', body: { email }, skipAuth: true },
+    )
+  },
+
+  async resetPassword(input: { token: string; newPassword: string }) {
+    return api<{ ok: true } | { ok: false; error: string }>(
+      '/api/v1/owner/auth/reset-password',
+      { method: 'POST', body: input, skipAuth: true },
+    )
+  },
+
   async me() {
     return api<{ ok: boolean; owner: any }>('/api/v1/owner/me')
   },

@@ -1,15 +1,25 @@
 import { Schema, model, Types, type InferSchemaType } from 'mongoose'
 
 /**
- * Token para reset de password de comercios.
+ * Token para reset de password.
  * Hash en DB, plain en email. Single-use, TTL 30 min.
+ *
+ * Cubre dos tipos de subject:
+ *   - merchantUserId: tabla MerchantUser (comerciantes)
+ *   - ownerId:        tabla Owner       (owners del SaaS)
+ *
+ * Exactly-one debe estar seteado; el route handler valida.
  */
 const passwordResetSchema = new Schema(
   {
     merchantUserId: {
       type: Types.ObjectId,
       ref: 'MerchantUser',
-      required: true,
+      index: true,
+    },
+    ownerId: {
+      type: Types.ObjectId,
+      ref: 'Owner',
       index: true,
     },
     tokenHash: { type: String, required: true, unique: true, index: true },

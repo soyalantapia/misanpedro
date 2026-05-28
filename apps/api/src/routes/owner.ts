@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { createHash, randomBytes } from 'node:crypto'
 import {
   App,
   Owner,
@@ -10,20 +11,23 @@ import {
   Activation,
   Redemption,
   Subscription,
+  PasswordReset,
 } from '@/models'
 import {
   signAccessToken,
   issueRefreshToken,
   rotateRefreshToken,
   revokeRefreshToken,
+  revokeAllForSubject,
 } from '@/services/jwt.service'
 import {
   buildTotpUri,
   generateTotpSecret,
   verifyTotpCode,
 } from '@/services/totp.service'
-import { sendOwnerNewAppNotice } from '@/services/email.service'
+import { sendOwnerNewAppNotice, sendPasswordResetLink } from '@/services/email.service'
 import { requireOwnerAuth } from '@/middleware/auth'
+import { rateLimit } from '@/middleware/security'
 import { env } from '@/env'
 
 export const ownerRoutes = new Hono()
@@ -188,6 +192,91 @@ ownerRoutes.post('/auth/refresh', async (c) => {
     refresh: rotated.token,
     refreshExpiresAt: rotated.expiresAt,
   })
+})
+
+// ─── O1: Password recovery del owner ──────────────────────────────────
+// Reusamos el modelo PasswordReset (ahora soporta ownerId | merchantUserId)
+// y el patrón de hash-en-DB + plain-en-email + single-use + TTL 30 min.
+// Sin esto el owner del SaaS queda lockout-eado si pierde su password.
+
+const OWNER_RESET_TTL_MS = 30 * 60 * 1000
+const ownerForgotLimiter = rateLimit({
+  prefix: 'owner-forgot',
+  max: 5,
+  windowMs: 60 * 60_000,
+})
+const ownerForgotSchema = z.object({ email: z.string().email().toLowerCase() })
+
+ownerRoutes.post('/auth/forgot-password', ownerForgotLimiter, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const parsed = ownerForgotSchema.safeParse(body)
+  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
+
+  const owner = await Owner.findOne({ email: parsed.data.email, enabled: true })
+  // Anti-enumeration: siempre OK aunque el email no exista
+  if (!owner) return c.json({ ok: true })
+
+  const token = randomBytes(32).toString('base64url')
+  const tokenHash = createHash('sha256').update(token).digest('hex')
+  const expiresAt = new Date(Date.now() + OWNER_RESET_TTL_MS)
+
+  await PasswordReset.deleteMany({ ownerId: owner._id })
+  await PasswordReset.create({
+    ownerId: owner._id,
+    tokenHash,
+    expiresAt,
+    requestedFromUa: c.req.header('user-agent'),
+  })
+
+  // Para el Owner panel el link va al deploy del owner panel, no al PWA.
+  // En prod (admin.misanpedro.app) usamos env.OWNER_APP_URL si está set,
+  // sino caemos a APP_URL_FRONT con prefijo /owner como convención.
+  const ownerUrl = (env as unknown as { OWNER_APP_URL?: string }).OWNER_APP_URL
+    ?? env.APP_URL_FRONT.replace(/\/?$/, '') + '/owner'
+  const resetLink = `${ownerUrl}/#/reset-password?token=${token}`
+  sendPasswordResetLink({
+    to: owner.email,
+    nombre: owner.nombre ?? owner.email.split('@')[0],
+    link: resetLink,
+  }).catch((err) => console.error('[owner-reset-email]', err))
+
+  return c.json({ ok: true })
+})
+
+const ownerResetSchema = z.object({
+  token: z.string().min(20),
+  newPassword: z.string().min(8, 'Mínimo 8 caracteres'),
+})
+
+ownerRoutes.post('/auth/reset-password', async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const parsed = ownerResetSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json({ ok: false, error: 'invalid input', issues: parsed.error.format() }, 400)
+  }
+  const tokenHash = createHash('sha256').update(parsed.data.token).digest('hex')
+  const reset = await PasswordReset.findOne({ tokenHash })
+  if (!reset || reset.usedAt) return c.json({ ok: false, error: 'token inválido' }, 401)
+  if (reset.expiresAt.getTime() < Date.now()) {
+    return c.json({ ok: false, error: 'token expirado' }, 401)
+  }
+  if (!reset.ownerId) {
+    // Token de otro subject (merchantUser) — rechazo
+    return c.json({ ok: false, error: 'token inválido' }, 401)
+  }
+
+  const owner = await Owner.findById(reset.ownerId)
+  if (!owner || !owner.enabled) return c.json({ ok: false, error: 'owner not found' }, 404)
+
+  owner.passwordHash = await bcrypt.hash(parsed.data.newPassword, 10)
+  await owner.save()
+
+  reset.usedAt = new Date()
+  await reset.save()
+
+  await revokeAllForSubject(owner._id.toString())
+
+  return c.json({ ok: true })
 })
 
 /** Info del owner logueado. */
