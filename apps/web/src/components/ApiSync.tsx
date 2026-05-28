@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { api, tokens } from '@/lib/api'
-import { demoStoreActions, getUserSnapshot, userActions } from '@/lib/stores'
+import { getUserSnapshot, userActions } from '@/lib/stores'
 import { merchantAuth } from '@/lib/merchantStore'
-import type { Activation, User } from '@/lib/types'
+import type { User } from '@/lib/types'
+import { syncMyActivations } from '@/lib/syncActivations'
 
 /**
  * Componente invisible que se monta en el shell y sincroniza el estado local
@@ -52,30 +53,7 @@ export function ApiSync() {
             return
           }
 
-          try {
-            const data = await api.activations.mine()
-            if (cancelled) return
-            const userId = getUserSnapshot()?.id
-            if (!userId) return
-            for (const a of data.activations) {
-              const local: Activation = {
-                id: a.id,
-                couponId: a.couponId,
-                userId,
-                codigoNumerico: a.codigoNumerico,
-                qrPayload: a.qrPayload,
-                activatedAt: a.activatedAt,
-                expiresAt: a.expiresAt,
-                status: a.status,
-                redeemedAt: a.redeemedAt,
-                ahorroEstimado: a.ahorroEstimado,
-                montoTicket: a.montoTicket,
-              }
-              demoStoreActions.upsertActivation(local)
-            }
-          } catch {
-            /* noop */
-          }
+          if (!cancelled) await syncMyActivations()
         })()
       }
 

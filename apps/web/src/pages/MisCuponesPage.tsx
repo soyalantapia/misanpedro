@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Ticket, Sparkles, RefreshCw, ArrowRight, Clock, AlertCircle } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
@@ -10,10 +10,16 @@ import { getMerchant } from '@/data/mockData'
 import { useCoupons } from '@/lib/couponsStore'
 import { api, ApiError } from '@/lib/api'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
+import { syncMyActivations } from '@/lib/syncActivations'
 
 export function MisCuponesPage() {
   const allActivations = useActivations()
   const user = useUser()
+  // V10: refrescar activaciones desde el backend al entrar (estado canjeado/
+  // expirado puede haber cambiado mientras el vecino estaba en otra pantalla).
+  useEffect(() => {
+    void syncMyActivations()
+  }, [])
   // Sólo mostramos activaciones del usuario actual. Si no hay user, mostramos
   // empty state (no filtramos vs el seed demo de otros vecinos).
   const activations = useMemo(

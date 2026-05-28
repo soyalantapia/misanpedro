@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, TrendingUp, Sparkles, PiggyBank } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
@@ -8,10 +8,17 @@ import { getMerchant } from '@/data/mockData'
 import { useCoupons } from '@/lib/couponsStore'
 import { formatMoney, formatRedeemedDate } from '@/lib/format'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
+import { syncMyActivations } from '@/lib/syncActivations'
 
 export function CanjeadosPage() {
   const allActivations = useActivations()
   const user = useUser()
+  // V10: refrescar las activaciones desde el backend al entrar. Sin esto, un
+  // canje confirmado por el comercio mientras el vecino no estaba en la pantalla
+  // del cupón activo (donde corre el polling) no aparecía hasta recargar la app.
+  useEffect(() => {
+    void syncMyActivations()
+  }, [])
   // Filtramos por user actual; sin login mostramos empty state.
   const activations = useMemo(
     () => (user ? allActivations.filter((a) => a.userId === user.id) : []),
