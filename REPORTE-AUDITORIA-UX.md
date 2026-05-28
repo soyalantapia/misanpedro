@@ -1,133 +1,93 @@
-# 🕵️ Auditoría UX — "En la piel del usuario"
+# 🕵️ Auditoría UX — "En la piel del usuario" · v2
 
-**Plataforma:** Cuponcito · PWA de descuentos vecinales (multi-tenant, "Mi San Pedro" como deploy inicial)
-**Stack:** Vite 7 + React 19 + TypeScript + Tailwind 4 · Hono + MongoDB (API)
-**Auditor:** Claude (rol: usuario recurrente)
-**Fecha:** 2026-05-28
-**Método:** Recorrido en vivo con preview interactivo (mobile 375×812) + análisis estático del código
+**Plataforma:** Cuponcito · PWA de descuentos vecinales · panel comercio multi-tenant
+**URL DEV:** http://localhost:5180/misanpedro/ (Vite + React 19 + Tailwind 4)
+**Auditor:** Claude — persona simulada de "Sandra, comerciante recurrente"
+**Fecha:** 2026-05-28 · 2ª vuelta tras aplicar 11 quick wins de la v1
+**Método:** Navegación real con preview interactivo (mobile 375×812) + 6 escenarios
 
-> **Nota previa**: este repo ya pasó por 7 auditorías técnicas previas que cerraron 60+ hallazgos. Esta 8ª pasada es distinta: la hago **en piel de usuario real**, sin mirar la lista de fixes anteriores, viendo qué se ROMPE o CONFUNDE cuando alguien de verdad entra a usar la app. Algunos hallazgos coinciden con tech-debt conocido, otros son nuevos.
+> **Nota previa**: este es el segundo pase de "auditoría en piel del usuario". El primer reporte (`REPORTE-AUDITORIA-UX-v1.md`) detectó 18 fricciones (F1-F18), de las cuales **11 fueron aplicadas** entre la v1 y esta v2. Esta segunda vuelta **encuentra menos hallazgos críticos** (es buena señal del progreso), pero descubre **9 fricciones nuevas** que el primer pase no captó porque están en pantallas o estados que no recorrí antes.
 
 ---
 
 ## 1. Resumen ejecutivo
 
 **Sensación general en 3 líneas:**
-Cuponcito se siente **cuidado, moderno y consistente**. La paleta y la tipografía están bien resueltas, los empty states son útiles, el copy es rioplatense y humano. Pero **al primer impacto hay UNA contradicción gigante** ("11 cupones activos" mientras dice "No encontramos descuentos") que erosiona la confianza inmediatamente, y **el panel comercio sigue "vendiendo" funciones que no funcionan** cuando estás en pending_payment. La PWA aún arrastra inconsistencias de branding entre "Mi San Pedro" (legacy) y "Cuponcito" (actual).
+Cuponcito **se siente más maduro que en la v1**. Los fixes de copy (CC05 "Volver", F14 "Tocá para pagar", F3 errores específicos en validación, F17 "WhatsApp" en nav) están vivos y mejoran sensiblemente la experiencia. Pero al recorrer pantallas más periféricas (WhatsApp connection, Mis Clientes locked, editor de cupones desde pending_payment) **aparecen pequeñas grietas**: duplicación visual del aviso de pago, copy que sigue prometiendo cosas que el estado del comercio bloquea, falta de loading state en QR generation.
 
-### Las 5 fricciones que más sangran
+### Las 5 fricciones que más sangran (ahora)
 
 | # | Fricción | Dónde duele |
 |---|---|---|
-| 🔴 1 | **Header dice "11 cupones activos", listado dice "No encontramos descuentos"** | Home vecino — primer load |
-| 🔴 2 | **Sandra puede crear cupones sin saber que su comercio NO es visible** | Dashboard admin · pending_payment |
-| 🟠 3 | **Mensaje de error de validación es redundante ("No es válido / Cupón inválido")** | Validar cupón — comerciante |
-| 🟠 4 | **Branding mezclado: header "Cuponcito", footer "soporte@misanpedro.app"** | Toda la app vecino |
-| 🟡 5 | **"Cancelar" arriba de pantallas que no son operaciones — confunde** | Login/Registro vecino |
+| 🔴 1 | **El editor de cupones está fuera del MerchantShell** → en pending_payment NO se ve el banner sticky | Crear/editar cupón sin saber que está bloqueado |
+| 🟠 2 | **QR de WhatsApp canvas vacío sin loading state** | Sandra ve un rectángulo violeta vacío y se pregunta si está roto |
+| 🟠 3 | **Dashboard duplica el aviso pending_payment** (sticky + card amarillo) | Saturación visual, "ya entendí" |
+| 🟠 4 | **Código fallido no se autolimpia** tras error en Validar | Reintentar en el mostrador requiere borrar 6 dígitos manualmente |
+| 🟡 5 | **Copy en editor de cupón sigue diciendo "los vecinos lo van a ver al instante"** cuando pending_payment lo bloquea | Promesa contradictoria con el banner amarillo |
 
-### 3 quick wins (alto impacto, bajo esfuerzo, hacer esta semana)
+### 3 quick wins (hacer esta semana)
 
-1. **Filtrar el contador "X cupones activos" usando los MISMOS criterios que el listado** → evita la contradicción del primer load.
-2. **Cuando `pending_payment`, deshabilitar el botón "Creá tu primer cupón" o cambiar copy a "Activá tu pago y empezá"** → impide trabajo en falso.
-3. **Cambiar "Cancelar" por "← Inicio" o "← Volver"** en headers de Login y Registro vecino → reduce ambigüedad.
+1. **Mover `AdminCuponEditPage` dentro del MerchantShell** o agregarle banner pending_payment propio.
+2. **Spinner / placeholder "Generando QR…"** mientras el canvas de WhatsApp está vacío.
+3. **Autolimpiar el input de código** tras error en Validar (`setCode('')` cuando `!result.ok`).
 
 ---
 
 ## 2. Diario del usuario (narrativa)
 
-### 🧑 Lucas — vecino que abre la app por primera vez
+### 🏪 Sandra, dueña de "La Esquina", abre Cuponcito un lunes 10:30
 
-> *Recibo un link de Cuponcito por WhatsApp de un amigo. Lo abro en mi celu.*
+> *Login, llego al dashboard. Lindo. Veo arriba un **banner color durazno apretado** que dice "Suscripción pendiente · tu comercio no es visible. Tocá para pagar". OK, entendí. Sigo bajando.*
 
-> *Carga rápido. Lindo encabezado violeta arriba "Cuponcito · Descuentos vecinales". Voy bajando: "Descubrí descuentos en tu ciudad — 0 comercios adheridos · **11 cupones activos**".*
+> *Más abajo, **otro card amarillo más grande** que dice exactamente lo mismo: "Suscripción pendiente de pago — Mientras no completes el pago, tu comercio NO es visible para los vecinos. Tocá para pagar."*
 
-> *Bajo más para ver los cupones. Pero... "**No encontramos descuentos. Pronto vamos a sumar más comercios al programa.**"*
+> *¿Por qué me lo dicen dos veces, una arriba de la otra? Ya entendí la primera. Me siento gritada.*
 
-> *¿Qué? Recién me dijo que hay 11 cupones activos. ¿Cuáles? ¿Es un error? ¿La app está rota?*
+**[N1 — Duplicación visual]**
 
-> *Pruebo el toggle "Por descuento" / "Por local" — nada. Pruebo categorías: Gastronomía, Cafetería, Panadería — nada en ninguna. El estado vacío es el mismo.*
+> *Más abajo, los KPIs: 0 / 0 / 0. Esperable porque no estoy activa. Y después la "Acción rápida" violeta gigante "Activá tu pago para empezar" → tres veces el mismo mensaje en la misma pantalla.*
 
-> *Bueno, parece que en mi zona todavía no hay nada. Pero entonces ¿por qué me dice que hay 11 cupones activos? Cierra la app, no vale la pena.*
+> *Voy a Validar. Pruebo tipear un código fake "123456" — error claro: **"No encontramos este código · Revisá los dígitos con el cliente. Si sigue fallando, que abra el QR."*** ✓ Muy bien escrito.*
 
-**Friction point**: el primer impacto es una contradicción no resuelta. El vecino se va.
+> *Pero ahora me quedo con "123456" tipeado en el input. Si llega otro cliente tengo que borrar uno por uno los dígitos antes de tipear el nuevo código. Tonto.*
 
----
+**[N3 — Sin autolimpieza en error]**
 
-> *Otro vecino — Lucas con sesión — abre la app un domingo a la noche.*
+> *Voy a Cupones → "Crear nuevo descuento". Llego al editor.*
 
-> *Llego a la home, tap en "Mis cupones". "Todavía no activaste ningún cupón. Cuando actives un descuento desde Descuentos, lo vas a ver acá con su QR y código." Bien claro. CTA "Ver descuentos" abajo.*
+> *El banner amarillo de "tu comercio no es visible" **desapareció**. Acá no está. Es como si fuera otra app.*
 
-> *Bajo. Header dice **"Cada cupón activo tiene 30 minutos antes de expirar."*** Bueno, me apuro.*
+**[N2 — Editor outside MerchantShell]**
 
-> *Voy a "Canjeados". Vacío también con copy similar: "Sin canjes todavía". OK.*
+> *Y arriba dice "Para QA Browser Comercio. Completá los datos y **los vecinos lo van a ver al instante**." Pero NO van a verlo porque estoy en pending_payment. ¿Me están mintiendo?*
 
-> *Voy a "Perfil". Me lleva a Login. Tengo que tipear email. Listo, OK.*
+**[N9 — Copy contradictorio en editor]**
 
-> *En el header del login dice **"< Cancelar"**. Pero... ¿qué cancelo? No estaba en medio de nada. Me confunde por 2 segundos. Pruebo igual, vuelvo a home.*
+> *Vuelvo. Voy a "Mis clientes". Locked state con un candado lindo. "Acá vas a ver a tus clientes Cuponcito". Botón "Ir a validar un cupón" como CTA. OK.*
 
-**Friction point**: "Cancelar" se usa cuando NO hay una operación en curso. Copy semánticamente equivocado.
+> *Pero el chip "MIS CLIENTES" está DEBAJO del candado, no arriba como en las otras pantallas. Se siente diferente, como si fuera otro componente.*
 
----
+**[N8 — Convención visual rota en locked state]**
 
-> *Lucas con cuenta vieja, abre la app después de meses.*
+> *Voy a WhatsApp. Header dice "Conectá WhatsApp Business". Bien. Y veo un rectángulo violeta gigante **completamente vacío** en la zona donde debería estar el QR.*
 
-> *Footer del home dice **"soporte@misanpedro.app"**. Pero arriba el branding es "Cuponcito". ¿Es la misma empresa? ¿O esto se llamaba antes Mi San Pedro?*
+> *¿Está cargando? ¿Se rompió? No hay spinner, no hay texto. Solo un rectángulo vacío.*
 
-> *Me da un poco de desconfianza. Como si fuera un proyecto a medio rebranderar.*
+**[N4 — QR sin loading state]**
 
-**Friction point**: inconsistencia de marca visible al usuario en cada pantalla.
+> *Abajo del rectángulo, las instrucciones 1-2-3-4 de cómo escanear. Buenas. Pero el QR sigue vacío.*
 
----
+> *Bajo y veo que hay un botón "Ya escaneé, conectar" que ya está **a medias tapado por el bottom nav floating**.*
 
-### 🏪 Sandra — dueña de un comercio recién dado de alta
+**[N6 — Bottom nav floating tapa CTA primario]**
 
-> *Hice el signup ayer. El pago de MP me dio error y me mandó al panel igual. Hoy abro a ver cómo está.*
+> *Y el chip de la página dice "PROMOCIONES" pero el nav de abajo dice "WhatsApp". ¿Cuál es la palabra real?*
 
-> *Login. Llego al dashboard.*
+**[N5 — "Promociones" vs "WhatsApp" inconsistencia]**
 
-> *Arriba: **"QA Browser Comercio · Panel comercio"**. Mi comercio. OK.*
+> *Voy a /comercio para cambiar mis horarios del sábado. Me redirige a Inicio. ¿Por qué?*
 
-> *Banner amarillo: **"Suscripción pendiente de pago. Completá el pago para que tu comercio sea visible para los vecinos. Tocá para ver el estado."***
-
-> *"Tocá para ver el estado" — bueno, después lo veo.*
-
-> *Bajo: tres KPIs grandes "0 / 0 / 0". Canjes hoy, esta semana, este mes. Triste pero esperable.*
-
-> *Acción rápida: card violeta enorme **"Creá tu primer cupón. Sin cupones activos los vecinos no ven tu comercio en la app."***
-
-> *¡Perfecto! Lo creo. Tap.*
-
-> *Llego al editor. Lleno todo. Preview a la izquierda — qué bueno, veo cómo lo va a ver el vecino. Guardo.*
-
-> *Vuelvo al dashboard, ahora dice "Mis cupones: 1 descuento activo". ✓*
-
-> *...pero esperá. Si mi pago está pendiente, ¿mi comercio es visible o no?*
-
-> *Tap en el banner amarillo. Me lleva a /admin/comercio. Veo el SubscriptionCard. Dice "Estado: Esperando primer pago". OK, NO estoy activa.*
-
-> *Mi cupón existe pero NO se ve. Trabajé al pedo.*
-
-**Friction point**: el dashboard te invita a crear cupones sin avisar que no van a ser visibles. Trabajo desperdiciado.
-
----
-
-> *Sandra unos días después. Su pago se concretó. Ahora prueba validar un canje.*
-
-> *Cliente llega al mostrador, le digo "abrí tu app y pasame el código". Cliente me dice "9 9 9 9 9 9".*
-
-> *Lo tipeo. Aparece grande: **"NO ES UN CUPÓN VÁLIDO · Cupón inválido."***
-
-> *¿Por qué no es válido? ¿Lo tipié mal? ¿Ya lo usaron? ¿Está vencido? ¿No es de este comercio? El mensaje no me dice nada.*
-
-> *Le pido al cliente que mejor abra el QR. Si tuviera más info en el error, podríamos haber resuelto sin ese paso extra.*
-
-**Friction point**: error técnicamente correcto pero inútil operativamente. Repite la palabra "inválido" sin agregar información.
-
----
-
-> *Sandra explora la bottom nav: "Inicio / Validar / Cupones / Clientes / Promos / Comercio". Son 6 items en mi celu chico. Cada label apretado, los iconos chicos. Si me equivoco de tap por 8px, voy a la sección equivocada.*
-
-**Friction point**: 6 items en bottom nav en mobile chico = tap targets borderline.
+> *(Probablemente porque la sesión simulada no tiene merchant cargado, pero como usuario real no entiendo el bounce.)*
 
 ---
 
@@ -135,265 +95,178 @@ Cuponcito se siente **cuidado, moderno y consistente**. La paleta y la tipograf�
 
 | ID | Problema | Severidad | Esfuerzo | ¿Quick win? |
 |----|----------|-----------|----------|-------------|
-| **F1** | Contador "11 cupones activos" vs listado "No encontramos descuentos" | 🔴 Crítica | Bajo | ✅ |
-| **F2** | Pending_payment promueve crear cupones que NO se ven | 🔴 Crítica | Bajo | ✅ |
-| **F3** | Error "No es un cupón válido · Cupón inválido" no dice por qué | 🟠 Alta | Bajo | ✅ |
-| **F4** | Footer `soporte@misanpedro.app` con marca Cuponcito | 🟠 Alta | Bajo | ✅ |
-| **F5** | "Cancelar" en headers de Login/Registro vecino | 🟠 Alta | Bajo | ✅ |
-| **F6** | "Mis cupones" dice "30 minutos antes de expirar" pero CuponActivoPage dice "Sin tiempo límite" | 🟠 Alta | Bajo | ✅ |
-| **F7** | Validar pantalla no muestra warning pending_payment | 🟠 Alta | Bajo | ✅ |
-| **F8** | Doble CTA "Crear nuevo" + "Crear primer cupón" en empty state | 🟡 Media | Bajo | ✅ |
-| **F9** | Bottom nav 6 ítems en mobile chico — apretado | 🟡 Media | Medio | — |
-| **F10** | Validación de email vacío usa mensaje nativo del browser | 🟡 Media | Bajo | ✅ |
-| **F11** | "Solo te lo pedimos esta vez" minimiza el costo cognitivo del registro de 5 campos | 🟡 Media | Bajo | ✅ |
-| **F12** | DNI placeholder "30123456" + help "Sólo números, sin puntos" — redundante | 🔵 Baja | Bajo | ✅ |
-| **F13** | "Mis cupones" vs "Descuentos del comercio" — distintos nombres para lo mismo | 🟡 Media | Bajo | ✅ |
-| **F14** | Banner pending_payment dice "Tocá para ver el estado" — vago | 🟡 Media | Bajo | ✅ |
-| **F15** | KPIs de dashboard muestran "0 / 0 / 0" sin contexto educativo cuando recién arrancás | 🟡 Media | Bajo | — *(parcialmente cubierto por onboarding banner DB02 ya implementado)* |
-| **F16** | "Por descuento" / "Por local" toggle confunde — "por local" no es claro que sea "por comercio" | 🔵 Baja | Bajo | ✅ |
-| **F17** | "Promos" como label del nav bottom — ambiguo (es WhatsApp masivo) | 🔵 Baja | Bajo | ✅ |
-| **F18** | Footer queda detrás del bottom nav floating en mobile chico (cerca pero no se solapa) | 🔵 Baja | Bajo | — |
+| **N2** | Editor cupón OUT del MerchantShell → sin banner pending_payment | 🔴 Crítica | Bajo | ✅ |
+| **N4** | QR canvas vacío sin loading state | 🟠 Alta | Bajo | ✅ |
+| **N1** | Dashboard duplica aviso pending_payment | 🟠 Alta | Bajo | ✅ |
+| **N3** | Código no se autolimpia tras error en Validar | 🟠 Alta | Bajo | ✅ |
+| **N9** | Editor cupón: copy "los vecinos lo van a ver al instante" engañoso si pending | 🟡 Media | Bajo | ✅ |
+| **N5** | Chip "PROMOCIONES" contradice nav "WhatsApp" | 🟡 Media | Bajo | ✅ |
+| **N6** | Bottom nav floating tapa CTA "Ya escaneé, conectar" en WhatsApp | 🟡 Media | Bajo | ✅ |
+| **N7** | Iconos circulares header (bell + logout) sin label visible | 🟡 Media | Medio | — |
+| **N8** | Mis Clientes locked: chip debajo del candado rompe convención | 🔵 Baja | Bajo | — |
+| **F9** *(arrastrado v1)* | Bottom nav merchant 6 ítems apretado en mobile chico | 🟡 Media | Medio | — |
+| **F13** *(arrastrado v1)* | "Cupones" / "Descuentos" / "Promociones" — 3 sinónimos | 🟡 Media | Bajo | ✅ |
 
 ---
 
 ## 4. Hallazgos detallados
 
-### [#F1] [Comunicación + Funcional] — Contador vs listado contradictorios al primer load
-📍 **Ubicación:** `apps/web/src/pages/DescuentosPage.tsx:166-173` (header) y `:186-249` (listado).
-👀 **Qué vi:** El hero dice **"0 comercios adheridos · 11 cupones activos."** y abajo el listado dice **"No encontramos descuentos. Pronto vamos a sumar más comercios al programa."**.
-😖 **Por qué molesta:** El usuario nuevo lee el número 11, baja a verlos, y no encuentra nada. Conclusión inmediata: **"la app está rota"**. Es la primera impresión y desinfla la confianza al instante.
+### [#N1] [Comunicación] — Dashboard duplica el aviso pending_payment dos veces consecutivas
+📍 **Ubicación:** `AdminDashboardPage` + `MerchantShell` (PendingPaymentBanner sticky-top).
+👀 **Qué vi:** Al llegar al Inicio veo arriba el banner sticky color durazno **"Suscripción pendiente · tu comercio no es visible. Tocá para pagar"** y, scrolleando 1 pantalla, otro card amarillo **más grande** con el mismo mensaje ampliado. Y, justo abajo, la "Acción rápida" violeta gigante "Activá tu pago para empezar" → **3 avisos de lo mismo en una sola pantalla**.
+😖 **Por qué molesta:** Sandra siente que la app le está gritando. Después de ver el primero, los siguientes generan "ya entendí, dejá de pegarme con esto". Sensación de no-respetar-la-atención. Pesa más en pantallas pequeñas donde los 3 avisos ocupan ~60% del viewport.
+🔥 **Severidad:** Alta
+🔧 **Esfuerzo:** Bajo
+✅ **Recomendación:** Ya que el `PendingPaymentBanner` del MerchantShell es persistente y cumple su rol, **eliminar el card amarillo en el body del AdminDashboardPage** (líneas 109-126 del file) — pasa a ser redundante. Y el "Acción rápida" violeta queda como CTA-único para el call-to-action de pagar, ya con `<CreditCard>` icon en lugar de `<Tag>`.
+
+### [#N2] [Flujo + Comunicación] — Editor de cupones queda OUT del MerchantShell → sin banner pending_payment
+📍 **Ubicación:** `App.tsx:77-78` → las rutas `/admin/cupones/nuevo` y `/admin/cupones/:id/editar` están **fuera** del `<Route path="admin" element={<MerchantShell />}>`.
+👀 **Qué vi:** En pending_payment, voy a /admin/cupones → veo el banner. Click "Crear nuevo" → entro al editor → el banner DESAPARECE. La pantalla no me recuerda que mi comercio sigue invisible para los vecinos. Si trabajo 5 minutos creando un cupón hermoso, lo guardo, vuelvo a /admin/cupones → sigue invisible.
+😖 **Por qué molesta:** Es exactamente el problema que el F7 fix quiso resolver (banner persistente). Pero la ruta del editor estaba afuera del shell y nadie lo notó. Regresión parcial silenciosa. Trabajo desperdiciado.
 🔥 **Severidad:** Crítica
 🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** El contador debe usar la **misma lógica** que `filteredCoupons`/`filteredMerchants` — es decir, contar solo los cupones cuyo merchant existe en el store. Si no, mostrar `"Aún no hay comercios cargados"` y NO mostrar el número de cupones huérfanos. Copy sugerido: **"Aún no hay comercios adheridos en tu ciudad — sumate para enterarte cuando lleguen."**.
+✅ **Recomendación:** Dos opciones:
+- **Opción A** (más correcta): mover `<Route path="admin/cupones/nuevo">` y `<Route path="admin/cupones/:id/editar">` dentro del `<Route path="admin" element={<MerchantShell />}>`. Hereda el banner sticky automáticamente.
+- **Opción B** (más rápida): importar el componente `PendingPaymentBanner` y renderizarlo manualmente al tope del `AdminCuponEditPage`.
 
----
-
-### [#F2] [Flujo + Funcional] — Comercio pending_payment puede crear cupones que no se ven
-📍 **Ubicación:** `AdminDashboardPage.tsx` — sección "Acción rápida" cuando `merchant.estado === 'pending_payment'`.
-👀 **Qué vi:** El dashboard muestra el banner amarillo "Suscripción pendiente de pago" pero **abajo te invita con un CTA enorme violeta a "Creá tu primer cupón"**. Sandra crea el cupón, vuelve al dashboard y dice "1 descuento activo" — pero el cupón NO se ve para vecinos hasta que pague.
-😖 **Por qué molesta:** Trabajo desperdiciado. Sandra creyó que arrancó. Cuando se entera (días después), se siente engañada y desconfía del producto.
-🔥 **Severidad:** Crítica
+### [#N3] [Funcional + UX] — Código tipeado no se autolimpia tras error
+📍 **Ubicación:** `AdminValidarPage.tsx` función `CodeMode`.
+👀 **Qué vi:** Tipeo "123456" → "No encontramos este código". El input sigue mostrando "1 2 3 4 5 6". Si llega otro cliente tengo que borrar los 6 dígitos manualmente antes de tipear el suyo.
+😖 **Por qué molesta:** En el mostrador, con el cliente esperando, cada segundo cuenta. Borrar 6 dígitos uno por uno (no hay clear button) es fricción acumulada cada vez que un cliente tipea mal. Sandra apura, se equivoca, y la app no la ayuda.
+🔥 **Severidad:** Alta
 🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Cuando `estado === 'pending_payment'`, reemplazar el card "Acción rápida" por algo como:
+✅ **Recomendación:** Agregar un botón "Probar otro código" en el `ResultPanel` cuando `!result.ok` que ejecute `setCode('')` y focus del input. Bonus: autolimpiar después de 5s mostrando el error.
+
+### [#N4] [Feedback + Performance percibida] — QR canvas vacío sin loading state en WhatsApp
+📍 **Ubicación:** `AdminWhatsappPage.tsx` función `ConnectionScreen`, lines 159-163.
+👀 **Qué vi:** Llego a /admin/whatsapp. Veo un **rectángulo violeta grande completamente vacío**. Después abajo las instrucciones 1-2-3-4 de cómo escanear. ¿Qué pasa? ¿Está cargando? ¿Se rompió mi internet? ¿Debo refrescar?
+😖 **Por qué molesta:** El usuario queda en limbo. La generación del QR depende del backend (`/wa/start` + stream SSE con evento `qr`); si el backend no está disponible o tarda, el canvas queda vacío indefinidamente. Sin feedback, Sandra cree que está roto.
+🔥 **Severidad:** Alta
+🔧 **Esfuerzo:** Bajo
+✅ **Recomendación:** Mostrar un estado intermedio mientras `wa.qr` está vacío:
+```tsx
+{!wa.qr ? (
+  <div className="grid h-60 w-60 place-items-center text-xs text-neutral-400">
+    <div className="flex flex-col items-center gap-2">
+      <RefreshCw size={20} className="animate-spin text-accent-500" />
+      <span>Generando QR…</span>
+    </div>
+  </div>
+) : (
+  <canvas ref={canvasRef} ... />
+)}
 ```
-[!] Activá tu pago para empezar
-    Mientras esté pendiente, tus cupones no van a aparecer
-    en la app del vecino.
-    [Ir a completar pago →]
-```
-Y deshabilitar el botón "Creá tu primer cupón" hasta que el merchant esté activo (o permitirlo pero con warning "Lo creás ahora, se ve cuando pagues").
+Y si tras 10s el QR sigue sin llegar, mostrar fallback: *"El servicio de WhatsApp Business no responde. Intentá refrescar o avisanos."*
 
----
-
-### [#F3] [Microcopy] — Error redundante en validación
-📍 **Ubicación:** Pantalla Validar cupón cuando el código es inválido.
-👀 **Qué vi:** Card rojo con título **"No es un cupón válido"** y subtítulo **"Cupón inválido"**. Dos veces la misma palabra, cero información operativa.
-😖 **Por qué molesta:** Sandra no sabe si tipeó mal, si el cupón fue canjeado, si está vencido, o si es de otro comercio. Tiene que pedir al cliente que repita, abra el QR, etc. — pérdida de tiempo en el mostrador.
-🔥 **Severidad:** Alta
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Aprovechar el `payload.error` o `payload.reason` del backend para mostrar mensajes específicos:
-- `not-found` → **"No encontramos ese código. ¿Lo tipeaste bien? Pedile al cliente que abra el QR."**
-- `already-redeemed` → **"Este cupón ya fue canjeado en este comercio el [fecha]."**
-- `wrong-merchant` → **"Este cupón es para otro comercio adherido."**
-- `expired` → **"Este cupón venció — el cliente puede reactivarlo desde la app."**
-
----
-
-### [#F4] [Comunicación] — Branding inconsistente: header "Cuponcito" + footer "soporte@misanpedro.app"
-📍 **Ubicación:** Footer del `AppShell` + `PerfilPage` + `AdminComercioPage` + páginas legales.
-👀 **Qué vi:** Toda la app vecino usa "Cuponcito" en el header. El footer dice "soporte@misanpedro.app". Inconsistente.
-😖 **Por qué molesta:** Da la sensación de "proyecto a medio rebranderar". El usuario duda si es la misma empresa, o si el soporte va a otro lado. Cosmético pero erosiona profesionalismo.
-🔥 **Severidad:** Alta (por presencia masiva, baja por funcionalidad)
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Decidir un email único de soporte (`soporte@cuponcito.app` por marca, o mantener `misanpedro` si los DNS solo apuntan ahí) y usar `VITE_SUPPORT_EMAIL` consistentemente. Si Cuponcito es la marca paraguas y "Mi San Pedro" es solo el tenant, el email general debería usar el dominio de la marca paraguas.
-
----
-
-### [#F5] [Microcopy] — "Cancelar" sin operación en curso
-📍 **Ubicación:** `LoginPage` y `RegistroPage` — link arriba a la izquierda dice "< Cancelar".
-👀 **Qué vi:** Llego a la pantalla por navegación (tap en "Perfil" sin sesión, o tap en "Crear cuenta"). El link arriba dice "< Cancelar". Pero no hay operación que cancelar — recién entré.
-😖 **Por qué molesta:** Suena a "vas a perder algo". Confusión sutil pero recurrente.
-🔥 **Severidad:** Alta (frecuencia altísima)
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Cambiar a **"← Volver"** o **"← Inicio"** o **"← Cuponcito"** (marca). Solo usar "Cancelar" cuando realmente cancelo una acción (ej. en un form a medio llenar, edición a medio hacer).
-
----
-
-### [#F6] [Comunicación] — Contradicción de "tiempo límite" entre pantallas
-📍 **Ubicación:** `MisCuponesPage` header dice **"Cada cupón activo tiene 30 minutos antes de expirar."** Pero `CuponActivoPage` muestra **"Sin tiempo límite — el código vale hasta que lo uses"** cuando el backend no envía `expiresAt`.
-👀 **Qué vi:** Dependiendo del estado, el usuario lee dos verdades opuestas en la misma sesión.
-😖 **Por qué molesta:** Si Lucas creyó que tenía 30 min y va corriendo al comercio, después ve "sin tiempo límite" y desconfía. ¿Quién dice la verdad?
-🔥 **Severidad:** Alta
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Decidir UNA política: o todos los cupones expiran a 30min, o ninguno. Sincronizar el copy en `MisCuponesPage:158` con la realidad del backend. Idealmente: backend SIEMPRE envía `expiresAt` (aunque sea +99 años para "sin expiración") y la UI muestra el tiempo restante en ambos lados.
-
----
-
-### [#F7] [Flujo + Comunicación] — Validar pantalla sin warning pending_payment
-📍 **Ubicación:** `AdminValidarPage`.
-👀 **Qué vi:** Sandra está en `pending_payment` (visible en dashboard). Va a Validar. Tipea un código. Ningún recordatorio de su estado.
-😖 **Por qué molesta:** Si los vecinos no la ven en el catálogo, nadie va a generar códigos para canjear. Sandra puede estar tipeando códigos en vano sin entender por qué nada funciona.
-🔥 **Severidad:** Alta
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Mostrar un banner sticky-top en TODO el panel admin cuando `pending_payment`, no solo en Inicio.
-
----
-
-### [#F8] [UI] — Doble CTA "Crear nuevo" + "Crear primer cupón" en empty state
-📍 **Ubicación:** `AdminCuponesPage` cuando no hay cupones.
-👀 **Qué vi:** Botón arriba a la derecha "+ Crear nuevo" y card grande al centro con "+ Crear primer cupón". Misma acción, dos botones, redundancia visual.
-😖 **Por qué molesta:** Distrae. ¿Cuál es el botón correcto?
+### [#N5] [Comunicación] — Chip "PROMOCIONES" en /admin/whatsapp contradice el nav "WhatsApp"
+📍 **Ubicación:** `AdminWhatsappPage.tsx` chip arriba del título.
+👀 **Qué vi:** El bottom nav dice "WhatsApp" (fix F17 aplicado). Pero la página tiene un chip "PROMOCIONES" arriba a la izquierda. Dos palabras para la misma sección. La marca elegida (post-F17) es "WhatsApp" → el chip debería decir lo mismo.
+😖 **Por qué molesta:** Confunde a un usuario que viene por primera vez. ¿Es la sección de WhatsApp o de Promociones? Inconsistencia interna.
 🔥 **Severidad:** Media
 🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Si hay empty state con CTA explícito, ocultar el botón "+ Crear nuevo" arriba.
+✅ **Recomendación:** Cambiar el chip de "PROMOCIONES" a "WHATSAPP" (o a "CAMPAÑAS" si querés diferenciar). Lo importante: que coincida con el label del nav.
 
----
-
-### [#F9] [UI + A11y] — 6 ítems en bottom nav del admin en mobile chico
-📍 **Ubicación:** `MerchantShell.tsx` — nav bottom mobile.
-👀 **Qué vi:** Inicio / Validar / Cupones / Clientes / Promos / Comercio. 6 ítems en 375px → cada tap target ~62px. Iconos y labels chicos. Borderline para WCAG (mínimo 44x44).
-😖 **Por qué molesta:** Mistaps frecuentes. Sandra apura entre clientes y termina en la sección equivocada.
+### [#N6] [UI + Mobile] — Bottom nav floating tapa el CTA "Ya escaneé, conectar"
+📍 **Ubicación:** `AdminWhatsappPage.tsx` `ConnectionScreen` botón fixed-bottom + `MerchantShell` bottom nav.
+👀 **Qué vi:** El `ConnectionScreen` tiene un botón "Ya escaneé, conectar" con `position: fixed; bottom: 0`. PERO también está el bottom nav del MerchantShell con `bottom-3` (12px). Ambos compiten por el mismo espacio en mobile. En el screenshot no se ve el botón porque queda tapado.
+😖 **Por qué molesta:** El CTA primario de la página es invisible. Sandra puede no saber qué tocar después de escanear.
 🔥 **Severidad:** Media
+🔧 **Esfuerzo:** Bajo
+✅ **Recomendación:** Subir el botón "Ya escaneé" más arriba (`bottom-24` por ejemplo, dejando espacio para el nav). O incrementar el `padding-bottom` del `<main>` del MerchantShell para que el scroll alcance a mostrar todo el CTA.
+
+### [#N7] [A11y + UI] — Iconos circulares en header sin label visible
+📍 **Ubicación:** `MerchantShell.tsx` mobile header — botones bell + logout sin texto.
+👀 **Qué vi:** Arriba a la derecha hay 2 botones circulares grises: una campana (notificaciones) y un icono de salida. Sin texto. Sandra puede no saber qué hacen sin haberlos probado.
+😖 **Por qué molesta:** El logout en particular es DESTRUCTIVO en sesión (te saca). Si Sandra se confunde y toca pensando que es "perfil" o "configuración", se sale sin querer.
+🔥 **Severidad:** Media (alta para nuevos, baja para recurrentes que ya lo aprendieron)
 🔧 **Esfuerzo:** Medio
-✅ **Recomendación:** Bajar a 5 ítems agrupando "Comercio" en un menú "Más" o moviendo "Promos" a un submenu de "Clientes". Alternativa: mantener 6 pero reducir padding lateral del contenedor de la nav.
+✅ **Recomendación:** Dos opciones:
+- Agregar tooltip sobre hover/long-press
+- O, en mobile, separar el botón "salir" en un menú "más" (kebab vertical) para reducir riesgo de mistap
 
----
+### [#N8] [UI] — Mis Clientes locked: chip "MIS CLIENTES" debajo del candado rompe convención
+📍 **Ubicación:** `AdminClientesPage.tsx` componente `LockedState`.
+👀 **Qué vi:** En las demás pantallas del admin la jerarquía es: chip arriba → título grande → descripción. En el LockedState es: icono candado grande → chip MIS CLIENTES → título → descripción → CTA. Roto.
+😖 **Por qué molesta:** Cosmético, pero se nota como "esta pantalla es distinta al resto". Quita sensación de cuidado.
+🔥 **Severidad:** Baja
+🔧 **Esfuerzo:** Bajo
+✅ **Recomendación:** Reordenar para que el chip "MIS CLIENTES" esté arriba del candado (siguiendo la convención del resto del panel).
 
-### [#F10] [Forms + Comunicación] — Validación de email vacío usa copy del browser
-📍 **Ubicación:** `LoginPage` botón "Enviarme el código" sin email.
-👀 **Qué vi:** Pop-up nativo del browser "Completa este campo" — en idioma del SO del usuario (puede ser inglés "Please fill out this field").
-😖 **Por qué molesta:** Sale del flow visual de Cuponcito, se ve cheap.
+### [#N9] [Microcopy] — Editor cupón: "los vecinos lo van a ver al instante" cuando pending_payment lo bloquea
+📍 **Ubicación:** `AdminCuponEditPage.tsx` subtítulo del header.
+👀 **Qué vi:** "Para QA Browser Comercio. Completá los datos y **los vecinos lo van a ver al instante**." Pero si el comercio está pending_payment, NO lo van a ver. Y el banner sticky que avisaba esto desapareció en esta ruta (ver N2).
+😖 **Por qué molesta:** Promesa engañosa. Sandra cree que está produciendo valor cuando en realidad nada se está publicando.
 🔥 **Severidad:** Media
 🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Quitar `required` nativo y manejar la validación con setError + `role="alert"` propio en el flow visual de la app, como ya hacen otros forms (ej. RegistroPage).
+✅ **Recomendación:** Condicionar el copy al estado del merchant:
+- Si `activo`: "los vecinos lo van a ver al instante"
+- Si `pending_payment`: "se va a publicar cuando completes el pago"
+- Si `suspendido` / `cancelado`: bloquear el editor con redirect
 
----
+### [#F9] *(arrastrado v1)* [UI + A11y] — 6 ítems en bottom nav admin apretados
+📍 **Ubicación:** `MerchantShell.tsx` mobile bottom nav.
+👀 **Qué vi:** Inicio / Validar / Cupones / Clientes / WhatsApp / Comercio. 6 ítems en 375px = ~62px cada uno. Iconos chicos, labels chicos. Tap targets borderline.
+😖 **Por qué molesta:** Mistaps frecuentes en uso real (Sandra apura entre clientes y termina en sección equivocada).
+🔥 **Severidad:** Media (alta en uso intensivo)
+🔧 **Esfuerzo:** Medio (cambio de IA)
+✅ **Recomendación:** Reducir a 5 ítems agrupando "Comercio" + "WhatsApp" en un menú "Más" (icono ⋯). Inicio + Validar + Cupones + Clientes + Más.
 
-### [#F11] [Microcopy] — "Solo te lo pedimos esta vez" minimiza el costo del registro
-📍 **Ubicación:** `RegistroPage` subheading.
-👀 **Qué vi:** Pide nombre, DNI, email, WhatsApp, fecha de nacimiento, T&C. El copy arriba dice "Solo te lo pedimos esta vez."
-😖 **Por qué molesta:** "Solo" es minimizador. El usuario LE DEDICA ENERGÍA cargando 5 datos personales. Reconocer eso es más empático.
-🔥 **Severidad:** Media (registro es el momento más crítico de conversión)
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Cambiar a algo como **"Una vez completado, no te lo pedimos más — usás todos los descuentos directo desde tu cuenta."** O incluso: **"~2 minutos. Después es 1 tap para canjear cualquier descuento."**.
-
----
-
-### [#F12] [UI] — Placeholder DNI redundante con help text
-📍 **Ubicación:** `RegistroPage` campo DNI.
-👀 **Qué vi:** Placeholder "30123456" y debajo help "Sólo números, sin puntos".
-😖 **Por qué molesta:** El placeholder YA muestra solo números sin puntos. El help es info repetida.
-🔥 **Severidad:** Baja
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Eliminar el help text, o cambiarlo a algo distinto: "7 u 8 dígitos".
-
----
-
-### [#F13] [Comunicación] — "Mis cupones" vs "Descuentos del comercio"
-📍 **Ubicación:** En `AdminCuponesPage` el chip dice "MIS CUPONES" pero el H1 dice "Descuentos del comercio". En la app del vecino se usa "cupones" en navegación y "descuentos" en el catálogo.
-👀 **Qué vi:** El producto usa los dos términos como sinónimos sin convención clara.
-😖 **Por qué molesta:** Mínima fricción cognitiva. ¿Son lo mismo? ¿Hay diferencia?
-🔥 **Severidad:** Media (presencia masiva)
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Adoptar un solo término. Mi sugerencia: **"descuentos"** para el catálogo público (lo que el vecino ve y comparte) y **"cupones"** para lo activado/canjeado (el QR personal). Esa convención ya está bien aplicada en parte; falta consolidarla.
-
----
-
-### [#F14] [Microcopy] — Banner pending_payment dice "Tocá para ver el estado"
-📍 **Ubicación:** `AdminDashboardPage`.
-👀 **Qué vi:** "Suscripción pendiente de pago — Completá el pago para que tu comercio sea visible para los vecinos. Tocá para ver el estado."
-😖 **Por qué molesta:** "Ver el estado" sugiere consulta pasiva ("ya sé el estado, decímelo"). El usuario quiere ACTUAR.
+### [#F13] *(arrastrado v1)* [Comunicación] — "Cupones" / "Descuentos" / "Promociones": 3 sinónimos sin convención
+📍 **Ubicación:** Toda la app.
+👀 **Qué vi:** En `AdminCuponesPage` chip="MIS CUPONES" + h1="Descuentos del comercio". En `AdminWhatsappPage` chip="PROMOCIONES" + nav="WhatsApp". En vecino DescuentosPage chip="DESCUENTOS VIGENTES". En MisCuponesPage chip="PENDIENTES DE CANJEAR".
+😖 **Por qué molesta:** Confusión léxica. ¿Son lo mismo? ¿Hay diferencia? La app no decidió.
 🔥 **Severidad:** Media
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Cambiar a **"Tocá para pagar y activar tu comercio."** El CTA implícito debe ser acción, no consulta.
-
----
-
-### [#F15] [UI + Comunicación] — Dashboard sin canjes muestra "0 / 0 / 0" frío
-📍 **Ubicación:** `AdminDashboardPage` KPIs.
-👀 **Qué vi:** Tres cards "Canjes hoy / Esta semana / Este mes" con tres ceros idénticos. El de "Este mes" está destacado en violet por accent.
-😖 **Por qué molesta:** Visual frío. Comercios nuevos ven 0/0/0 cada vez que entran.
-🔥 **Severidad:** Media
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Cuando los 3 son 0, mostrar UN solo card grande "Listo para tu primer canje · Recibí a un cliente, pedile el código, validá. ¡Te esperamos!" con CTA a Validar. Ya hay un onboarding banner en el código pero queda tapado por las KPIs vacías.
-
----
-
-### [#F16] [Microcopy] — Toggle "Por descuento" / "Por local" confunde
-📍 **Ubicación:** `DescuentosPage` ViewToggle.
-👀 **Qué vi:** Dos botones "Por descuento" / "Por local". El segundo es ambiguo — ¿"local" = "comercio cercano"? ¿"local" = "negocio"?
-😖 **Por qué molesta:** "Local" en argentino puede ser comercio o "cerca de mí". El usuario no entiende qué cambia.
-🔥 **Severidad:** Baja
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Cambiar a **"Por descuento" / "Por comercio"** o **"Ofertas" / "Comercios"**.
-
----
-
-### [#F17] [Microcopy] — "Promos" en nav bottom es ambiguo
-📍 **Ubicación:** `MerchantShell` nav.
-👀 **Qué vi:** "Promos" es el ícono de WhatsApp. Sandra puede pensar que es "ver promociones disponibles" no "mandar promos a clientes".
-😖 **Por qué molesta:** Mistapeo + curva de aprendizaje innecesaria.
-🔥 **Severidad:** Baja
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Cambiar label a **"WhatsApp"** (es lo que es). El ícono ya es de mensajería, no se gana nada con la palabra "Promos".
-
----
-
-### [#F18] [UI + Mobile] — Footer y bottom nav cerca en mobile chico
-📍 **Ubicación:** `AppShell` mobile.
-👀 **Qué vi:** Footer (Términos · Privacidad · Mi cuenta · email) queda a ~67px del bottom nav floating. Visualmente apretado en pantallas chicas, con el nav semitransparente encima del footer cuando hay scroll.
-😖 **Por qué molesta:** Sensación de "amontonado" en la zona pulgar.
-🔥 **Severidad:** Baja
-🔧 **Esfuerzo:** Bajo
-✅ **Recomendación:** Aumentar `pb-32` → `pb-40` en el `<main>` del AppShell para más respiración. O mover el footer al panel de Perfil (donde realmente buscás esos links).
+🔧 **Esfuerzo:** Bajo (decidir convención + reemplazar strings)
+✅ **Recomendación:** Convención propuesta:
+- **"Descuento"** = la promo desde el lado del comercio (lo que crea + edita)
+- **"Cupón"** = la promo desde el lado del vecino (lo que activa + usa)
+- **"Campaña"** = comunicación masiva (WhatsApp), NO "promoción" (palabra reservada al descuento real)
 
 ---
 
 ## 5. Recomendaciones
 
-### Quick wins — hacer esta semana
+### Quick wins — hacer esta semana (impacto inmediato, ≤2h c/u)
 
 | Fix | Impacto |
 |-----|---------|
-| **F1** — Sincronizar contador con listado filtrado | Saca la contradicción del primer load. Crítico. |
-| **F2** — Bloquear/transformar "Crear cupón" si pending_payment | Evita trabajo en vano de comercios nuevos. |
-| **F3** — Error de validación con razón específica del backend | Reduce fricción en mostrador. |
-| **F4** — Decidir email único de soporte vía `VITE_SUPPORT_EMAIL` | Profesionalismo. |
-| **F5** — Cambiar "Cancelar" → "Volver" en headers de Login/Registro | Microclaridad recurrente. |
-| **F6** — Sincronizar copy "30 minutos" entre MisCupones y CuponActivo | Verdad operativa única. |
-| **F7** — Banner pending_payment sticky en todo el admin | Contexto persistente. |
-| **F14** — "Tocá para ver el estado" → "Tocá para pagar" | CTA accionable. |
-| **F17** — "Promos" → "WhatsApp" | Claridad. |
-| **F8** — Remover botón duplicado "Crear nuevo" en empty state cupones | Limpieza visual. |
-| **F10** — Quitar `required` nativo, usar validación visual propia | Consistencia de marca. |
+| **N2** — Mover editor cupón dentro del MerchantShell | Cierra regresión silenciosa del banner pending_payment |
+| **N4** — Spinner "Generando QR…" en WhatsApp connection | Saca del limbo a Sandra en su primer setup |
+| **N1** — Eliminar card amarillo del Dashboard (el sticky banner ya cumple) | Reduce ruido visual |
+| **N3** — Botón "Probar otro código" + autoclear en Validar | Fricción menos en mostrador |
+| **N9** — Copy condicional en editor según `merchant.estado` | Honestidad operativa |
+| **N5** — Chip "PROMOCIONES" → "WHATSAPP" en `AdminWhatsappPage` | Consistencia léxica |
+| **N6** — `bottom-24` en botón "Ya escaneé" del WhatsApp | CTA visible |
 
-**Estimado total:** ~3-4 horas de dev. Todos riesgo bajo.
+**Estimado total: ~3-4h dev.**
 
 ### Mejoras estratégicas — próximos sprints
 
-- **F9 — Replantear el nav bottom del admin.** 6 ítems no entran cómodos en mobile. Posibles caminos: agrupar "Comercio" en un menú "Más", o agrupar "Promos + Clientes" como "Comunicación". Requiere decisión de IA (information architecture).
-- **F13 — Glosario consistente.** Un documento de "convenciones de copy" que defina cupón vs descuento, vecino vs cliente, comercio vs local. Sirve para que cada nuevo dev/diseñador no reabra esta discusión.
-- **F15 — Onboarding visual para comercio nuevo.** En lugar de "0/0/0", una bienvenida con 3 pasos: "1. Creá un descuento · 2. Esperá a tu primer cliente · 3. Validá su código". Ya hay un banner de DB02 pero queda tapado.
+- **F13** — Adoptar y propagar el glosario "Descuento / Cupón / Campaña" en toda la app. Documento de convención + sweep de strings + tests con assertions sobre términos.
+- **F9** — Rediseñar el bottom nav del admin de 6 → 5 ítems con menú "Más".
+- **N7** — Sistema de tooltips/labels visibles en iconos del header (especialmente logout) o relocalizar acciones destructivas a un menú secundario.
 
-### Lo que está bien (no tocar)
+### Lo que está mejor que en v1 (no tocar)
 
-- **Empty states** del vecino (Mis cupones, Canjeados) — excelentes, copy útil + CTA claro
-- **Editor de cupones** con preview en vivo y presets de % — fricción mínima
-- **TemplatesPicker** de plantillas pre-llenadas por rubro — onboarding tácito brillante
-- **OTP login** con código grande + countdown + reenviar + cambiar email — muy bien resuelto
-- **SubscriptionCard** con Ley 24.240 explícita — honesto y legal
-- **Notifications bell** con SSE en tiempo real — diferencial
-- **PWA install prompt** con instrucciones iOS manuales — cubre el 30-40% de usuarios que el `beforeinstallprompt` deja afuera
+- Banner sticky pending_payment del MerchantShell (F7 aplicado)
+- CTA "Activá tu pago para empezar" como acción rápida (F2)
+- Errores específicos por reason en Validar (F3): "No encontramos este código · Revisá los dígitos con el cliente"
+- Copy "Tocá para pagar" en lugar de "Tocá para ver el estado" (F14)
+- Nav "WhatsApp" en lugar de "Promos" (F17)
+- "Volver" en lugar de "Cancelar" en login/registro (F5)
+- Validación in-app sin popup nativo del browser (F10)
+- Bundle code-split funcionando (BU01)
 
 ---
 
 ## Apéndice — Método y limitaciones
 
-- **Recorrido en vivo:** Mobile 375×812 con dev server local (vite + react 19).
-- **Sin backend real:** El API no estaba corriendo. La sesión simulada no rehidrató el zustand-like store entre navegaciones → no pude recorrer 100% de los flujos autenticados del vecino.
-- **Lo no auditado:** Flujo de pago Mercado Pago real (queda en mock), flujo de WhatsApp Business sesión QR (requiere whatsapp-web.js), flujo de canje confirmado real (sin API).
-- **Próxima vez:** correr API + Mongo + MP sandbox para auditar pago + WhatsApp E2E.
+- **Recorrido en vivo:** mobile 375×812 con preview Vite + React.
+- **Sesión simulada:** comercio "QA Browser Comercio" en `pending_payment` (estado realista para audit de onboarding).
+- **Sin backend:** no pude probar flujos que requieren API real (signup→MP, WhatsApp connect→SSE, validación con cupón existente). Esos casos quedan auditados solo por código.
+- **6 escenarios completados** de 8 planeados (no pude llegar a editar horarios ni a Owner panel — la sesión simulada redirige a /admin cuando entra a /admin/comercio por falta de apiMerchant fully loaded).
+- **Lo no auditado este pase:** Owner panel (`apps/owner`), landing comercial (`apps/landing`), flujo de cancelación con arrepentimiento.
 
 ---
 
-*Reporte generado por auditoría exploratoria. No se modificó ningún archivo de código de producción durante esta pasada — solo este `.md`.*
+*Reporte v2 generado el 2026-05-28. Cero archivos de código modificados durante este pase — solo este `.md`. El reporte v1 se preservó en `REPORTE-AUDITORIA-UX-v1.md` para histórico.*
