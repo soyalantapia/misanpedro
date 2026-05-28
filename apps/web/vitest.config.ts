@@ -21,6 +21,8 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: false,
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['node_modules', 'dist'],
+    // Excluimos `e2e/` porque esos son tests de Playwright (browser).
+    // Si vitest los encuentra, falla porque @playwright/test no es compatible.
+    exclude: ['node_modules', 'dist', 'e2e'],
   },
 })
