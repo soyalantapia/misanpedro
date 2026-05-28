@@ -2,16 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "misanpedro-dev",
-      "runtimeExecutable": "/opt/homebrew/opt/node@22/bin/npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "client"],
+      "name": "misanpedro-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@misanpedro/web", "dev"],
       "port": 5180
-    },
-    {
-      "name": "landing",
-      "runtimeExecutable": "true",
-      "runtimeArgs": [],
-      "port": 5181
     }
   ]
 }
