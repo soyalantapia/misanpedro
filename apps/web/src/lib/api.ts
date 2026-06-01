@@ -179,6 +179,18 @@ export type ApiMerchant = {
   logoUrl?: string
   mapsUrl?: string
   logoSeed?: string
+  // Micro-sitio (carta de presentación del comercio)
+  tagline?: string
+  descripcion?: string
+  servicios?: string[]
+  galeria?: string[]
+  productos?: { nombre: string; precio?: string | null; descripcion?: string | null }[]
+  redes?: {
+    instagram?: string | null
+    facebook?: string | null
+    web?: string | null
+    whatsapp?: string | null
+  }
   destacado?: boolean
   foundingMember?: boolean
   nivel?: string
@@ -199,12 +211,24 @@ export type ApiCoupon = {
   descripcion: string
   condiciones?: string
   porcentaje: number
+  /** Precio normal aproximado por persona (ARS, opcional). */
+  precioReferencia?: number
   vigenciaHasta: string
   diasAplica?: string
   estado: string
   stockMaximo?: number
   stockUsado?: number
   imagenUrl?: string
+  // ─── Asesor de cupones (públicos) ───
+  tipoOferta?: 'porcentaje' | 'dos_por_uno' | 'precio_fijo' | 'happy_hour'
+  exclusiva?: boolean
+  dias?: string[]
+  franjaDesde?: string
+  franjaHasta?: string
+  productoGancho?: string
+  // ─── Solo en respuestas del propio comercio (mine/list, create, patch) ───
+  costoReferencia?: number
+  objetivo?: 'traer_nuevos' | 'llenar_flojos' | 'vaciar_stock' | 'fidelizar'
   merchant?: Pick<ApiMerchant, 'id' | 'slug' | 'nombre' | 'categoria' | 'logoSeed' | 'cover'>
 }
 
@@ -269,6 +293,9 @@ export const merchantApi = {
       categoria: string
       categoriaOtro?: string
       direccion: string
+      /** Coordenadas marcadas en el mapa al registrarse. */
+      lat?: number
+      lng?: number
       telefono: string
       /** Horarios ahora opcional — se completa después en el panel. */
       horarios?: string
@@ -279,6 +306,8 @@ export const merchantApi = {
     }
     admin: { nombre: string; email: string; password: string }
     acceptedTc: true
+    /** Código de referido (opcional) si el comercio llegó por un link de referido. */
+    ref?: string
   }) {
     const data = await request<{
       accessToken: string
@@ -637,6 +666,40 @@ export const whatsapp = {
   },
 }
 
+// ─── Referidos (comercio) ────────────────────────────────────────────
+
+export type ApiReferral = {
+  code: string
+  link: string
+  pendientes: number
+  confirmados: number
+  weeksEarned: number
+  cap: number
+  freeTrialUntil: string | null
+}
+
+export type ApiReferralItem = {
+  id: string
+  nombre: string
+  status: 'pending' | 'confirmed'
+  weeksGranted: number
+  createdAt: string
+  confirmedAt: string | null
+}
+
+export const referrals = {
+  async me() {
+    return request<{ ok: boolean; referral: ApiReferral }>('/referrals/me', {
+      subject: 'merchant',
+    })
+  },
+  async mine() {
+    return request<{ ok: boolean; referidos: ApiReferralItem[] }>('/referrals/mine', {
+      subject: 'merchant',
+    })
+  },
+}
+
 export const api = {
   merchantApi,
   userApi,
@@ -647,6 +710,7 @@ export const api = {
   merchantAdmin,
   billing,
   whatsapp,
+  referrals,
   templates,
   habeasData,
   customerNotes,

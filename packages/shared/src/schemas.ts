@@ -25,6 +25,27 @@ export const categoriaSchema = z.enum([
   'otro',
 ])
 
+/**
+ * Servicios/comodidades que el comercio puede destacar en su ficha pública
+ * (micro-sitio). Los ids son canónicos; las etiquetas legibles viven en el
+ * frontend (SERVICIOS en apps/web/src/lib/types.ts) — mismo patrón que las
+ * categorías. Sirven para mostrar chips en la ficha y, a futuro, para filtrar.
+ */
+export const SERVICIO_IDS = [
+  'delivery',
+  'retira',
+  'tarjeta',
+  'mercadopago',
+  'wifi',
+  'estacionamiento',
+  'accesible',
+  'pet_friendly',
+  'aire',
+  'reservas',
+] as const
+
+export const servicioSchema = z.enum(SERVICIO_IDS)
+
 export const diaSemanaSchema = z.enum(['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'])
 
 export const horarioDiaSchema = z.discriminatedUnion('abierto', [
@@ -114,6 +135,14 @@ export const merchantSignupSchema = z.object({
     /** Si categoria === 'otro', acá va el rubro real (free text). */
     categoriaOtro: z.string().max(60).optional(),
     direccion: z.string().min(5).max(160),
+    /**
+     * Coordenadas reales del comercio (las marca en un mapa al registrarse).
+     * Opcionales: si no vienen, el backend cae al centro del tenant. El
+     * frontend las exige para que cada comercio caiga en su punto real y no
+     * todos apilados en el centro de la ciudad.
+     */
+    lat: z.number().min(-90).max(90).optional(),
+    lng: z.number().min(-180).max(180).optional(),
     telefono: phoneSchema,
     /** Horarios ahora es OPCIONAL — se completa después en el panel. */
     horarios: z.string().optional().default(''),
@@ -133,6 +162,8 @@ export const merchantSignupSchema = z.object({
     email: z.string().email().toLowerCase(),
     password: z.string().min(8, 'Mínimo 8 caracteres'),
   }),
+  /** Código de referido (opcional): el comercio que invitó a este. */
+  ref: z.string().trim().max(40).optional(),
   /** El comercio debe aceptar TyC + Privacidad explícitamente. */
   acceptedTc: z.literal(true, {
     error: 'Tenés que aceptar los términos y condiciones',
@@ -159,12 +190,10 @@ export const couponCreateSchema = z.object({
   titulo: plainTextSchema(8, 60, 'Título'),
   descripcion: plainTextSchema(20, 280, 'Descripción'),
   condiciones: plainTextSchema(0, 280, 'Condiciones').optional().default(''),
-  porcentaje: z
-    .number()
-    .int()
-    .refine((n) => [5, 10, 15, 20, 25, 30, 40, 50].includes(n), {
-      message: 'Porcentaje inválido',
-    }),
+  // Antes era una lista fija [5,10,15,20,25,30,40,50] — pero el form ya dejaba
+  // tipear % libres y el slider del asesor necesita continuo. Relajado a entero
+  // 1–100 (los valores viejos quedan dentro del rango → backward-compatible).
+  porcentaje: z.number().int().min(1, 'Mínimo 1%').max(100, 'Máximo 100%'),
   vigenciaHasta: z
     .string()
     .refine(
@@ -175,6 +204,27 @@ export const couponCreateSchema = z.object({
       { message: 'La vigencia tiene que ser una fecha futura' },
     ),
   diasAplica: z.string().max(80).optional(),
+  /** Precio normal aproximado por persona (ARS). Opcional — alimenta el
+   *  planificador del vecino. */
+  precioReferencia: z.number().positive().optional(),
+  // ─── Asesor de cupones (todos opcionales, backward-compatible) ───────
+  // `.nullable()`: enviar null en un PATCH = LIMPIAR el campo (volverlo a vacío).
+  // `undefined`/omitido = no tocar. Permite "deshacer" un opcional al editar.
+  /** Costo aprox del comercio (PRIVADO — el backend nunca lo devuelve al vecino). */
+  costoReferencia: z.number().positive().nullable().optional(),
+  /** Objetivo comercial (guía al asesor; PRIVADO). */
+  objetivo: z.enum(['traer_nuevos', 'llenar_flojos', 'vaciar_stock', 'fidelizar']).nullable().optional(),
+  /** Tipo de oferta. */
+  tipoOferta: z.enum(['porcentaje', 'dos_por_uno', 'precio_fijo', 'happy_hour']).optional(),
+  /** Exclusivo de la app. */
+  exclusiva: z.boolean().optional(),
+  /** Días estructurados (además del string diasAplica para display). */
+  dias: z.array(diaSemanaSchema).max(7).nullable().optional(),
+  /** Franja horaria HH:MM (00:00–23:59). */
+  franjaDesde: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Hora válida HH:MM').nullable().optional(),
+  franjaHasta: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Hora válida HH:MM').nullable().optional(),
+  /** Producto estrella / gancho (para el copy). */
+  productoGancho: z.string().max(60).nullable().optional(),
   estado: z.enum(['activo', 'pausado']).default('activo'),
 })
 
@@ -219,17 +269,62 @@ export const confirmRedemptionSchema = z.object({
 
 // ─── Merchant edit ────────────────────────────────────────────────────
 
+/** Producto/ítem destacado de la carta del comercio (micro-sitio). */
+export const productoSchema = z.object({
+  nombre: plainTextSchema(1, 60, 'Nombre del producto'),
+  /** Precio como texto libre ("$3.500", "desde $2.000", "2x1"). */
+  precio: plainTextSchema(0, 24, 'Precio').optional().nullable(),
+  descripcion: plainTextSchema(0, 140, 'Descripción').optional().nullable(),
+})
+
 export const merchantUpdateSchema = z.object({
   nombre: z.string().min(3).max(80).optional(),
   categoria: categoriaSchema.optional(),
   categoriaOtro: z.string().max(60).optional().nullable(),
   direccion: z.string().min(5).max(160).optional(),
+  /**
+   * Coordenadas reales del comercio. Permiten corregir el pin DESPUÉS del alta
+   * (el comercio movió de local, o quedó en el placeholder del centro). Mismo
+   * rango que merchantSignupSchema; el backend sólo toca location si vienen.
+   */
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
   telefono: phoneSchema.optional(),
   horarios: z.string().max(500).optional(),
   horariosDetalle: horariosSemanaSchema.optional(),
   coverImageUrl: safeImageSrcSchema.optional().nullable(),
   logoUrl: safeImageSrcSchema.optional().nullable(),
   mapsUrl: safeHrefUrlSchema.optional().nullable(),
+  // ─── Micro-sitio: la ficha del vecino como "carta de presentación" ──────
+  /** Frase corta del hero (ej: "Pizzería a la piedra desde 1998"). */
+  tagline: plainTextSchema(0, 90, 'Frase').optional().nullable(),
+  /** Texto "Sobre el comercio" (historia, qué ofrece). */
+  descripcion: plainTextSchema(0, 600, 'Descripción').optional().nullable(),
+  /** Servicios/comodidades destacadas (chips en la ficha). */
+  servicios: z.array(servicioSchema).max(SERVICIO_IDS.length).optional(),
+  /**
+   * Redes y contacto extra. instagram/whatsapp se guardan como texto libre
+   * (handle o número) y el frontend construye un href seguro; facebook/web
+   * deben ser URLs http(s) válidas.
+   */
+  redes: z
+    .object({
+      instagram: z.string().trim().max(120).optional().nullable(),
+      facebook: safeHrefUrlSchema.optional().nullable(),
+      web: safeHrefUrlSchema.optional().nullable(),
+      whatsapp: z.string().trim().max(40).optional().nullable(),
+    })
+    .partial()
+    .optional()
+    .nullable(),
+  /**
+   * Galería de fotos del comercio (data URLs base64 o URLs http). Tope chico
+   * (4) porque por ahora viajan en base64 en el body; migrar a CDN para subir
+   * el límite (ver TODO BD01 en AdminComercioPage).
+   */
+  galeria: z.array(safeImageSrcSchema).max(4).optional(),
+  /** Carta / productos destacados (nombre + precio + descripción). */
+  productos: z.array(productoSchema).max(20).optional(),
   cuit: z.string().optional().nullable(),
   razonSocial: z.string().min(3).optional().nullable(),
   condicionFiscal: z
@@ -254,3 +349,5 @@ export type RedeemByCodeInput = z.infer<typeof redeemByCodeSchema>
 export type RedeemByPayloadInput = z.infer<typeof redeemByPayloadSchema>
 export type ConfirmRedemptionInput = z.infer<typeof confirmRedemptionSchema>
 export type MerchantUpdateInput = z.infer<typeof merchantUpdateSchema>
+export type Servicio = z.infer<typeof servicioSchema>
+export type Producto = z.infer<typeof productoSchema>

@@ -79,6 +79,12 @@ export type Merchant = {
 
 export type CouponEstado = 'activo' | 'pausado' | 'agotado' | 'vencido'
 
+/** Objetivo comercial del cupón. Guía al asesor; es PRIVADO (no se muestra al vecino). */
+export type CuponObjetivo = 'traer_nuevos' | 'llenar_flojos' | 'vaciar_stock' | 'fidelizar'
+
+/** Tipo de oferta. La cuponera arranca en 'porcentaje'. */
+export type TipoOferta = 'porcentaje' | 'dos_por_uno' | 'precio_fijo' | 'happy_hour'
+
 export type Coupon = {
   id: string
   merchantId: string
@@ -86,10 +92,28 @@ export type Coupon = {
   descripcion: string
   condiciones: string
   porcentaje: number
+  /** Precio normal aproximado por persona (ARS, opcional). */
+  precioReferencia?: number
   vigenciaHasta: string
   imagenSeed: string
   estado: CouponEstado
   diasAplica?: string
+  // ─── Asesor de cupones (todos opcionales, backward-compatible) ───────
+  /** Costo aprox del comercio (PRIVADO — nunca se serializa al vecino). */
+  costoReferencia?: number
+  /** Objetivo comercial (PRIVADO). */
+  objetivo?: CuponObjetivo
+  /** Tipo de oferta (default 'porcentaje'). */
+  tipoOferta?: TipoOferta
+  /** Exclusivo de la app (no se consigue en la puerta). */
+  exclusiva?: boolean
+  /** Días en que aplica (estructurado). `diasAplica` queda para display/compat. */
+  dias?: DiaSemana[]
+  /** Franja horaria (HH:MM). */
+  franjaDesde?: string
+  franjaHasta?: string
+  /** Producto estrella / gancho (para el copy). */
+  productoGancho?: string
 }
 
 export type ActivationStatus = 'activo' | 'canjeado' | 'expirado' | 'cancelado'

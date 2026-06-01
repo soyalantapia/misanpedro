@@ -9,6 +9,9 @@ const couponSchema = new Schema(
     descripcion: { type: String, required: true },
     condiciones: { type: String, default: '' },
     porcentaje: { type: Number, required: true, min: 1, max: 100 },
+    /** Precio normal aproximado POR PERSONA (ARS, opcional) — alimenta el
+     *  planificador "Armá tu plan" del vecino para estimar cuánto le queda. */
+    precioReferencia: { type: Number, min: 0 },
     vigenciaHasta: { type: Date, required: true, index: true },
     imagenUrl: { type: String },
     diasAplica: { type: String },
@@ -20,6 +23,22 @@ const couponSchema = new Schema(
     },
     stockMaximo: { type: Number },
     stockUsado: { type: Number, default: 0 },
+    // ─── Asesor de cupones (todos opcionales, backward-compatible) ───────
+    /** Costo aprox del comercio (PRIVADO — nunca se serializa al vecino). */
+    costoReferencia: { type: Number, min: 0 },
+    /** Objetivo comercial (PRIVADO): traer_nuevos|llenar_flojos|vaciar_stock|fidelizar. */
+    objetivo: { type: String },
+    /** Tipo de oferta. Default porcentaje. */
+    tipoOferta: { type: String, default: 'porcentaje' },
+    /** Exclusivo de la app (no se consigue en la puerta). */
+    exclusiva: { type: Boolean, default: false },
+    /** Días estructurados (ids DiaSemana). `diasAplica` (string) queda para display. */
+    dias: { type: [String], default: undefined },
+    /** Franja horaria (HH:MM). */
+    franjaDesde: { type: String },
+    franjaHasta: { type: String },
+    /** Producto estrella / gancho (para el copy). */
+    productoGancho: { type: String },
   },
   { timestamps: true },
 )
