@@ -41,6 +41,32 @@ export const CATEGORIAS: { id: Categoria; label: string }[] = [
   { id: 'otro', label: 'Otro · completar' },
 ]
 
+export type Servicio =
+  | 'delivery'
+  | 'retira'
+  | 'tarjeta'
+  | 'mercadopago'
+  | 'wifi'
+  | 'estacionamiento'
+  | 'accesible'
+  | 'pet_friendly'
+  | 'aire'
+  | 'reservas'
+
+/** Servicios/comodidades que el comercio destaca en su ficha (micro-sitio). */
+export const SERVICIOS: { id: Servicio; label: string }[] = [
+  { id: 'delivery', label: 'Delivery' },
+  { id: 'retira', label: 'Retiro en local' },
+  { id: 'tarjeta', label: 'Acepta tarjeta' },
+  { id: 'mercadopago', label: 'MercadoPago / QR' },
+  { id: 'wifi', label: 'WiFi' },
+  { id: 'estacionamiento', label: 'Estacionamiento' },
+  { id: 'accesible', label: 'Accesible' },
+  { id: 'pet_friendly', label: 'Pet friendly' },
+  { id: 'aire', label: 'Aire acondicionado' },
+  { id: 'reservas', label: 'Reservas' },
+]
+
 export type DiaSemana = 'lun' | 'mar' | 'mie' | 'jue' | 'vie' | 'sab' | 'dom'
 
 export const DIAS_SEMANA: { id: DiaSemana; label: string; corto: string }[] = [
@@ -76,6 +102,26 @@ export type Merchant = {
   /** Link directo a Google Maps (si está, reemplaza la búsqueda generada) */
   mapsUrl?: string
   logoSeed?: string
+  /** URL/dataURL del logo del comercio (avatar en la ficha). */
+  logoUrl?: string
+  // ─── Micro-sitio (carta de presentación editable por el comercio) ──────
+  /** Frase corta del hero. */
+  tagline?: string
+  /** Texto "Sobre el comercio". */
+  descripcion?: string
+  /** Servicios/comodidades destacadas. */
+  servicios?: Servicio[]
+  /** Galería de fotos (data URLs base64 o URLs). */
+  galeria?: string[]
+  /** Carta / productos destacados. */
+  productos?: { nombre: string; precio?: string | null; descripcion?: string | null }[]
+  /** Redes y contacto extra. */
+  redes?: {
+    instagram?: string | null
+    facebook?: string | null
+    web?: string | null
+    whatsapp?: string | null
+  }
   destacado?: boolean
 }
 
@@ -88,6 +134,8 @@ export type Coupon = {
   descripcion: string
   condiciones: string
   porcentaje: number
+  /** Precio normal aproximado por persona (ARS, opcional) — para el planificador. */
+  precioReferencia?: number
   vigenciaHasta: string
   imagenSeed: string
   estado: CouponEstado

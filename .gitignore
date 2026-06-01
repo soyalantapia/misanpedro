@@ -39,3 +39,6 @@ wa-sessions/
 apps/api/.wwebjs_cache/
 apps/api/.wwebjs_auth/
 apps/api/wa-sessions/
+
+# gstack (caché de tooling de agentes: logs de browse, detección de host, tokens)
+.gstack/

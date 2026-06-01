@@ -18,6 +18,7 @@ import { notificationsRoutes } from '@/routes/notifications'
 import { adminRoutes } from '@/routes/admin'
 import { ownerRoutes } from '@/routes/owner'
 import { tenantRoutes } from '@/routes/tenant'
+import { referralsRoutes } from '@/routes/referrals'
 import { seedIfEmpty } from '@/services/seed.service'
 import { startExpiryLoop, stopExpiryLoop } from '@/services/expiry.service'
 import { initSentry, captureException, flushSentry } from '@/services/sentry.service'
@@ -108,6 +109,7 @@ app.route('/api/v1/notifications', notificationsRoutes)
 app.route('/api/v1/admin', adminRoutes)
 app.route('/api/v1/owner', ownerRoutes)
 app.route('/api/v1/tenant', tenantRoutes)
+app.route('/api/v1/referrals', referralsRoutes)
 
 app.notFound((c) => c.json({ ok: false, error: 'not found' }, 404))
 

@@ -119,6 +119,9 @@ export const merchantAuth = {
       /** Texto libre si categoria === 'otro'. */
       categoriaOtro?: string
       direccion: string
+      /** Coordenadas marcadas en el mapa al registrarse. */
+      lat?: number
+      lng?: number
       telefono: string
       /** Horarios ahora opcional — se completa después en el panel. */
       horarios?: string
@@ -128,6 +131,8 @@ export const merchantAuth = {
       direccionFiscal?: string
     }
     admin: { nombre: string; email: string; password: string }
+    /** Código de referido (opcional). */
+    ref?: string
     acceptedTc?: boolean
   }): Promise<{ ok: true } | { ok: false; error: string }> {
     try {

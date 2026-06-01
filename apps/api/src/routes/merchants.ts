@@ -32,6 +32,26 @@ function serializeMerchantPublic(m: any) {
     logoUrl: m.logoUrl,
     mapsUrl: m.mapsUrl,
     logoSeed: m.logoSeed,
+    // Micro-sitio (carta de presentación del comercio)
+    tagline: m.tagline,
+    descripcion: m.descripcion,
+    servicios: Array.isArray(m.servicios) ? m.servicios : [],
+    galeria: Array.isArray(m.galeria) ? m.galeria : [],
+    productos: Array.isArray(m.productos)
+      ? m.productos.map((p: any) => ({
+          nombre: p.nombre,
+          precio: p.precio,
+          descripcion: p.descripcion,
+        }))
+      : [],
+    redes: m.redes
+      ? {
+          instagram: m.redes.instagram,
+          facebook: m.redes.facebook,
+          web: m.redes.web,
+          whatsapp: m.redes.whatsapp,
+        }
+      : undefined,
     destacado: !!m.destacado,
     foundingMember: !!m.foundingMember,
     nivel: m.nivel,
@@ -111,12 +131,24 @@ merchantsRoutes.patch('/me', requireMerchantAuth, async (c) => {
   if (data.categoria !== undefined) merchant.categoria = data.categoria
   if (data.categoriaOtro !== undefined) merchant.categoriaOtro = data.categoriaOtro ?? undefined
   if (data.direccion !== undefined) merchant.direccion = data.direccion
+  // Sólo reescribimos el punto si llegan ambas coordenadas. GeoJSON guarda
+  // [lng, lat] (al revés que el form). Así el comercio corrige un pin mal
+  // ubicado o el placeholder del centro sin que editar la dirección lo pise.
+  if (data.lat !== undefined && data.lng !== undefined) {
+    merchant.location = { type: 'Point', coordinates: [data.lng, data.lat] }
+  }
   if (data.telefono !== undefined) merchant.telefono = data.telefono
   if (data.horarios !== undefined) merchant.horarios = data.horarios
   if (data.horariosDetalle !== undefined) merchant.horariosDetalle = data.horariosDetalle as any
   if (data.coverImageUrl !== undefined) merchant.coverImageUrl = data.coverImageUrl ?? undefined
   if (data.logoUrl !== undefined) merchant.logoUrl = data.logoUrl ?? undefined
   if (data.mapsUrl !== undefined) merchant.mapsUrl = data.mapsUrl ?? undefined
+  if (data.tagline !== undefined) merchant.tagline = data.tagline ?? undefined
+  if (data.descripcion !== undefined) merchant.descripcion = data.descripcion ?? undefined
+  if (data.servicios !== undefined) merchant.servicios = data.servicios
+  if (data.galeria !== undefined) merchant.galeria = data.galeria
+  if (data.productos !== undefined) merchant.productos = data.productos as any
+  if (data.redes !== undefined) merchant.redes = (data.redes ?? undefined) as any
   if (data.cuit !== undefined) merchant.cuit = data.cuit ?? undefined
   if (data.razonSocial !== undefined) merchant.razonSocial = data.razonSocial ?? undefined
   if (data.condicionFiscal !== undefined) merchant.condicionFiscal = data.condicionFiscal ?? undefined

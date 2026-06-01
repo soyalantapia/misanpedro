@@ -20,6 +20,11 @@ const schema = z.object({
 
   SENTRY_DSN: z.string().optional(),
 
+  // Web Push (VAPID). Si faltan las claves, el push queda en no-op.
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default('mailto:soporte@misanpedro.app'),
+
   WHATSAPP_SESSIONS_DIR: z.string().default('/tmp/wa-sessions'),
 
   /** Plan mensual en ARS — precio FINAL al comercio (monotributo emite factura C sin IVA discriminado). NO sumar IVA encima. */

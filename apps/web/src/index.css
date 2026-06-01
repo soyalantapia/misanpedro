@@ -80,6 +80,27 @@
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Tema vecino "Club de ahorro" (light) ──────────────────────
+     Fondo blanco, amigable. El lime sigue siendo el acento de marca.
+     Convive con la paleta light del panel admin (accent violet). */
+  --color-fin-bg: #ffffff;
+  --color-fin-surface: #f7f8f9;
+  --color-fin-surface2: #eef0f3;
+  --color-fin-line: #e2e5ea;
+  --color-fin-ink: #0f1923;
+  --color-fin-soft: #5a6474;
+  --color-fin-faint: #9aa3b0;
+  --color-fin-lime: #5db800;
+  --color-fin-lime2: #4ea000;
+  --color-fin-violet: #5347c8;
+  --color-fin-up: #059669;
+  --color-fin-danger: #e11d48;
+
+  --shadow-fin-glow: 0 0 0 1px rgba(93, 184, 0, 0.18),
+    0 8px 24px -8px rgba(93, 184, 0, 0.22);
+  --shadow-fin-card: 0 1px 3px rgba(15, 25, 35, 0.06),
+    0 4px 16px -4px rgba(15, 25, 35, 0.08);
 }
 
 :root {
@@ -347,4 +368,39 @@ input:focus-visible {
      en runtime cuando loadTenantConfig() responde. */
   --tenant-primary: var(--color-accent-500);
   --tenant-accent: var(--color-accent-700);
+}
+
+/* ── Utilidades del tema "Fintech del ahorro" ─────────────────── */
+@utility shadow-fin-glow {
+  box-shadow: var(--shadow-fin-glow);
+}
+@utility shadow-fin-card {
+  box-shadow: var(--shadow-fin-card);
+}
+
+/* Textura sutil de puntos para superficies claras (hero/wallet). */
+.bg-fin-grid {
+  background-image: radial-gradient(rgba(93, 184, 0, 0.10) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Mesh de acento para el héroe del ahorro (light). */
+.bg-fin-mesh {
+  background-image:
+    radial-gradient(ellipse at top right, rgba(93, 184, 0, 0.10), transparent 55%),
+    radial-gradient(ellipse at bottom left, rgba(83, 71, 200, 0.07), transparent 55%);
+}
+
+@keyframes count-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@utility animate-count-pop {
+  animation: count-pop 500ms var(--ease-out-expo) both;
 }

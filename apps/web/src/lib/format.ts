@@ -119,6 +119,33 @@ export function defaultHorariosSemana(): HorariosSemana {
   return result as HorariosSemana
 }
 
+/**
+ * ¿El comercio está abierto ahora según su horario por día?
+ *   - `true`  → abierto en este momento
+ *   - `false` → cerrado (hoy no abre, o fuera de franja)
+ *   - `null`  → sin info de horarios (la ficha oculta el chip)
+ * Maneja franjas que cruzan medianoche (ej. 20:00–02:00).
+ */
+export function isOpenNow(
+  detalle: HorariosSemana | undefined | null,
+  now: Date = new Date(),
+): boolean | null {
+  if (!detalle || typeof detalle !== 'object') return null
+  const map: DiaSemana[] = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab']
+  const h = detalle[map[now.getDay()]]
+  if (!h) return null
+  if (!h.abierto) return false
+  const toMin = (s: string) => {
+    const [hh, mm] = s.split(':').map(Number)
+    return Number.isNaN(hh) || Number.isNaN(mm) ? null : hh * 60 + mm
+  }
+  const desde = toMin(h.desde)
+  const hasta = toMin(h.hasta)
+  if (desde == null || hasta == null) return null
+  const cur = now.getHours() * 60 + now.getMinutes()
+  return hasta < desde ? cur >= desde || cur <= hasta : cur >= desde && cur <= hasta
+}
+
 /** Convierte "1992-06-15" → "15 de junio de 1992" (es-AR).
  *  Importante: agregamos T12:00:00 para evitar bug de timezone — `new Date("1992-06-15")`
  *  se interpreta como UTC midnight, que en zonas al oeste de UTC (ej. AR = UTC-3)

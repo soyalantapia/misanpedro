@@ -15,13 +15,9 @@ import { syncMyActivations } from '@/lib/syncActivations'
 export function MisCuponesPage() {
   const allActivations = useActivations()
   const user = useUser()
-  // V10: refrescar activaciones desde el backend al entrar (estado canjeado/
-  // expirado puede haber cambiado mientras el vecino estaba en otra pantalla).
   useEffect(() => {
     void syncMyActivations()
   }, [])
-  // Sólo mostramos activaciones del usuario actual. Si no hay user, mostramos
-  // empty state (no filtramos vs el seed demo de otros vecinos).
   const activations = useMemo(
     () => (user ? allActivations.filter((a) => a.userId === user.id) : []),
     [allActivations, user],
@@ -95,11 +91,11 @@ export function MisCuponesPage() {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
         <div className="flex flex-col gap-2">
-          <div className="h-4 w-32 animate-pulse rounded-full bg-accent-100" />
-          <div className="h-9 w-48 animate-pulse rounded-2xl bg-neutral-200" />
+          <div className="h-4 w-32 animate-pulse rounded-full bg-fin-surface2" />
+          <div className="h-9 w-48 animate-pulse rounded-2xl bg-fin-surface2" />
         </div>
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-24 animate-pulse rounded-3xl bg-white shadow-card" style={{ animationDelay: `${i * 60}ms` }} />
+          <div key={i} className="h-24 animate-pulse rounded-3xl bg-fin-surface" style={{ animationDelay: `${i * 60}ms` }} />
         ))}
       </div>
     )
@@ -110,8 +106,6 @@ export function MisCuponesPage() {
     setReactivating(activationId)
     const isMongoId = /^[0-9a-f]{24}$/i.test(couponId)
     if (isMongoId) {
-      // Reactivación vía API: valida que el cupón siga activo en el servidor
-      // y devuelve una activación fresca (o la ya activa existente).
       try {
         const res = await api.activations.create(couponId)
         const a = res.activation
@@ -141,7 +135,6 @@ export function MisCuponesPage() {
         setReactivating(null)
       }
     } else {
-      // Demo / seed: reactivación local (datos de prueba, no hay server real)
       const a = activationActions.reactivate(activationId)
       setReactivating(null)
       if (a) {
@@ -154,17 +147,10 @@ export function MisCuponesPage() {
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
       <header className="flex flex-col gap-1.5">
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
-          <Ticket size={12} /> Pendientes de canjear
-        </div>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-fin-ink sm:text-4xl">
           Mis cupones
         </h1>
-        <p className="text-sm text-neutral-500">
-          {/* F6: antes decía "Cada cupón activo tiene 30 minutos antes de expirar"
-              pero el backend no siempre setea expiresAt — la verdad real está en
-              CuponActivoPage (con ExpiryHint que muestra countdown o "Sin tiempo límite").
-              Acá quitamos el "30 minutos" y dejamos copy neutral consistente. */}
+        <p className="text-sm text-fin-soft">
           Acá ves los descuentos que activaste y todavía no canjeaste. Si alguno expiró, lo
           podés reactivar.
         </p>
@@ -178,7 +164,7 @@ export function MisCuponesPage() {
           action={
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-5 py-2.5 text-sm font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5"
+              className="inline-flex items-center gap-1.5 rounded-full bg-fin-lime px-5 py-2.5 text-sm font-bold text-fin-bg shadow-fin-glow transition-all duration-200 hover:-translate-y-0.5"
             >
               <Sparkles size={14} /> Ver descuentos
             </Link>
@@ -190,13 +176,10 @@ export function MisCuponesPage() {
             const c = getCoupon(a.couponId)
             const m = c ? getMerchantBySlug(c.merchantId) : undefined
             if (!c || !m) {
-              // Datos de cupón/comercio aún no disponibles (API cargando o seed
-              // sin resolver). Mostramos un skeleton para no ocultar silenciosamente
-              // la activación mientras el store termina de hidratar.
               return (
                 <div
                   key={a.id}
-                  className="h-24 animate-pulse rounded-3xl bg-white shadow-card ring-1 ring-neutral-100"
+                  className="h-24 animate-pulse rounded-3xl bg-fin-surface ring-1 ring-fin-line"
                 />
               )
             }
@@ -208,24 +191,18 @@ export function MisCuponesPage() {
               <div
                 key={a.id}
                 style={{ animationDelay: `${i * 60}ms` }}
-                className="animate-fade-up flex overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-neutral-100"
+                className="animate-fade-up flex overflow-hidden rounded-3xl bg-fin-surface ring-1 ring-fin-line shadow-fin-card"
               >
-                <CardImage
-                  categoria={m.categoria}
-                  className="h-auto w-24 shrink-0"
-                  size="sm"
-                />
+                <CardImage categoria={m.categoria} className="h-auto w-24 shrink-0" size="sm" />
                 <div className="flex flex-1 flex-col gap-1 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-fin-faint">
                         {m.nombre}
                       </p>
-                      <p className="text-sm font-bold leading-tight text-neutral-900">
-                        {c.titulo}
-                      </p>
+                      <p className="text-sm font-bold leading-tight text-fin-ink">{c.titulo}</p>
                     </div>
-                    <span className="shrink-0 font-bold text-accent-700 tabular-nums">
+                    <span className="shrink-0 font-bold text-fin-lime tabular-nums">
                       {c.porcentaje}%
                     </span>
                   </div>
@@ -236,7 +213,7 @@ export function MisCuponesPage() {
                     {showAsActive ? (
                       <Link
                         to={`/activacion/${a.id}`}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-1.5 text-xs font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-fin-lime px-4 py-1.5 text-xs font-bold text-fin-bg shadow-fin-glow transition-all duration-200 hover:-translate-y-0.5"
                       >
                         Ver QR <ArrowRight size={12} />
                       </Link>
@@ -245,7 +222,7 @@ export function MisCuponesPage() {
                         type="button"
                         onClick={() => handleReactivate(a.id, a.couponId)}
                         disabled={reactivating === a.id}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-bold text-accent-700 ring-1 ring-accent-200 transition-all hover:-translate-y-0.5 hover:bg-accent-50 disabled:opacity-60"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-fin-surface2 px-4 py-1.5 text-xs font-bold text-fin-lime ring-1 ring-fin-line transition-all hover:-translate-y-0.5 hover:text-fin-ink disabled:opacity-60"
                       >
                         <RefreshCw size={12} className={reactivating === a.id ? 'animate-spin' : ''} />
                         {reactivating === a.id ? 'Activando…' : 'Reactivar'}
@@ -253,7 +230,7 @@ export function MisCuponesPage() {
                     )}
                     <Link
                       to={`/cupon/${c.id}`}
-                      className="text-xs font-semibold text-neutral-500 hover:text-neutral-900"
+                      className="text-xs font-semibold text-fin-soft hover:text-fin-ink"
                     >
                       Detalle
                     </Link>
@@ -271,21 +248,21 @@ export function MisCuponesPage() {
 function StatusLine({ status }: { status: string }) {
   if (status === 'cancelado') {
     return (
-      <p className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-400">
+      <p className="inline-flex items-center gap-1 text-[11px] font-medium text-fin-faint">
         <AlertCircle size={11} /> Cancelado · podés reactivarlo
       </p>
     )
   }
   if (status === 'expirado') {
     return (
-      <p className="inline-flex items-center gap-1 text-[11px] font-medium text-status-error-fg">
+      <p className="inline-flex items-center gap-1 text-[11px] font-medium text-fin-danger">
         <AlertCircle size={11} /> Expirado · podés reactivarlo
       </p>
     )
   }
   if (status === 'activo') {
     return (
-      <p className="inline-flex items-center gap-1 text-[11px] font-bold tabular-nums text-status-success-fg">
+      <p className="inline-flex items-center gap-1 text-[11px] font-bold tabular-nums text-fin-up">
         <Clock size={11} /> Listo para canjear
       </p>
     )

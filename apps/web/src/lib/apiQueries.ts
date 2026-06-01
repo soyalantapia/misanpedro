@@ -234,6 +234,16 @@ export function useApiWhatsappCampaigns() {
   return useAsync(() => api.whatsapp.campaigns(), [])
 }
 
+// ─── Referidos (comercio) ────────────────────────────────────────────
+
+export function useReferralsMe() {
+  return useAsync(() => api.referrals.me().then((r) => r.referral), [])
+}
+
+export function useReferralsMine() {
+  return useAsync(() => api.referrals.mine().then((r) => r.referidos), [])
+}
+
 // ─── Tipos re-export ─────────────────────────────────────────────────
 
 export type { ApiMerchant, ApiCoupon, ApiActivation }

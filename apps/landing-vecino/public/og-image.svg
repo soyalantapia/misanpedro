@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0eefd"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+    <linearGradient id="logo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#695ede"/>
+      <stop offset="100%" stop-color="#4239a3"/>
+    </linearGradient>
+    <linearGradient id="gradText" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#695ede"/>
+      <stop offset="100%" stop-color="#4239a3"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Soft gradient orbs -->
+  <circle cx="150" cy="100" r="220" fill="#695ede" opacity="0.08"/>
+  <circle cx="1050" cy="530" r="280" fill="#695ede" opacity="0.06"/>
+
+  <!-- Logo + brand row -->
+  <g transform="translate(80, 80)">
+    <rect width="56" height="56" rx="12" fill="url(#logo)"/>
+    <text x="28" y="40" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif" font-size="32" font-weight="900" fill="#ffffff">m</text>
+    <text x="76" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif" font-size="28" font-weight="700" fill="#333132">misanpedro</text>
+  </g>
+
+  <!-- Eyebrow chip -->
+  <g transform="translate(80, 220)">
+    <rect width="280" height="32" rx="16" fill="#ffffff" stroke="#e0ddfb"/>
+    <text x="140" y="22" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif" font-size="12" font-weight="700" fill="#4239a3" letter-spacing="2">PARA COMERCIOS DE SAN PEDRO</text>
+  </g>
+
+  <!-- Main headline -->
+  <text x="80" y="330" font-family="-apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif" font-size="72" font-weight="800" fill="#333132" letter-spacing="-2">
+    Tus clientes vuelven solos.
+  </text>
+  <text x="80" y="410" font-family="-apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif" font-size="72" font-weight="800" fill="url(#gradText)" letter-spacing="-2">
+    Sin imprimir un volante más.
+  </text>
+
+  <!-- Subhead -->
+  <text x="80" y="480" font-family="-apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif" font-size="24" font-weight="400" fill="#605a5e">
+    Cupones, CRM y WhatsApp Business para tu PyME.
+  </text>
+
+  <!-- CTA pill -->
+  <g transform="translate(80, 520)">
+    <rect width="220" height="60" rx="30" fill="url(#logo)"/>
+    <text x="110" y="38" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif" font-size="18" font-weight="700" fill="#ffffff">
+      Empezar →
+    </text>
+  </g>
+
+  <!-- Trust strip -->
+  <text x="80" y="600" font-family="-apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif" font-size="14" font-weight="500" fill="#8b8589">
+    Cancelás cuando quieras · Precio congelado de por vida · Hecho en San Pedro
+  </text>
+</svg>

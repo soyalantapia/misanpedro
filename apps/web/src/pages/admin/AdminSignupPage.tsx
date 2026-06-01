@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Store,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
   CheckCircle2,
   Sparkles,
   Clock,
@@ -18,23 +17,17 @@ import { merchantAuth } from '@/lib/merchantStore'
 import { useToast } from '@/components/Toast'
 import { Select } from '@/components/Select'
 import { cn } from '@/lib/cn'
-import { billing } from '@/lib/api'
 import { validateCuit } from '@/lib/validations/cuit'
 import { evaluatePassword } from '@/lib/validations/password'
+import { useTenant } from '@/lib/tenant'
 
-/**
- * Precio único $25.000/mes FINAL para el comercio.
- *
- * Primera etapa (monotributo): factura C, sin IVA discriminado. El monto
- * que ve el comercio = el monto que cobra MP = el monto del recibo.
- *
- * Más adelante (SaaS S.A.S./responsable inscripto): factura A con IVA 21%
- * discriminado dentro del mismo $25.000 (el precio público no cambia).
- *
- * Cambio asociado: T&C sección 5 + .env.example.PLAN_AMOUNT_ARS + billing.ts
- * sendReceiptForSubscription (sin recargo IVA en email).
- */
-const PRECIO_TOTAL = 25_000
+// Leaflet es pesado (~150KB) — lo bajamos como chunk aparte y sólo cuando
+// el comercio llega al paso de datos del signup.
+const LocationPicker = lazy(() =>
+  import('@/components/LocationPicker').then((m) => ({ default: m.LocationPicker })),
+)
+
+const SANPEDRO_CENTER = { lat: -33.6797, lng: -59.6669 }
 
 type Step = 'datos' | 'fiscal' | 'pago' | 'listo'
 type CondicionFiscal = 'monotributo' | 'responsable_inscripto'
@@ -44,6 +37,8 @@ type Form = {
   categoria: Categoria
   categoriaOtro: string
   direccion: string
+  lat: number | null
+  lng: number | null
   telefono: string
   horarios: string
   emailAdmin: string
@@ -61,6 +56,8 @@ const empty: Form = {
   categoria: 'gastronomia',
   categoriaOtro: '',
   direccion: '',
+  lat: null,
+  lng: null,
   telefono: '',
   horarios: '',
   emailAdmin: '',
@@ -138,6 +135,13 @@ export function AdminSignupPage() {
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
   const toast = useToast()
+  const tenant = useTenant()
+  const mapCenter = tenant.config?.geoCenter ?? SANPEDRO_CENTER
+  const cityHint =
+    [tenant.config?.ciudad, tenant.config?.provincia].filter(Boolean).join(', ') ||
+    'San Pedro, Buenos Aires'
+  const [searchParams] = useSearchParams()
+  const refCode = searchParams.get('ref')?.trim() || undefined
 
   // Persistimos el form en localStorage en cada cambio. No persistimos
   // password ni acceptedTc (ver saveDraft). Tampoco después de "listo".
@@ -152,6 +156,12 @@ export function AdminSignupPage() {
     if (draftRestored) setDraftRestored(false)
   }
 
+  // Seteamos lat+lng juntas para no dejar un estado intermedio (lat sin lng).
+  function setLocation(ll: { lat: number; lng: number }) {
+    setForm((f) => ({ ...f, lat: ll.lat, lng: ll.lng }))
+    setError(null)
+  }
+
   function discardDraft() {
     clearDraft()
     setForm(empty)
@@ -164,6 +174,8 @@ export function AdminSignupPage() {
     if (form.categoria === 'otro' && form.categoriaOtro.trim().length < 2)
       return 'Indicá qué tipo de comercio es'
     if (form.direccion.trim().length < 5) return 'Falta una dirección válida'
+    if (form.lat == null || form.lng == null)
+      return 'Marcá la ubicación de tu comercio en el mapa'
     if (!form.telefono.trim()) return 'Falta el teléfono'
     // Los horarios ya no son obligatorios al signup — se completan en el panel
     if (form.nombreAdmin.trim().length < 3) return 'Falta tu nombre completo'
@@ -219,6 +231,8 @@ export function AdminSignupPage() {
         categoriaOtro:
           form.categoria === 'otro' ? form.categoriaOtro.trim() : undefined,
         direccion: form.direccion.trim(),
+        lat: form.lat ?? undefined,
+        lng: form.lng ?? undefined,
         telefono: form.telefono.trim(),
         horarios: form.horarios.trim(),
         cuit: form.cuit.trim(),
@@ -231,51 +245,18 @@ export function AdminSignupPage() {
         email: form.emailAdmin.trim().toLowerCase(),
         password: form.password,
       },
+      ref: refCode,
       acceptedTc: true,
     })
     if (result.ok) {
-      // Comercio creado en backend — limpiamos el draft persistido.
+      // Comercio creado y ACTIVO con 3 meses gratis — sin pago ni MercadoPago.
+      // Entra directo al panel y ya es visible para los vecinos.
       clearDraft()
-      // Disparamos el flujo de billing (Mercado Pago preapproval).
-      // En production, redirigimos al checkout de MP. En development con
-      // MP_ACCESS_TOKEN vacío, el backend devuelve init_point apuntando a
-      // /admin/billing/mock-pay → en ese caso auto-confirmamos para que el
-      // comercio quede activo y pueda usar el panel.
-      try {
-        const pre = await billing.createPreapproval()
-        const ref = pre.subscription.externalReference
-        const initPoint = pre.subscription.initPoint
-        const isMock = initPoint.includes('/admin/billing/mock-pay')
-        if (isMock) {
-          await billing.mockConfirm(ref)
-          setSubmitting(false)
-          setStep('listo')
-          toast.success('¡Comercio activo!', 'Pago simulado en dev. Ya podés usar el panel.')
-          setTimeout(() => navigate('/admin', { replace: true }), 1500)
-          return
-        }
-        // Producción real: redirigir al checkout de MP.
-        // setSubmitting(false) ANTES del location.href — si el browser bloquea
-        // el redirect (popup blocker, CSP), el botón vuelve a ser usable.
-        toast.info('Te llevamos a Mercado Pago…')
-        setSubmitting(false)
-        window.location.href = initPoint
-        return
-      } catch {
-        // Si el billing falla, igual dejamos al comercio entrar al panel
-        // (queda pending_payment y desde Mi Comercio puede reintentar).
-        // IMPORTANTE: el comercio NO es visible para vecinos hasta que pague,
-        // así que el toast tiene que comunicar urgencia (NO éxito) y
-        // redirigimos directo a /admin/comercio donde puede reintentar el pago.
-        setSubmitting(false)
-        setStep('listo')
-        toast.warning(
-          'Pago pendiente',
-          'Tu comercio quedó creado pero NO es visible aún. Completá el pago desde "Mi Comercio".',
-        )
-        setTimeout(() => navigate('/admin/comercio', { replace: true }), 1500)
-        return
-      }
+      setSubmitting(false)
+      setStep('listo')
+      toast.success('¡Listo! Tenés 3 meses gratis', 'Tu comercio ya es visible para los vecinos.')
+      setTimeout(() => navigate('/admin', { replace: true }), 1500)
+      return
     }
     // El API rechazó el signup. Mostramos error y volvemos al primer paso si
     // el problema fue de email. No hay fallback local — todos los comercios
@@ -308,22 +289,32 @@ export function AdminSignupPage() {
           </div>
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-accent-700">
-              Sumá tu comercio · ${PRECIO_TOTAL.toLocaleString('es-AR')} / mes
+              Sumá tu comercio · 3 meses gratis
             </p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900">
               {step === 'datos' && 'Datos del comercio'}
               {step === 'fiscal' && 'Datos fiscales'}
-              {step === 'pago' && 'Activá tu suscripción'}
+              {step === 'pago' && 'Empezá gratis'}
               {step === 'listo' && '¡Bienvenido!'}
             </h1>
             <p className="mt-1 text-sm text-neutral-500">
-              {step === 'datos' && '3 minutos · Sin permanencia'}
-              {step === 'fiscal' && 'Para emitir tu factura C'}
-              {step === 'pago' && `${PRECIO_TOTAL.toLocaleString('es-AR')} ARS / mes · Precio congelado de por vida`}
+              {step === 'datos' && '3 minutos · Sin tarjeta'}
+              {step === 'fiscal' && 'Opcional — para tu factura más adelante'}
+              {step === 'pago' && '3 meses gratis · sin tarjeta · acceso completo'}
               {step === 'listo' && 'Te estamos llevando al panel…'}
             </p>
           </div>
         </div>
+
+        {refCode && (
+          <div className="flex items-center gap-2.5 rounded-2xl bg-status-success-bg px-4 py-3 text-status-success-fg ring-1 ring-status-success/20">
+            <span aria-hidden className="text-lg leading-none">👋</span>
+            <p className="text-xs leading-snug">
+              <strong>Te invitó un comercio.</strong> Registrate y publicá tu primer descuento:
+              arrancás con 15 días gratis extra (y tu colega gana una semana). ¡Bienvenido!
+            </p>
+          </div>
+        )}
 
         <Stepper step={step} />
 
@@ -398,6 +389,28 @@ export function AdminSignupPage() {
                 />
               }
             />
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+                Ubicación en el mapa <span className="text-status-error">*</span>
+              </span>
+              <Suspense
+                fallback={
+                  <div className="h-[240px] animate-pulse rounded-2xl bg-neutral-100 ring-1 ring-neutral-200" />
+                }
+              >
+                <LocationPicker
+                  value={
+                    form.lat != null && form.lng != null
+                      ? { lat: form.lat, lng: form.lng }
+                      : null
+                  }
+                  onChange={setLocation}
+                  address={form.direccion}
+                  center={mapCenter}
+                  cityHint={cityHint}
+                />
+              </Suspense>
+            </div>
             <Field
               label="Teléfono"
               required
@@ -741,12 +754,12 @@ function PagoStep({
           <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
             <Sparkles size={11} /> Plan estándar comercio
           </div>
-          <p className="mt-3 text-5xl font-bold tabular-nums tracking-tight">
-            ${PRECIO_TOTAL.toLocaleString('es-AR')}
-            <span className="ml-1 text-base font-normal text-accent-50">/ mes</span>
+          <p className="mt-3 text-5xl font-bold tracking-tight">
+            3 meses
+            <span className="ml-2 text-3xl font-bold text-accent-50">gratis</span>
           </p>
           <p className="mt-1 text-xs text-accent-50/90">
-            Precio congelado de por vida · Sin permanencia · Cancelás cuando quieras
+            Sin tarjeta · Sin MercadoPago · Cancelás cuando quieras
           </p>
         </div>
         <div className="px-5 pt-4 pb-3">
@@ -784,8 +797,8 @@ function PagoStep({
 
       <div className="rounded-3xl bg-status-info-bg p-4 text-status-info-fg ring-1 ring-status-info/20">
         <p className="text-xs leading-snug">
-          <strong>Derecho de arrepentimiento:</strong> tenés <strong>10 días</strong> para
-          arrepentirte y solicitar reembolso completo (Ley 24.240 de Defensa del Consumidor).
+          <strong>Sin compromiso:</strong> arrancás con <strong>3 meses gratis</strong> y acceso
+          completo a todo. No te pedimos tarjeta ni datos de pago para empezar.
         </p>
       </div>
 
@@ -836,7 +849,7 @@ function PagoStep({
       >
         {submitting ? (
           <>
-            <Clock size={16} className="animate-pulse" /> Procesando pago…
+            <Clock size={16} className="animate-pulse" /> Activando…
           </>
         ) : !acceptedTc ? (
           <>
@@ -844,7 +857,7 @@ function PagoStep({
           </>
         ) : (
           <>
-            <CreditCard size={16} /> Pagar ${PRECIO_TOTAL.toLocaleString('es-AR')} y crear comercio
+            <Sparkles size={16} /> Empezar gratis
           </>
         )}
       </button>

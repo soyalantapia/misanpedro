@@ -11,6 +11,7 @@ import {
   MessageCircle,
   HelpCircle,
   CreditCard,
+  Gift,
 } from 'lucide-react'
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
 import { useMerchant } from '@/lib/merchantsStore'
@@ -39,6 +40,10 @@ const links = [
   { to: '/admin/whatsapp', label: 'WhatsApp', icon: MessageCircle, end: false },
   { to: '/admin/comercio', label: 'Comercio', icon: Store, end: false },
 ]
+
+// Referidos vive en el sidebar desktop y en el header mobile (NO en el bottom
+// nav: ya tiene 6 ítems y sumar un 7º aprieta los tap targets en 375px).
+const referidosLink = { to: '/admin/referidos', label: 'Recomendá y ganá', icon: Gift, end: false }
 
 export function MerchantShell() {
   const sessionState = useMerchantSession()
@@ -115,7 +120,7 @@ export function MerchantShell() {
           </div>
         </div>
         <nav aria-label="Navegación panel comercio" className="flex flex-col gap-1 px-3">
-          {links.map(({ to, label, icon: Icon, end }) => (
+          {[...links, referidosLink].map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -186,6 +191,14 @@ export function MerchantShell() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            to="/admin/referidos"
+            aria-label="Recomendá y ganá"
+            title="Recomendá y ganá"
+            className="grid h-9 w-9 place-items-center rounded-full bg-accent-50 text-accent-700 hover:bg-accent-100"
+          >
+            <Gift size={15} />
+          </Link>
           <NotificationsBell compact />
           <button
             type="button"

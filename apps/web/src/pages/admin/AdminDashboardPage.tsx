@@ -13,6 +13,7 @@ import {
   Receipt,
   UserPlus,
   CreditCard,
+  Gift,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useRedemptionsForMerchant } from '@/lib/merchantQueries'
@@ -212,6 +213,14 @@ export function AdminDashboardPage() {
 
       <section className="flex flex-col gap-3">
         <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Gestión</p>
+        {merchantCoupons.length > 0 && (
+          <SecondaryAction
+            to="/admin/referidos"
+            title="Recomendá y ganá"
+            description="Invitá a otro comercio: ganás 1 semana gratis por cada uno"
+            icon={Gift}
+          />
+        )}
         <SecondaryAction
           to="/admin/cupones"
           title="Mis cupones"

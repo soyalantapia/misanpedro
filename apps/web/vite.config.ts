@@ -30,6 +30,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        // Carga los handlers de Web Push (push / notificationclick) dentro del
+        // service worker generado por Workbox. push-sw.js vive en public/.
+        importScripts: ['push-sw.js'],
         // Forzar al SW nuevo a tomar control YA, sin esperar a que el user
         // cierre todos los tabs. Crítico para que cambios de config (ej. la
         // URL del API) lleguen al user en el siguiente refresh sin que tenga

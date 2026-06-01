@@ -31,6 +31,18 @@ if (import.meta.env.DEV) {
   )
 }
 
+// Service worker: sólo en producción. Registra el SW generado por Workbox,
+// que incluye los handlers de Web Push (importScripts push-sw.js). En dev no
+// hay SW (devOptions off), por eso las notificaciones se prueban en build/PWA.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const base = import.meta.env.BASE_URL
+    navigator.serviceWorker
+      .register(`${base}sw.js`, { scope: base })
+      .catch((err) => console.error('[sw] registro falló', err))
+  })
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

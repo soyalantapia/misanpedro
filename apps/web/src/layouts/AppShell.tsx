@@ -1,13 +1,14 @@
 import { Outlet, NavLink, Link } from 'react-router-dom'
-import { Tag, Ticket, CheckCircle2, User } from 'lucide-react'
+import { Tag, Map, CheckCircle2, User } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { OfflineBanner } from '@/components/OfflineBanner'
 import { RedemptionWatcher } from '@/components/RedemptionWatcher'
-import { useTenant, SUPPORT_EMAIL } from '@/lib/tenant'
+import { AlertsBell } from '@/components/AlertsBell'
+import { useTenant } from '@/lib/tenant'
 
 const links = [
   { to: '/', label: 'Descuentos', icon: Tag, end: true },
-  { to: '/mis-cupones', label: 'Mis cupones', icon: Ticket, end: false },
+  { to: '/mapa', label: 'Mapa', icon: Map, end: false },
   { to: '/canjeados', label: 'Canjeados', icon: CheckCircle2, end: false },
   { to: '/perfil', label: 'Perfil', icon: User, end: false },
 ]
@@ -16,17 +17,21 @@ export function AppShell() {
   const tenant = useTenant()
   const appName = tenant.config?.nombre ?? 'Mi San Pedro'
   return (
-    <div className="flex min-h-[100svh] flex-col bg-primary-50 text-neutral-900 md:flex-row">
+    <div className="flex min-h-[100svh] flex-col bg-fin-bg text-fin-ink md:flex-row">
       {/* Sidebar (md+) */}
-      <aside aria-label="Panel lateral" className="hidden shrink-0 border-r border-neutral-100 bg-white md:flex md:w-60 md:flex-col lg:w-64">
+      <aside
+        aria-label="Panel lateral"
+        className="hidden shrink-0 border-r border-fin-line bg-fin-surface md:flex md:w-60 md:flex-col lg:w-64"
+      >
         <div className="flex items-center gap-3 px-6 py-7">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-fin-lime text-fin-bg shadow-fin-glow">
             <Tag size={22} />
           </div>
-          <div>
-            <p className="text-base font-bold text-neutral-900">{appName}</p>
-            <p className="text-xs font-medium text-neutral-400">Descuentos vecinales</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-base font-bold text-fin-ink">{appName}</p>
+            <p className="text-xs font-medium text-fin-faint">Descuentos vecinales</p>
           </div>
+          <AlertsBell />
         </div>
         <nav aria-label="Navegación principal" className="flex flex-col gap-1 px-3">
           {links.map(({ to, label, icon: Icon, end }) => (
@@ -37,24 +42,15 @@ export function AppShell() {
               className={({ isActive }) =>
                 cn(
                   'group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200',
-                  'focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
                   isActive
-                    ? 'bg-accent-50 text-accent-700'
-                    : 'text-neutral-500 hover:bg-primary-100/60 hover:text-neutral-800',
+                    ? 'bg-fin-surface2 text-fin-lime ring-1 ring-fin-line'
+                    : 'text-fin-soft hover:bg-fin-surface2/60 hover:text-fin-ink',
                 )
               }
             >
               {({ isActive }) => (
                 <>
-                  <Icon
-                    size={18}
-                    className={cn(
-                      'transition-colors',
-                      isActive
-                        ? 'text-accent-500'
-                        : 'text-neutral-400 group-hover:text-neutral-700',
-                    )}
-                  />
+                  <Icon size={18} className={cn('transition-colors', isActive ? 'text-fin-lime' : 'text-fin-faint group-hover:text-fin-ink')} />
                   {label}
                 </>
               )}
@@ -63,16 +59,16 @@ export function AppShell() {
         </nav>
       </aside>
 
-      {/* Mobile header */}
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-neutral-100 bg-white/85 px-4 py-3 backdrop-blur-md md:hidden">
-        <div className="flex items-center gap-2.5">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta">
-            <Tag size={18} />
+      {/* Mobile header — compacto */}
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-fin-line bg-fin-bg/80 px-4 py-2.5 backdrop-blur-xl md:hidden">
+        <Link to="/" className="flex min-w-0 items-center gap-2" aria-label={`${appName} · inicio`}>
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-fin-lime text-fin-bg">
+            <Tag size={16} />
           </div>
-          <div>
-            <p className="text-sm font-bold leading-tight text-neutral-900">{appName}</p>
-            <p className="text-[11px] font-medium leading-tight text-neutral-400">Descuentos vecinales</p>
-          </div>
+          <span className="truncate text-[15px] font-bold leading-none text-fin-ink">{appName}</span>
+        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <AlertsBell />
         </div>
       </header>
 
@@ -80,32 +76,12 @@ export function AppShell() {
         <OfflineBanner />
         <RedemptionWatcher />
         <Outlet />
-        <footer className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 pb-4 text-[11px] text-neutral-400">
-          <Link to="/legal/terminos" className="hover:text-neutral-700">
-            Términos
-          </Link>
-          <span>·</span>
-          <Link to="/legal/privacidad" className="hover:text-neutral-700">
-            Privacidad
-          </Link>
-          <span>·</span>
-          <Link to="/perfil" className="hover:text-neutral-700">
-            Mi cuenta
-          </Link>
-          <span>·</span>
-          <a
-            href={`mailto:${SUPPORT_EMAIL}`}
-            className="hover:text-neutral-700"
-          >
-            {SUPPORT_EMAIL}
-          </a>
-        </footer>
       </main>
 
       {/* Mobile bottom nav */}
       <nav
         aria-label="Navegación móvil"
-        className="fixed inset-x-3 bottom-3 z-30 rounded-3xl bg-white p-1.5 shadow-floating md:hidden"
+        className="fixed inset-x-3 bottom-3 z-30 rounded-3xl bg-fin-surface/95 p-1.5 ring-1 ring-fin-line shadow-fin-card backdrop-blur-xl md:hidden"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-center justify-around">
@@ -117,9 +93,7 @@ export function AppShell() {
               className={({ isActive }) =>
                 cn(
                   'flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-2.5 text-[11px] font-semibold transition-all duration-200',
-                  isActive
-                    ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta'
-                    : 'text-neutral-500',
+                  isActive ? 'bg-fin-lime text-fin-bg shadow-fin-glow' : 'text-fin-soft',
                 )
               }
             >

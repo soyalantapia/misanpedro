@@ -20,9 +20,7 @@ import { formatBirthdate } from '@/lib/format'
 import { useToast } from '@/components/Toast'
 import { SUPPORT_EMAIL, getSupportLink } from '@/lib/tenant'
 
-// V1: soporte con fallback a email si el WhatsApp es placeholder o no está
-// seteado (mismo helper que usa el panel del comercio).
-const SUPPORT = getSupportLink('Hola, necesito ayuda con mi cuenta de Mi San Pedro.')
+const SUPPORT = getSupportLink('Hola, necesito ayuda con mis datos en Mi San Pedro.')
 
 export function PerfilPage() {
   const user = useUser()
@@ -32,7 +30,7 @@ export function PerfilPage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <Navigate to="/datos" replace />
 
   async function handleExport() {
     setExporting(true)
@@ -51,10 +49,7 @@ export function PerfilPage() {
       URL.revokeObjectURL(url)
       toast.success('Listo', 'Tu archivo de datos personales está descargado.')
     } catch (err) {
-      toast.error(
-        'No se pudo exportar',
-        err instanceof ApiError ? err.message : 'Sin conexión',
-      )
+      toast.error('No se pudo exportar', err instanceof ApiError ? err.message : 'Sin conexión')
     } finally {
       setExporting(false)
     }
@@ -64,16 +59,13 @@ export function PerfilPage() {
     setDeleting(true)
     try {
       await habeasData.deleteMyAccount()
-      toast.success('Cuenta eliminada', 'Tus datos fueron borrados.')
+      toast.success('Datos eliminados', 'Tus datos fueron borrados.')
       await userApi.logout().catch(() => {})
       userActions.signOut()
       demoStoreActions.resetAll()
       navigate('/', { replace: true })
     } catch (err) {
-      toast.error(
-        'No se pudo eliminar',
-        err instanceof ApiError ? err.message : 'Sin conexión',
-      )
+      toast.error('No se pudo eliminar', err instanceof ApiError ? err.message : 'Sin conexión')
     } finally {
       setDeleting(false)
     }
@@ -93,45 +85,40 @@ export function PerfilPage() {
     <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
       <Link
         to="/"
-        className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-neutral-500 hover:text-neutral-900"
+        className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-fin-soft hover:text-fin-ink"
       >
         <ChevronLeft size={16} /> Volver
       </Link>
 
       <header className="flex flex-col gap-1.5">
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
-          <ShieldCheck size={12} /> Mi cuenta
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
-          {user.nombre}
-        </h1>
-        <p className="text-sm text-neutral-500">Datos personales y privacidad.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-fin-ink sm:text-3xl">{user.nombre}</h1>
+        <p className="text-sm text-fin-soft">Datos personales y privacidad.</p>
       </header>
 
-      <section className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
-            Datos personales
-          </h2>
-          <div className="mt-3 flex flex-col gap-2.5 text-sm">
-            <Row icon={IdCard} label="DNI" value={user.dni} />
-            <Row icon={Mail} label="Email" value={user.email} />
-            <Row icon={Phone} label="WhatsApp" value={user.whatsapp} />
-            <Row icon={Cake} label="Nacimiento" value={formatBirthdate(user.fechaNacimiento)} />
-          </div>
-          <p className="mt-3 text-[11px] text-neutral-400">
-            ¿Necesitás corregir algo? Escribinos a{' '}
-            <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-accent-700">
-              {SUPPORT_EMAIL}
-            </a>
-            .
-          </p>
-        </section>
+      <section className="rounded-3xl bg-fin-surface p-5 ring-1 ring-fin-line shadow-fin-card">
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-fin-faint">
+          Datos personales
+        </h2>
+        <div className="mt-3 flex flex-col gap-2.5 text-sm">
+          <Row icon={IdCard} label="DNI" value={user.dni} />
+          <Row icon={Mail} label="Email" value={user.email} />
+          <Row icon={Phone} label="WhatsApp" value={user.whatsapp} />
+          <Row icon={Cake} label="Nacimiento" value={formatBirthdate(user.fechaNacimiento)} />
+        </div>
+        <p className="mt-3 text-[11px] text-fin-faint">
+          ¿Necesitás corregir algo? Escribinos a{' '}
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-fin-lime">
+            {SUPPORT_EMAIL}
+          </a>
+          .
+        </p>
+      </section>
 
-      <section className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-        <h2 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+      <section className="rounded-3xl bg-fin-surface p-5 ring-1 ring-fin-line shadow-fin-card">
+        <h2 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-fin-faint">
           <Lock size={11} aria-hidden="true" /> Privacidad y datos (Ley 25.326)
         </h2>
-        <p className="mt-2 text-xs text-neutral-500">
+        <p className="mt-2 text-xs text-fin-soft">
           Tenés derecho a acceder, rectificar, suprimir y oponerte al uso de tus datos.
         </p>
 
@@ -139,17 +126,17 @@ export function PerfilPage() {
           type="button"
           onClick={handleExport}
           disabled={exporting}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-100 px-4 py-3 text-sm font-bold text-neutral-800 transition-colors hover:bg-primary-200 disabled:opacity-60"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-fin-surface2 px-4 py-3 text-sm font-bold text-fin-ink ring-1 ring-fin-line transition-colors hover:bg-fin-line disabled:opacity-60"
         >
           <Download size={14} /> {exporting ? 'Generando…' : 'Exportar mis datos (JSON)'}
         </button>
 
         {confirmDelete ? (
-          <div className="mt-3 rounded-2xl border border-status-error/20 bg-status-error-bg/50 p-3">
-            <div className="flex items-start gap-2 text-xs text-status-error-fg">
+          <div className="mt-3 rounded-2xl border border-fin-danger/30 bg-fin-danger/10 p-3">
+            <div className="flex items-start gap-2 text-xs text-fin-danger">
               <AlertTriangle size={14} className="mt-0.5 shrink-0" />
               <p>
-                Vamos a borrar tu cuenta y anonimizar tus canjes (los comercios mantienen el
+                Vamos a borrar tus datos y anonimizar tus canjes (los comercios mantienen el
                 ahorro registrado pero sin tus datos personales). Esto no se puede deshacer.
               </p>
             </div>
@@ -158,7 +145,7 @@ export function PerfilPage() {
                 type="button"
                 onClick={() => setConfirmDelete(false)}
                 disabled={deleting}
-                className="flex-1 rounded-xl bg-white px-3 py-2 text-xs font-bold text-neutral-700 ring-1 ring-neutral-200 hover:bg-primary-100 disabled:opacity-60"
+                className="flex-1 rounded-xl bg-fin-surface2 px-3 py-2 text-xs font-bold text-fin-ink ring-1 ring-fin-line hover:bg-fin-line disabled:opacity-60"
               >
                 Cancelar
               </button>
@@ -166,7 +153,7 @@ export function PerfilPage() {
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex-1 rounded-xl bg-status-error-fg px-3 py-2 text-xs font-bold text-white hover:bg-red-700 disabled:opacity-60"
+                className="flex-1 rounded-xl bg-fin-danger px-3 py-2 text-xs font-bold text-fin-bg hover:opacity-90 disabled:opacity-60"
               >
                 {deleting ? 'Borrando…' : 'Sí, borrar todo'}
               </button>
@@ -176,44 +163,42 @@ export function PerfilPage() {
           <button
             type="button"
             onClick={() => setConfirmDelete(true)}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-status-error-bg px-4 py-3 text-sm font-bold text-status-error-fg transition-colors hover:bg-red-100"
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-fin-danger/12 px-4 py-3 text-sm font-bold text-fin-danger transition-colors hover:bg-fin-danger/20"
           >
-            <Trash2 size={14} /> Eliminar mi cuenta
+            <Trash2 size={14} /> Eliminar mis datos
           </button>
         )}
       </section>
 
-      <section className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-        <h2 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
-          Más
-        </h2>
+      <section className="rounded-3xl bg-fin-surface p-5 ring-1 ring-fin-line shadow-fin-card">
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-fin-faint">Más</h2>
         <div className="mt-3 flex flex-col gap-1">
           <Link
             to="/legal/terminos"
-            className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-primary-100"
+            className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-semibold text-fin-soft hover:bg-fin-surface2 hover:text-fin-ink"
           >
-            <FileText size={14} className="text-neutral-400" /> Términos y Condiciones
+            <FileText size={14} className="text-fin-faint" /> Términos y Condiciones
           </Link>
           <Link
             to="/legal/privacidad"
-            className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-primary-100"
+            className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-semibold text-fin-soft hover:bg-fin-surface2 hover:text-fin-ink"
           >
-            <ShieldCheck size={14} className="text-neutral-400" /> Política de Privacidad
+            <ShieldCheck size={14} className="text-fin-faint" /> Política de Privacidad
           </Link>
           <a
             href={SUPPORT.href}
             target={SUPPORT.isWhatsapp ? '_blank' : undefined}
             rel="noreferrer noopener"
-            className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-primary-100"
+            className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-semibold text-fin-soft hover:bg-fin-surface2 hover:text-fin-ink"
           >
-            <Phone size={14} className="text-neutral-400" /> {SUPPORT.label}
+            <Phone size={14} className="text-fin-faint" /> {SUPPORT.label}
           </a>
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-left text-sm font-semibold text-neutral-700 hover:bg-primary-100"
+            className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-left text-sm font-semibold text-fin-soft hover:bg-fin-surface2 hover:text-fin-ink"
           >
-            <LogOut size={14} className="text-neutral-400" /> Cerrar sesión
+            <LogOut size={14} className="text-fin-faint" /> Salir
           </button>
         </div>
       </section>
@@ -232,12 +217,12 @@ function Row({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary-100 text-neutral-500">
+      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-fin-surface2 text-fin-soft">
         <Icon size={14} />
       </div>
       <div className="flex flex-1 items-center justify-between gap-2 text-sm">
-        <span className="text-neutral-500">{label}</span>
-        <span className="text-right font-semibold text-neutral-900">{value || '—'}</span>
+        <span className="text-fin-soft">{label}</span>
+        <span className="text-right font-semibold text-fin-ink">{value || '—'}</span>
       </div>
     </div>
   )

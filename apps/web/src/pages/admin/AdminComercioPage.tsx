@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import {
   Store,
@@ -18,20 +18,30 @@ import {
   AlertTriangle,
   FileText,
   ShieldOff,
+  Camera,
+  Share2,
+  Globe,
+  MessageCircle,
+  Sparkles,
+  Eye,
+  Plus,
 } from 'lucide-react'
 import { useMerchantSession, merchantAuth } from '@/lib/merchantStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { api, ApiError, subscription } from '@/lib/api'
 import { useApiMerchantProfile } from '@/lib/apiQueries'
-import { SUPPORT_EMAIL } from '@/lib/tenant'
+import { SUPPORT_EMAIL, useTenant } from '@/lib/tenant'
 import { CardImage } from '@/components/CardImage'
+import { MicrositePreview } from '@/components/MicrositePreview'
 import {
   CATEGORIAS,
   DIAS_SEMANA,
+  SERVICIOS,
   type Categoria,
   type DiaSemana,
   type HorarioDia,
   type HorariosSemana,
+  type Servicio,
 } from '@/lib/types'
 
 /**
@@ -54,7 +64,25 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { defaultHorariosSemana, formatHorariosSemana } from '@/lib/format'
 import { cn } from '@/lib/cn'
 
+// Leaflet pesa ~150KB — lo bajamos como chunk aparte y sólo cuando el comercio
+// abre el editor de perfil (mismo patrón que el signup).
+const LocationPicker = lazy(() =>
+  import('@/components/LocationPicker').then((m) => ({ default: m.LocationPicker })),
+)
+
+const SANPEDRO_CENTER = { lat: -33.6797, lng: -59.6669 }
+
 const MAX_COVER_BYTES = 2 * 1024 * 1024
+const MAX_GALLERY_PHOTOS = 4
+const MAX_GALLERY_BYTES = 1.5 * 1024 * 1024
+
+/** Vacío → null; sin esquema → antepone https:// para que pase la validación
+ *  de URL del backend (safeHrefUrlSchema sólo acepta http/https/etc.). */
+function normalizeOptionalUrl(v: string): string | null {
+  const t = v.trim()
+  if (!t) return null
+  return /^https?:\/\//i.test(t) ? t : `https://${t}`
+}
 
 /**
  * TODO (BD01) — Migrar upload de cover/logo a presigned URLs.
@@ -84,10 +112,19 @@ type Draft = {
   categoria: Categoria
   direccion: string
   telefono: string
+  lat: number | null
+  lng: number | null
   coverImageUrl?: string
   logoUrl?: string
   mapsUrl: string
   horariosDetalle: HorariosSemana
+  // ─── Micro-sitio (carta de presentación) ──────────────────────────────
+  tagline: string
+  descripcion: string
+  servicios: Servicio[]
+  galeria: string[]
+  productos: { nombre: string; precio: string; descripcion: string }[]
+  redes: { instagram: string; facebook: string; web: string; whatsapp: string }
 }
 
 export function AdminComercioPage() {
@@ -117,6 +154,8 @@ export function AdminComercioPage() {
         nombre: apiM.nombre,
         categoria: apiM.categoria,
         direccion: apiM.direccion,
+        lat: apiM.lat,
+        lng: apiM.lng,
         telefono: apiM.telefono,
         horarios: apiM.horarios,
         horariosDetalle: apiM.horariosDetalle,
@@ -125,6 +164,12 @@ export function AdminComercioPage() {
         logoUrl: apiM.logoUrl,
         mapsUrl: apiM.mapsUrl,
         logoSeed: apiM.logoSeed,
+        tagline: apiM.tagline,
+        descripcion: apiM.descripcion,
+        servicios: apiM.servicios,
+        galeria: apiM.galeria,
+        productos: apiM.productos,
+        redes: apiM.redes,
         estado: apiM.estado,
         razonSocial: apiM.razonSocial,
         cuit: apiM.cuit,
@@ -154,10 +199,27 @@ export function AdminComercioPage() {
       categoria: merchant.categoria,
       direccion: merchant.direccion,
       telefono: merchant.telefono,
+      lat: merchant.lat ?? null,
+      lng: merchant.lng ?? null,
       coverImageUrl: merchant.coverImageUrl,
       logoUrl: merchant.logoUrl,
       mapsUrl: merchant.mapsUrl ?? '',
       horariosDetalle: ensureHorariosSemana(merchant.horariosDetalle),
+      tagline: merchant.tagline ?? '',
+      descripcion: merchant.descripcion ?? '',
+      servicios: Array.isArray(merchant.servicios) ? merchant.servicios : [],
+      galeria: Array.isArray(merchant.galeria) ? merchant.galeria : [],
+      productos: (Array.isArray(merchant.productos) ? merchant.productos : []).map((p: any) => ({
+        nombre: p.nombre ?? '',
+        precio: p.precio ?? '',
+        descripcion: p.descripcion ?? '',
+      })),
+      redes: {
+        instagram: merchant.redes?.instagram ?? '',
+        facebook: merchant.redes?.facebook ?? '',
+        web: merchant.redes?.web ?? '',
+        whatsapp: merchant.redes?.whatsapp ?? '',
+      },
     })
     setEditing(true)
   }
@@ -180,11 +242,33 @@ export function AdminComercioPage() {
       categoria: draft.categoria,
       direccion: draft.direccion.trim(),
       telefono: draft.telefono.trim(),
+      // Sólo mandamos coordenadas si el comercio marcó un punto. El backend
+      // toca location únicamente cuando llegan ambas (ver PATCH /merchants/me).
+      ...(draft.lat != null && draft.lng != null
+        ? { lat: draft.lat, lng: draft.lng }
+        : {}),
       horarios: formatHorariosSemana(draft.horariosDetalle),
       horariosDetalle: draft.horariosDetalle,
       coverImageUrl: draft.coverImageUrl ?? null,
       logoUrl: draft.logoUrl ?? null,
       mapsUrl: draft.mapsUrl.trim() || null,
+      tagline: draft.tagline.trim() || null,
+      descripcion: draft.descripcion.trim() || null,
+      servicios: draft.servicios,
+      galeria: draft.galeria,
+      productos: draft.productos
+        .map((p) => ({
+          nombre: p.nombre.trim(),
+          precio: p.precio.trim() || undefined,
+          descripcion: p.descripcion.trim() || undefined,
+        }))
+        .filter((p) => p.nombre.length > 0),
+      redes: {
+        instagram: draft.redes.instagram.trim() || null,
+        facebook: normalizeOptionalUrl(draft.redes.facebook),
+        web: normalizeOptionalUrl(draft.redes.web),
+        whatsapp: draft.redes.whatsapp.trim() || null,
+      },
     }
     try {
       await api.merchantAdmin.updateMe(apiPayload)
@@ -231,14 +315,29 @@ export function AdminComercioPage() {
         <EditingView draft={draft} setDraft={setDraft} />
       ) : (
         <>
-          <div className="overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-neutral-100">
-            <CardImage
-              categoria={merchant.categoria}
-              coverImageUrl={merchant.coverImageUrl}
-              className="h-32"
-              size="md"
+          <div className="flex flex-col gap-2">
+            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+              <Eye size={11} /> Así te ven los vecinos
+            </p>
+            <MicrositePreview
+              data={{
+                nombre: merchant.nombre,
+                categoria: merchant.categoria,
+                tagline: merchant.tagline,
+                descripcion: merchant.descripcion,
+                coverImageUrl: merchant.coverImageUrl,
+                logoUrl: merchant.logoUrl,
+                servicios: merchant.servicios,
+                galeria: merchant.galeria,
+                productos: merchant.productos,
+                redes: merchant.redes,
+                horariosDetalle: merchant.horariosDetalle,
+              }}
             />
-            <div className="flex flex-col gap-2 p-5 text-sm">
+          </div>
+
+          <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+            <div className="flex flex-col gap-2 text-sm">
               <p className="text-[11px] font-bold uppercase tracking-widest text-accent-700">
                 {cat}
               </p>
@@ -352,10 +451,38 @@ function EditingView({
   draft: Draft
   setDraft: (d: Draft) => void
 }) {
+  const tenant = useTenant()
+  const mapCenter = tenant.config?.geoCenter ?? SANPEDRO_CENTER
+  const cityHint =
+    [tenant.config?.ciudad, tenant.config?.provincia].filter(Boolean).join(', ') ||
+    'San Pedro, Buenos Aires'
+
   return (
     <>
+      <div className="flex flex-col gap-2">
+        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          <Eye size={11} /> Vista previa — así te ven los vecinos
+        </p>
+        <MicrositePreview
+          data={{
+            nombre: draft.nombre,
+            categoria: draft.categoria,
+            tagline: draft.tagline,
+            descripcion: draft.descripcion,
+            coverImageUrl: draft.coverImageUrl,
+            logoUrl: draft.logoUrl,
+            servicios: draft.servicios,
+            galeria: draft.galeria,
+            productos: draft.productos,
+            redes: draft.redes,
+            horariosDetalle: draft.horariosDetalle,
+          }}
+        />
+      </div>
+
       <CoverEditor draft={draft} setDraft={setDraft} />
       <LogoEditor draft={draft} setDraft={setDraft} />
+      <GaleriaEditor draft={draft} setDraft={setDraft} />
       <div className="flex flex-col gap-3 rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
         <Field
           label="Nombre del comercio"
@@ -397,6 +524,32 @@ function EditingView({
             />
           }
         />
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+            Ubicación en el mapa
+          </span>
+          <p className="text-[11px] text-neutral-400">
+            Si tu comercio aparece mal ubicado para los vecinos, buscá la dirección o
+            arrastrá el pin hasta la puerta exacta.
+          </p>
+          <Suspense
+            fallback={
+              <div className="h-[240px] animate-pulse rounded-2xl bg-neutral-100 ring-1 ring-neutral-200" />
+            }
+          >
+            <LocationPicker
+              value={
+                draft.lat != null && draft.lng != null
+                  ? { lat: draft.lat, lng: draft.lng }
+                  : null
+              }
+              onChange={(ll) => setDraft({ ...draft, lat: ll.lat, lng: ll.lng })}
+              address={draft.direccion}
+              center={mapCenter}
+              cityHint={cityHint}
+            />
+          </Suspense>
+        </div>
         <Field
           label="Teléfono"
           input={
@@ -410,6 +563,11 @@ function EditingView({
         />
         <MapsUrlField draft={draft} setDraft={setDraft} />
       </div>
+
+      <PresentacionEditor draft={draft} setDraft={setDraft} />
+      <ServiciosEditor draft={draft} setDraft={setDraft} />
+      <ProductosEditor draft={draft} setDraft={setDraft} />
+      <RedesEditor draft={draft} setDraft={setDraft} />
 
       <HorariosEditor draft={draft} setDraft={setDraft} />
     </>
@@ -574,6 +732,91 @@ function LogoEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
   )
 }
 
+function GaleriaEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const toast = useToast()
+  const fotos = draft.galeria
+  const full = fotos.length >= MAX_GALLERY_PHOTOS
+
+  function handleUpload(file: File) {
+    if (full) return
+    if (file.size > MAX_GALLERY_BYTES) {
+      toast.error('Foto muy grande', 'El máximo por foto es 1,5 MB.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setDraft({
+        ...draft,
+        galeria: [...draft.galeria, reader.result as string].slice(0, MAX_GALLERY_PHOTOS),
+      })
+    }
+    reader.onerror = () => toast.error('No se pudo leer la foto')
+    reader.readAsDataURL(file)
+  }
+
+  function removeAt(i: number) {
+    setDraft({ ...draft, galeria: draft.galeria.filter((_, idx) => idx !== i) })
+  }
+
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+      <div className="flex items-center justify-between">
+        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          <ImageIcon size={11} /> Galería de fotos
+        </p>
+        <span className="text-[11px] tabular-nums text-neutral-400">
+          {fotos.length}/{MAX_GALLERY_PHOTOS}
+        </span>
+      </div>
+      <p className="mt-1 text-[11px] text-neutral-400">
+        Mostrá tu local y tus productos. Hasta {MAX_GALLERY_PHOTOS} fotos, 1,5 MB cada una.
+      </p>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {fotos.map((src, i) => (
+          <div
+            key={i}
+            className="relative aspect-square overflow-hidden rounded-2xl ring-1 ring-neutral-200"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={() => removeAt(i)}
+              aria-label={`Quitar foto ${i + 1}`}
+              className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white transition-colors hover:bg-status-error-fg"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ))}
+        {!full && (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="grid aspect-square place-items-center rounded-2xl border-2 border-dashed border-neutral-200 text-neutral-400 transition-colors hover:border-accent-300 hover:text-accent-500"
+          >
+            <span className="flex flex-col items-center gap-1 text-[11px] font-bold">
+              <Upload size={16} /> Agregar
+            </span>
+          </button>
+        )}
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) handleUpload(f)
+          e.target.value = ''
+        }}
+      />
+    </div>
+  )
+}
+
 function MapsUrlField({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) => void }) {
   return (
     <Field
@@ -595,6 +838,243 @@ function MapsUrlField({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) 
         </>
       }
     />
+  )
+}
+
+function PresentacionEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) => void }) {
+  return (
+    <div className="flex flex-col gap-3 rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <Sparkles size={11} /> Presentación
+      </p>
+      <Field
+        label="Frase corta"
+        input={
+          <>
+            <input
+              type="text"
+              value={draft.tagline}
+              maxLength={90}
+              onChange={(e) => setDraft({ ...draft, tagline: e.target.value })}
+              placeholder="Ej: Pizzería a la piedra desde 1998"
+              className={inputCls}
+            />
+            <p className="text-right text-[11px] text-neutral-400">{draft.tagline.length}/90</p>
+          </>
+        }
+      />
+      <Field
+        label="Sobre el comercio"
+        input={
+          <>
+            <textarea
+              value={draft.descripcion}
+              maxLength={600}
+              rows={4}
+              onChange={(e) => setDraft({ ...draft, descripcion: e.target.value })}
+              placeholder="Contales a los vecinos quién sos, qué ofrecés y qué te hace diferente."
+              className={cn(inputCls, 'resize-none')}
+            />
+            <p className="text-right text-[11px] text-neutral-400">
+              {draft.descripcion.length}/600
+            </p>
+          </>
+        }
+      />
+    </div>
+  )
+}
+
+function ServiciosEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) => void }) {
+  function toggle(id: Servicio) {
+    const has = draft.servicios.includes(id)
+    setDraft({
+      ...draft,
+      servicios: has
+        ? draft.servicios.filter((s) => s !== id)
+        : [...draft.servicios, id],
+    })
+  }
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Servicios</p>
+      <p className="mt-1 text-[11px] text-neutral-400">
+        Tocá los que ofrezcas. Se muestran como etiquetas en tu ficha.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {SERVICIOS.map(({ id, label }) => {
+          const active = draft.servicios.includes(id)
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => toggle(id)}
+              className={cn(
+                'rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition-colors',
+                active
+                  ? 'bg-accent-500 text-white ring-accent-500'
+                  : 'bg-white text-neutral-600 ring-neutral-200 hover:bg-primary-50',
+              )}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function ProductosEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) => void }) {
+  const items = draft.productos
+  const full = items.length >= 20
+
+  function add() {
+    if (full) return
+    setDraft({ ...draft, productos: [...items, { nombre: '', precio: '', descripcion: '' }] })
+  }
+  function update(i: number, field: 'nombre' | 'precio' | 'descripcion', value: string) {
+    setDraft({
+      ...draft,
+      productos: items.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)),
+    })
+  }
+  function remove(i: number) {
+    setDraft({ ...draft, productos: items.filter((_, idx) => idx !== i) })
+  }
+
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+      <div className="flex items-center justify-between">
+        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          <Tag size={11} /> Productos destacados
+        </p>
+        <span className="text-[11px] tabular-nums text-neutral-400">{items.length}/20</span>
+      </div>
+      <p className="mt-1 text-[11px] text-neutral-400">
+        Mostrá algunos productos o platos con su precio. El nombre es obligatorio; el resto, opcional.
+      </p>
+      <div className="mt-3 flex flex-col gap-2">
+        {items.map((p, i) => (
+          <div key={i} className="rounded-2xl bg-primary-50 p-3 ring-1 ring-neutral-200">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={p.nombre}
+                onChange={(e) => update(i, 'nombre', e.target.value)}
+                placeholder="Nombre (ej: Café con leche)"
+                maxLength={60}
+                className={cn(inputCls, 'flex-1')}
+              />
+              <input
+                type="text"
+                value={p.precio}
+                onChange={(e) => update(i, 'precio', e.target.value)}
+                placeholder="$ Precio"
+                maxLength={24}
+                className={cn(inputCls, 'w-28 shrink-0')}
+              />
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                aria-label={`Quitar ${p.nombre || 'producto'}`}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-status-error-bg text-status-error-fg transition-colors hover:bg-status-error-bg/80"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+            <input
+              type="text"
+              value={p.descripcion}
+              onChange={(e) => update(i, 'descripcion', e.target.value)}
+              placeholder="Descripción corta (opcional)"
+              maxLength={140}
+              className={cn(inputCls, 'mt-2')}
+            />
+          </div>
+        ))}
+      </div>
+      {!full && (
+        <button
+          type="button"
+          onClick={add}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-2xl bg-primary-100 px-4 py-2.5 text-xs font-bold text-neutral-700 transition-colors hover:bg-primary-200"
+        >
+          <Plus size={14} /> Agregar producto
+        </button>
+      )}
+    </div>
+  )
+}
+
+function RedesEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) => void }) {
+  function setRed(key: keyof Draft['redes'], value: string) {
+    setDraft({ ...draft, redes: { ...draft.redes, [key]: value } })
+  }
+  return (
+    <div className="flex flex-col gap-3 rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        Redes y contacto
+      </p>
+      <RedInput
+        icon={Camera}
+        label="Instagram"
+        value={draft.redes.instagram}
+        onChange={(v) => setRed('instagram', v)}
+        placeholder="@tucomercio"
+      />
+      <RedInput
+        icon={MessageCircle}
+        label="WhatsApp"
+        value={draft.redes.whatsapp}
+        onChange={(v) => setRed('whatsapp', v)}
+        placeholder="(03329) 425678"
+      />
+      <RedInput
+        icon={Share2}
+        label="Facebook"
+        value={draft.redes.facebook}
+        onChange={(v) => setRed('facebook', v)}
+        placeholder="facebook.com/tucomercio"
+      />
+      <RedInput
+        icon={Globe}
+        label="Sitio web"
+        value={draft.redes.web}
+        onChange={(v) => setRed('web', v)}
+        placeholder="www.tucomercio.com"
+      />
+    </div>
+  )
+}
+
+function RedInput({
+  icon: Icon,
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  icon: typeof Camera
+  label: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <Icon size={12} /> {label}
+      </span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={inputCls}
+      />
+    </label>
   )
 }
 

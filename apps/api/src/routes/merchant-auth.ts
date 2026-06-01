@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs'
 import { createHash, randomBytes } from 'node:crypto'
 import { z } from 'zod'
 import { merchantLoginSchema, merchantSignupSchema } from '@misanpedro/shared'
-import { Merchant, MerchantUser, PasswordReset } from '@/models'
+import { Merchant, MerchantUser, PasswordReset, Referral } from '@/models'
+import { generateReferralCode } from '@/routes/referrals'
 import { env } from '@/env'
 import {
   issueRefreshToken,
@@ -61,21 +62,28 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
   }
 
   const slug = await generateUniqueSlug(comercio.nombre, appId)
-  // Coordenadas placeholder: centro geográfico del tenant. Se actualizan
-  // cuando el comerciante edita su perfil. Fallback a San Pedro si el
-  // tenant no tiene geoCenter configurado (compatibilidad con registros viejos).
+  // Coordenadas del comercio: las marca en el mapa al registrarse (lat/lng).
+  // Si no vinieron (cliente viejo o geocoding fallido), caemos al centro
+  // geográfico del tenant — y a San Pedro si el tenant no tiene geoCenter.
   const tenant = c.get('tenant')
   const geoCenter = tenant?.geoCenter ?? { lat: -33.6797, lng: -59.6669 }
+  const lat = comercio.lat ?? geoCenter.lat
+  const lng = comercio.lng ?? geoCenter.lng
   const now = new Date()
   const arrepentimientoExpiraEn = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000)
+  // 3 meses gratis: el comercio nace `activo` (visible para vecinos al instante),
+  // sin pago ni MercadoPago. freeTrialUntil es informativo (no corta nada por ahora).
+  const freeTrialUntil = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
+  const referralCode = await generateReferralCode(appId)
   const merchant = await Merchant.create({
     appId,
     slug,
+    referralCode,
     nombre: comercio.nombre,
     categoria: comercio.categoria,
     categoriaOtro: comercio.categoriaOtro,
     direccion: comercio.direccion,
-    location: { type: 'Point', coordinates: [geoCenter.lng, geoCenter.lat] },
+    location: { type: 'Point', coordinates: [lng, lat] },
     telefono: comercio.telefono,
     horarios: comercio.horarios ?? '',
     logoSeed: comercio.nombre
@@ -86,7 +94,8 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
       .join('')
       .toUpperCase(),
     nivel: 'standard',
-    estado: 'pending_payment',
+    estado: 'activo',
+    freeTrialUntil,
     cuit: comercio.cuit,
     razonSocial: comercio.razonSocial,
     condicionFiscal: comercio.condicionFiscal,
@@ -105,6 +114,35 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
     rol: 'admin',
     lastLoginAt: new Date(),
   })
+
+  // ─── Referido: si vino con ?ref, resolvemos + dedupe + Referral(pending) ──
+  const refCode = parsed.data.ref?.trim()
+  if (refCode) {
+    try {
+      const referrer = await Merchant.findOne({ appId, referralCode: refCode })
+      if (referrer && referrer._id.toString() !== merchant._id.toString()) {
+        const referrerUser = await MerchantUser.findOne({ appId, merchantId: referrer._id })
+        const sameEmail = !!referrerUser?.email && referrerUser.email === admin.email
+        const sameCuit = !!referrer.cuit && !!comercio.cuit && referrer.cuit === comercio.cuit
+        const samePhone = !!referrer.telefono && referrer.telefono === comercio.telefono
+        const isSelf = sameEmail || sameCuit || samePhone
+        merchant.referredByCode = refCode
+        if (!isSelf)
+          merchant.referredByMerchantId = referrer._id as typeof merchant.referredByMerchantId
+        await merchant.save()
+        await Referral.create({
+          appId,
+          referrerMerchantId: referrer._id,
+          referredMerchantId: merchant._id,
+          referredByCode: refCode,
+          status: isSelf ? 'rejected' : 'pending',
+          rejectedReason: isSelf ? 'self' : null,
+        })
+      }
+    } catch (err) {
+      console.error('[referral-signup]', err)
+    }
+  }
 
   // Email bienvenida (no bloqueante)
   sendMerchantWelcome(admin.email, admin.nombre, comercio.nombre).catch((err) =>

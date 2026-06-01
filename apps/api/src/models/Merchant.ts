@@ -66,6 +66,32 @@ const merchantSchema = new Schema(
     /** URL del logo subido por el comercio (PNG/JPG cuadrado). */
     logoUrl: { type: String },
     mapsUrl: { type: String },
+    // ─── Micro-sitio (ficha pública como carta de presentación) ─────────
+    /** Frase corta del hero. */
+    tagline: { type: String },
+    /** Descripción / "sobre el comercio". */
+    descripcion: { type: String },
+    /** Servicios/comodidades destacadas (ids de SERVICIO_IDS en shared). */
+    servicios: { type: [String], default: [] },
+    /** Galería de fotos (data URLs base64 o URLs). Máx 4 hasta migrar a CDN. */
+    galeria: { type: [String], default: [] },
+    /** Carta / productos destacados (nombre + precio + descripción). */
+    productos: {
+      type: [
+        new Schema(
+          { nombre: String, precio: String, descripcion: String },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
+    /** Redes y contacto extra. instagram/whatsapp como texto libre. */
+    redes: {
+      instagram: { type: String },
+      facebook: { type: String },
+      web: { type: String },
+      whatsapp: { type: String },
+    },
     logoSeed: { type: String },
     destacado: { type: Boolean, default: false },
     foundingMember: { type: Boolean, default: false },
@@ -88,12 +114,32 @@ const merchantSchema = new Schema(
     /** Día de aceptación del derecho de arrepentimiento (defensa al consumidor). */
     arrepentimientoExpiraEn: { type: Date },
     arrepentido: { type: Boolean, default: false },
+    /**
+     * Fin de los 3 meses gratis (informativo). El comercio nace `activo` y
+     * gratis al registrarse — no se cobra ni se corta nada al vencer (por ahora
+     * el trial es indefinido en la práctica). Sirve para mostrar "gratis hasta X".
+     */
+    freeTrialUntil: { type: Date },
+    // ─── Programa de referidos ──────────────────────────────────────────
+    /** Código de referido propio (único por tenant). Se genera al signup / lazy. */
+    referralCode: { type: String },
+    /** Código con el que ESTE comercio fue referido (crudo, para auditoría). */
+    referredByCode: { type: String },
+    /** Comercio que lo refirió (resuelto: mismo appId, no self). */
+    referredByMerchantId: { type: Types.ObjectId, ref: 'Merchant' },
+    /** Semanas gratis ya acreditadas por referir (el tope se aplica en la lógica). */
+    referralWeeksEarned: { type: Number, default: 0 },
+    /** Fecha del primer cupón activo — hace idempotente el trigger del referido. */
+    firstCouponAt: { type: Date },
+    /** Fecha en que ESTE comercio, como referido, cobró su premio de días gratis. One-time. */
+    referredRewardGrantedAt: { type: Date },
   },
   { timestamps: true },
 )
 
 // Compound uniques scoped al tenant
 merchantSchema.index({ appId: 1, slug: 1 }, { unique: true })
+merchantSchema.index({ appId: 1, referralCode: 1 }, { unique: true, sparse: true })
 merchantSchema.index({ location: '2dsphere' })
 
 export type MerchantDoc = InferSchemaType<typeof merchantSchema> & {

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { HashRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route, Outlet } from 'react-router-dom'
 import { AppShell } from '@/layouts/AppShell'
 import { MerchantShell } from '@/layouts/MerchantShell'
 import { ToastProvider } from '@/components/Toast'
@@ -13,8 +13,8 @@ import { useTenant } from '@/lib/tenant'
 const DescuentosPage = lazy(() =>
   import('@/pages/DescuentosPage').then((m) => ({ default: m.DescuentosPage })),
 )
-const MisCuponesPage = lazy(() =>
-  import('@/pages/MisCuponesPage').then((m) => ({ default: m.MisCuponesPage })),
+const MapaPage = lazy(() =>
+  import('@/pages/MapaPage').then((m) => ({ default: m.MapaPage })),
 )
 const CanjeadosPage = lazy(() =>
   import('@/pages/CanjeadosPage').then((m) => ({ default: m.CanjeadosPage })),
@@ -28,11 +28,11 @@ const MerchantDetailPage = lazy(() =>
 const RegistroPage = lazy(() =>
   import('@/pages/RegistroPage').then((m) => ({ default: m.RegistroPage })),
 )
-const LoginPage = lazy(() =>
-  import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })),
-)
 const CuponActivoPage = lazy(() =>
   import('@/pages/CuponActivoPage').then((m) => ({ default: m.CuponActivoPage })),
+)
+const PlanPage = lazy(() =>
+  import('@/pages/PlanPage').then((m) => ({ default: m.PlanPage })),
 )
 const PerfilPage = lazy(() =>
   import('@/pages/PerfilPage').then((m) => ({ default: m.PerfilPage })),
@@ -99,6 +99,9 @@ const AdminComercioPage = lazy(() =>
 const AdminWhatsappPage = lazy(() =>
   import('@/pages/admin/AdminWhatsappPage').then((m) => ({ default: m.AdminWhatsappPage })),
 )
+const AdminReferidosPage = lazy(() =>
+  import('@/pages/admin/AdminReferidosPage').then((m) => ({ default: m.AdminReferidosPage })),
+)
 
 /**
  * Fallback minimalista mientras se carga el chunk de la página.
@@ -116,6 +119,15 @@ function PageSuspenseFallback() {
         <div className="h-10 w-10 animate-pulse rounded-2xl bg-accent-100" />
         <span className="sr-only">Cargando…</span>
       </div>
+    </div>
+  )
+}
+
+/** Fondo oscuro full-bleed para las pantallas del vecino fuera del AppShell. */
+function VecinoBg() {
+  return (
+    <div className="min-h-[100svh] bg-fin-bg text-fin-ink">
+      <Outlet />
     </div>
   )
 }
@@ -141,16 +153,18 @@ export default function App() {
       <HashRouter>
         <Suspense fallback={<PageSuspenseFallback />}>
           <Routes>
-            {/* App vecino */}
-            <Route path="registro" element={<RegistroPage />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="cupon/:id" element={<CuponDetailPage />} />
-            <Route path="comercio/:id" element={<MerchantDetailPage />} />
-            <Route path="activacion/:id" element={<CuponActivoPage />} />
+            {/* App vecino — fondo oscuro (fuera del AppShell) */}
+            <Route element={<VecinoBg />}>
+              <Route path="plan" element={<PlanPage />} />
+              <Route path="datos" element={<RegistroPage />} />
+              <Route path="cupon/:id" element={<CuponDetailPage />} />
+              <Route path="comercio/:id" element={<MerchantDetailPage />} />
+              <Route path="activacion/:id" element={<CuponActivoPage />} />
+            </Route>
 
             <Route element={<AppShell />}>
               <Route index element={<DescuentosPage />} />
-              <Route path="mis-cupones" element={<MisCuponesPage />} />
+              <Route path="mapa" element={<MapaPage />} />
               <Route path="canjeados" element={<CanjeadosPage />} />
               <Route path="perfil" element={<PerfilPage />} />
             </Route>
@@ -178,6 +192,7 @@ export default function App() {
               <Route path="clientes" element={<AdminClientesPage />} />
               <Route path="clientes/:userId" element={<AdminClienteDetailPage />} />
               <Route path="whatsapp" element={<AdminWhatsappPage />} />
+              <Route path="referidos" element={<AdminReferidosPage />} />
               <Route path="comercio" element={<AdminComercioPage />} />
             </Route>
 

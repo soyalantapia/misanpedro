@@ -14,6 +14,8 @@ import { useToast } from '@/components/Toast'
 import { api, userApi, ApiError } from '@/lib/api'
 import { purgeDemoDataForApiUser } from '@/lib/demoSeeder'
 import { validateRegistro, type RegistroForm, type RegistroErrors } from '@/lib/validations/registro'
+import { COUNTRY_CODES, DEFAULT_COUNTRY, getCountry } from '@/lib/countryCodes'
+import { getSupportLink } from '@/lib/tenant'
 
 type Errors = RegistroErrors
 
@@ -31,15 +33,33 @@ const initial: FormState = {
 export function RegistroPage() {
   const [form, setForm] = useState<FormState>(initial)
   const [errors, setErrors] = useState<Errors>({})
+  // WhatsApp con selector de país (default Argentina). Guardamos el número
+  // aparte y combinamos "+<dial> <número>" en form.whatsapp.
+  const [pais, setPais] = useState(DEFAULT_COUNTRY)
+  const [waNumero, setWaNumero] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  // El vecino ya tiene cuenta (409 en registro): mostramos una salida clara
+  // para recuperar el acceso, ya que no hay login OTP.
+  const [returningUser, setReturningUser] = useState(false)
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const next = params.get('next') ?? '/'
   const toast = useToast()
+  const support = getSupportLink(
+    'Hola, ya tengo cuenta en Mi San Pedro y necesito recuperar el acceso (cambié de teléfono o limpié la app).',
+    'Recuperar mi cuenta',
+  )
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }))
     setErrors((e) => ({ ...e, [key]: undefined }))
+    if (returningUser) setReturningUser(false)
+  }
+
+  function setWhatsapp(nextPais: string, nextNumero: string) {
+    const dial = getCountry(nextPais).dial
+    const num = nextNumero.replace(/[^\d\s]/g, '').trim()
+    update('whatsapp', num ? `+${dial} ${num}` : '')
   }
 
   function validate(): Errors {
@@ -51,9 +71,6 @@ export function RegistroPage() {
     const errs = validate()
     setErrors(errs)
     if (Object.keys(errs).length > 0) {
-      // V2: scroll al primer campo con error. En mobile el error podía quedar
-      // fuera de vista y el usuario creía que el botón no respondía. Mismo
-      // patrón que AdminCuponEditPage.
       const firstKey = Object.keys(errs)[0]
       document
         .querySelector(`[data-field="${firstKey}"]`)
@@ -70,12 +87,8 @@ export function RegistroPage() {
       fechaNacimiento: form.fechaNacimiento,
     }
 
-    // Registramos contra el API. Sin fallback local: si falla, el usuario
-    // tiene que reintentar. Es la única forma de garantizar que la cuenta
-    // exista en la DB y pueda usar canjes/notificaciones reales.
     try {
       const data = await userApi.register({ ...payload, acceptedTc: true })
-      // Vecino real: descartamos demoUsers + activations seed previos
       purgeDemoDataForApiUser()
       userActions.replace({
         id: data.user.id,
@@ -90,36 +103,33 @@ export function RegistroPage() {
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         const msg = (err.payload?.error ?? '').toString().toLowerCase()
-        const next: Errors = {}
-        if (msg.includes('whatsapp')) next.whatsapp = err.payload.error
-        else if (msg.includes('dni')) next.dni = err.payload.error
-        else next.email = err.payload?.error ?? 'Email ya registrado'
-        setErrors(next)
+        const nextErr: Errors = {}
+        if (msg.includes('whatsapp')) nextErr.whatsapp = 'Ese WhatsApp ya está cargado'
+        else if (msg.includes('dni')) nextErr.dni = 'Ese DNI ya está cargado'
+        else nextErr.email = 'Ese email ya está cargado'
+        setErrors(nextErr)
+        setReturningUser(true)
         setSubmitting(false)
         return
       }
-      // 5xx / network: mostramos error visible, NO seguimos con local
       toast.error(
-        'No pudimos crear tu cuenta',
+        'No pudimos guardar tus datos',
         err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
       )
       setSubmitting(false)
       return
     }
-    toast.success('¡Cuenta creada!', 'Ya podés canjear descuentos.')
+    toast.success('¡Listo!', 'Ya podés canjear descuentos.')
     const activarMatch = next.match(/^\/cupon\/([^/]+)\/activar$/)
     if (activarMatch) {
-      // Activar el cupón vía API (NO usar activationActions.activate local
-      // que generaría id `a-xxx` que el backend no reconoce).
       try {
-        const data = await userApi.me() // sólo para confirmar token; opcional
+        const data = await userApi.me()
         void data
       } catch {
         /* noop */
       }
       try {
         const act = await api.activations.create(activarMatch[1])
-        // Espejar al store local con el id Mongo
         activationActions.activate(activarMatch[1], {
           id: act.activation.id,
           codigoNumerico: act.activation.codigoNumerico,
@@ -127,7 +137,6 @@ export function RegistroPage() {
         })
         navigate(`/activacion/${act.activation.id}`, { replace: true })
       } catch {
-        // si falla la activación, llevamos al user al detalle del cupón
         navigate(`/cupon/${activarMatch[1]}`, { replace: true })
       }
     } else {
@@ -140,31 +149,40 @@ export function RegistroPage() {
     <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
       <Link
         to="/"
-        className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-neutral-500 hover:text-neutral-900"
+        className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-fin-soft hover:text-fin-ink"
       >
         <ChevronLeft size={16} /> Volver
       </Link>
 
       <header className="flex flex-col gap-1.5">
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-fin-surface2 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-fin-lime ring-1 ring-fin-line">
           <Sparkles size={12} /> Estás a un paso
         </div>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
-          Creá tu cuenta para canjear
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-fin-ink sm:text-4xl">
+          Completá tus datos para canjear
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-fin-soft">
           Dos minutos, una sola vez. Después es un tap para canjear cualquier descuento.
         </p>
-        <p className="mt-1 text-xs text-neutral-500">
-          ¿Ya tenés cuenta?{' '}
-          <Link
-            to={`/login?next=${encodeURIComponent(next)}`}
-            className="font-bold text-accent-700 underline-offset-2 hover:underline"
-          >
-            Iniciar sesión con código
-          </Link>
-        </p>
       </header>
+
+      {returningUser && (
+        <div className="flex flex-col gap-2 rounded-2xl bg-fin-surface2 p-4 ring-1 ring-fin-line shadow-fin-card">
+          <p className="text-sm font-bold text-fin-ink">Estos datos ya están cargados</p>
+          <p className="text-xs leading-relaxed text-fin-soft">
+            Ya nos dejaste tus datos antes. Si cambiaste de teléfono o limpiaste la app y quedaste
+            afuera, escribinos y te devolvemos el acceso en un toque.
+          </p>
+          <a
+            href={support.href}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-fin-lime px-4 py-2 text-xs font-bold text-fin-bg shadow-fin-glow transition-all hover:-translate-y-0.5"
+          >
+            {support.label}
+          </a>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field
@@ -209,7 +227,7 @@ export function RegistroPage() {
           required
           fieldKey="email"
           icon={Mail}
-          help="Te enviamos un código por email para iniciar sesión"
+          help="Lo usamos para identificarte y avisarte novedades"
           error={errors.email}
           input={
             <input
@@ -226,19 +244,44 @@ export function RegistroPage() {
           label="WhatsApp"
           required
           fieldKey="whatsapp"
-          icon={Phone}
-          help="Formato internacional: +54 9 [código área] [número] · Ej: +54 9 3329 555444"
+          help="Elegí tu país y escribí el número con código de área (sin el código de país)."
           error={errors.whatsapp}
           input={
-            <input
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              value={form.whatsapp}
-              onChange={(e) => update('whatsapp', e.target.value)}
-              placeholder="+54 9 3329 555444"
-              className={iconInputCls}
-            />
+            <div className="flex gap-2">
+              <select
+                aria-label="Código de país"
+                value={pais}
+                onChange={(e) => {
+                  setPais(e.target.value)
+                  setWhatsapp(e.target.value, waNumero)
+                }}
+                className={`${inputCls} w-32 shrink-0`}
+              >
+                {COUNTRY_CODES.map((c) => (
+                  <option key={c.iso} value={c.iso}>
+                    {c.flag} +{c.dial}
+                  </option>
+                ))}
+              </select>
+              <div className="relative flex-1">
+                <Phone
+                  size={14}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fin-faint"
+                />
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={waNumero}
+                  onChange={(e) => {
+                    setWaNumero(e.target.value)
+                    setWhatsapp(pais, e.target.value)
+                  }}
+                  placeholder="9 3329 555444"
+                  className={iconInputCls}
+                />
+              </div>
+            </div>
           }
         />
         <Field
@@ -260,22 +303,22 @@ export function RegistroPage() {
 
         <label
           data-field="acceptedTc"
-          className="mt-2 flex items-start gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100"
+          className="mt-2 flex items-start gap-3 rounded-2xl bg-fin-surface p-4 ring-1 ring-fin-line shadow-fin-card"
         >
           <input
             type="checkbox"
             checked={form.acceptedTc}
             onChange={(e) => update('acceptedTc', e.target.checked)}
-            className="mt-1 h-4 w-4 shrink-0 accent-accent-500"
+            className="mt-1 h-4 w-4 shrink-0 accent-fin-lime"
           />
-          <span className="text-xs leading-relaxed text-neutral-600">
+          <span className="text-xs leading-relaxed text-fin-soft">
             Acepto los{' '}
             <Link
               to="/legal/terminos"
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="font-bold text-accent-700 underline-offset-2 hover:underline"
+              className="font-bold text-fin-lime underline-offset-2 hover:underline"
             >
               términos y condiciones
             </Link>{' '}
@@ -285,7 +328,7 @@ export function RegistroPage() {
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="font-bold text-accent-700 underline-offset-2 hover:underline"
+              className="font-bold text-fin-lime underline-offset-2 hover:underline"
             >
               política de privacidad
             </Link>{' '}
@@ -293,11 +336,11 @@ export function RegistroPage() {
           </span>
         </label>
         {errors.acceptedTc && (
-          <p role="alert" className="-mt-2 text-xs font-semibold text-status-error">{errors.acceptedTc}</p>
+          <p role="alert" className="-mt-2 text-xs font-semibold text-fin-danger">{errors.acceptedTc}</p>
         )}
 
-        <div className="mt-2 flex items-start gap-3 rounded-2xl bg-status-info-bg p-4 text-status-info-fg">
-          <ShieldCheck size={16} className="mt-0.5 shrink-0" />
+        <div className="mt-2 flex items-start gap-3 rounded-2xl bg-fin-surface2 p-4 text-fin-soft ring-1 ring-fin-line">
+          <ShieldCheck size={16} className="mt-0.5 shrink-0 text-fin-lime" />
           <p className="text-xs font-medium">
             Tus datos personales nunca se comparten con terceros sin tu consentimiento. El comercio
             ve tu nombre solo cuando canjeás un cupón en su local.
@@ -307,9 +350,9 @@ export function RegistroPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-4 text-base font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5 hover:from-accent-500 hover:to-accent-700 hover:shadow-floating active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-fin-lime px-6 py-4 text-base font-bold text-fin-bg shadow-fin-glow transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
         >
-          {submitting ? 'Creando cuenta…' : 'Crear cuenta y canjear'}
+          {submitting ? 'Guardando…' : 'Guardar y canjear'}
         </button>
       </form>
     </div>
@@ -317,11 +360,10 @@ export function RegistroPage() {
 }
 
 const inputCls =
-  'w-full rounded-2xl bg-white px-4 py-3.5 text-sm text-neutral-900 shadow-card ring-1 ring-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400'
+  'w-full rounded-2xl bg-fin-surface px-4 py-3.5 text-sm text-fin-ink ring-1 ring-fin-line placeholder:text-fin-faint focus:outline-none focus:ring-2 focus:ring-fin-lime'
 
-/** Input variante con padding-left para acomodar el icono. */
 const iconInputCls =
-  'w-full rounded-2xl bg-white py-3.5 pl-11 pr-4 text-sm text-neutral-900 shadow-card ring-1 ring-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400'
+  'w-full rounded-2xl bg-fin-surface py-3.5 pl-11 pr-4 text-sm text-fin-ink ring-1 ring-fin-line placeholder:text-fin-faint focus:outline-none focus:ring-2 focus:ring-fin-lime'
 
 function Field({
   label,
@@ -335,34 +377,30 @@ function Field({
   label: string
   input: React.ReactNode
   error?: string
-  /** Texto de ayuda debajo del input (neutral). */
   help?: string
-  /** Muestra asterisco rojo en el label. */
   required?: boolean
-  /** Icono lucide-react que se renderiza dentro del input (izquierda). */
   icon?: typeof Mail
-  /** V2: usado para el scroll-to del primer campo inválido al enviar. */
   fieldKey?: string
 }) {
   return (
     <label className="flex flex-col gap-1.5" data-field={fieldKey}>
-      <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+      <span className="text-[11px] font-bold uppercase tracking-widest text-fin-faint">
         {label}
-        {required && <span className="ml-1 text-status-error">*</span>}
+        {required && <span className="ml-1 text-fin-danger">*</span>}
       </span>
       <div className={Icon ? 'relative' : ''}>
         {Icon && (
           <Icon
             size={14}
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fin-faint"
           />
         )}
         {input}
       </div>
       {error ? (
-        <span role="alert" className="text-xs font-semibold text-status-error-fg">{error}</span>
+        <span role="alert" className="text-xs font-semibold text-fin-danger">{error}</span>
       ) : (
-        help && <span className="text-[11px] text-neutral-400">{help}</span>
+        help && <span className="text-[11px] text-fin-faint">{help}</span>
       )}
     </label>
   )
