@@ -570,6 +570,23 @@ export const merchantCoupons = {
 
 // ─── Merchant edit + stats ───────────────────────────────────────────
 
+export type MerchantStatsPeriodo = 'mes' | '7dias' | 'mesPasado' | 'todo'
+
+export type ApiMerchantStatsAsesor = {
+  periodo: MerchantStatsPeriodo
+  /** Σ montoTicket del período — ESTIMADO (lo tipea el cajero). */
+  ventas: number
+  clientes: number
+  nuevos: number
+  crecimiento: { ventasPct: number | null; clientesPct: number | null }
+  volvieron: number
+  unaSolaVez: number
+  totalClientes: number
+  cuandoVienen: { dia: string; canjes: number }[]
+  cupones: { titulo: string; canjes: number }[]
+  mejoresClientes: { nombre: string; visitas: number }[]
+}
+
 export const merchantAdmin = {
   async profile() {
     return request<{ ok: boolean; merchant: ApiMerchant }>('/merchants/me/profile', {
@@ -588,6 +605,12 @@ export const merchantAdmin = {
       ok: boolean
       stats: { canjes: number; ahorroTotal: number; ingresosTotal: number; clientesUnicos: number }
     }>('/merchants/me/stats', { subject: 'merchant' })
+  },
+  async statsAsesor(periodo: MerchantStatsPeriodo = 'mes') {
+    return request<{ ok: boolean; stats: ApiMerchantStatsAsesor }>(
+      `/merchants/me/stats/asesor?periodo=${encodeURIComponent(periodo)}`,
+      { subject: 'merchant' },
+    )
   },
 }
 

@@ -14,6 +14,7 @@ import {
   UserPlus,
   CreditCard,
   Gift,
+  BarChart3,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useRedemptionsForMerchant } from '@/lib/merchantQueries'
@@ -237,6 +238,12 @@ export function AdminDashboardPage() {
           }
           icon={Users}
           locked={!hasRedemptions}
+        />
+        <SecondaryAction
+          to="/admin/estadisticas"
+          title="Estadísticas"
+          description="Cuánta plata y gente te trae la app, y qué hacer"
+          icon={BarChart3}
         />
         <SecondaryAction
           to="/admin/whatsapp"

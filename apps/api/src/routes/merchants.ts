@@ -1,8 +1,9 @@
 import { Hono } from 'hono'
 import { merchantUpdateSchema } from '@misanpedro/shared'
-import { Coupon, Merchant, Redemption } from '@/models'
+import { Coupon, Merchant, Redemption, User } from '@/models'
 import { requireMerchantAuth } from '@/middleware/auth'
 import { tenantContext, getAppId } from '@/middleware/tenant'
+import { computeAsesorStats, type Periodo } from '@/services/merchantStats'
 
 export const merchantsRoutes = new Hono()
 
@@ -179,6 +180,73 @@ merchantsRoutes.get('/me/stats', requireMerchantAuth, async (c) => {
       ahorroTotal,
       ingresosTotal,
       clientesUnicos,
+    },
+  })
+})
+
+// GET /merchants/me/stats/asesor?periodo=mes|7dias|mesPasado|todo
+// Stats del comercio para la página "Asesor de estadísticas". Calcula TODO de
+// la tabla Redemption del comercio (scoped por appId + merchantId del token).
+// Cargamos los docs y agregamos en JS — mismo patrón que /me/stats y
+// /redemptions/clientes (el volumen por comercio es chico). NO toca /me/stats.
+merchantsRoutes.get('/me/stats/asesor', requireMerchantAuth, async (c) => {
+  const appId = getAppId(c)
+  const auth = c.get('auth')
+  if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
+
+  const periodoRaw = c.req.query('periodo')
+  const periodo: Periodo = (['mes', '7dias', 'mesPasado', 'todo'] as const).includes(
+    periodoRaw as never,
+  )
+    ? (periodoRaw as Periodo)
+    : 'mes'
+
+  // Scoping estricto: SOLO canjes de este comercio en este tenant.
+  const all = await Redemption.find({ appId, merchantId: auth.merchantId })
+  const raw = computeAsesorStats(
+    all.map((r) => ({
+      userId: r.userId?.toString() ?? '',
+      couponId: r.couponId.toString(),
+      montoTicket: r.montoTicket,
+      redeemedAt: r.redeemedAt,
+    })),
+    periodo,
+    new Date(),
+  )
+
+  // Joins de display: título del cupón y nombre del cliente (scoped por appId).
+  const couponDocs = raw.cupones.length
+    ? await Coupon.find({ appId, _id: { $in: raw.cupones.map((x) => x.couponId) } })
+    : []
+  const couponTitulo = new Map(couponDocs.map((x) => [x._id.toString(), x.titulo]))
+  const cupones = raw.cupones.map((x) => ({
+    titulo: couponTitulo.get(x.couponId) ?? 'Cupón',
+    canjes: x.canjes,
+  }))
+
+  const userDocs = raw.mejores.length
+    ? await User.find({ appId, _id: { $in: raw.mejores.map((m) => m.userId) } })
+    : []
+  const userNombre = new Map(userDocs.map((u) => [u._id.toString(), u.nombre]))
+  const mejoresClientes = raw.mejores.map((m) => ({
+    nombre: userNombre.get(m.userId) ?? 'Cliente',
+    visitas: m.visitas,
+  }))
+
+  return c.json({
+    ok: true,
+    stats: {
+      periodo: raw.periodo,
+      ventas: raw.ventas,
+      clientes: raw.clientes,
+      nuevos: raw.nuevos,
+      crecimiento: raw.crecimiento,
+      volvieron: raw.volvieron,
+      unaSolaVez: raw.unaSolaVez,
+      totalClientes: raw.totalClientes,
+      cuandoVienen: raw.cuandoVienen,
+      cupones,
+      mejoresClientes,
     },
   })
 })

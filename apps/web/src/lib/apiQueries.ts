@@ -14,6 +14,7 @@ import {
   type ApiActivation,
   type ApiCoupon,
   type ApiMerchant,
+  type MerchantStatsPeriodo,
 } from './api'
 
 type AsyncState<T> = {
@@ -209,6 +210,10 @@ export function useApiMyCoupons() {
 
 export function useApiMerchantStats() {
   return useAsync(() => api.merchantAdmin.stats().then((r) => r.stats), [])
+}
+
+export function useApiMerchantStatsAsesor(periodo: MerchantStatsPeriodo) {
+  return useAsync(() => api.merchantAdmin.statsAsesor(periodo).then((r) => r.stats), [periodo])
 }
 
 export function useApiMerchantProfile() {

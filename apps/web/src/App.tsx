@@ -92,6 +92,9 @@ const AdminWhatsappPage = lazy(() =>
 const AdminReferidosPage = lazy(() =>
   import('@/pages/admin/AdminReferidosPage').then((m) => ({ default: m.AdminReferidosPage })),
 )
+const AdminEstadisticasPage = lazy(() =>
+  import('@/pages/admin/AdminEstadisticasPage').then((m) => ({ default: m.AdminEstadisticasPage })),
+)
 
 /**
  * Fallback minimalista mientras se carga el chunk de la página.
@@ -179,6 +182,7 @@ export default function App() {
               <Route path="cupones/:id/editar" element={<AdminCuponEditPage />} />
               <Route path="clientes" element={<AdminClientesPage />} />
               <Route path="clientes/:userId" element={<AdminClienteDetailPage />} />
+              <Route path="estadisticas" element={<AdminEstadisticasPage />} />
               <Route path="whatsapp" element={<AdminWhatsappPage />} />
               <Route path="referidos" element={<AdminReferidosPage />} />
               <Route path="comercio" element={<AdminComercioPage />} />

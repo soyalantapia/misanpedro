@@ -12,6 +12,7 @@ import {
   HelpCircle,
   CreditCard,
   Gift,
+  BarChart3,
 } from 'lucide-react'
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
 import { useMerchant } from '@/lib/merchantsStore'
@@ -41,8 +42,10 @@ const links = [
   { to: '/admin/comercio', label: 'Comercio', icon: Store, end: false },
 ]
 
-// Referidos vive en el sidebar desktop y en el header mobile (NO en el bottom
-// nav: ya tiene 6 ítems y sumar un 7º aprieta los tap targets en 375px).
+// Estadísticas y Referidos viven en el sidebar desktop (NO en el bottom nav:
+// ya tiene 6 ítems y sumar un 7º aprieta los tap targets en 375px — el acceso
+// mobile a Estadísticas es la SecondaryAction del dashboard).
+const estadisticasLink = { to: '/admin/estadisticas', label: 'Estadísticas', icon: BarChart3, end: false }
 const referidosLink = { to: '/admin/referidos', label: 'Recomendá y ganá', icon: Gift, end: false }
 
 export function MerchantShell() {
@@ -120,7 +123,7 @@ export function MerchantShell() {
           </div>
         </div>
         <nav aria-label="Navegación panel comercio" className="flex flex-col gap-1 px-3">
-          {[...links, referidosLink].map(({ to, label, icon: Icon, end }) => (
+          {[...links, estadisticasLink, referidosLink].map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
