@@ -43,6 +43,7 @@ function apiCouponToLocal(c: ApiCoupon, merchantSlug: string): Coupon {
     precioReferencia: c.precioReferencia,
     vigenciaHasta: c.vigenciaHasta,
     imagenSeed: 'custom',
+    imagenUrl: c.imagenUrl ?? undefined,
     estado: c.estado as Coupon['estado'],
     diasAplica: c.diasAplica,
   }

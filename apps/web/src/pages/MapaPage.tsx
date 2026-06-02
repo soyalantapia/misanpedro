@@ -36,6 +36,7 @@ function apiCouponToLocal(c: ApiCoupon, merchantSlug: string): Coupon {
     porcentaje: c.porcentaje,
     vigenciaHasta: c.vigenciaHasta,
     imagenSeed: 'custom',
+    imagenUrl: c.imagenUrl ?? undefined,
     estado: c.estado as Coupon['estado'],
     diasAplica: c.diasAplica,
   }

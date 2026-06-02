@@ -47,6 +47,7 @@ export function CuponDetailPage() {
         porcentaje: apiCoupon.porcentaje,
         vigenciaHasta: apiCoupon.vigenciaHasta,
         imagenSeed: 'custom',
+        imagenUrl: apiCoupon.imagenUrl ?? undefined,
         estado: apiCoupon.estado as Coupon['estado'],
         diasAplica: apiCoupon.diasAplica,
       }
@@ -142,7 +143,7 @@ export function CuponDetailPage() {
       <div className="relative">
         <CardImage
           categoria={merchant.categoria}
-          coverImageUrl={merchant.coverImageUrl}
+          coverImageUrl={coupon?.imagenUrl ?? merchant.coverImageUrl}
           className="h-56 w-full sm:h-64"
           size="lg"
         />

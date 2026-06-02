@@ -138,6 +138,8 @@ export type Coupon = {
   precioReferencia?: number
   vigenciaHasta: string
   imagenSeed: string
+  /** Imagen propia del cupón (data:image/* o URL). Pisa la portada del comercio. */
+  imagenUrl?: string
   estado: CouponEstado
   diasAplica?: string
 }

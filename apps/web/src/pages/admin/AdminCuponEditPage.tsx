@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Save,
+  ImagePlus,
   Tag,
   Sparkles,
   Check,
@@ -37,6 +38,8 @@ type FormState = {
   precioReferencia: string
   /** Costo aprox del comercio (texto; se manda como number). PRIVADO. */
   costoReferencia: string
+  /** Imagen del cupón (data:image/* base64 o URL). Opcional. */
+  imagenUrl: string
   vigenciaHasta: string
   /** Texto libre de display; se autogenera desde dias+franja si están. */
   diasAplica: string
@@ -56,6 +59,7 @@ const empty: FormState = {
   porcentaje: 30,
   precioReferencia: '',
   costoReferencia: '',
+  imagenUrl: '',
   vigenciaHasta: defaultExpiry(),
   diasAplica: '',
   objetivo: '',
@@ -301,6 +305,7 @@ export function AdminCuponEditPage() {
         porcentaje: existing.porcentaje,
         precioReferencia: existing.precioReferencia != null ? String(existing.precioReferencia) : '',
         costoReferencia: existing.costoReferencia != null ? String(existing.costoReferencia) : '',
+        imagenUrl: existing.imagenUrl ?? '',
         vigenciaHasta: isoToDate(existing.vigenciaHasta),
         diasAplica: existing.diasAplica ?? '',
         objetivo: existing.objetivo ?? '',
@@ -366,6 +371,7 @@ export function AdminCuponEditPage() {
       porcentaje: form.porcentaje,
       precioReferencia: num(form.precioReferencia),
       costoReferencia: clr(num(form.costoReferencia)),
+      imagenUrl: clr(form.imagenUrl.trim() || undefined),
       vigenciaHasta: dateToIso(form.vigenciaHasta),
       diasAplica: buildDiasAplica(form.dias, form.franjaDesde, form.franjaHasta, form.diasAplica.trim()) || undefined,
       dias: clr(form.dias.length ? form.dias : undefined),
@@ -428,7 +434,7 @@ export function AdminCuponEditPage() {
 //  ASESOR (paso a paso)
 // ════════════════════════════════════════════════════════════════════════
 
-const PASOS = ['objetivo', 'jugada', 'gancho', 'plata', 'cuando', 'exclusiva', 'publicar'] as const
+const PASOS = ['objetivo', 'jugada', 'gancho', 'plata', 'cuando', 'publicar'] as const
 type Paso = (typeof PASOS)[number]
 
 function Asesor({
@@ -465,6 +471,37 @@ function Asesor({
     form.precioReferencia.trim() && Number.isFinite(precio) && precio > 0
       ? calcMoney(precio, form.porcentaje, form.costoReferencia.trim() && costo > 0 ? costo : undefined)
       : null
+  const tienePrecio = form.precioReferencia.trim() !== '' && Number.isFinite(precio) && precio > 0
+  const tieneCosto = form.costoReferencia.trim() !== '' && Number.isFinite(costo) && costo > 0
+  // El costo no puede igualar ni superar al precio (no habría margen ni a 0% off).
+  const costoMayorQuePrecio = tienePrecio && tieneCosto && costo >= precio
+  // Máximo % de descuento que NO te deja vender bajo costo (múltiplo de 5). Sin
+  // costo, el tope es 70. Así el costo "impacta la barra de descuento".
+  const maxDescuento =
+    tienePrecio && tieneCosto && costo < precio
+      ? Math.min(70, Math.max(5, Math.floor(((1 - costo / precio) * 100) / 5) * 5))
+      : 70
+  // Si el costo baja el tope por debajo del % elegido, lo recortamos solo.
+  useEffect(() => {
+    if (form.porcentaje > maxDescuento) update('porcentaje', maxDescuento)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxDescuento])
+  // Si llegás a "publicar" sin título/descripción (p.ej. saltaste la jugada), los
+  // autocompletamos con un default editable para que no falle al publicar.
+  useEffect(() => {
+    if (paso !== 'publicar') return
+    const g = form.productoGancho.trim()
+    if (!form.titulo.trim()) {
+      update('titulo', g ? `${form.porcentaje}% OFF en ${g}` : `${form.porcentaje}% OFF en el local`)
+    }
+    if (!form.descripcion.trim()) {
+      update(
+        'descripcion',
+        `Aprovechá ${form.porcentaje}% OFF${g ? ` en ${g}` : ''} en ${merchant.nombre}. Mostrá el cupón en el local para usarlo.`,
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paso])
   const fuerza = calcFuerza(form)
   // La franja necesita que el cierre sea MAYOR al inicio. Como "HH:MM" está
   // zero-padded, la comparación de strings alcanza. Si está al revés, avisamos
@@ -533,10 +570,14 @@ function Asesor({
               </span>
               <p className="text-base font-bold text-ink">{jugada.titulo}</p>
               <p className="text-xs leading-snug text-ink-soft">{jugada.descripcion}</p>
-              <p className="text-[11px] leading-snug text-ink-soft"><strong className="text-ink">Por qué:</strong> {jugada.why}</p>
-              <button type="button" onClick={() => aplicarJugada(jugada)} className={btnPrimary}>
+              <JugadaResumen jugada={jugada} />
+              <p className="text-[11px] leading-snug text-ink-soft"><strong className="text-ink">Por qué funciona:</strong> {jugada.why}</p>
+              <button type="button" onClick={() => aplicarJugada(jugada)} className={`${btnPrimary} mt-1`}>
                 <Check size={16} /> Usar esta jugada
               </button>
+              <p className="text-center text-[11px] text-ink-faint">
+                Cargo todo esto en el cupón y lo revisás antes de publicar.
+              </p>
             </div>
           ) : (
             <p className="rounded-2xl bg-surface p-4 text-sm leading-snug text-ink-soft shadow-card ring-1 ring-line">
@@ -568,6 +609,11 @@ function Asesor({
             <MoneyInput label="Precio normal" value={form.precioReferencia} onChange={(v) => update('precioReferencia', v)} placeholder="6000" />
             <MoneyInput label="Tu costo (privado)" value={form.costoReferencia} onChange={(v) => update('costoReferencia', v)} placeholder="2500" />
           </div>
+          {costoMayorQuePrecio && (
+            <p className="text-[11px] font-semibold text-status-error-fg">
+              Tu costo tiene que ser menor al precio normal — revisá los números.
+            </p>
+          )}
 
           <div className="mt-1">
             <div className="flex items-center justify-between">
@@ -577,13 +623,18 @@ function Asesor({
             <input
               type="range"
               min={5}
-              max={70}
+              max={maxDescuento}
               step={5}
-              value={form.porcentaje}
+              value={Math.min(form.porcentaje, maxDescuento)}
               onChange={(e) => update('porcentaje', Number(e.target.value))}
               className="mt-1 w-full accent-brand"
             />
-            <div className="flex justify-between text-[10px] text-ink-faint"><span>5%</span><span>70%</span></div>
+            <div className="flex justify-between text-[10px] text-ink-faint"><span>5%</span><span>{maxDescuento}%</span></div>
+            {tieneCosto && !costoMayorQuePrecio && maxDescuento < 70 && (
+              <p className="mt-1 text-[11px] text-ink-soft">
+                Tope <span className="font-bold text-ink">{maxDescuento}%</span> para no vender bajo tu costo.
+              </p>
+            )}
           </div>
 
           {money ? (
@@ -619,7 +670,7 @@ function Asesor({
               Poné el precio normal y te muestro cuánto paga el vecino, cuánto se ahorra y tu margen. Es solo para vos: no se publica.
             </p>
           )}
-          <NavBtns onPrev={prev} onNext={next} />
+          <NavBtns onPrev={prev} onNext={next} nextDisabled={costoMayorQuePrecio} />
         </Step>
       )}
 
@@ -659,40 +710,41 @@ function Asesor({
               {buildDiasAplica(form.dias, form.franjaDesde, form.franjaHasta, '') || 'Sin restricción: aplica siempre.'}
             </p>
           )}
-          <NavBtns onPrev={prev} onNext={next} nextDisabled={franjaInvalida} />
-        </Step>
-      )}
-
-      {paso === 'exclusiva' && (
-        <Step title="¿Exclusivo de la app?" hint="Lo que hace que el vecino baje Mi San Pedro.">
-          <button
-            type="button"
-            onClick={() => update('exclusiva', !form.exclusiva)}
-            className={`flex items-center justify-between gap-3 rounded-2xl p-4 text-left ring-1 transition-all ${
-              form.exclusiva ? 'bg-brand-soft ring-brand' : 'bg-surface ring-line'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${form.exclusiva ? 'bg-brand text-on-brand' : 'bg-surface-2 text-ink-faint'}`}>
-                <Lock size={16} />
-              </span>
-              <div>
-                <p className="text-sm font-bold text-ink">Exclusivo de Mi San Pedro</p>
-                <p className="text-[11px] leading-snug text-ink-soft">Que no se consiga en la puerta. Es lo que le da motivo al vecino para usar la app.</p>
-              </div>
-            </div>
-            <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${form.exclusiva ? 'bg-brand-strong text-on-brand' : 'bg-surface-2 text-transparent'}`}>
-              <Check size={14} />
-            </span>
-          </button>
-          <NavBtns onPrev={prev} onNext={next} nextLabel="Ver mi cupón" />
+          <NavBtns onPrev={prev} onNext={next} nextLabel="Ver mi cupón" nextDisabled={franjaInvalida} />
         </Step>
       )}
 
       {paso === 'publicar' && (
-        <Step title="Tu cupón" hint="Así lo ve el vecino. Revisá la fuerza y publicá.">
+        <Step title="Tu cupón" hint="Así lo ve el vecino. Revisá, ajustá y publicá.">
           <FuerzaMeter fuerza={fuerza} />
           <Preview merchant={merchant} form={form} money={money} />
+
+          <Field label="Título del cupón" hint={`${form.titulo.length}/60`}>
+            <input
+              type="text"
+              value={form.titulo}
+              maxLength={60}
+              onChange={(e) => update('titulo', e.target.value)}
+              placeholder="Ej: 30% OFF en el menú del mediodía"
+              className={inputCls}
+            />
+          </Field>
+
+          <Field label="Descripción" hint={`${form.descripcion.length}/280`}>
+            <textarea
+              value={form.descripcion}
+              maxLength={280}
+              rows={3}
+              onChange={(e) => update('descripcion', e.target.value)}
+              placeholder="¿Qué incluye? ¿En qué productos aplica?"
+              className={`${inputCls} resize-none`}
+            />
+          </Field>
+
+          <Field label="Foto del cupón (opcional)">
+            <ImagenCuponInput value={form.imagenUrl} onChange={(v) => update('imagenUrl', v)} />
+          </Field>
+
           {/* Vigencia rápida acá para no perder el paso de fecha */}
           <VigenciaChips value={form.vigenciaHasta} onChange={(v) => update('vigenciaHasta', v)} />
           <WizardBar>
@@ -735,6 +787,43 @@ function Step({ title, hint, children }: { title: string; hint?: string; childre
       </div>
       {children}
     </section>
+  )
+}
+
+/**
+ * Resumen concreto de la jugada: traduce los campos (%, días, franja,
+ * exclusividad) a chips para que el comercio vea EXACTAMENTE qué cupón va a
+ * crear antes de aplicarla.
+ */
+function JugadaResumen({ jugada }: { jugada: Jugada }) {
+  const chips: string[] = [`${jugada.porcentaje}% OFF`]
+  chips.push(
+    jugada.dias.length > 0 && jugada.dias.length < 7
+      ? DIAS_SEMANA.filter((d) => jugada.dias.includes(d.id))
+          .map((d) => d.corto)
+          .join(', ')
+      : 'Todos los días',
+  )
+  if (jugada.franjaDesde && jugada.franjaHasta) {
+    chips.push(`${jugada.franjaDesde}–${jugada.franjaHasta} hs`)
+  }
+  if (jugada.exclusiva) chips.push('Exclusivo de la app')
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[10px] font-bold uppercase tracking-widest text-brand-strong">
+        Esto crea
+      </span>
+      <div className="flex flex-wrap gap-1.5">
+        {chips.map((c) => (
+          <span
+            key={c}
+            className="rounded-full bg-bg px-2.5 py-1 text-[11px] font-semibold text-ink ring-1 ring-line"
+          >
+            {c}
+          </span>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -839,6 +928,83 @@ function VigenciaChips({ value, onChange }: { value: string; onChange: (v: strin
   )
 }
 
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">{label}</span>
+        {hint && <span className="text-[11px] tabular-nums text-ink-faint">{hint}</span>}
+      </div>
+      {children}
+    </label>
+  )
+}
+
+const MAX_CUPON_IMG_BYTES = 2 * 1024 * 1024
+
+/** Uploader de la imagen del cupón: base64 con límite de 2 MB. La foto se
+ *  acomoda sola al recuadro de la tarjeta (object-cover en CardImage). */
+function ImagenCuponInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const ref = useRef<HTMLInputElement>(null)
+  const toast = useToast()
+  function onPick(file: File) {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Tiene que ser una imagen')
+      return
+    }
+    if (file.size > MAX_CUPON_IMG_BYTES) {
+      toast.error('Imagen muy grande', 'El máximo es 2 MB. Probá con una más liviana.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => onChange(reader.result as string)
+    reader.onerror = () => toast.error('No se pudo leer el archivo')
+    reader.readAsDataURL(file)
+  }
+  return (
+    <div className="flex items-center gap-3">
+      <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-2xl bg-surface ring-1 ring-line">
+        {value ? (
+          <img src={value} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <ImagePlus size={22} className="text-ink-faint" />
+        )}
+      </div>
+      <div className="flex flex-col items-start gap-1.5">
+        <input
+          ref={ref}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) onPick(f)
+            e.target.value = ''
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => ref.current?.click()}
+          className="rounded-xl bg-surface px-3 py-1.5 text-xs font-bold text-ink ring-1 ring-line hover:bg-bg"
+        >
+          {value ? 'Cambiar foto' : 'Subir foto'}
+        </button>
+        {value ? (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            className="text-[11px] font-semibold text-status-error-fg"
+          >
+            Quitar
+          </button>
+        ) : (
+          <span className="text-[11px] text-ink-faint">Se acomoda sola al recuadro. Máx 2 MB.</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function Preview({
   merchant,
   form,
@@ -854,7 +1020,7 @@ function Preview({
         Vista previa para el vecino
       </p>
       <div className="relative">
-        <CardImage categoria={merchant.categoria} className="h-32 w-full" />
+        <CardImage categoria={merchant.categoria} coverImageUrl={form.imagenUrl || undefined} className="h-32 w-full" />
         <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-surface/95 px-3 py-1 font-bold text-brand-strong shadow-card backdrop-blur-md">
           <span className="text-base tabular-nums">{form.porcentaje}%</span>
           <span className="ml-1 text-[10px] font-extrabold tracking-widest">OFF</span>

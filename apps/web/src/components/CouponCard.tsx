@@ -25,7 +25,7 @@ export function CouponCard({
       <div className="relative">
         <CardImage
           categoria={merchant.categoria}
-          coverImageUrl={merchant.coverImageUrl}
+          coverImageUrl={coupon.imagenUrl ?? merchant.coverImageUrl}
           className="h-36 w-full"
         />
         <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-fin-bg/80 px-3 py-1 font-bold text-fin-lime shadow-fin-card backdrop-blur-md ring-1 ring-fin-lime/30">
