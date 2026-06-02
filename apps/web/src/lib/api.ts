@@ -90,7 +90,11 @@ async function doRefresh(subject: Subject): Promise<string | null> {
         body: JSON.stringify({ refreshToken: refresh }),
       })
       if (!r.ok) {
-        tokens.clear(subject)
+        // Solo cerramos sesión si el refresh es RECHAZADO (401 = token
+        // inválido o revocado por logout). Ante 5xx / hipo del servidor NO
+        // limpiamos: mantenemos la sesión para no desloguear por algo
+        // transitorio (clave para la sesión persistente del comercio).
+        if (r.status === 401) tokens.clear(subject)
         return null
       }
       const data = (await r.json()) as { accessToken: string; refreshToken?: string }
@@ -265,27 +269,22 @@ export type ApiUserSession = {
 // ─── Auth merchant ───────────────────────────────────────────────────
 
 export const merchantApi = {
-  async login(email: string, password: string) {
+  // ─── Login OTP (passwordless) ───
+  async requestOtp(email: string) {
+    return request<{ ok: boolean; _debugCode?: string }>(
+      '/merchant/auth/request-otp',
+      json({ email }),
+    )
+  },
+  async verifyOtp(email: string, code: string) {
     const data = await request<{
       accessToken: string
       refreshToken: string
       user: ApiMerchantSession['user']
       merchant: ApiMerchantSession['merchant']
-    }>('/merchant/auth/login', json({ email, password }))
+    }>('/merchant/auth/verify-otp', json({ email, code }))
     tokens.set('merchant', data.accessToken, data.refreshToken)
     return data
-  },
-  async forgotPassword(email: string) {
-    return request<{ ok: boolean }>(
-      '/merchant/auth/forgot-password',
-      json({ email }),
-    )
-  },
-  async resetPassword(token: string, newPassword: string) {
-    return request<{ ok: boolean }>(
-      '/merchant/auth/reset-password',
-      json({ token, newPassword }),
-    )
   },
   async signup(payload: {
     comercio: {
@@ -304,7 +303,7 @@ export const merchantApi = {
       condicionFiscal?: 'monotributo' | 'responsable_inscripto' | 'consumidor_final'
       direccionFiscal?: string
     }
-    admin: { nombre: string; email: string; password: string }
+    admin: { nombre: string; email: string; password?: string }
     acceptedTc: true
     /** Código de referido (opcional) si el comercio llegó por un link de referido. */
     ref?: string

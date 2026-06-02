@@ -8,8 +8,6 @@ import {
   Sparkles,
   Clock,
   Receipt,
-  Eye,
-  EyeOff,
   Lock,
 } from 'lucide-react'
 import { CATEGORIAS, type Categoria } from '@/lib/types'
@@ -18,7 +16,6 @@ import { useToast } from '@/components/Toast'
 import { Select } from '@/components/Select'
 import { cn } from '@/lib/cn'
 import { validateCuit } from '@/lib/validations/cuit'
-import { evaluatePassword } from '@/lib/validations/password'
 import { useTenant } from '@/lib/tenant'
 
 // Leaflet es pesado (~150KB) — lo bajamos como chunk aparte y sólo cuando
@@ -42,7 +39,6 @@ type Form = {
   telefono: string
   horarios: string
   emailAdmin: string
-  password: string
   nombreAdmin: string
   cuit: string
   razonSocial: string
@@ -61,7 +57,6 @@ const empty: Form = {
   telefono: '',
   horarios: '',
   emailAdmin: '',
-  password: '',
   nombreAdmin: '',
   cuit: '',
   razonSocial: '',
@@ -73,13 +68,12 @@ const empty: Form = {
 /**
  * Persistencia del draft del signup en localStorage.
  * Si el usuario recarga (F5, cierra y vuelve a abrir, navega y vuelve),
- * los datos quedan. Excluimos `password` y `acceptedTc` por seguridad/legal:
- *   - password no se almacena nunca en localStorage (XSS-safe)
- *   - acceptedTc tiene que ser un consent fresco cada vez
+ * los datos quedan. Excluimos `acceptedTc`: el consentimiento tiene que ser
+ * fresco cada vez (no se persiste).
  */
 const DRAFT_KEY = 'msp.admin.signup.draft.v1'
 
-type StoredDraft = Omit<Form, 'password' | 'acceptedTc'>
+type StoredDraft = Omit<Form, 'acceptedTc'>
 
 function loadDraft(): Partial<Form> | null {
   try {
@@ -95,9 +89,9 @@ function loadDraft(): Partial<Form> | null {
 
 function saveDraft(form: Form) {
   try {
-    // password y acceptedTc no se persisten al draft
-    const { password: _, acceptedTc: __, ...rest } = form
-    void _; void __
+    // acceptedTc no se persiste al draft (consent fresco cada vez)
+    const { acceptedTc: __, ...rest } = form
+    void __
     // Si está todo vacío, no escribimos basura al storage.
     const someFilled = Object.values(rest).some(
       (v) => typeof v === 'string' && v.trim().length > 0,
@@ -132,7 +126,6 @@ export function AdminSignupPage() {
   const [draftRestored, setDraftRestored] = useState<boolean>(() => loadDraft() !== null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
   const toast = useToast()
   const tenant = useTenant()
@@ -180,7 +173,6 @@ export function AdminSignupPage() {
     // Los horarios ya no son obligatorios al signup — se completan en el panel
     if (form.nombreAdmin.trim().length < 3) return 'Falta tu nombre completo'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAdmin)) return 'Email inválido'
-    if (form.password.length < 8) return 'La contraseña debe tener al menos 8 caracteres'
     return null
   }
 
@@ -243,7 +235,6 @@ export function AdminSignupPage() {
       admin: {
         nombre: form.nombreAdmin.trim(),
         email: form.emailAdmin.trim().toLowerCase(),
-        password: form.password,
       },
       ref: refCode,
       acceptedTc: true,
@@ -462,35 +453,10 @@ export function AdminSignupPage() {
                 />
               }
             />
-            <Field
-              label="Contraseña"
-              required
-              input={
-                <>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      value={form.password}
-                      onChange={(e) => update('password', e.target.value)}
-                      placeholder="Mínimo 8 caracteres"
-                      className={cn(inputCls, 'pr-11')}
-                      minLength={8}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                      aria-pressed={showPassword}
-                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-ink-faint transition-colors hover:bg-surface-2 hover:text-ink"
-                    >
-                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </div>
-                  <PasswordStrengthBar password={form.password} />
-                </>
-              }
-            />
+            <p className="rounded-xl bg-brand-soft px-3 py-2 text-xs font-medium text-brand-strong">
+              No necesitás contraseña: cada vez que entres al panel te mandamos
+              un código de acceso a este email.
+            </p>
 
             {error && (
               <p role="alert" className="rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
@@ -531,53 +497,6 @@ export function AdminSignupPage() {
 
         {step === 'listo' && <ListoStep form={form} />}
       </div>
-    </div>
-  )
-}
-
-function PasswordStrengthBar({ password }: { password: string }) {
-  const strength = evaluatePassword(password)
-  if (strength.score === 0) return null
-  const colors = [
-    '',
-    'bg-status-error',
-    'bg-status-warning',
-    'bg-status-success',
-    'bg-status-success',
-  ] as const
-  const textColors = [
-    '',
-    'text-status-error-fg',
-    'text-status-warning-fg',
-    'text-status-success-fg',
-    'text-status-success-fg',
-  ] as const
-  return (
-    <div className="mt-1 flex flex-col gap-1">
-      <div
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={4}
-        aria-valuenow={strength.score}
-        aria-valuetext={`Fortaleza de la contraseña: ${strength.label}`}
-        className="flex gap-1"
-      >
-        {[1, 2, 3, 4].map((i) => (
-          <span
-            key={i}
-            className={cn(
-              'h-1 flex-1 rounded-full transition-colors',
-              i <= strength.score ? colors[strength.score] : 'bg-surface-2',
-            )}
-          />
-        ))}
-      </div>
-      <p className={cn('text-[11px] font-semibold', textColors[strength.score])}>
-        {strength.label}
-        {strength.hint && (
-          <span className="ml-1 font-normal text-ink-soft">· {strength.hint}</span>
-        )}
-      </p>
     </div>
   )
 }

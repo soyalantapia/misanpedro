@@ -58,16 +58,6 @@ const AdminLoginPage = lazy(() =>
 const AdminSignupPage = lazy(() =>
   import('@/pages/admin/AdminSignupPage').then((m) => ({ default: m.AdminSignupPage })),
 )
-const AdminForgotPasswordPage = lazy(() =>
-  import('@/pages/admin/AdminForgotPasswordPage').then((m) => ({
-    default: m.AdminForgotPasswordPage,
-  })),
-)
-const AdminResetPasswordPage = lazy(() =>
-  import('@/pages/admin/AdminResetPasswordPage').then((m) => ({
-    default: m.AdminResetPasswordPage,
-  })),
-)
 const AdminClienteDetailPage = lazy(() =>
   import('@/pages/admin/AdminClienteDetailPage').then((m) => ({
     default: m.AdminClienteDetailPage,
@@ -173,11 +163,9 @@ export default function App() {
             <Route path="legal/terminos" element={<TerminosPage />} />
             <Route path="legal/privacidad" element={<PrivacidadPage />} />
 
-            {/* Panel comercio — rutas SIN shell (auth/password reset) */}
+            {/* Panel comercio — rutas SIN shell (login OTP) */}
             <Route path="admin/login" element={<AdminLoginPage />} />
             <Route path="admin/registro" element={<AdminSignupPage />} />
-            <Route path="admin/forgot-password" element={<AdminForgotPasswordPage />} />
-            <Route path="admin/reset-password" element={<AdminResetPasswordPage />} />
             <Route path="admin/canje/:activationId" element={<AdminConfirmarCanjePage />} />
 
             {/* N2: editor de cupón AHORA dentro del MerchantShell → hereda

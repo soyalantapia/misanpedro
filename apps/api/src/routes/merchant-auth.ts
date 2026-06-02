@@ -1,16 +1,13 @@
 import { Hono } from 'hono'
 import bcrypt from 'bcryptjs'
-import { createHash, randomBytes, randomInt } from 'node:crypto'
-import { z } from 'zod'
+import { createHash, randomInt } from 'node:crypto'
 import {
-  merchantLoginSchema,
   merchantSignupSchema,
   merchantOtpRequestSchema,
   merchantOtpVerifySchema,
 } from '@misanpedro/shared'
-import { Merchant, MerchantUser, Otp, PasswordReset, Referral } from '@/models'
+import { Merchant, MerchantUser, Otp, Referral } from '@/models'
 import { generateReferralCode } from '@/routes/referrals'
-import { env } from '@/env'
 import {
   issueRefreshToken,
   signAccessToken,
@@ -21,7 +18,7 @@ import {
 import { requireMerchantAuth } from '@/middleware/auth'
 import { rateLimit } from '@/middleware/security'
 import { tenantContext, getAppId } from '@/middleware/tenant'
-import { sendMerchantWelcome, sendMerchantOtpCode, sendPasswordResetLink } from '@/services/email.service'
+import { sendMerchantWelcome, sendMerchantOtpCode } from '@/services/email.service'
 
 export const merchantAuthRoutes = new Hono()
 
@@ -29,8 +26,6 @@ export const merchantAuthRoutes = new Hono()
 // (un comercio sólo vive dentro de un tenant).
 merchantAuthRoutes.use('*', tenantContext)
 
-// Login: 8 intentos por minuto por IP/UA (anti-brute force)
-const loginLimiter = rateLimit({ prefix: 'merchant-login', max: 8, windowMs: 60_000 })
 // Signup: 3 nuevos comercios por hora por cliente
 const signupLimiter = rateLimit({ prefix: 'merchant-signup', max: 3, windowMs: 60 * 60_000 })
 
@@ -192,71 +187,6 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
   )
 })
 
-merchantAuthRoutes.post('/login', loginLimiter, async (c) => {
-  const appId = getAppId(c)
-  const body = await c.req.json().catch(() => ({}))
-  const parsed = merchantLoginSchema.safeParse(body)
-  if (!parsed.success) {
-    return c.json({ ok: false, error: 'invalid input', issues: parsed.error.format() }, 400)
-  }
-  const { email, password } = parsed.data
-
-  const user = await MerchantUser.findOne({ appId, email })
-  if (!user) return c.json({ ok: false, error: 'credenciales inválidas' }, 401)
-
-  // Comercios passwordless (alta OTP-only) no tienen hash → el login por
-  // contraseña no aplica. Mismo mensaje genérico (anti-enumeración).
-  if (!user.passwordHash) return c.json({ ok: false, error: 'credenciales inválidas' }, 401)
-  const ok = await bcrypt.compare(password, user.passwordHash)
-  if (!ok) return c.json({ ok: false, error: 'credenciales inválidas' }, 401)
-
-  const merchantPre = await Merchant.findOne({ appId, _id: user.merchantId })
-  if (!merchantPre) return c.json({ ok: false, error: 'comercio no encontrado' }, 404)
-  if (merchantPre.estado === 'suspendido') {
-    return c.json({ ok: false, error: 'cuenta suspendida — contactá soporte' }, 403)
-  }
-  if (merchantPre.estado === 'cancelado') {
-    return c.json({ ok: false, error: 'cuenta cancelada' }, 403)
-  }
-
-  user.lastLoginAt = new Date()
-  await user.save()
-
-  const accessToken = signAccessToken({
-    sub: user._id.toString(),
-    type: 'merchant_user',
-    merchantId: user.merchantId.toString(),
-    appId: String(appId),
-  })
-  const { token: refreshToken } = await issueRefreshToken({
-    subjectType: 'merchant_user',
-    subjectId: user._id.toString(),
-    userAgent: c.req.header('user-agent'),
-  })
-
-  return c.json({
-    ok: true,
-    accessToken,
-    refreshToken,
-    user: {
-      id: user._id.toString(),
-      email: user.email,
-      nombre: user.nombre,
-      rol: user.rol,
-      merchantId: user.merchantId.toString(),
-    },
-    merchant: {
-      id: merchantPre._id.toString(),
-      slug: merchantPre.slug,
-      nombre: merchantPre.nombre,
-      categoria: merchantPre.categoria,
-      // E1 (audit v9): incluir estado para que el panel sepa si está
-      // pending_payment al re-loguear (banner, dashboard, copy del editor).
-      estado: merchantPre.estado,
-    },
-  })
-})
-
 // ─── Login OTP (passwordless) ─────────────────────────────────────────
 // El comercio entra con un código de 6 dígitos al email, sin contraseña.
 // Mismo patrón que el vecino (user-auth.ts) + checks de estado del comercio.
@@ -404,76 +334,6 @@ merchantAuthRoutes.post('/logout', async (c) => {
 merchantAuthRoutes.post('/logout-all', requireMerchantAuth, async (c) => {
   const auth = c.get('auth')
   await revokeAllForSubject(auth.sub)
-  return c.json({ ok: true })
-})
-
-// ─── Reset de password ────────────────────────────────────────────────
-
-const RESET_TTL_MS = 30 * 60 * 1000
-const forgotPwdLimiter = rateLimit({ prefix: 'forgot-pwd', max: 5, windowMs: 60 * 60_000 })
-const forgotPwdSchema = z.object({ email: z.string().email().toLowerCase() })
-
-merchantAuthRoutes.post('/forgot-password', forgotPwdLimiter, async (c) => {
-  const appId = getAppId(c)
-  const body = await c.req.json().catch(() => ({}))
-  const parsed = forgotPwdSchema.safeParse(body)
-  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
-
-  const user = await MerchantUser.findOne({ appId, email: parsed.data.email })
-  // Anti-enum: siempre devolvemos OK aunque el email no exista
-  if (!user) return c.json({ ok: true })
-
-  const token = randomBytes(32).toString('base64url')
-  const tokenHash = createHash('sha256').update(token).digest('hex')
-  const expiresAt = new Date(Date.now() + RESET_TTL_MS)
-
-  await PasswordReset.deleteMany({ merchantUserId: user._id })
-  await PasswordReset.create({
-    merchantUserId: user._id,
-    tokenHash,
-    expiresAt,
-    requestedFromUa: c.req.header('user-agent'),
-  })
-
-  const resetLink = `${env.APP_URL_FRONT}/#/admin/reset-password?token=${token}`
-  sendPasswordResetLink({ to: user.email, nombre: user.nombre, link: resetLink }).catch((err) =>
-    console.error('[reset-email]', err),
-  )
-
-  return c.json({ ok: true })
-})
-
-const resetPwdSchema = z.object({
-  token: z.string().min(20),
-  newPassword: z.string().min(8, 'Mínimo 8 caracteres'),
-})
-
-merchantAuthRoutes.post('/reset-password', async (c) => {
-  const appId = getAppId(c)
-  const body = await c.req.json().catch(() => ({}))
-  const parsed = resetPwdSchema.safeParse(body)
-  if (!parsed.success) {
-    return c.json({ ok: false, error: 'invalid input', issues: parsed.error.format() }, 400)
-  }
-  const tokenHash = createHash('sha256').update(parsed.data.token).digest('hex')
-  const reset = await PasswordReset.findOne({ tokenHash })
-  if (!reset || reset.usedAt) return c.json({ ok: false, error: 'token inválido' }, 401)
-  if (reset.expiresAt.getTime() < Date.now()) {
-    return c.json({ ok: false, error: 'token expirado' }, 401)
-  }
-
-  // El user debe estar en el tenant que hace el reset.
-  const user = await MerchantUser.findOne({ _id: reset.merchantUserId, appId })
-  if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
-
-  user.passwordHash = await bcrypt.hash(parsed.data.newPassword, 10)
-  await user.save()
-
-  reset.usedAt = new Date()
-  await reset.save()
-
-  await revokeAllForSubject(user._id.toString())
-
   return c.json({ ok: true })
 })
 

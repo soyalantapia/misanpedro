@@ -57,14 +57,30 @@ export function useMerchantSession() {
 }
 
 export const merchantAuth = {
-  async login(
+  // ─── Login OTP (passwordless) ───
+  async requestOtp(
     email: string,
-    password: string,
-  ): Promise<{ ok: true } | { ok: false; error: string }> {
-    // Sólo API real. Sin fallback local: el comercio tiene que existir en
-    // la DB para poder validar cupones, recibir notificaciones, cobrar, etc.
+  ): Promise<{ ok: true; debugCode?: string } | { ok: false; error: string }> {
     try {
-      const data = await merchantApi.login(email, password)
+      const data = await merchantApi.requestOtp(email)
+      return { ok: true, debugCode: data._debugCode }
+    } catch (err) {
+      const msg = (err as Error)?.message ?? ''
+      const isNetwork = /fetch|network|connect/i.test(msg)
+      return {
+        ok: false,
+        error: isNetwork
+          ? 'Sin conexión. Verificá tu red e intentá de nuevo.'
+          : 'No pudimos enviar el código. Reintentá en un momento.',
+      }
+    }
+  },
+  async verifyOtp(
+    email: string,
+    code: string,
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    try {
+      const data = await merchantApi.verifyOtp(email, code)
       const session: MerchantSession = {
         userId: data.user.id,
         merchantId: data.merchant.id,
@@ -78,38 +94,36 @@ export const merchantAuth = {
       return { ok: true }
     } catch (apiErr) {
       if (apiErr instanceof ApiError && apiErr.status === 401) {
-        return { ok: false, error: 'Email o contraseña incorrectos. Verificá los datos e intentá de nuevo.' }
+        return { ok: false, error: 'Código incorrecto o vencido. Pedí uno nuevo.' }
       }
-      // 403 → backend devuelve esto cuando el comercio está suspendido o
-      // cancelado (no es problema de credenciales). Mostrar mensaje específico
-      // para que Sandra NO pierda tiempo reseteando password.
+      if (apiErr instanceof ApiError && apiErr.status === 429) {
+        return {
+          ok: false,
+          error: 'Demasiados intentos. Esperá un momento y pedí un código nuevo.',
+        }
+      }
+      // 403 → comercio suspendido/cancelado (no es problema del código).
       if (apiErr instanceof ApiError && apiErr.status === 403) {
         const estado = (apiErr.payload?.estado ?? '').toString().toLowerCase()
         if (estado === 'suspendido') {
-          return {
-            ok: false,
-            error:
-              'Tu cuenta está suspendida. Escribinos a soporte para reactivarla.',
-          }
+          return { ok: false, error: 'Tu cuenta está suspendida. Escribinos a soporte para reactivarla.' }
         }
         if (estado === 'cancelado') {
-          return {
-            ok: false,
-            error:
-              'Tu cuenta fue cancelada. Si querés volver a usar Mi San Pedro, escribinos a soporte.',
-          }
+          return { ok: false, error: 'Tu cuenta fue cancelada. Si querés volver, escribinos a soporte.' }
         }
-        // 403 sin estado conocido — fallback con mensaje claro
         return {
           ok: false,
-          error:
-            apiErr.message ||
-            'Tu cuenta tiene un problema de acceso. Escribinos a soporte.',
+          error: apiErr.message || 'Tu cuenta tiene un problema de acceso. Escribinos a soporte.',
         }
       }
       const msg = (apiErr as Error)?.message ?? ''
       const isNetwork = /fetch|network|connect/i.test(msg)
-      return { ok: false, error: isNetwork ? 'Sin conexión. Verificá tu red e intentá de nuevo.' : 'No pudimos iniciar sesión. Verificá tu conexión.' }
+      return {
+        ok: false,
+        error: isNetwork
+          ? 'Sin conexión. Verificá tu red e intentá de nuevo.'
+          : 'No pudimos verificar el código. Reintentá.',
+      }
     }
   },
   async signup(payload: {
@@ -130,7 +144,7 @@ export const merchantAuth = {
       condicionFiscal?: 'monotributo' | 'responsable_inscripto' | 'consumidor_final'
       direccionFiscal?: string
     }
-    admin: { nombre: string; email: string; password: string }
+    admin: { nombre: string; email: string; password?: string }
     /** Código de referido (opcional). */
     ref?: string
     acceptedTc?: boolean
