@@ -24,11 +24,26 @@ export const requireMerchantAuth: MiddlewareHandler = async (c, next) => {
     if (payload.type !== 'merchant_user') {
       return c.json({ ok: false, error: 'forbidden' }, 403)
     }
+    if (!sameTenant(c, payload)) {
+      return c.json({ ok: false, error: 'tenant mismatch' }, 403)
+    }
     c.set('auth', payload)
   } catch {
     return c.json({ ok: false, error: 'invalid token' }, 401)
   }
   await next()
+}
+
+/**
+ * Tenant binding: si la ruta resolvió un tenant (appId) y el token trae su
+ * propio appId, deben coincidir. Evita que un sujeto del tenant A opere sobre
+ * el tenant B spoofeando `X-Tenant-Slug`. Guardado: si la ruta no usa
+ * tenantContext (reqAppId vacío) o el token no tiene appId, no bloquea.
+ */
+function sameTenant(c: Context, payload: AccessPayload): boolean {
+  const reqAppId = c.get('appId')
+  if (!reqAppId || !payload.appId) return true
+  return payload.appId === reqAppId
 }
 
 export const requireUserAuth: MiddlewareHandler = async (c, next) => {
@@ -38,6 +53,9 @@ export const requireUserAuth: MiddlewareHandler = async (c, next) => {
     const payload = verifyAccessToken(token)
     if (payload.type !== 'user') {
       return c.json({ ok: false, error: 'forbidden' }, 403)
+    }
+    if (!sameTenant(c, payload)) {
+      return c.json({ ok: false, error: 'tenant mismatch' }, 403)
     }
     c.set('auth', payload)
   } catch {

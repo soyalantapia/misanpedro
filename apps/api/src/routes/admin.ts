@@ -37,7 +37,7 @@ adminRoutes.get('/metrics', requireSuperAdmin, async (c) => {
   ])
 
   // MRR estimado (todos los activos pagando el plan estándar)
-  const mrrARS = activeSubs * Number(env.PLAN_AMOUNT_ARS ?? 25_000)
+  const mrrARS = activeSubs * Number(env.PLAN_AMOUNT_ARS ?? 50_000)
 
   // Total ahorro generado a los vecinos
   const ahorroAggregate = await Redemption.aggregate([

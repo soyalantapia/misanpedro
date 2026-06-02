@@ -221,6 +221,9 @@ export const couponCreateSchema = z.object({
   /** Precio normal aproximado por persona (ARS). Opcional — alimenta el
    *  planificador del vecino. */
   precioReferencia: z.number().positive().optional(),
+  /** Imagen del cupón (data:image/* base64 o URL http/https). Se muestra en la
+   *  tarjeta que ve el vecino. Opcional. */
+  imagenUrl: safeImageSrcSchema.optional().nullable(),
   // ─── Asesor de cupones (todos opcionales, backward-compatible) ───────
   // `.nullable()`: enviar null en un PATCH = LIMPIAR el campo (volverlo a vacío).
   // `undefined`/omitido = no tocar. Permite "deshacer" un opcional al editar.

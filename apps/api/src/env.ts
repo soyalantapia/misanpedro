@@ -28,7 +28,7 @@ const schema = z.object({
   WHATSAPP_SESSIONS_DIR: z.string().default('/tmp/wa-sessions'),
 
   /** Plan mensual en ARS — precio FINAL al comercio (monotributo emite factura C sin IVA discriminado). NO sumar IVA encima. */
-  PLAN_AMOUNT_ARS: z.coerce.number().default(25_000),
+  PLAN_AMOUNT_ARS: z.coerce.number().default(50_000),
 
   /** Email de soporte (visible en TyC y panel ayuda). */
   SUPPORT_EMAIL: z.string().default('soporte@misanpedro.app'),

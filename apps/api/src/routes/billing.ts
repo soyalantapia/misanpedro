@@ -11,7 +11,7 @@ import { verifyMpSignature, mapMpStatus } from '@/services/mp-signature'
 
 export const billingRoutes = new Hono()
 
-const PLAN_AMOUNT_ARS = Number(env.PLAN_AMOUNT_ARS ?? 25_000)
+const PLAN_AMOUNT_ARS = Number(env.PLAN_AMOUNT_ARS ?? 50_000)
 
 /**
  * B1: precio FINAL al comercio. Primera etapa = monotributo personal del

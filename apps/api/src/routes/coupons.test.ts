@@ -69,6 +69,26 @@ describe('couponCreateSchema / couponUpdateSchema — asesor', () => {
   })
 })
 
+describe('imagenUrl — validación de imagen segura (anti-XSS)', () => {
+  it('acepta https y data:image', () => {
+    expect(couponCreateSchema.safeParse({ ...base, imagenUrl: 'https://cdn.x.com/a.jpg' }).success).toBe(true)
+    expect(
+      couponCreateSchema.safeParse({ ...base, imagenUrl: 'data:image/png;base64,iVBORw0KGgo=' }).success,
+    ).toBe(true)
+  })
+
+  it('RECHAZA esquemas peligrosos (javascript:, data:text/html)', () => {
+    expect(couponCreateSchema.safeParse({ ...base, imagenUrl: 'javascript:alert(1)' }).success).toBe(false)
+    expect(
+      couponCreateSchema.safeParse({ ...base, imagenUrl: 'data:text/html,<script>x</script>' }).success,
+    ).toBe(false)
+  })
+
+  it('acepta null para limpiar la imagen al editar (update)', () => {
+    expect(couponUpdateSchema.safeParse({ imagenUrl: null }).success).toBe(true)
+  })
+})
+
 describe('serializeCoupon — privacidad (regla dura)', () => {
   const doc = {
     _id: new Types.ObjectId(),
@@ -103,6 +123,11 @@ describe('serializeCoupon — privacidad (regla dura)', () => {
     const priv = serializeCoupon(doc, undefined, { includePrivate: true })
     expect(priv.costoReferencia).toBe(2500)
     expect(priv.objetivo).toBe('llenar_flojos')
+  })
+
+  it('expone imagenUrl en público (la foto del cupón sí viaja al vecino)', () => {
+    const withImg = { ...doc, imagenUrl: 'https://cdn.x.com/cupon.jpg' }
+    expect(serializeCoupon(withImg).imagenUrl).toBe('https://cdn.x.com/cupon.jpg')
   })
 })
 

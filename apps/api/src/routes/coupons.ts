@@ -208,6 +208,7 @@ couponsRoutes.patch('/:id', requireMerchantAuth, requireMerchantActive, async (c
   if (data.condiciones !== undefined) coupon.condiciones = data.condiciones
   if (data.porcentaje !== undefined) coupon.porcentaje = data.porcentaje
   if (data.precioReferencia !== undefined) coupon.precioReferencia = data.precioReferencia
+  if (data.imagenUrl !== undefined) coupon.imagenUrl = data.imagenUrl ?? undefined
   if (data.vigenciaHasta !== undefined) coupon.vigenciaHasta = new Date(data.vigenciaHasta)
   if (data.diasAplica !== undefined) coupon.diasAplica = data.diasAplica
   if (data.estado !== undefined) coupon.estado = data.estado

@@ -15,4 +15,4 @@ process.env.JWT_REFRESH_SECRET =
   'test-jwt-refresh-secret-32-chars-minimum-padding-padding'
 process.env.APP_URL_FRONT = process.env.APP_URL_FRONT ?? 'http://localhost:5180'
 process.env.APP_URL_API = process.env.APP_URL_API ?? 'http://localhost:3001'
-process.env.PLAN_AMOUNT_ARS = process.env.PLAN_AMOUNT_ARS ?? '25000'
+process.env.PLAN_AMOUNT_ARS = process.env.PLAN_AMOUNT_ARS ?? '50000'
