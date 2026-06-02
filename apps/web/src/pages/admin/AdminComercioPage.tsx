@@ -1,4 +1,5 @@
 import { lazy, Suspense, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, Navigate } from 'react-router-dom'
 import {
   Store,
@@ -290,13 +291,13 @@ export function AdminComercioPage() {
     <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
       <header className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1.5">
-          <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+          <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong">
             <Store size={12} /> Mi comercio
           </div>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
             {merchant.nombre}
           </h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-ink-soft">
             Así te ven los vecinos en la app.
           </p>
         </div>
@@ -304,7 +305,7 @@ export function AdminComercioPage() {
           <button
             type="button"
             onClick={startEdit}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-bold text-accent-700 shadow-card ring-1 ring-neutral-100 transition-all hover:-translate-y-0.5 hover:bg-accent-50"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-surface px-4 py-2 text-xs font-bold text-brand-strong shadow-card ring-1 ring-line transition-all hover:-translate-y-0.5 hover:bg-brand-soft"
           >
             <Pencil size={13} /> Editar
           </button>
@@ -316,7 +317,7 @@ export function AdminComercioPage() {
       ) : (
         <>
           <div className="flex flex-col gap-2">
-            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
               <Eye size={11} /> Así te ven los vecinos
             </p>
             <MicrositePreview
@@ -336,29 +337,29 @@ export function AdminComercioPage() {
             />
           </div>
 
-          <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+          <div className="rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
             <div className="flex flex-col gap-2 text-sm">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-accent-700">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-brand-strong">
                 {cat}
               </p>
-              <div className="flex items-start gap-2.5 text-neutral-700">
-                <MapPin size={14} className="mt-0.5 shrink-0 text-neutral-400" />
+              <div className="flex items-start gap-2.5 text-ink">
+                <MapPin size={14} className="mt-0.5 shrink-0 text-ink-faint" />
                 <span>{merchant.direccion}</span>
               </div>
               {merchant.telefono && (
-                <div className="flex items-start gap-2.5 text-neutral-700">
-                  <Phone size={14} className="mt-0.5 shrink-0 text-neutral-400" />
+                <div className="flex items-start gap-2.5 text-ink">
+                  <Phone size={14} className="mt-0.5 shrink-0 text-ink-faint" />
                   <a
                     href={`tel:${merchant.telefono.replace(/\s/g, '')}`}
-                    className="font-medium text-accent-700 hover:underline"
+                    className="font-medium text-brand-strong hover:underline"
                   >
                     {merchant.telefono}
                   </a>
                 </div>
               )}
               {horariosDisplay && (
-                <div className="flex items-start gap-2.5 text-neutral-700">
-                  <Clock size={14} className="mt-0.5 shrink-0 text-neutral-400" />
+                <div className="flex items-start gap-2.5 text-ink">
+                  <Clock size={14} className="mt-0.5 shrink-0 text-ink-faint" />
                   <span>{horariosDisplay}</span>
                 </div>
               )}
@@ -366,7 +367,7 @@ export function AdminComercioPage() {
                 href={mapsHref}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-accent-700 hover:text-accent-600"
+                className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-brand-strong hover:text-brand-strong"
               >
                 Ver en Google Maps <ExternalLink size={12} />
               </a>
@@ -378,8 +379,8 @@ export function AdminComercioPage() {
             <Stat label="Categoría" stringValue={cat} />
           </div>
 
-          <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          <div className="rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
               Tu cuenta
             </p>
             <div className="mt-2 flex flex-col gap-1 text-sm">
@@ -392,18 +393,18 @@ export function AdminComercioPage() {
           {apiM && <FiscalCard merchant={merchant} />}
           {apiM && <SubscriptionCard merchant={merchant} onChanged={apiRes.refetch} />}
 
-          <p className="text-center text-xs text-neutral-400">
+          <p className="text-center text-xs text-ink-faint">
             ¿Querés ver cómo te muestra la app del vecino?{' '}
-            <Link to={`/comercio/${merchant.id}`} className="font-bold text-accent-700">
+            <Link to={`/comercio/${merchant.id}`} className="font-bold text-brand-strong">
               Ver mi ficha pública
             </Link>
           </p>
         </>
       )}
 
-      {editing && (
+      {editing && createPortal(
         <div
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating"
+          className="fixed inset-x-0 bottom-24 z-30 border-t border-line bg-bg shadow-floating md:bottom-0"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           <div className="mx-auto flex w-full max-w-2xl items-stretch gap-2 px-4 py-3 sm:px-6">
@@ -419,12 +420,13 @@ export function AdminComercioPage() {
               type="button"
               onClick={save}
               disabled={saving}
-              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60"
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-6 py-3.5 text-base font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60"
             >
               <Save size={16} /> {saving ? 'Guardando…' : 'Guardar cambios'}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       <ConfirmDialog
@@ -460,7 +462,7 @@ function EditingView({
   return (
     <>
       <div className="flex flex-col gap-2">
-        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
           <Eye size={11} /> Vista previa — así te ven los vecinos
         </p>
         <MicrositePreview
@@ -483,7 +485,7 @@ function EditingView({
       <CoverEditor draft={draft} setDraft={setDraft} />
       <LogoEditor draft={draft} setDraft={setDraft} />
       <GaleriaEditor draft={draft} setDraft={setDraft} />
-      <div className="flex flex-col gap-3 rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+      <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
         <Field
           label="Nombre del comercio"
           input={
@@ -525,16 +527,16 @@ function EditingView({
           }
         />
         <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
             Ubicación en el mapa
           </span>
-          <p className="text-[11px] text-neutral-400">
+          <p className="text-[11px] text-ink-faint">
             Si tu comercio aparece mal ubicado para los vecinos, buscá la dirección o
             arrastrá el pin hasta la puerta exacta.
           </p>
           <Suspense
             fallback={
-              <div className="h-[240px] animate-pulse rounded-2xl bg-neutral-100 ring-1 ring-neutral-200" />
+              <div className="h-[240px] animate-pulse rounded-2xl bg-surface-2 ring-1 ring-line" />
             }
           >
             <LocationPicker
@@ -600,7 +602,7 @@ function CoverEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-neutral-100">
+    <div className="overflow-hidden rounded-3xl bg-surface shadow-card ring-1 ring-line">
       <CardImage
         categoria={draft.categoria}
         coverImageUrl={draft.coverImageUrl}
@@ -608,14 +610,14 @@ function CoverEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
         size="md"
       />
       <div className="flex flex-col gap-2 p-4">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
           Portada
         </p>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-3 py-2.5 text-xs font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-3 py-2.5 text-xs font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
           >
             <Upload size={13} /> Subir foto
           </button>
@@ -623,12 +625,12 @@ function CoverEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
             <button
               type="button"
               onClick={clearCover}
-              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-primary-100 px-3 py-2.5 text-xs font-bold text-neutral-700 hover:bg-primary-200"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-surface-2 px-3 py-2.5 text-xs font-bold text-ink hover:bg-surface-2"
             >
               <Trash2 size={13} /> Quitar
             </button>
           ) : (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-2 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-ink-soft">
               <ImageIcon size={10} /> Gradiente actual
             </span>
           )}
@@ -644,7 +646,7 @@ function CoverEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
             e.target.value = ''
           }}
         />
-        <p className="text-[11px] text-neutral-400">
+        <p className="text-[11px] text-ink-faint">
           JPG o PNG, máximo 2 MB. Si no subís, se usa el gradiente de tu categoría.
         </p>
       </div>
@@ -678,12 +680,12 @@ function LogoEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
   }
 
   return (
-    <div className="rounded-3xl bg-white p-4 shadow-card ring-1 ring-neutral-100">
-      <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+    <div className="rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
         Logo del comercio (opcional)
       </p>
       <div className="mt-3 flex items-center gap-3">
-        <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-primary-100 ring-1 ring-neutral-200">
+        <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-line">
           {draft.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -692,7 +694,7 @@ function LogoEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
               className="h-full w-full object-cover"
             />
           ) : (
-            <ImageIcon size={20} className="text-neutral-400" />
+            <ImageIcon size={20} className="text-ink-faint" />
           )}
         </div>
         <div className="flex flex-1 flex-col gap-1.5">
@@ -700,7 +702,7 @@ function LogoEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-primary-100 px-3 py-2 text-xs font-bold text-neutral-800 hover:bg-primary-200"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-surface-2 px-3 py-2 text-xs font-bold text-ink hover:bg-surface-2"
             >
               <Upload size={13} /> Subir logo
             </button>
@@ -714,7 +716,7 @@ function LogoEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
               </button>
             )}
           </div>
-          <p className="text-[11px] text-neutral-400">PNG cuadrado, máx 600 KB.</p>
+          <p className="text-[11px] text-ink-faint">PNG cuadrado, máx 600 KB.</p>
         </div>
       </div>
       <input
@@ -760,23 +762,23 @@ function GaleriaEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft)
   }
 
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+    <div className="rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
       <div className="flex items-center justify-between">
-        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
           <ImageIcon size={11} /> Galería de fotos
         </p>
-        <span className="text-[11px] tabular-nums text-neutral-400">
+        <span className="text-[11px] tabular-nums text-ink-faint">
           {fotos.length}/{MAX_GALLERY_PHOTOS}
         </span>
       </div>
-      <p className="mt-1 text-[11px] text-neutral-400">
+      <p className="mt-1 text-[11px] text-ink-faint">
         Mostrá tu local y tus productos. Hasta {MAX_GALLERY_PHOTOS} fotos, 1,5 MB cada una.
       </p>
       <div className="mt-3 grid grid-cols-3 gap-2">
         {fotos.map((src, i) => (
           <div
             key={i}
-            className="relative aspect-square overflow-hidden rounded-2xl ring-1 ring-neutral-200"
+            className="relative aspect-square overflow-hidden rounded-2xl ring-1 ring-line"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
@@ -784,7 +786,7 @@ function GaleriaEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft)
               type="button"
               onClick={() => removeAt(i)}
               aria-label={`Quitar foto ${i + 1}`}
-              className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white transition-colors hover:bg-status-error-fg"
+              className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-on-brand transition-colors hover:bg-status-error-fg"
             >
               <Trash2 size={13} />
             </button>
@@ -794,7 +796,7 @@ function GaleriaEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft)
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="grid aspect-square place-items-center rounded-2xl border-2 border-dashed border-neutral-200 text-neutral-400 transition-colors hover:border-accent-300 hover:text-accent-500"
+            className="grid aspect-square place-items-center rounded-2xl border-2 border-dashed border-line text-ink-faint transition-colors hover:border-brand hover:text-brand"
           >
             <span className="flex flex-col items-center gap-1 text-[11px] font-bold">
               <Upload size={16} /> Agregar
@@ -830,7 +832,7 @@ function MapsUrlField({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) 
             placeholder="https://maps.app.goo.gl/…"
             className={inputCls}
           />
-          <p className="text-[11px] text-neutral-400">
+          <p className="text-[11px] text-ink-faint">
             En Google Maps tap{' '}
             <Copy size={10} className="inline" aria-hidden="true" /> Compartir → Copiar link y pegalo acá. Si lo
             dejás vacío, se busca por nombre + dirección.
@@ -843,8 +845,8 @@ function MapsUrlField({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) 
 
 function PresentacionEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) => void }) {
   return (
-    <div className="flex flex-col gap-3 rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+    <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
         <Sparkles size={11} /> Presentación
       </p>
       <Field
@@ -859,7 +861,7 @@ function PresentacionEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: D
               placeholder="Ej: Pizzería a la piedra desde 1998"
               className={inputCls}
             />
-            <p className="text-right text-[11px] text-neutral-400">{draft.tagline.length}/90</p>
+            <p className="text-right text-[11px] text-ink-faint">{draft.tagline.length}/90</p>
           </>
         }
       />
@@ -875,7 +877,7 @@ function PresentacionEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: D
               placeholder="Contales a los vecinos quién sos, qué ofrecés y qué te hace diferente."
               className={cn(inputCls, 'resize-none')}
             />
-            <p className="text-right text-[11px] text-neutral-400">
+            <p className="text-right text-[11px] text-ink-faint">
               {draft.descripcion.length}/600
             </p>
           </>
@@ -896,9 +898,9 @@ function ServiciosEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draf
     })
   }
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-      <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Servicios</p>
-      <p className="mt-1 text-[11px] text-neutral-400">
+    <div className="rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">Servicios</p>
+      <p className="mt-1 text-[11px] text-ink-faint">
         Tocá los que ofrezcas. Se muestran como etiquetas en tu ficha.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -913,8 +915,8 @@ function ServiciosEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draf
               className={cn(
                 'rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition-colors',
                 active
-                  ? 'bg-accent-500 text-white ring-accent-500'
-                  : 'bg-white text-neutral-600 ring-neutral-200 hover:bg-primary-50',
+                  ? 'bg-brand text-on-brand ring-brand'
+                  : 'bg-surface text-ink-soft ring-line hover:bg-bg',
               )}
             >
               {label}
@@ -945,19 +947,19 @@ function ProductosEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draf
   }
 
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+    <div className="rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
       <div className="flex items-center justify-between">
-        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
           <Tag size={11} /> Productos destacados
         </p>
-        <span className="text-[11px] tabular-nums text-neutral-400">{items.length}/20</span>
+        <span className="text-[11px] tabular-nums text-ink-faint">{items.length}/20</span>
       </div>
-      <p className="mt-1 text-[11px] text-neutral-400">
+      <p className="mt-1 text-[11px] text-ink-faint">
         Mostrá algunos productos o platos con su precio. El nombre es obligatorio; el resto, opcional.
       </p>
       <div className="mt-3 flex flex-col gap-2">
         {items.map((p, i) => (
-          <div key={i} className="rounded-2xl bg-primary-50 p-3 ring-1 ring-neutral-200">
+          <div key={i} className="rounded-2xl bg-bg p-3 ring-1 ring-line">
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -999,7 +1001,7 @@ function ProductosEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draf
         <button
           type="button"
           onClick={add}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-2xl bg-primary-100 px-4 py-2.5 text-xs font-bold text-neutral-700 transition-colors hover:bg-primary-200"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-2xl bg-surface-2 px-4 py-2.5 text-xs font-bold text-ink transition-colors hover:bg-surface-2"
         >
           <Plus size={14} /> Agregar producto
         </button>
@@ -1013,8 +1015,8 @@ function RedesEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
     setDraft({ ...draft, redes: { ...draft.redes, [key]: value } })
   }
   return (
-    <div className="flex flex-col gap-3 rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-      <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+    <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
         Redes y contacto
       </p>
       <RedInput
@@ -1064,7 +1066,7 @@ function RedInput({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
         <Icon size={12} /> {label}
       </span>
       <input
@@ -1105,15 +1107,15 @@ function HorariosEditor({
   }
 
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+    <div className="rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
           Horarios por día
         </p>
         <button
           type="button"
           onClick={applyToAll}
-          className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-[10px] font-bold text-neutral-700 hover:bg-accent-50 hover:text-accent-700"
+          className="inline-flex items-center gap-1 rounded-full bg-bg px-2.5 py-1 text-[10px] font-bold text-ink hover:bg-brand-soft hover:text-brand-strong"
         >
           <Copy size={10} /> Copiar Lun a todos
         </button>
@@ -1127,10 +1129,10 @@ function HorariosEditor({
               key={d.id}
               className={cn(
                 'flex items-center gap-2 rounded-2xl border p-2.5 transition-colors',
-                horario.abierto ? 'border-accent-200 bg-accent-50/40' : 'border-neutral-200 bg-primary-50',
+                horario.abierto ? 'border-line bg-brand-soft/40' : 'border-line bg-bg',
               )}
             >
-              <span className="grid h-9 w-12 shrink-0 place-items-center rounded-xl bg-white text-xs font-bold text-neutral-700 ring-1 ring-neutral-200">
+              <span className="grid h-9 w-12 shrink-0 place-items-center rounded-xl bg-surface text-xs font-bold text-ink ring-1 ring-line">
                 {d.corto}
               </span>
               <button
@@ -1147,7 +1149,7 @@ function HorariosEditor({
                   'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors',
                   horario.abierto
                     ? 'bg-status-success-bg text-status-success-fg'
-                    : 'bg-neutral-200 text-neutral-500',
+                    : 'bg-surface-2 text-ink-soft',
                 )}
               >
                 {horario.abierto ? 'Abierto' : 'Cerrado'}
@@ -1161,9 +1163,9 @@ function HorariosEditor({
                     onChange={(e) =>
                       setDay(d.id, { ...horario, desde: e.target.value })
                     }
-                    className="flex-1 rounded-xl bg-white px-2 py-1.5 text-xs ring-1 ring-neutral-200 focus:outline-none focus:ring-2 focus:ring-accent-400"
+                    className="flex-1 rounded-xl bg-surface px-2 py-1.5 text-xs ring-1 ring-line focus:outline-none focus:ring-2 focus:ring-brand"
                   />
-                  <span className="text-xs text-neutral-400">a</span>
+                  <span className="text-xs text-ink-faint">a</span>
                   <input
                     type="time"
                     value={horario.hasta}
@@ -1171,19 +1173,19 @@ function HorariosEditor({
                     onChange={(e) =>
                       setDay(d.id, { ...horario, hasta: e.target.value })
                     }
-                    className="flex-1 rounded-xl bg-white px-2 py-1.5 text-xs ring-1 ring-neutral-200 focus:outline-none focus:ring-2 focus:ring-accent-400"
+                    className="flex-1 rounded-xl bg-surface px-2 py-1.5 text-xs ring-1 ring-line focus:outline-none focus:ring-2 focus:ring-brand"
                   />
                 </div>
               ) : (
-                <span className="flex-1 text-xs text-neutral-400">Sin atención este día</span>
+                <span className="flex-1 text-xs text-ink-faint">Sin atención este día</span>
               )}
             </div>
           )
         })}
       </div>
-      <p className="mt-3 text-[11px] text-neutral-400">
+      <p className="mt-3 text-[11px] text-ink-faint">
         Vista previa para el vecino:{' '}
-        <span className="font-medium text-neutral-700">
+        <span className="font-medium text-ink">
           {formatHorariosSemana(draft.horariosDetalle)}
         </span>
       </p>
@@ -1192,12 +1194,12 @@ function HorariosEditor({
 }
 
 const inputCls =
-  'w-full rounded-2xl bg-white px-4 py-3 text-sm text-neutral-900 ring-1 ring-neutral-200 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400'
+  'w-full rounded-2xl bg-surface px-4 py-3 text-sm text-ink ring-1 ring-line placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand'
 
 function Field({ label, input }: { label: string; input: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+      <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
         {label}
       </span>
       {input}
@@ -1217,10 +1219,10 @@ function Stat({
   icon?: typeof Tag
 }) {
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">{label}</p>
-      <p className="mt-1 inline-flex items-center gap-2 text-lg font-bold text-neutral-900">
-        {Icon && <Icon size={16} className="text-accent-500" />}
+    <div className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-line">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-ink-soft">{label}</p>
+      <p className="mt-1 inline-flex items-center gap-2 text-lg font-bold text-ink">
+        {Icon && <Icon size={16} className="text-brand" />}
         {stringValue ?? value ?? 0}
       </p>
     </div>
@@ -1229,9 +1231,9 @@ function Stat({
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-dashed border-neutral-100 py-1.5 last:border-b-0">
-      <span className="text-neutral-500">{label}</span>
-      <span className="font-bold text-neutral-900">{value}</span>
+    <div className="flex items-center justify-between gap-3 border-b border-dashed border-line py-1.5 last:border-b-0">
+      <span className="text-ink-soft">{label}</span>
+      <span className="font-bold text-ink">{value}</span>
     </div>
   )
 }
@@ -1247,8 +1249,8 @@ function FiscalCard({ merchant }: { merchant: any }) {
   const tieneFiscal = merchant.cuit || merchant.razonSocial || merchant.condicionFiscal
   if (!tieneFiscal) return null
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+    <div className="rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
         <FileText size={11} /> Datos fiscales
       </p>
       <div className="mt-2 flex flex-col gap-1 text-sm">
@@ -1262,9 +1264,9 @@ function FiscalCard({ merchant }: { merchant: any }) {
           <Row label="Domicilio fiscal" value={merchant.direccionFiscal} />
         )}
       </div>
-      <p className="mt-3 text-[11px] text-neutral-400">
+      <p className="mt-3 text-[11px] text-ink-faint">
         Estos datos se usan para emitir tu factura mensual. Si necesitás corregirlos, escribinos a{' '}
-        <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-accent-700">
+        <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-brand-strong">
           {SUPPORT_EMAIL}
         </a>
         .
@@ -1335,13 +1337,13 @@ function SubscriptionCard({
   }
 
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+    <div className="rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
         <CreditCard size={11} /> Plan y suscripción
       </p>
 
       <div className="mt-2 flex flex-col gap-1 text-sm">
-        <Row label="Plan" value="Estándar · $25.000 final / mes" />
+        <Row label="Plan" value="Estándar · $50.000 final / mes" />
         <Row
           label="Estado"
           value={
@@ -1379,7 +1381,7 @@ function SubscriptionCard({
           type="button"
           onClick={handlePay}
           disabled={paying}
-          className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-3 text-sm font-bold text-white shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60"
+          className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-4 py-3 text-sm font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60"
         >
           <CreditCard size={14} />
           {paying ? 'Redirigiendo a MercadoPago…' : 'Pagar suscripción'}
@@ -1402,7 +1404,7 @@ function SubscriptionCard({
                 type="button"
                 onClick={() => setConfirming(false)}
                 disabled={submitting}
-                className="flex-1 rounded-xl bg-white px-3 py-2 text-xs font-bold text-neutral-700 ring-1 ring-neutral-200 hover:bg-primary-100 disabled:opacity-60"
+                className="flex-1 rounded-xl bg-surface px-3 py-2 text-xs font-bold text-ink ring-1 ring-line hover:bg-surface-2 disabled:opacity-60"
               >
                 No cancelar
               </button>
@@ -1410,7 +1412,7 @@ function SubscriptionCard({
                 type="button"
                 onClick={handleCancel}
                 disabled={submitting}
-                className="flex-1 rounded-xl bg-status-error-fg px-3 py-2 text-xs font-bold text-white hover:bg-red-700 disabled:opacity-60"
+                className="flex-1 rounded-xl bg-status-error-fg px-3 py-2 text-xs font-bold text-on-brand hover:bg-danger disabled:opacity-60"
               >
                 {submitting ? 'Cancelando…' : 'Sí, cancelar'}
               </button>
@@ -1420,7 +1422,7 @@ function SubscriptionCard({
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl bg-primary-100 px-4 py-2.5 text-xs font-bold text-neutral-700 hover:bg-status-error-bg hover:text-status-error-fg"
+            className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl bg-surface-2 px-4 py-2.5 text-xs font-bold text-ink hover:bg-status-error-bg hover:text-status-error-fg"
           >
             Cancelar suscripción
           </button>

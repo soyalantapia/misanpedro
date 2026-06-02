@@ -17,10 +17,10 @@ export type LatLng = { lat: number; lng: number }
  * real y no todos apilados en el centro de la ciudad.
  */
 
-/** Pin tipo "gota" violeta (combina con el accent del panel). */
+/** Pin tipo "gota" en color de marca (consistente con el resto del panel). */
 const locationIcon = L.divIcon({
   className: 'msp-loc-pin',
-  html: `<svg width="38" height="38" viewBox="0 0 24 24" fill="#6d5ef0" stroke="#ffffff" stroke-width="1.6" style="filter:drop-shadow(0 3px 5px rgba(76,58,180,.45))"><path d="M12 21.5s7-6.4 7-11.5a7 7 0 1 0-14 0c0 5.1 7 11.5 7 11.5z"/><circle cx="12" cy="10" r="2.6" fill="#ffffff" stroke="none"/></svg>`,
+  html: `<svg width="38" height="38" viewBox="0 0 24 24" fill="#5db800" stroke="#ffffff" stroke-width="1.6" style="filter:drop-shadow(0 3px 5px rgba(93,184,0,.45))"><path d="M12 21.5s7-6.4 7-11.5a7 7 0 1 0-14 0c0 5.1 7 11.5 7 11.5z"/><circle cx="12" cy="10" r="2.6" fill="#ffffff" stroke="none"/></svg>`,
   iconSize: [38, 38],
   iconAnchor: [19, 36],
 })
@@ -110,13 +110,13 @@ export function LocationPicker({
         type="button"
         onClick={geocode}
         disabled={geocoding}
-        className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1.5 text-[11px] font-bold text-accent-700 ring-1 ring-accent-200 transition-colors hover:bg-accent-100 disabled:opacity-60"
+        className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1.5 text-[11px] font-bold text-brand-strong ring-1 ring-line transition-colors hover:bg-brand-soft disabled:opacity-60"
       >
         {geocoding ? <Loader2 size={12} className="animate-spin" /> : <Search size={12} />}
         {geocoding ? 'Buscando…' : 'Buscar dirección en el mapa'}
       </button>
 
-      <div className="overflow-hidden rounded-2xl ring-1 ring-neutral-200">
+      <div className="overflow-hidden rounded-2xl ring-1 ring-line">
         <MapContainer
           center={initialCenter}
           zoom={value ? 16 : 14}
@@ -151,12 +151,12 @@ export function LocationPicker({
           {error}
         </p>
       ) : value ? (
-        <p className="inline-flex items-center gap-1 text-[11px] text-neutral-500">
-          <MapPin size={11} className="text-accent-600" />
+        <p className="inline-flex items-center gap-1 text-[11px] text-ink-soft">
+          <MapPin size={11} className="text-brand-strong" />
           Arrastrá el pin para ajustarlo a la puerta exacta de tu comercio.
         </p>
       ) : (
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[11px] text-ink-soft">
           Buscá tu dirección o tocá el mapa para marcar dónde está tu comercio.
         </p>
       )}

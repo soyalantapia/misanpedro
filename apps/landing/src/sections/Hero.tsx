@@ -1,6 +1,12 @@
 import { ArrowRight, MessageCircle, ShoppingBag, Ticket, User } from 'lucide-react'
 import { SIGNUP_URL } from '@/lib/cn'
 import { useTenant } from '@/lib/tenant'
+import {
+  COMERCIOS_ADHERIDOS,
+  TOTAL_CUPOS,
+  CUPOS_RESTANTES,
+  PRECIO_MENSUAL_LABEL,
+} from '@/lib/launch'
 
 export function Hero() {
   const { config } = useTenant()
@@ -61,7 +67,7 @@ export function Hero() {
               href={SIGNUP_URL}
               className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-7 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
             >
-              Sumar mi comercio
+              Empezá gratis
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
             </a>
             <a
@@ -73,15 +79,20 @@ export function Hero() {
             </a>
           </div>
 
-          {/* L2: removido "Probar gratis" porque NO hay trial — el plan cobra
-              desde día 1 ($25.000/mes). Reemplazado por "Sumar mi comercio".
-              Reassurance abajo destaca el reembolso de 10 días (Ley 24.240)
-              para mitigar el riesgo percibido. */}
+          {/* Oferta de lanzamiento: los primeros 20 comercios entran con 3 meses
+              gratis y sin tarjeta; después $50.000/mes congelado de por vida.
+              El contador "X de 20" sale de @/lib/launch (fuente única). */}
           <p
-            className="animate-fade-up mt-6 text-xs text-neutral-500"
+            className="animate-fade-up mt-5 inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-xs font-bold text-accent-700 ring-1 ring-accent-100"
+            style={{ animationDelay: '210ms' }}
+          >
+            🔥 Ya van {COMERCIOS_ADHERIDOS} de {TOTAL_CUPOS} comercios · quedan {CUPOS_RESTANTES} lugares
+          </p>
+          <p
+            className="animate-fade-up mt-4 text-xs text-neutral-500"
             style={{ animationDelay: '240ms' }}
           >
-            10 días para arrepentirte (Ley 24.240) · Precio congelado de por vida · Hecho en San Pedro
+            3 meses gratis, sin tarjeta · Después {PRECIO_MENSUAL_LABEL}/mes congelado de por vida · Hecho en San Pedro
           </p>
         </div>
 

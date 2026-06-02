@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { AlertTriangle, AlertCircle, Info } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
@@ -22,9 +23,9 @@ const variantConfig: Record<
   },
   info: {
     Icon: Info,
-    iconBg: 'bg-accent-50',
-    iconText: 'text-accent-500',
-    cta: 'bg-gradient-to-br from-accent-400 to-accent-600 hover:from-accent-500 hover:to-accent-700 shadow-cta',
+    iconBg: 'bg-brand-soft',
+    iconText: 'text-brand',
+    cta: 'bg-gradient-to-br from-brand to-brand-strong hover:from-brand-strong hover:to-brand-strong shadow-cta',
   },
 }
 
@@ -77,7 +78,7 @@ export function ConfirmDialog({
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -89,11 +90,11 @@ export function ConfirmDialog({
         type="button"
         aria-label="Cerrar"
         onClick={onCancel}
-        className="animate-fade-in absolute inset-0 bg-neutral-950/50 backdrop-blur-sm"
+        className="animate-fade-in absolute inset-0 bg-ink/40 backdrop-blur-sm"
       />
 
       {/* Dialog */}
-      <div className="animate-toast-in relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-toast ring-1 ring-neutral-100 sm:max-w-md sm:p-7">
+      <div className="animate-toast-in relative w-full max-w-sm rounded-3xl bg-surface p-6 shadow-toast ring-1 ring-line sm:max-w-md sm:p-7">
         <div className="flex flex-col items-center gap-4 text-center">
           <div
             className={cn(
@@ -106,11 +107,11 @@ export function ConfirmDialog({
           </div>
 
           <div>
-            <h2 id="confirm-title" className="text-xl font-bold text-neutral-900">
+            <h2 id="confirm-title" className="text-xl font-bold text-ink">
               {title}
             </h2>
             {description && (
-              <div className="mt-2 text-sm text-neutral-500">{description}</div>
+              <div className="mt-2 text-sm text-ink-soft">{description}</div>
             )}
           </div>
         </div>
@@ -121,7 +122,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             className={cn(
-              'flex-1 rounded-full px-5 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2',
+              'flex-1 rounded-full px-5 py-3.5 text-sm font-semibold text-on-brand transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
               cfg.cta,
             )}
           >
@@ -130,12 +131,13 @@ export function ConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 rounded-full bg-primary-100 px-5 py-3.5 text-sm font-semibold text-neutral-700 transition-colors hover:bg-primary-200 focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2"
+            className="flex-1 rounded-full bg-surface-2 px-5 py-3.5 text-sm font-semibold text-ink transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
           >
             {cancelLabel}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

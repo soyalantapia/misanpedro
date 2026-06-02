@@ -129,21 +129,21 @@ export function Select<T extends string>({
         aria-expanded={open}
         aria-label={ariaLabel}
         className={cn(
-          'flex w-full items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3 text-sm text-neutral-900 ring-1 ring-neutral-200 transition-all',
-          'focus:outline-none focus:ring-2 focus:ring-accent-400',
-          'hover:ring-neutral-300',
-          open && 'ring-2 ring-accent-400',
+          'flex w-full items-center justify-between gap-2 rounded-2xl bg-surface px-4 py-3 text-sm text-ink ring-1 ring-line transition-all',
+          'focus:outline-none focus:ring-2 focus:ring-brand',
+          'hover:ring-line',
+          open && 'ring-2 ring-brand',
           disabled && 'cursor-not-allowed opacity-60',
         )}
       >
-        <span className={cn('truncate text-left', !selected && 'text-neutral-400')}>
+        <span className={cn('truncate text-left', !selected && 'text-ink-faint')}>
           {selected?.label ?? placeholder}
         </span>
         <ChevronDown
           size={16}
           className={cn(
-            'shrink-0 text-neutral-400 transition-transform duration-150',
-            open && 'rotate-180 text-accent-600',
+            'shrink-0 text-ink-faint transition-transform duration-150',
+            open && 'rotate-180 text-brand-strong',
           )}
         />
       </button>
@@ -153,7 +153,7 @@ export function Select<T extends string>({
           ref={listRef}
           role="listbox"
           className={cn(
-            'absolute left-0 right-0 z-30 mt-1.5 max-h-72 overflow-auto rounded-2xl bg-white p-1.5 shadow-floating ring-1 ring-neutral-200',
+            'absolute left-0 right-0 z-30 mt-1.5 max-h-72 overflow-auto rounded-2xl bg-surface p-1.5 shadow-floating ring-1 ring-line',
             'animate-in fade-in-0 zoom-in-95 duration-100',
           )}
         >
@@ -174,13 +174,13 @@ export function Select<T extends string>({
                 }}
                 className={cn(
                   'flex cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm transition-colors',
-                  isHi ? 'bg-primary-100 text-neutral-900' : 'text-neutral-700',
+                  isHi ? 'bg-surface-2 text-ink' : 'text-ink',
                   isSelected && 'font-semibold',
                 )}
               >
                 <span className="truncate">{o.label}</span>
                 {isSelected && (
-                  <Check size={14} className="shrink-0 text-accent-600" />
+                  <Check size={14} className="shrink-0 text-brand-strong" />
                 )}
               </li>
             )

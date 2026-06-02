@@ -37,7 +37,7 @@ const FEATURES = [
   {
     icon: CreditCard,
     title: 'MercadoPago integrado',
-    body: 'Cobramos la mensualidad por MP. Sin tarjeta en formularios.',
+    body: 'Empezás sin tarjeta. Recién cobramos por MP cuando terminan los 3 meses gratis.',
   },
 ] as const
 

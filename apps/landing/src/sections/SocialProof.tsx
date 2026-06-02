@@ -1,19 +1,25 @@
-import { Sparkles, Lock, BadgeCheck, Headphones } from 'lucide-react'
+import { Sparkles, Gift, Lock, Headphones } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import {
+  COMERCIOS_ADHERIDOS,
+  TOTAL_CUPOS,
+  CUPOS_RESTANTES,
+  MESES_GRATIS,
+} from '@/lib/launch'
 
 // LA1 (audit v8): reemplazamos los "logos de pioneros" inventados por los
-// beneficios reales del programa fundador. No fabricamos clientes — la prueba
+// beneficios reales del programa de lanzamiento. No fabricamos clientes — la prueba
 // social verdadera la sumamos cuando haya comercios adheridos con su permiso.
 const BENEFICIOS = [
   {
-    icon: Lock,
-    title: 'Precio congelado',
-    text: '$25.000/mes de por vida, aunque después suba para nuevos comercios.',
+    icon: Gift,
+    title: `${MESES_GRATIS} meses gratis`,
+    text: `Sin tarjeta. Los primeros ${TOTAL_CUPOS} comercios entran sin pagar los primeros ${MESES_GRATIS} meses.`,
   },
   {
-    icon: BadgeCheck,
-    title: 'Sin permanencia',
-    text: 'Cancelás cuando quieras desde tu panel, sin penalidad.',
+    icon: Lock,
+    title: 'Precio congelado',
+    text: 'Después, $50.000/mes de por vida, aunque suba para nuevos comercios.',
   },
   {
     icon: Headphones,
@@ -29,11 +35,12 @@ export function SocialProof() {
         <AnimatedSection className="flex flex-col items-center gap-2 text-center">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-accent-700">
             <Sparkles size={11} />
-            Programa fundador · Primeros 20 comercios de San Pedro
+            Programa de lanzamiento · Primeros 20 comercios de San Pedro
           </span>
           <h2 className="text-balance text-base font-semibold leading-snug text-neutral-700 sm:text-lg">
-            Sé de los primeros en sumarte y quedate con el{' '}
-            <strong className="text-neutral-900">precio fundador $25.000/mes congelado de por vida</strong>
+            Los primeros {TOTAL_CUPOS} comercios entran con{' '}
+            <strong className="text-neutral-900">{MESES_GRATIS} meses gratis</strong> y, después,{' '}
+            <strong className="text-neutral-900">$50.000/mes congelado de por vida</strong>
           </h2>
         </AnimatedSection>
 
@@ -54,13 +61,13 @@ export function SocialProof() {
 
         <div className="mt-8 flex flex-col items-center gap-2 text-center">
           <p className="text-xs text-neutral-500">
-            El cupo fundador es para los primeros 20. Después el precio sube para nuevos comercios.
+            Ya van {COMERCIOS_ADHERIDOS} de {TOTAL_CUPOS} comercios — quedan {CUPOS_RESTANTES} lugares. Cuando se completen, cierra la oferta de lanzamiento.
           </p>
           <a
             href="#precios"
             className="inline-flex items-center gap-1 text-xs font-bold text-accent-700 underline-offset-4 transition-colors hover:text-accent-900 hover:underline"
           >
-            Ver precio fundador →
+            Ver precio de lanzamiento →
           </a>
         </div>
       </div>

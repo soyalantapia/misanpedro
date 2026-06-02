@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, MapPin, Percent, ArrowDownWideNarrow, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
@@ -45,7 +46,7 @@ export function FilterSheet({
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <button
         type="button"
@@ -151,6 +152,7 @@ export function FilterSheet({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

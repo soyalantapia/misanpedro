@@ -96,13 +96,13 @@ export function AdminDashboardPage() {
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
       <header className="flex flex-col gap-1.5">
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong">
           <Sparkles size={12} /> Inicio
         </div>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
           {merchantSession.apiMerchant?.nombre ?? merchant?.nombre ?? 'Tu comercio'}
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-soft">
           Validá cupones, gestioná descuentos y mirá tu base de clientes de la app.
         </p>
       </header>
@@ -122,16 +122,16 @@ export function AdminDashboardPage() {
       {!hasRedemptions && !pendingPayment && (
         <section
           aria-labelledby="onboarding-title"
-          className="flex items-start gap-3 rounded-2xl bg-accent-50 p-4 ring-1 ring-accent-100"
+          className="flex items-start gap-3 rounded-2xl bg-brand-soft p-4 ring-1 ring-line"
         >
-          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-accent-100 text-accent-700">
+          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-strong">
             <Sparkles size={16} />
           </span>
           <div className="flex-1 min-w-0">
-            <p id="onboarding-title" className="text-sm font-bold text-accent-800">
+            <p id="onboarding-title" className="text-sm font-bold text-brand-strong">
               Empezá a recibir tus primeros canjes
             </p>
-            <ol className="mt-1 list-decimal pl-4 text-xs leading-relaxed text-accent-800/90">
+            <ol className="mt-1 list-decimal pl-4 text-xs leading-relaxed text-brand-strong/90">
               <li>{merchantCoupons.length === 0 ? 'Creá tu primer descuento desde "Mis cupones".' : 'Los vecinos ya pueden ver tus descuentos.'}</li>
               <li>Cuando un cliente llegue al local, escaneá su QR o ingresá su código en "Validar".</li>
               <li>Acá vas a ver el detalle del impacto: ahorro, ingresos y nuevos clientes.</li>
@@ -143,10 +143,10 @@ export function AdminDashboardPage() {
       {hasRedemptions && (
         <section className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
-            <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+            <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
               <TrendingUp size={11} /> Generado por la app · de por vida
             </p>
-            <span className="text-[10px] font-medium text-neutral-400">
+            <span className="text-[10px] font-medium text-ink-faint">
               desde que sumaste tu comercio
             </span>
           </div>
@@ -181,7 +181,7 @@ export function AdminDashboardPage() {
       )}
 
       <section className="flex flex-col gap-3">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
           Acción rápida
         </p>
         {/* F2: cuando pending_payment, la acción rápida es completar el pago.
@@ -212,7 +212,7 @@ export function AdminDashboardPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Gestión</p>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">Gestión</p>
         {merchantCoupons.length > 0 && (
           <SecondaryAction
             to="/admin/referidos"
@@ -272,16 +272,16 @@ function LifetimeStat({
   return (
     <div
       className={cn(
-        'flex flex-col gap-2 rounded-2xl p-4 shadow-card ring-1 ring-neutral-100',
+        'flex flex-col gap-2 rounded-2xl p-4 shadow-card ring-1 ring-line',
         accent
-          ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white'
-          : 'bg-white text-neutral-900',
+          ? 'bg-gradient-to-br from-brand to-brand-strong text-on-brand'
+          : 'bg-surface text-ink',
       )}
     >
       <div
         className={cn(
           'inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest',
-          accent ? 'bg-white/15 text-accent-50' : 'bg-accent-50 text-accent-700',
+          accent ? 'bg-surface/15 text-on-brand' : 'bg-brand-soft text-brand-strong',
         )}
       >
         <Icon size={10} />
@@ -292,7 +292,7 @@ function LifetimeStat({
         <p
           className={cn(
             'text-[11px] leading-snug',
-            accent ? 'text-accent-50/80' : 'text-neutral-500',
+            accent ? 'text-on-brand/80' : 'text-ink-soft',
           )}
         >
           {hint}
@@ -314,14 +314,14 @@ function Kpi({
   return (
     <div
       className={cn(
-        'flex flex-col gap-1 rounded-2xl px-3 py-3.5 text-center shadow-card ring-1 ring-neutral-100',
-        accent ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white' : 'bg-white',
+        'flex flex-col gap-1 rounded-2xl px-3 py-3.5 text-center shadow-card ring-1 ring-line',
+        accent ? 'bg-gradient-to-br from-brand to-brand-strong text-on-brand' : 'bg-surface',
       )}
     >
       <p
         className={cn(
           'text-2xl font-bold tabular-nums leading-none',
-          accent ? 'text-white' : 'text-accent-700',
+          accent ? 'text-on-brand' : 'text-brand-strong',
         )}
       >
         {value}
@@ -329,7 +329,7 @@ function Kpi({
       <p
         className={cn(
           'text-[10px] font-bold uppercase tracking-widest leading-tight',
-          accent ? 'text-accent-50' : 'text-neutral-500',
+          accent ? 'text-on-brand' : 'text-ink-soft',
         )}
       >
         {label}
@@ -352,14 +352,14 @@ function PrimaryAction({
   return (
     <Link
       to={to}
-      className="group flex items-center gap-4 rounded-3xl bg-gradient-to-br from-accent-400 to-accent-600 p-5 text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5 hover:shadow-floating"
+      className="group flex items-center gap-4 rounded-3xl bg-gradient-to-br from-brand to-brand-strong p-5 text-on-brand shadow-cta transition-all duration-200 hover:-translate-y-0.5 hover:shadow-floating"
     >
-      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15">
+      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface/15">
         <Icon size={22} />
       </div>
       <div className="flex-1">
         <p className="text-base font-bold">{title}</p>
-        <p className="text-xs font-medium text-accent-50/90">{description}</p>
+        <p className="text-xs font-medium text-on-brand/90">{description}</p>
       </div>
       <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
     </Link>
@@ -384,18 +384,18 @@ function SecondaryAction({
       <div
         className={cn(
           'grid h-11 w-11 shrink-0 place-items-center rounded-2xl',
-          locked ? 'bg-primary-100 text-neutral-400' : 'bg-accent-50 text-accent-700',
+          locked ? 'bg-surface-2 text-ink-faint' : 'bg-brand-soft text-brand-strong',
         )}
       >
         <Icon size={20} />
       </div>
       <div className="flex-1">
-        <p className={cn('text-sm font-bold', locked ? 'text-neutral-400' : 'text-neutral-900')}>{title}</p>
-        <p className={cn('text-xs', locked ? 'text-neutral-400' : 'text-neutral-500')}>
+        <p className={cn('text-sm font-bold', locked ? 'text-ink-faint' : 'text-ink')}>{title}</p>
+        <p className={cn('text-xs', locked ? 'text-ink-faint' : 'text-ink-soft')}>
           {description}
         </p>
       </div>
-      <ArrowRight size={16} className={cn('transition-transform', locked ? 'text-neutral-200' : 'text-neutral-400 group-hover:translate-x-1')} />
+      <ArrowRight size={16} className={cn('transition-transform', locked ? 'text-ink-faint' : 'text-ink-faint group-hover:translate-x-1')} />
     </>
   )
 
@@ -403,7 +403,7 @@ function SecondaryAction({
     return (
       <div
         aria-disabled="true"
-        className="flex cursor-not-allowed items-center gap-4 rounded-3xl bg-white p-4 opacity-60 shadow-card ring-1 ring-neutral-100"
+        className="flex cursor-not-allowed items-center gap-4 rounded-3xl bg-surface p-4 opacity-60 shadow-card ring-1 ring-line"
       >
         {inner}
       </div>
@@ -413,7 +413,7 @@ function SecondaryAction({
   return (
     <Link
       to={to}
-      className="group flex items-center gap-4 rounded-3xl bg-white p-4 shadow-card ring-1 ring-neutral-100 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover"
+      className="group flex items-center gap-4 rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover"
     >
       {inner}
     </Link>

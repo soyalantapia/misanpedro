@@ -146,7 +146,7 @@ export function CardImage({
   return (
     <div
       className={cn(
-        'relative overflow-hidden bg-gradient-to-br text-white/90',
+        'relative overflow-hidden bg-gradient-to-br text-on-brand/90',
         v.bg,
         className,
       )}

@@ -113,7 +113,7 @@ export function CanjeadosPage() {
           action={
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 rounded-full bg-fin-lime px-5 py-2.5 text-sm font-bold text-fin-bg shadow-fin-glow transition-all duration-200 hover:-translate-y-0.5"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-brand to-brand-strong px-5 py-2.5 text-sm font-bold text-on-brand shadow-cta transition-all duration-200 hover:-translate-y-0.5"
             >
               <Sparkles size={14} /> Ver descuentos
             </Link>

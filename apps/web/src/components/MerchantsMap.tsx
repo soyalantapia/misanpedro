@@ -11,7 +11,7 @@ const SANPEDRO: [number, number] = [-33.6797, -59.6669]
 function merchantIcon(label: string) {
   return L.divIcon({
     className: 'msp-pin',
-    html: `<div style="width:38px;height:38px;border-radius:9999px;background:linear-gradient(135deg,#7e74e7,#5347c8);box-shadow:0 4px 10px -2px rgba(105,94,222,.6);border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:11px;font-family:Satoshi,system-ui,sans-serif;line-height:1;">${label}</div>`,
+    html: `<div style="width:38px;height:38px;border-radius:9999px;background:linear-gradient(135deg,#5db800,#4ea000);box-shadow:0 4px 10px -2px rgba(93,184,0,.5);border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:11px;font-family:Satoshi,system-ui,sans-serif;line-height:1;">${label}</div>`,
     iconSize: [38, 38],
     iconAnchor: [19, 19],
     popupAnchor: [0, -20],
@@ -75,7 +75,7 @@ export default function MerchantsMap({
 
   return (
     <div
-      className="overflow-hidden rounded-3xl shadow-card ring-1 ring-neutral-100"
+      className="overflow-hidden rounded-3xl shadow-card ring-1 ring-line"
       style={{ height: 'min(68vh, 560px)' }}
     >
       <MapContainer
@@ -100,18 +100,18 @@ export default function MerchantsMap({
             <Marker key={m.id} position={[m.lat, m.lng]} icon={merchantIcon(maxPct > 0 ? `${maxPct}%` : '•')}>
               <Popup>
                 <div className="min-w-[180px]">
-                  <p className="text-sm font-bold text-neutral-900">{m.nombre}</p>
-                  <p className="text-[11px] text-neutral-500">
+                  <p className="text-sm font-bold text-ink">{m.nombre}</p>
+                  <p className="text-[11px] text-ink-soft">
                     {catLabel} · {count} {count === 1 ? 'cupón' : 'cupones'}
                   </p>
                   {maxPct > 0 && (
-                    <p className="mt-1.5 inline-block rounded-full bg-accent-50 px-2 py-0.5 text-[11px] font-bold text-accent-700">
+                    <p className="mt-1.5 inline-block rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-brand-strong">
                       Hasta {maxPct}% OFF
                     </p>
                   )}
                   <Link
                     to={`/comercio/${m.id}`}
-                    className="mt-2 block text-xs font-bold text-accent-600 hover:text-accent-700"
+                    className="mt-2 block text-xs font-bold text-brand-strong hover:text-brand-strong"
                   >
                     Ver local →
                   </Link>

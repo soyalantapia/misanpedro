@@ -130,7 +130,7 @@ export function MerchantDetailPage() {
       </div>
 
       <div className="flex flex-col gap-6 px-4 pb-12 sm:px-6">
-        <header className="-mt-10 flex flex-col gap-2">
+        <header className={`flex flex-col gap-2 ${merchant.logoUrl ? '-mt-10' : 'pt-4'}`}>
           {merchant.logoUrl && (
             <img
               src={merchant.logoUrl}

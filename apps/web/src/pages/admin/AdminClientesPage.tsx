@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { Lock, Users, Download, ScanLine, Search, AlertTriangle, X } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
@@ -98,22 +99,22 @@ export function AdminClientesPage() {
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
       <header className="flex flex-col gap-1.5">
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong">
           <Users size={12} /> Mis clientes
         </div>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
           Vecinos que canjearon en tu comercio
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-soft">
           Esta base es exclusiva de los vecinos que pasaron por tu local. La base general de la
           plataforma nunca se entrega.
         </p>
       </header>
 
-      <div className="overflow-hidden rounded-3xl bg-neutral-900 text-white shadow-card">
+      <div className="overflow-hidden rounded-3xl bg-ink text-on-brand shadow-card">
         <div className="flex items-start justify-between gap-3 p-5">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">
               Ahorro generado a clientes
             </p>
             <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight">
@@ -123,7 +124,7 @@ export function AdminClientesPage() {
           <button
             type="button"
             onClick={() => setShowExportConfirm(true)}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-3.5 py-2 text-xs font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-brand to-brand-strong px-3.5 py-2 text-xs font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
           >
             <Download size={13} /> CSV
           </button>
@@ -131,13 +132,13 @@ export function AdminClientesPage() {
         <div className="grid grid-cols-2 border-t border-white/10">
           <div className="border-r border-white/10 px-5 py-3.5">
             <p className="text-xl font-bold tabular-nums leading-tight">{totalUnique}</p>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">
               {totalUnique === 1 ? 'Cliente único' : 'Clientes únicos'}
             </p>
           </div>
           <div className="px-5 py-3.5">
             <p className="text-xl font-bold tabular-nums leading-tight">{totalCanjes}</p>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">
               {totalCanjes === 1 ? 'Canje total' : 'Canjes totales'}
             </p>
           </div>
@@ -147,7 +148,7 @@ export function AdminClientesPage() {
       <div className="relative">
         <Search
           size={16}
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint"
         />
         <input
           type="search"
@@ -155,7 +156,7 @@ export function AdminClientesPage() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nombre, email o DNI…"
           aria-label="Buscar clientes"
-          className="w-full rounded-2xl bg-white py-3 pl-10 pr-4 text-sm shadow-card ring-1 ring-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400"
+          className="w-full rounded-2xl bg-surface py-3 pl-10 pr-4 text-sm shadow-card ring-1 ring-line placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand"
         />
       </div>
 
@@ -172,14 +173,14 @@ export function AdminClientesPage() {
               key={c.user.id}
               to={`/admin/clientes/${c.user.id}`}
               style={{ animationDelay: `${i * 40}ms` }}
-              className="animate-fade-up flex items-center gap-3 rounded-3xl bg-white p-4 shadow-card ring-1 ring-neutral-100 transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
+              className="animate-fade-up flex items-center gap-3 rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
             >
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-accent-400 to-accent-600 text-white text-sm font-bold shadow-cta">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand to-brand-strong text-on-brand text-sm font-bold shadow-cta">
                 {initials}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="truncate text-sm font-bold text-neutral-900">{c.user.nombre}</p>
-                <p className="truncate text-xs text-neutral-500">
+                <p className="truncate text-sm font-bold text-ink">{c.user.nombre}</p>
+                <p className="truncate text-xs text-ink-soft">
                   {formatRedeemedDate(c.lastRedeemedAt)}{' '}
                   {c.count > 1 ? `· ${c.count} canjes en total` : '· 1ra visita'}
                 </p>
@@ -188,7 +189,7 @@ export function AdminClientesPage() {
                 <p className="text-base font-bold text-status-success-fg tabular-nums">
                   {formatMoney(c.totalAhorro)}
                 </p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">
                   ahorrado
                 </p>
               </div>
@@ -198,13 +199,13 @@ export function AdminClientesPage() {
       </div>
 
       {filtered.length === 0 && (
-        <p role="status" aria-live="polite" className="text-center text-sm text-neutral-400">
+        <p role="status" aria-live="polite" className="text-center text-sm text-ink-faint">
           No hay clientes que coincidan con "{search}".
         </p>
       )}
 
-      <div className="rounded-2xl bg-accent-50 p-4 text-accent-800 ring-1 ring-accent-100">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-accent-700">
+      <div className="rounded-2xl bg-brand-soft p-4 text-brand-strong ring-1 ring-line">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-brand-strong">
           Próximo paso
         </p>
         <p className="mt-1 text-xs font-medium">
@@ -216,7 +217,7 @@ export function AdminClientesPage() {
       </div>
 
       {/* Modal de confirmación para exportar PII */}
-      {showExportConfirm && (
+      {showExportConfirm && createPortal(
         <div
           role="dialog"
           aria-modal="true"
@@ -228,12 +229,12 @@ export function AdminClientesPage() {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setShowExportConfirm(false)}
           />
-          <div className="relative z-10 mx-4 w-full max-w-md rounded-3xl bg-white p-6 shadow-floating ring-1 ring-neutral-100 sm:mx-auto">
+          <div className="relative z-10 mx-4 w-full max-w-md rounded-3xl bg-surface p-6 shadow-floating ring-1 ring-line sm:mx-auto">
             <button
               type="button"
               onClick={() => setShowExportConfirm(false)}
               aria-label="Cerrar"
-              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full text-ink-faint hover:bg-surface-2 hover:text-ink"
             >
               <X size={16} />
             </button>
@@ -242,33 +243,34 @@ export function AdminClientesPage() {
             </div>
             <h2
               id="export-dialog-title"
-              className="text-lg font-bold text-neutral-900"
+              className="text-lg font-bold text-ink"
             >
               Exportar datos de clientes
             </h2>
-            <p className="mt-2 text-sm text-neutral-500">
-              El CSV incluye <span className="font-semibold text-neutral-800">nombre, DNI, email y WhatsApp</span> de{' '}
-              <span className="font-semibold text-neutral-800">{clients.length} {clients.length === 1 ? 'cliente' : 'clientes'}</span>.
+            <p className="mt-2 text-sm text-ink-soft">
+              El CSV incluye <span className="font-semibold text-ink">nombre, DNI, email y WhatsApp</span> de{' '}
+              <span className="font-semibold text-ink">{clients.length} {clients.length === 1 ? 'cliente' : 'clientes'}</span>.
               Guardalo de forma segura y usalo solo para comunicaciones relacionadas con tu comercio.
             </p>
             <div className="mt-5 flex gap-3">
               <button
                 type="button"
                 onClick={() => setShowExportConfirm(false)}
-                className="flex-1 rounded-2xl bg-neutral-100 px-4 py-3 text-sm font-bold text-neutral-700 transition-all hover:bg-neutral-200"
+                className="flex-1 rounded-2xl bg-surface-2 px-4 py-3 text-sm font-bold text-ink transition-all hover:bg-surface-2"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={doExport}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-3 text-sm font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-4 py-3 text-sm font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
               >
                 <Download size={14} /> Descargar CSV
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
@@ -281,24 +283,24 @@ function LockedState() {
       {/* N8: chip ARRIBA del candado para seguir la convención visual del
           resto del panel (chip → ícono → título → descripción → CTA). Antes
           el chip estaba debajo del candado, rompiendo la jerarquía esperada. */}
-      <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+      <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong">
         <Users size={12} /> Mis clientes
       </div>
-      <div className="grid h-20 w-20 place-items-center rounded-3xl bg-primary-100 text-neutral-500 shadow-card">
+      <div className="grid h-20 w-20 place-items-center rounded-3xl bg-surface-2 text-ink-soft shadow-card">
         <Lock size={36} />
       </div>
       <div>
-        <h1 className="text-2xl font-bold leading-tight tracking-tight text-neutral-900 sm:text-3xl">
+        <h1 className="text-2xl font-bold leading-tight tracking-tight text-ink sm:text-3xl">
           Acá vas a ver a tus clientes de Mi San Pedro
         </h1>
-        <p className="mt-2 text-sm text-neutral-500">
+        <p className="mt-2 text-sm text-ink-soft">
           Esta sección se desbloquea cuando valides tu primer cupón. Cada cliente que canjee en tu
           local va a aparecer acá con sus datos de contacto.
         </p>
       </div>
       <Link
         to="/admin/validar"
-        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3 text-sm font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand to-brand-strong px-6 py-3 text-sm font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
       >
         <ScanLine size={16} /> Ir a validar un cupón
       </Link>

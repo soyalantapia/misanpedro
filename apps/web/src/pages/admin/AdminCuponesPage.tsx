@@ -107,13 +107,13 @@ export function AdminCuponesPage() {
               Antes el chip decía "MIS CUPONES" pero el h1 "Descuentos del
               comercio" → dos palabras para lo mismo en la misma pantalla.
               Ahora ambos dicen "Descuentos" (palabra del lado comercio). */}
-          <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+          <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong">
             <Tag size={12} /> Mis descuentos
           </div>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
             Descuentos del comercio
           </h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-ink-soft">
             Crear, editar, pausar o eliminar los descuentos que ofrecés a los vecinos.
           </p>
         </div>
@@ -124,7 +124,7 @@ export function AdminCuponesPage() {
         {cupones.length > 0 && (
           <Link
             to="/admin/cupones/nuevo"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-2.5 text-xs font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-brand to-brand-strong px-4 py-2.5 text-xs font-bold text-on-brand shadow-cta transition-all duration-200 hover:-translate-y-0.5"
           >
             <Plus size={14} /> Crear nuevo
           </Link>
@@ -134,7 +134,7 @@ export function AdminCuponesPage() {
       {apiCupones.loading && localCupones.length === 0 ? (
         <div className="flex flex-col gap-2.5">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-2xl bg-white ring-1 ring-neutral-100" />
+            <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface ring-1 ring-line" />
           ))}
         </div>
       ) : cupones.length === 0 ? (
@@ -145,7 +145,7 @@ export function AdminCuponesPage() {
           action={
             <Link
               to="/admin/cupones/nuevo"
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-5 py-2.5 text-sm font-bold text-white shadow-cta hover:-translate-y-0.5 transition-all"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-brand to-brand-strong px-5 py-2.5 text-sm font-bold text-on-brand shadow-cta hover:-translate-y-0.5 transition-all"
             >
               <Plus size={14} /> Crear primer cupón
             </Link>
@@ -161,17 +161,17 @@ export function AdminCuponesPage() {
               <div
                 key={c.id}
                 className={cn(
-                  'rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100 transition-opacity',
+                  'rounded-2xl bg-surface p-4 shadow-card ring-1 ring-line transition-opacity',
                   isPausado && 'opacity-70',
                 )}
               >
                 <div className="flex items-start gap-3">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-accent-50 text-accent-700 font-bold tabular-nums">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-strong font-bold tabular-nums">
                     {c.porcentaje}%
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-sm font-bold leading-tight text-neutral-900">
+                      <h3 className="text-sm font-bold leading-tight text-ink">
                         {c.titulo}
                       </h3>
                       <div className="relative shrink-0">
@@ -179,7 +179,7 @@ export function AdminCuponesPage() {
                           type="button"
                           onClick={() => setOpenMenuId(menuOpen ? null : c.id)}
                           aria-label="Acciones"
-                          className="grid h-7 w-7 place-items-center rounded-full text-neutral-400 hover:bg-primary-100 hover:text-neutral-700"
+                          className="grid h-7 w-7 place-items-center rounded-full text-ink-faint hover:bg-surface-2 hover:text-ink"
                         >
                           <MoreVertical size={14} />
                         </button>
@@ -191,11 +191,11 @@ export function AdminCuponesPage() {
                               className="fixed inset-0 z-30 cursor-default"
                               onClick={() => setOpenMenuId(null)}
                             />
-                            <div className="animate-fade-in absolute right-0 top-9 z-40 flex w-48 flex-col overflow-hidden rounded-2xl bg-white py-1 shadow-floating ring-1 ring-neutral-100">
+                            <div className="animate-fade-in absolute right-0 top-9 z-40 flex w-48 flex-col overflow-hidden rounded-2xl bg-surface py-1 shadow-floating ring-1 ring-line">
                               <Link
                                 to={`/admin/cupones/${c.id}/editar`}
                                 onClick={() => setOpenMenuId(null)}
-                                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-primary-50"
+                                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-ink hover:bg-bg"
                               >
                                 <Pencil size={12} /> Editar
                               </Link>
@@ -205,7 +205,7 @@ export function AdminCuponesPage() {
                                   setOpenMenuId(null)
                                   setConfirmPause({ id: c.id, isPausado })
                                 }}
-                                className="flex items-center gap-2 px-4 py-2 text-left text-xs font-semibold text-neutral-700 hover:bg-primary-50"
+                                className="flex items-center gap-2 px-4 py-2 text-left text-xs font-semibold text-ink hover:bg-bg"
                               >
                                 {isPausado ? <Play size={12} /> : <Pause size={12} />}
                                 {isPausado ? 'Reactivar' : 'Pausar'}
@@ -226,14 +226,14 @@ export function AdminCuponesPage() {
                       </div>
                     </div>
                     {c.diasAplica && (
-                      <p className="text-[11px] text-neutral-500">{c.diasAplica}</p>
+                      <p className="text-[11px] text-ink-soft">{c.diasAplica}</p>
                     )}
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <StateBadge estado={c.estado} />
-                      <span className="text-[11px] text-neutral-400">
+                      <span className="text-[11px] text-ink-faint">
                         {formatVigencia(c.vigenciaHasta)}
                       </span>
-                      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-bold text-neutral-700 tabular-nums">
+                      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-xs font-bold text-ink tabular-nums">
                         <Activity size={10} /> {canjes} {canjes === 1 ? 'canje' : 'canjes'}
                       </span>
                     </div>
@@ -245,9 +245,9 @@ export function AdminCuponesPage() {
         </div>
       )}
 
-      <p className="text-center text-xs text-neutral-400">
+      <p className="text-center text-xs text-ink-faint">
         ¿Querés ver cómo se ven en la app del vecino?{' '}
-        <Link to="/" className="font-bold text-accent-700">
+        <Link to="/" className="font-bold text-brand-strong">
           Abrir app del vecino
         </Link>
       </p>
@@ -293,7 +293,7 @@ function StateBadge({ estado }: { estado: string }) {
         ? 'bg-status-warning-bg text-status-warning-fg'
         : estado === 'agotado'
           ? 'bg-status-info-bg text-status-info-fg'
-          : 'bg-primary-100 text-neutral-500'
+          : 'bg-surface-2 text-ink-soft'
   return (
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest ${cls}`}

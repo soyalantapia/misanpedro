@@ -131,28 +131,28 @@ const variantConfig: Record<
     iconBg: 'bg-status-success-bg',
     iconText: 'text-status-success',
     barColor: 'bg-status-success',
-    title: 'text-neutral-900',
+    title: 'text-ink',
   },
   error: {
     Icon: AlertCircle,
     iconBg: 'bg-status-error-bg',
     iconText: 'text-status-error',
     barColor: 'bg-status-error',
-    title: 'text-neutral-900',
+    title: 'text-ink',
   },
   warning: {
     Icon: AlertTriangle,
     iconBg: 'bg-status-warning-bg',
     iconText: 'text-status-warning',
     barColor: 'bg-status-warning',
-    title: 'text-neutral-900',
+    title: 'text-ink',
   },
   info: {
     Icon: Info,
-    iconBg: 'bg-accent-50',
-    iconText: 'text-accent-500',
-    barColor: 'bg-accent-500',
-    title: 'text-neutral-900',
+    iconBg: 'bg-brand-soft',
+    iconText: 'text-brand',
+    barColor: 'bg-brand',
+    title: 'text-ink',
   },
 }
 
@@ -193,7 +193,7 @@ function ToastItem({
     <div
       role={toast.variant === 'error' ? 'alert' : 'status'}
       className={cn(
-        'pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-toast ring-1 ring-neutral-100',
+        'pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl bg-surface shadow-toast ring-1 ring-line',
         'animate-toast-in',
         toast.variant === 'error' && 'animate-shake',
       )}
@@ -215,7 +215,7 @@ function ToastItem({
         <div className="min-w-0 flex-1 pt-0.5">
           <p className={cn('text-sm font-bold', cfg.title)}>{toast.title}</p>
           {toast.description && (
-            <p className="mt-0.5 text-sm text-neutral-500">{toast.description}</p>
+            <p className="mt-0.5 text-sm text-ink-soft">{toast.description}</p>
           )}
           {toast.action && (
             <button
@@ -224,7 +224,7 @@ function ToastItem({
                 toast.action?.onClick()
                 onDismiss(toast.id)
               }}
-              className="mt-2 inline-flex rounded-full px-2 py-1 text-xs font-bold text-accent-600 transition-colors hover:bg-accent-50 hover:text-accent-700 focus-visible:ring-2 focus-visible:ring-accent-400"
+              className="mt-2 inline-flex rounded-full px-2 py-1 text-xs font-bold text-brand-strong transition-colors hover:bg-brand-soft hover:text-brand-strong focus-visible:ring-2 focus-visible:ring-brand"
             >
               {toast.action.label}
             </button>
@@ -235,7 +235,7 @@ function ToastItem({
           type="button"
           onClick={() => onDismiss(toast.id)}
           aria-label="Cerrar"
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-neutral-400 transition-colors hover:bg-primary-100 hover:text-neutral-700 focus-visible:ring-2 focus-visible:ring-accent-400"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-faint transition-colors hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-brand"
         >
           <X size={16} />
         </button>

@@ -28,24 +28,24 @@ export function AdminForgotPasswordPage() {
   }
 
   return (
-    <div className="bg-violet-mesh min-h-[100svh] bg-primary-50 px-4 pt-8 pb-12 sm:px-6">
+    <div className="bg-violet-mesh min-h-[100svh] bg-bg px-4 pt-8 pb-12 sm:px-6">
       <div className="mx-auto flex w-full max-w-md flex-col gap-6">
         <Link
           to="/admin/login"
-          className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-neutral-500 hover:text-neutral-900"
+          className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink"
         >
           <ChevronLeft size={16} /> Volver al login
         </Link>
 
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta">
             <KeyRound size={26} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
               {sent ? '¡Listo!' : 'Recuperar contraseña'}
             </h1>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-ink-soft">
               {sent
                 ? `Si ${email} existe en nuestra base, te enviamos un link para crear una contraseña nueva. Revisá tu inbox y la carpeta de spam.`
                 : 'Te enviaremos un link a tu email para crear una nueva contraseña.'}
@@ -54,22 +54,22 @@ export function AdminForgotPasswordPage() {
         </div>
 
         {!sent && (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-3xl bg-white p-5 shadow-floating ring-1 ring-neutral-100">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-3xl bg-surface p-5 shadow-floating ring-1 ring-line">
             <label className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
                 Email del comercio
               </span>
               <div className="relative">
                 <Mail
                   size={14}
-                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint"
                 />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="vos@tucomercio.com"
-                  className="w-full rounded-2xl bg-white py-3 pl-10 pr-4 text-sm ring-1 ring-neutral-200 focus:outline-none focus:ring-2 focus:ring-accent-400"
+                  className="w-full rounded-2xl bg-surface py-3 pl-10 pr-4 text-sm ring-1 ring-line focus:outline-none focus:ring-2 focus:ring-brand"
                   required
                 />
               </div>
@@ -84,7 +84,7 @@ export function AdminForgotPasswordPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60"
+              className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-6 py-3.5 text-base font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60"
             >
               {submitting ? 'Enviando…' : 'Enviarme el link'}
             </button>
@@ -94,7 +94,7 @@ export function AdminForgotPasswordPage() {
         {sent && (
           <Link
             to="/admin/login"
-            className="text-center text-sm font-semibold text-accent-700 hover:text-accent-800"
+            className="text-center text-sm font-semibold text-brand-strong hover:text-brand-strong"
           >
             Volver al login
           </Link>

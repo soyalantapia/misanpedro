@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   ChevronLeft,
@@ -7,7 +8,6 @@ import {
   Save,
   Tag,
   Sparkles,
-  Wand2,
   Check,
   UserPlus,
   TrendingUp,
@@ -22,14 +22,11 @@ import { useToast } from '@/components/Toast'
 import { CardImage } from '@/components/CardImage'
 import { getMerchant } from '@/data/mockData'
 import { DIAS_SEMANA, type Categoria, type DiaSemana } from '@/lib/types'
-import { api, ApiError, templates as templatesApi } from '@/lib/api'
+import { api, ApiError } from '@/lib/api'
 import { useApiMyCoupons } from '@/lib/apiQueries'
 
 type Objetivo = 'traer_nuevos' | 'llenar_flojos' | 'vaciar_stock' | 'fidelizar'
 type TipoOferta = 'porcentaje' | 'dos_por_uno' | 'precio_fijo' | 'happy_hour'
-
-const TITULO_MAX = 60
-const DESCRIPCION_MAX = 280
 
 type FormState = {
   titulo: string
@@ -294,8 +291,6 @@ export function AdminCuponEditPage() {
 
   const [form, setForm] = useState<FormState>(empty)
   const [submitting, setSubmitting] = useState(false)
-  // Modo: 'asesor' guiado (default) o 'rapido' (form de toda la vida).
-  const [modo, setModo] = useState<'asesor' | 'rapido'>('asesor')
 
   useEffect(() => {
     if (existing) {
@@ -325,9 +320,9 @@ export function AdminCuponEditPage() {
   if (isEdit && !existing && apiCupones.loading) {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
-        <div className="h-6 w-40 animate-pulse rounded-full bg-neutral-200" />
+        <div className="h-6 w-40 animate-pulse rounded-full bg-surface-2" />
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-14 animate-pulse rounded-2xl bg-white shadow-card" style={{ animationDelay: `${i * 60}ms` }} />
+          <div key={i} className="h-14 animate-pulse rounded-2xl bg-surface shadow-card" style={{ animationDelay: `${i * 60}ms` }} />
         ))}
       </div>
     )
@@ -399,55 +394,32 @@ export function AdminCuponEditPage() {
   }
 
   return (
-    <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
-      <Link to="/admin/cupones" className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-neutral-500 hover:text-neutral-900">
+    <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-44 sm:px-6 sm:pt-10 md:pb-32">
+      <Link to="/admin/cupones" className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink">
         <ChevronLeft size={16} /> Mis cupones
       </Link>
 
       <header className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
-            {isEdit ? <Tag size={12} /> : <Sparkles size={12} />} {isEdit ? 'Editar cupón' : 'Nuevo cupón'}
-          </div>
-          <button
-            type="button"
-            onClick={() => setModo((m) => (m === 'asesor' ? 'rapido' : 'asesor'))}
-            className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-neutral-600 ring-1 ring-neutral-200 hover:bg-primary-50"
-          >
-            {modo === 'asesor' ? <>Modo rápido <ArrowRight size={12} /></> : <><Wand2 size={12} /> Usar el asesor</>}
-          </button>
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong">
+          {isEdit ? <Tag size={12} /> : <Sparkles size={12} />} {isEdit ? 'Editar cupón' : 'Nuevo cupón'}
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
-          {modo === 'asesor' ? 'Armemos un cupón fuerte' : isEdit ? form.titulo || 'Editar cupón' : 'Crear un cupón'}
+        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          Armemos un cupón fuerte
         </h1>
-        <p className="text-sm text-neutral-500">
-          {modo === 'asesor'
-            ? `Te hago unas preguntas y salís con un cupón que el vecino no quiera dejar pasar.`
-            : `Para ${merchant.nombre}. Completá los datos del cupón.`}
+        <p className="text-sm text-ink-soft">
+          Te hago unas preguntas y salís con un cupón que el vecino no quiera dejar pasar.
         </p>
       </header>
 
-      {modo === 'asesor' ? (
-        <Asesor
-          form={form}
-          setForm={setForm}
-          update={update}
-          merchant={merchant}
-          submitting={submitting}
-          onPublicar={publicar}
-          isEdit={isEdit}
-        />
-      ) : (
-        <Clasico
-          form={form}
-          update={update}
-          setForm={setForm}
-          merchant={merchant}
-          submitting={submitting}
-          onPublicar={publicar}
-          isEdit={isEdit}
-        />
-      )}
+      <Asesor
+        form={form}
+        setForm={setForm}
+        update={update}
+        merchant={merchant}
+        submitting={submitting}
+        onPublicar={publicar}
+        isEdit={isEdit}
+      />
     </div>
   )
 }
@@ -494,6 +466,14 @@ function Asesor({
       ? calcMoney(precio, form.porcentaje, form.costoReferencia.trim() && costo > 0 ? costo : undefined)
       : null
   const fuerza = calcFuerza(form)
+  // La franja necesita que el cierre sea MAYOR al inicio. Como "HH:MM" está
+  // zero-padded, la comparación de strings alcanza. Si está al revés, avisamos
+  // y bloqueamos el "Siguiente".
+  const franjaInvalida = !!(
+    form.franjaDesde &&
+    form.franjaHasta &&
+    form.franjaHasta <= form.franjaDesde
+  )
 
   function aplicarJugada(j: Jugada) {
     setForm((f) => ({
@@ -526,14 +506,14 @@ function Asesor({
                   type="button"
                   onClick={() => { update('objetivo', o.id); setPaso('jugada') }}
                   className={`flex flex-col gap-1.5 rounded-2xl p-4 text-left ring-1 transition-all hover:-translate-y-0.5 ${
-                    sel ? 'bg-accent-50 ring-accent-300' : 'bg-white ring-neutral-200 hover:ring-accent-200'
+                    sel ? 'bg-brand-soft ring-brand' : 'bg-surface ring-line hover:ring-line'
                   }`}
                 >
-                  <span className={`grid h-9 w-9 place-items-center rounded-xl ${sel ? 'bg-accent-500 text-white' : 'bg-accent-50 text-accent-700'}`}>
+                  <span className={`grid h-9 w-9 place-items-center rounded-xl ${sel ? 'bg-brand text-on-brand' : 'bg-brand-soft text-brand-strong'}`}>
                     <Icon size={18} />
                   </span>
-                  <span className="text-sm font-bold text-neutral-900">{o.label}</span>
-                  <span className="text-[11px] leading-snug text-neutral-500">{o.why}</span>
+                  <span className="text-sm font-bold text-ink">{o.label}</span>
+                  <span className="text-[11px] leading-snug text-ink-soft">{o.why}</span>
                 </button>
               )
             })}
@@ -547,19 +527,19 @@ function Asesor({
           hint={jugada ? `Pensada para ${merchant.nombre}.` : 'Volvé y elegí un objetivo para que te proponga una.'}
         >
           {jugada ? (
-            <div className="flex flex-col gap-3 rounded-2xl bg-gradient-to-br from-pink-50 to-accent-50 p-4 ring-1 ring-accent-100">
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-accent-700 ring-1 ring-accent-200">
+            <div className="flex flex-col gap-3 rounded-2xl bg-brand-soft p-4 ring-1 ring-line">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-[11px] font-bold text-brand-strong ring-1 ring-line">
                 <Zap size={12} /> {jugada.label}
               </span>
-              <p className="text-base font-bold text-neutral-900">{jugada.titulo}</p>
-              <p className="text-xs leading-snug text-neutral-600">{jugada.descripcion}</p>
-              <p className="text-[11px] leading-snug text-neutral-500"><strong className="text-neutral-700">Por qué:</strong> {jugada.why}</p>
+              <p className="text-base font-bold text-ink">{jugada.titulo}</p>
+              <p className="text-xs leading-snug text-ink-soft">{jugada.descripcion}</p>
+              <p className="text-[11px] leading-snug text-ink-soft"><strong className="text-ink">Por qué:</strong> {jugada.why}</p>
               <button type="button" onClick={() => aplicarJugada(jugada)} className={btnPrimary}>
                 <Check size={16} /> Usar esta jugada
               </button>
             </div>
           ) : (
-            <p className="rounded-2xl bg-white p-4 text-sm leading-snug text-neutral-500 shadow-card ring-1 ring-neutral-100">
+            <p className="rounded-2xl bg-surface p-4 text-sm leading-snug text-ink-soft shadow-card ring-1 ring-line">
               Volvé un paso y elegí qué querés lograr y te propongo una jugada concreta. O seguí y armalo a mano.
             </p>
           )}
@@ -591,8 +571,8 @@ function Asesor({
 
           <div className="mt-1">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Descuento</span>
-              <span className="text-lg font-bold tabular-nums text-accent-700">{form.porcentaje}%</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">Descuento</span>
+              <span className="text-lg font-bold tabular-nums text-brand-strong">{form.porcentaje}%</span>
             </div>
             <input
               type="range"
@@ -601,21 +581,21 @@ function Asesor({
               step={5}
               value={form.porcentaje}
               onChange={(e) => update('porcentaje', Number(e.target.value))}
-              className="mt-1 w-full accent-accent-600"
+              className="mt-1 w-full accent-brand"
             />
-            <div className="flex justify-between text-[10px] text-neutral-400"><span>5%</span><span>70%</span></div>
+            <div className="flex justify-between text-[10px] text-ink-faint"><span>5%</span><span>70%</span></div>
           </div>
 
           {money ? (
-            <div className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100">
+            <div className="flex flex-col gap-2 rounded-2xl bg-surface p-4 shadow-card ring-1 ring-line">
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Paga el vecino</p>
-                  <p className="text-xl font-bold text-neutral-900">{fmtMoney(money.vecinoPaga)}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">Paga el vecino</p>
+                  <p className="text-xl font-bold text-ink">{fmtMoney(money.vecinoPaga)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Se ahorra</p>
-                  <p className="text-xl font-bold text-accent-700">{fmtMoney(money.ahorro)}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">Se ahorra</p>
+                  <p className="text-xl font-bold text-brand-strong">{fmtMoney(money.ahorro)}</p>
                 </div>
               </div>
               {money.margen != null && (
@@ -626,14 +606,17 @@ function Asesor({
                 </p>
               )}
               {!money.pierdePlata && corajeMsg(form.objetivo, money) && (
-                <p className="rounded-xl bg-accent-50 px-3 py-2 text-center text-xs font-medium text-accent-800">
+                <p className="rounded-xl bg-brand-soft px-3 py-2 text-center text-xs font-medium text-brand-strong">
                   {corajeMsg(form.objetivo, money)}
                 </p>
               )}
+              <p className="border-t border-line pt-2 text-center text-[11px] text-ink-soft">
+                💡 El precio y el costo son <span className="font-bold text-brand-strong">solo para vos</span>: te calculamos margen y ahorro. No se publican en la app.
+              </p>
             </div>
           ) : (
-            <p className="text-[11px] text-neutral-400">
-              Poné el precio normal y te muestro cuánto paga el vecino y cuánto se ahorra.
+            <p className="text-[11px] text-ink-faint">
+              Poné el precio normal y te muestro cuánto paga el vecino, cuánto se ahorra y tu margen. Es solo para vos: no se publica.
             </p>
           )}
           <NavBtns onPrev={prev} onNext={next} />
@@ -651,7 +634,7 @@ function Asesor({
                   type="button"
                   onClick={() => update('dias', sel ? form.dias.filter((x) => x !== d.id) : [...form.dias, d.id])}
                   className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
-                    sel ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta' : 'bg-white text-neutral-700 ring-1 ring-neutral-200 hover:bg-primary-50'
+                    sel ? 'bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta' : 'bg-surface text-ink ring-1 ring-line hover:bg-bg'
                   }`}
                 >
                   {d.corto}
@@ -659,16 +642,24 @@ function Asesor({
               )
             })}
           </div>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Franja</span>
-            <input type="time" value={form.franjaDesde} onChange={(e) => update('franjaDesde', e.target.value)} className="rounded-xl bg-white px-3 py-1.5 text-sm ring-1 ring-neutral-200" />
-            <span className="text-neutral-400">a</span>
-            <input type="time" value={form.franjaHasta} onChange={(e) => update('franjaHasta', e.target.value)} className="rounded-xl bg-white px-3 py-1.5 text-sm ring-1 ring-neutral-200" />
+          <div className="mt-1 flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">Franja</span>
+            <div className="flex items-center gap-2">
+              <input type="time" value={form.franjaDesde} onChange={(e) => update('franjaDesde', e.target.value)} className="min-w-0 flex-1 rounded-xl bg-surface px-3 py-2 text-sm ring-1 ring-line" />
+              <span className="shrink-0 text-ink-faint">a</span>
+              <input type="time" value={form.franjaHasta} min={form.franjaDesde || undefined} onChange={(e) => update('franjaHasta', e.target.value)} className="min-w-0 flex-1 rounded-xl bg-surface px-3 py-2 text-sm ring-1 ring-line" />
+            </div>
           </div>
-          <p className="text-[11px] text-neutral-400">
-            {buildDiasAplica(form.dias, form.franjaDesde, form.franjaHasta, '') || 'Sin restricción: aplica siempre.'}
-          </p>
-          <NavBtns onPrev={prev} onNext={next} />
+          {franjaInvalida ? (
+            <p className="text-[11px] font-semibold text-status-error-fg">
+              El horario de cierre tiene que ser mayor al de inicio.
+            </p>
+          ) : (
+            <p className="text-[11px] text-ink-faint">
+              {buildDiasAplica(form.dias, form.franjaDesde, form.franjaHasta, '') || 'Sin restricción: aplica siempre.'}
+            </p>
+          )}
+          <NavBtns onPrev={prev} onNext={next} nextDisabled={franjaInvalida} />
         </Step>
       )}
 
@@ -678,19 +669,19 @@ function Asesor({
             type="button"
             onClick={() => update('exclusiva', !form.exclusiva)}
             className={`flex items-center justify-between gap-3 rounded-2xl p-4 text-left ring-1 transition-all ${
-              form.exclusiva ? 'bg-accent-50 ring-accent-300' : 'bg-white ring-neutral-200'
+              form.exclusiva ? 'bg-brand-soft ring-brand' : 'bg-surface ring-line'
             }`}
           >
             <div className="flex items-start gap-3">
-              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${form.exclusiva ? 'bg-accent-500 text-white' : 'bg-neutral-100 text-neutral-400'}`}>
+              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${form.exclusiva ? 'bg-brand text-on-brand' : 'bg-surface-2 text-ink-faint'}`}>
                 <Lock size={16} />
               </span>
               <div>
-                <p className="text-sm font-bold text-neutral-900">Exclusivo de Mi San Pedro</p>
-                <p className="text-[11px] leading-snug text-neutral-500">Que no se consiga en la puerta. Es lo que le da motivo al vecino para usar la app.</p>
+                <p className="text-sm font-bold text-ink">Exclusivo de Mi San Pedro</p>
+                <p className="text-[11px] leading-snug text-ink-soft">Que no se consiga en la puerta. Es lo que le da motivo al vecino para usar la app.</p>
               </div>
             </div>
-            <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${form.exclusiva ? 'bg-accent-600 text-white' : 'bg-neutral-200 text-transparent'}`}>
+            <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${form.exclusiva ? 'bg-brand-strong text-on-brand' : 'bg-surface-2 text-transparent'}`}>
               <Check size={14} />
             </span>
           </button>
@@ -704,117 +695,14 @@ function Asesor({
           <Preview merchant={merchant} form={form} money={money} />
           {/* Vigencia rápida acá para no perder el paso de fecha */}
           <VigenciaChips value={form.vigenciaHasta} onChange={(v) => update('vigenciaHasta', v)} />
-          <div className="flex gap-2">
+          <WizardBar>
             <button type="button" onClick={prev} className={btnGhost}><ArrowLeft size={16} /> Atrás</button>
             <button type="button" onClick={onPublicar} disabled={submitting} className={`${btnPrimary} flex-1`}>
               <Save size={16} /> {submitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Publicar cupón'}
             </button>
-          </div>
+          </WizardBar>
         </Step>
       )}
-    </div>
-  )
-}
-
-// ════════════════════════════════════════════════════════════════════════
-//  MODO RÁPIDO (form de toda la vida, ahora con los campos clave)
-// ════════════════════════════════════════════════════════════════════════
-
-function Clasico({
-  form,
-  update,
-  setForm,
-  merchant,
-  submitting,
-  onPublicar,
-  isEdit,
-}: {
-  form: FormState
-  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
-  setForm: React.Dispatch<React.SetStateAction<FormState>>
-  merchant: { id: string; nombre: string; categoria: Categoria }
-  submitting: boolean
-  onPublicar: () => void
-  isEdit: boolean
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      <Preview merchant={merchant} form={form} money={null} />
-      {!isEdit && (
-        <TemplatesPicker
-          key={merchant.categoria}
-          categoria={merchant.categoria}
-          onPick={(t) =>
-            setForm((f) => ({
-              ...f,
-              titulo: t.titulo,
-              descripcion: t.descripcion,
-              condiciones: t.condiciones ?? '',
-              porcentaje: t.porcentaje,
-              diasAplica: t.diasAplica ?? '',
-              tipoOferta: (t.tipoOferta as TipoOferta) ?? f.tipoOferta,
-              objetivo: (t.objetivo as Objetivo) ?? f.objetivo,
-              exclusiva: t.exclusiva ?? f.exclusiva,
-              dias: (t.dias as DiaSemana[]) ?? f.dias,
-              franjaDesde: t.franjaDesde ?? f.franjaDesde,
-              franjaHasta: t.franjaHasta ?? f.franjaHasta,
-              productoGancho: t.productoGancho ?? f.productoGancho,
-            }))
-          }
-        />
-      )}
-
-      <Field label="Título del cupón" hint={`${form.titulo.length}/${TITULO_MAX}`}>
-        <input type="text" value={form.titulo} maxLength={TITULO_MAX} onChange={(e) => update('titulo', e.target.value)} placeholder="Ej: 30% OFF en el menú del mediodía" className={inputCls} />
-      </Field>
-
-      <Field label="Descuento">
-        <div className="flex items-center gap-3">
-          <input type="range" min={5} max={70} step={5} value={form.porcentaje} onChange={(e) => update('porcentaje', Number(e.target.value))} className="w-full accent-accent-600" />
-          <span className="w-12 text-right text-lg font-bold tabular-nums text-accent-700">{form.porcentaje}%</span>
-        </div>
-      </Field>
-
-      <div className="grid grid-cols-2 gap-2.5">
-        <MoneyInput label="Precio normal (opcional)" value={form.precioReferencia} onChange={(v) => update('precioReferencia', v)} placeholder="6000" />
-        <MoneyInput label="Tu costo (privado)" value={form.costoReferencia} onChange={(v) => update('costoReferencia', v)} placeholder="2500" />
-      </div>
-
-      <Field label="Descripción" hint={`${form.descripcion.length}/${DESCRIPCION_MAX}`}>
-        <textarea value={form.descripcion} maxLength={DESCRIPCION_MAX} rows={4} onChange={(e) => update('descripcion', e.target.value)} placeholder="¿Qué incluye? ¿En qué productos aplica?" className={`${inputCls} resize-none`} />
-      </Field>
-
-      <Field label="Condiciones (opcional)">
-        <textarea value={form.condiciones} rows={3} onChange={(e) => update('condiciones', e.target.value)} placeholder="Restricciones, productos excluidos, monto mínimo, etc." className={`${inputCls} resize-none`} />
-      </Field>
-
-      <Field label="Días y franja (opcional)">
-        <div className="flex flex-wrap gap-1.5">
-          {DIAS_SEMANA.map((d) => {
-            const sel = form.dias.includes(d.id)
-            return (
-              <button key={d.id} type="button" onClick={() => update('dias', sel ? form.dias.filter((x) => x !== d.id) : [...form.dias, d.id])} className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all ${sel ? 'bg-accent-600 text-white' : 'bg-white text-neutral-700 ring-1 ring-neutral-200'}`}>
-                {d.corto}
-              </button>
-            )
-          })}
-        </div>
-        <div className="mt-2 flex items-center gap-2">
-          <input type="time" value={form.franjaDesde} onChange={(e) => update('franjaDesde', e.target.value)} className="rounded-xl bg-white px-3 py-1.5 text-sm ring-1 ring-neutral-200" />
-          <span className="text-neutral-400">a</span>
-          <input type="time" value={form.franjaHasta} onChange={(e) => update('franjaHasta', e.target.value)} className="rounded-xl bg-white px-3 py-1.5 text-sm ring-1 ring-neutral-200" />
-        </div>
-      </Field>
-
-      <Field label="Vigente hasta">
-        <VigenciaChips value={form.vigenciaHasta} onChange={(v) => update('vigenciaHasta', v)} />
-      </Field>
-
-      <BottomBar>
-        <button type="button" onClick={onPublicar} disabled={submitting} className={`${btnPrimary} w-full`}>
-          <Save size={16} /> {submitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear cupón'}
-        </button>
-      </BottomBar>
     </div>
   )
 }
@@ -822,17 +710,17 @@ function Clasico({
 // ─── Piezas compartidas ─────────────────────────────────────────────────
 
 const inputCls =
-  'w-full rounded-2xl bg-white px-4 py-3 text-sm text-neutral-900 ring-1 ring-neutral-200 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400'
+  'w-full rounded-2xl bg-surface px-4 py-3 text-sm text-ink ring-1 ring-line placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand'
 const btnPrimary =
-  'flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-sm font-bold text-white shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60'
+  'flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-6 py-3.5 text-sm font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60'
 const btnGhost =
-  'flex items-center justify-center gap-1.5 rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-neutral-600 ring-1 ring-neutral-200 hover:bg-primary-50'
+  'flex items-center justify-center gap-1.5 rounded-2xl bg-surface px-4 py-3.5 text-sm font-bold text-ink-soft ring-1 ring-line hover:bg-bg'
 
 function Stepper({ idx, total }: { idx: number; total: number }) {
   return (
     <div className="flex items-center gap-1.5">
       {Array.from({ length: total }).map((_, i) => (
-        <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= idx ? 'bg-accent-500' : 'bg-neutral-200'}`} />
+        <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= idx ? 'bg-brand' : 'bg-surface-2'}`} />
       ))}
     </div>
   )
@@ -842,29 +730,66 @@ function Step({ title, hint, children }: { title: string; hint?: string; childre
   return (
     <section className="flex flex-col gap-3">
       <div>
-        <h2 className="text-lg font-bold text-neutral-900">{title}</h2>
-        {hint && <p className="text-xs text-neutral-500">{hint}</p>}
+        <h2 className="text-lg font-bold text-ink">{title}</h2>
+        {hint && <p className="text-xs text-ink-soft">{hint}</p>}
       </div>
       {children}
     </section>
   )
 }
 
-function NavBtns({ onPrev, onNext, nextLabel = 'Siguiente' }: { onPrev: () => void; onNext: () => void; nextLabel?: string }) {
+/**
+ * Barra de acción del asesor: SIEMPRE fija al pie. Se portalea a `document.body`
+ * para escapar el containing-block del transform del contenedor (animate-fade-up)
+ * y se ubica arriba del bottom-nav flotante del MerchantShell (bottom-24 en
+ * mobile, bottom-0 en desktop). Así, en todo momento, se ve qué toca abajo.
+ */
+function WizardBar({ children }: { children: React.ReactNode }) {
+  return createPortal(
+    <div
+      className="fixed inset-x-0 bottom-24 z-30 bg-bg md:bottom-0"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <div className="mx-auto flex w-full max-w-2xl gap-2 px-4 py-3 sm:px-6">{children}</div>
+    </div>,
+    document.body,
+  )
+}
+
+function NavBtns({
+  onPrev,
+  onNext,
+  nextLabel = 'Siguiente',
+  nextDisabled = false,
+}: {
+  onPrev: () => void
+  onNext: () => void
+  nextLabel?: string
+  nextDisabled?: boolean
+}) {
   return (
-    <div className="flex gap-2 pt-1">
-      <button type="button" onClick={onPrev} className={btnGhost}><ArrowLeft size={16} /> Atrás</button>
-      <button type="button" onClick={onNext} className={`${btnPrimary} flex-1`}>{nextLabel} <ArrowRight size={16} /></button>
-    </div>
+    <WizardBar>
+      <button type="button" onClick={onPrev} className={btnGhost}>
+        <ArrowLeft size={16} /> Atrás
+      </button>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={nextDisabled}
+        className={`${btnPrimary} flex-1`}
+      >
+        {nextLabel} <ArrowRight size={16} />
+      </button>
+    </WizardBar>
   )
 }
 
 function MoneyInput({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">{label}</span>
+      <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">{label}</span>
       <div className="relative">
-        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">$</span>
+        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-faint">$</span>
         <input type="number" min={0} inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={`${inputCls} pl-8`} />
       </div>
     </label>
@@ -875,14 +800,14 @@ function FuerzaMeter({ fuerza }: { fuerza: { nivel: 'Fuerte' | 'Media' | 'Floja'
   const color =
     fuerza.nivel === 'Fuerte' ? 'bg-status-success-bg text-status-success-fg' : fuerza.nivel === 'Media' ? 'bg-status-warning-bg text-status-warning-fg' : 'bg-status-error-bg text-status-error-fg'
   return (
-    <div className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-card ring-1 ring-neutral-100">
+    <div className="flex flex-col gap-2 rounded-2xl bg-surface p-4 shadow-card ring-1 ring-line">
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Fuerza del cupón</span>
+        <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">Fuerza del cupón</span>
         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${color}`}>{fuerza.nivel}</span>
       </div>
       {fuerza.mejora && (
-        <p className="flex items-start gap-1.5 text-xs leading-snug text-neutral-600">
-          <Zap size={13} className="mt-0.5 shrink-0 text-accent-500" /> {fuerza.mejora}
+        <p className="flex items-start gap-1.5 text-xs leading-snug text-ink-soft">
+          <Zap size={13} className="mt-0.5 shrink-0 text-brand" /> {fuerza.mejora}
         </p>
       )}
     </div>
@@ -902,35 +827,15 @@ function VigenciaChips({ value, onChange }: { value: string; onChange: (v: strin
           const target = addDays(new Date(), p.days).toISOString().slice(0, 10)
           const active = value === target
           return (
-            <button key={p.label} type="button" onClick={() => onChange(target)} className={`rounded-full px-3 py-1 text-xs font-bold transition-all ${active ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta' : 'bg-white text-neutral-700 ring-1 ring-neutral-200 hover:bg-primary-50'}`}>
+            <button key={p.label} type="button" onClick={() => onChange(target)} className={`rounded-full px-3 py-1 text-xs font-bold transition-all ${active ? 'bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta' : 'bg-surface text-ink ring-1 ring-line hover:bg-bg'}`}>
               {p.label}
             </button>
           )
         })}
       </div>
       <input type="date" value={value} onChange={(e) => onChange(e.target.value)} className={inputCls} min={new Date().toISOString().slice(0, 10)} />
-      {value && <p className="text-[11px] text-neutral-500">Hasta el <span className="font-bold text-neutral-700">{formatDateLong(value)}</span></p>}
+      {value && <p className="text-[11px] text-ink-soft">Hasta el <span className="font-bold text-ink">{formatDateLong(value)}</span></p>}
     </div>
-  )
-}
-
-function BottomBar({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">{children}</div>
-    </div>
-  )
-}
-
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">{label}</span>
-        {hint && <span className="text-[11px] tabular-nums text-neutral-400">{hint}</span>}
-      </div>
-      {children}
-    </label>
   )
 }
 
@@ -944,98 +849,36 @@ function Preview({
   money: ReturnType<typeof calcMoney> | null
 }) {
   return (
-    <div className="overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-neutral-100">
-      <p className="border-b border-neutral-100 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+    <div className="overflow-hidden rounded-3xl bg-surface shadow-card ring-1 ring-line">
+      <p className="border-b border-line px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-ink-soft">
         Vista previa para el vecino
       </p>
       <div className="relative">
         <CardImage categoria={merchant.categoria} className="h-32 w-full" />
-        <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/95 px-3 py-1 font-bold text-accent-700 shadow-card backdrop-blur-md">
+        <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-surface/95 px-3 py-1 font-bold text-brand-strong shadow-card backdrop-blur-md">
           <span className="text-base tabular-nums">{form.porcentaje}%</span>
           <span className="ml-1 text-[10px] font-extrabold tracking-widest">OFF</span>
         </span>
         {form.exclusiva && (
-          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-accent-600/95 px-2.5 py-1 text-[10px] font-bold text-white shadow-card backdrop-blur">
+          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-brand-strong/95 px-2.5 py-1 text-[10px] font-bold text-on-brand shadow-card backdrop-blur">
             <Lock size={10} /> Exclusivo app
           </span>
         )}
       </div>
       <div className="flex flex-col gap-1 p-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{merchant.nombre}</p>
-        <h3 className="text-base font-bold leading-tight text-neutral-900">{form.titulo || 'Título de tu cupón'}</h3>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">{merchant.nombre}</p>
+        <h3 className="text-base font-bold leading-tight text-ink">{form.titulo || 'Título de tu cupón'}</h3>
         {money && (
-          <p className="text-xs font-semibold text-neutral-600">
-            Pagás <span className="font-bold text-neutral-900">{fmtMoney(money.vecinoPaga)}</span> · ahorrás{' '}
-            <span className="font-bold text-accent-700">{fmtMoney(money.ahorro)}</span>
+          <p className="text-xs font-semibold text-ink-soft">
+            Pagás <span className="font-bold text-ink">{fmtMoney(money.vecinoPaga)}</span> · ahorrás{' '}
+            <span className="font-bold text-brand-strong">{fmtMoney(money.ahorro)}</span>
           </p>
         )}
         {(() => {
           const d = buildDiasAplica(form.dias, form.franjaDesde, form.franjaHasta, form.diasAplica)
-          return d ? <p className="text-xs text-neutral-500">{d}</p> : null
+          return d ? <p className="text-xs text-ink-soft">{d}</p> : null
         })()}
       </div>
-    </div>
-  )
-}
-
-type Template = {
-  titulo: string
-  descripcion: string
-  condiciones?: string
-  porcentaje: number
-  diasAplica?: string
-  objetivo?: string
-  tipoOferta?: string
-  exclusiva?: boolean
-  dias?: string[]
-  franjaDesde?: string
-  franjaHasta?: string
-  productoGancho?: string
-}
-
-function TemplatesPicker({ categoria, onPick }: { categoria: Categoria; onPick: (t: Template) => void }) {
-  const [items, setItems] = useState<Template[] | null>(null)
-  const [open, setOpen] = useState(false)
-  useEffect(() => {
-    let cancelled = false
-    templatesApi
-      .coupons(categoria)
-      .then((r) => { if (!cancelled) setItems(r.templates as Template[]) })
-      .catch(() => { if (!cancelled) setItems([]) })
-    return () => { cancelled = true }
-  }, [categoria])
-
-  if (items === null || items.length === 0) return null
-
-  return (
-    <div className="rounded-3xl bg-gradient-to-br from-pink-50 via-fuchsia-50 to-accent-50 p-4 ring-1 ring-accent-100">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2">
-          <div className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-pink-400 to-accent-600 text-white shadow-cta"><Wand2 size={16} /></div>
-          <div>
-            <p className="text-sm font-bold text-neutral-900">Empezá con una jugada</p>
-            <p className="text-[11px] text-neutral-500">Recetas fuertes para tu rubro. Después ajustás lo que quieras.</p>
-          </div>
-        </div>
-        <button type="button" onClick={() => setOpen((s) => !s)} className="shrink-0 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-accent-700 ring-1 ring-accent-200 hover:bg-accent-50">
-          {open ? 'Cerrar' : `Ver ${items.length}`}
-        </button>
-      </div>
-      {open && (
-        <ul className="mt-3 grid gap-2">
-          {items.map((t, i) => (
-            <li key={i}>
-              <button type="button" onClick={() => { onPick(t); setOpen(false) }} className="group flex w-full flex-col gap-1 rounded-2xl bg-white p-3 text-left ring-1 ring-neutral-100 transition-all hover:-translate-y-0.5 hover:ring-accent-200">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="line-clamp-1 text-sm font-bold text-neutral-900">{t.titulo}</p>
-                  <span className="shrink-0 rounded-full bg-accent-50 px-2 py-0.5 text-[10px] font-bold text-accent-700">{t.porcentaje}% OFF</span>
-                </div>
-                <p className="line-clamp-2 text-[11px] text-neutral-500">{t.descripcion}</p>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   )
 }

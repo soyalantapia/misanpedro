@@ -87,10 +87,10 @@ export function MerchantShell() {
   // en lugar de redirigir al login y generar un flash falso.
   if (!user || !merchant) {
     return (
-      <div className="flex min-h-[100svh] items-center justify-center bg-primary-50">
+      <div className="flex min-h-[100svh] items-center justify-center bg-bg">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-pulse rounded-2xl bg-accent-100" />
-          <div className="h-3 w-32 animate-pulse rounded-full bg-neutral-200" />
+          <div className="h-10 w-10 animate-pulse rounded-2xl bg-brand-soft" />
+          <div className="h-3 w-32 animate-pulse rounded-full bg-surface-2" />
         </div>
       </div>
     )
@@ -102,19 +102,19 @@ export function MerchantShell() {
   }
 
   return (
-    <div className="flex min-h-[100svh] flex-col bg-primary-50 text-neutral-900 md:flex-row">
-      <aside aria-label="Panel lateral comercio" className="hidden shrink-0 border-r border-neutral-100 bg-white md:flex md:w-64 md:flex-col lg:w-72">
+    <div className="flex min-h-[100svh] flex-col bg-bg text-ink md:flex-row">
+      <aside aria-label="Panel lateral comercio" className="hidden shrink-0 border-r border-line bg-surface md:flex md:w-64 md:flex-col lg:w-72">
         <div className="flex flex-col gap-3 px-5 py-6">
-          <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-accent-700">
+          <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-strong">
             <ShieldCheck size={10} /> Panel comercio
           </div>
           <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta">
               <Store size={20} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-base font-bold text-neutral-900">{merchant.nombre}</p>
-              <p className="truncate text-xs text-neutral-500">{user.nombre}</p>
+              <p className="truncate text-base font-bold text-ink">{merchant.nombre}</p>
+              <p className="truncate text-xs text-ink-soft">{user.nombre}</p>
             </div>
             <NotificationsBell />
           </div>
@@ -129,8 +129,8 @@ export function MerchantShell() {
                 cn(
                   'group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200',
                   isActive
-                    ? 'bg-accent-50 text-accent-700'
-                    : 'text-neutral-500 hover:bg-primary-100/60 hover:text-neutral-800',
+                    ? 'bg-brand-soft text-brand-strong'
+                    : 'text-ink-soft hover:bg-surface-2/60 hover:text-ink',
                 )
               }
             >
@@ -141,8 +141,8 @@ export function MerchantShell() {
                     className={cn(
                       'transition-colors',
                       isActive
-                        ? 'text-accent-500'
-                        : 'text-neutral-400 group-hover:text-neutral-700',
+                        ? 'text-brand'
+                        : 'text-ink-faint group-hover:text-ink',
                     )}
                   />
                   {label}
@@ -156,36 +156,36 @@ export function MerchantShell() {
             href={SUPPORT.href}
             target={SUPPORT.isWhatsapp ? '_blank' : undefined}
             rel="noreferrer noopener"
-            className="flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold text-neutral-500 hover:bg-status-success-bg/60 hover:text-status-success-fg"
+            className="flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold text-ink-soft hover:bg-status-success-bg/60 hover:text-status-success-fg"
           >
             <HelpCircle size={14} /> {SUPPORT.label}
           </a>
           <Link
             to="/legal/terminos"
-            className="flex items-center gap-2 rounded-2xl px-4 py-2 text-[11px] font-medium text-neutral-400 hover:bg-primary-100/60 hover:text-neutral-700"
+            className="flex items-center gap-2 rounded-2xl px-4 py-2 text-[11px] font-medium text-ink-faint hover:bg-surface-2/60 hover:text-ink"
           >
             Términos y Privacidad
           </Link>
           <button
             type="button"
             onClick={() => setConfirmLogout(true)}
-            className="flex w-full items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold text-neutral-500 hover:bg-primary-100/60 hover:text-neutral-900"
+            className="flex w-full items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold text-ink-soft hover:bg-surface-2/60 hover:text-ink"
           >
             <LogOut size={14} /> Cerrar sesión
           </button>
         </div>
       </aside>
 
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-neutral-100 bg-white/85 px-4 py-3 backdrop-blur-md md:hidden">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-surface/85 px-4 py-3 backdrop-blur-md md:hidden">
         <div className="flex items-center gap-2.5">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta">
+          <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta">
             <Store size={18} />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold leading-tight text-neutral-900">
+            <p className="truncate text-sm font-bold leading-tight text-ink">
               {merchant.nombre}
             </p>
-            <p className="truncate text-[11px] font-medium leading-tight text-accent-700">
+            <p className="truncate text-[11px] font-medium leading-tight text-brand-strong">
               Panel comercio
             </p>
           </div>
@@ -195,7 +195,7 @@ export function MerchantShell() {
             to="/admin/referidos"
             aria-label="Recomendá y ganá"
             title="Recomendá y ganá"
-            className="grid h-9 w-9 place-items-center rounded-full bg-accent-50 text-accent-700 hover:bg-accent-100"
+            className="grid h-9 w-9 place-items-center rounded-full bg-brand-soft text-brand-strong hover:bg-brand-soft"
           >
             <Gift size={15} />
           </Link>
@@ -205,7 +205,7 @@ export function MerchantShell() {
             onClick={() => setConfirmLogout(true)}
             aria-label="Cerrar sesión"
             title="Cerrar sesión"
-            className="grid h-9 w-9 place-items-center rounded-full bg-primary-100 text-neutral-500 hover:text-neutral-900"
+            className="grid h-9 w-9 place-items-center rounded-full bg-surface-2 text-ink-soft hover:text-ink"
           >
             <LogOut size={14} />
           </button>
@@ -229,7 +229,7 @@ export function MerchantShell() {
           conviene migrar a "Más" menú. */}
       <nav
         aria-label="Navegación móvil"
-        className="fixed inset-x-2 bottom-3 z-30 rounded-3xl bg-white p-1 shadow-floating md:hidden"
+        className="fixed inset-x-2 bottom-3 z-30 rounded-3xl bg-surface p-1 shadow-floating md:hidden"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-center justify-around">
@@ -244,8 +244,8 @@ export function MerchantShell() {
                   // min-h asegura tap target ≥44px (WCAG 2.1 SC 2.5.5)
                   'min-h-[44px] justify-center',
                   isActive
-                    ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta'
-                    : 'text-neutral-500 active:bg-primary-100',
+                    ? 'bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta'
+                    : 'text-ink-soft active:bg-surface-2',
                 )
               }
             >

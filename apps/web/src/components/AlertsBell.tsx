@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Bell, X, Sparkles, Check, BellRing, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useApiMerchants, useApiCoupons } from '@/lib/apiQueries'
@@ -83,7 +84,7 @@ export function AlertsBell() {
       >
         <Bell size={16} />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-status-error px-1 text-[10px] font-bold text-white ring-2 ring-white">
+          <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-status-error px-1 text-[10px] font-bold text-on-brand ring-2 ring-white">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -167,7 +168,7 @@ function AlertsPanel({
     void syncPushCategories(next)
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-start sm:justify-end sm:p-4">
       <button
         type="button"
@@ -193,7 +194,7 @@ function AlertsPanel({
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            className="grid h-8 w-8 place-items-center rounded-full text-fin-faint hover:bg-fin-surface2 hover:text-neutral-700"
+            className="grid h-8 w-8 place-items-center rounded-full text-fin-faint hover:bg-fin-surface2 hover:text-ink"
           >
             <X size={16} />
           </button>
@@ -227,7 +228,7 @@ function AlertsPanel({
                 >
                   <span
                     className={cn(
-                      'absolute top-0.5 grid h-5 w-5 place-items-center rounded-full bg-white shadow transition-all duration-200',
+                      'absolute top-0.5 grid h-5 w-5 place-items-center rounded-full bg-surface shadow transition-all duration-200',
                       subscribed ? 'left-[22px]' : 'left-0.5',
                     )}
                   >
@@ -329,6 +330,7 @@ function AlertsPanel({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

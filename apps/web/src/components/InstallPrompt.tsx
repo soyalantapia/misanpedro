@@ -89,33 +89,33 @@ export function InstallPrompt() {
     <div
       role="dialog"
       aria-labelledby="install-prompt-title"
-      className="animate-fade-up fixed inset-x-3 bottom-24 z-40 mx-auto flex max-w-sm items-start gap-3 rounded-3xl bg-white p-4 shadow-floating ring-1 ring-neutral-100 md:bottom-6 md:left-auto md:right-6 md:mx-0"
+      className="animate-fade-up fixed inset-x-3 bottom-24 z-40 mx-auto flex max-w-sm items-start gap-3 rounded-3xl bg-surface p-4 shadow-floating ring-1 ring-line md:bottom-6 md:left-auto md:right-6 md:mx-0"
       style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta">
         <Sparkles size={18} />
       </div>
       <div className="flex flex-1 flex-col gap-1">
-        <p id="install-prompt-title" className="text-sm font-bold text-neutral-900">
+        <p id="install-prompt-title" className="text-sm font-bold text-ink">
           Instalá Mi San Pedro
         </p>
         {mode === 'native' ? (
           <>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-ink-soft">
               Agregala a tu pantalla de inicio para acceso rápido.
             </p>
             <div className="mt-1 flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleInstall}
-                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 px-3 py-1.5 text-xs font-bold text-white shadow-cta hover:-translate-y-0.5 transition-all"
+                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-brand to-brand-strong px-3 py-1.5 text-xs font-bold text-on-brand shadow-cta hover:-translate-y-0.5 transition-all"
               >
                 <Download size={12} /> Instalar
               </button>
               <button
                 type="button"
                 onClick={dismiss}
-                className="text-xs font-semibold text-neutral-500 hover:text-neutral-900"
+                className="text-xs font-semibold text-ink-soft hover:text-ink"
               >
                 Más tarde
               </button>
@@ -123,27 +123,27 @@ export function InstallPrompt() {
           </>
         ) : (
           <>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-ink-soft">
               Para sumarla a tu pantalla de inicio:
             </p>
-            <ol className="mt-1 space-y-1 text-[11px] text-neutral-600">
+            <ol className="mt-1 space-y-1 text-[11px] text-ink-soft">
               <li className="flex items-center gap-1.5">
-                <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-accent-100 text-[9px] font-bold text-accent-700">
+                <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-soft text-[9px] font-bold text-brand-strong">
                   1
                 </span>
-                Tocá <Share size={11} className="inline text-accent-700" /> Compartir
+                Tocá <Share size={11} className="inline text-brand-strong" /> Compartir
               </li>
               <li className="flex items-center gap-1.5">
-                <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-accent-100 text-[9px] font-bold text-accent-700">
+                <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-soft text-[9px] font-bold text-brand-strong">
                   2
                 </span>
-                Elegí <Plus size={11} className="inline text-accent-700" /> "Agregar a inicio"
+                Elegí <Plus size={11} className="inline text-brand-strong" /> "Agregar a inicio"
               </li>
             </ol>
             <button
               type="button"
               onClick={dismiss}
-              className="mt-1 self-start text-[11px] font-semibold text-neutral-500 hover:text-neutral-900"
+              className="mt-1 self-start text-[11px] font-semibold text-ink-soft hover:text-ink"
             >
               Entendido
             </button>
@@ -154,7 +154,7 @@ export function InstallPrompt() {
         type="button"
         onClick={dismiss}
         aria-label="Cerrar"
-        className="grid h-7 w-7 place-items-center rounded-full text-neutral-400 hover:bg-primary-100 hover:text-neutral-700"
+        className="grid h-7 w-7 place-items-center rounded-full text-ink-faint hover:bg-surface-2 hover:text-ink"
       >
         <X size={14} />
       </button>

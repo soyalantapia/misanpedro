@@ -69,7 +69,7 @@ export function TerminosPage() {
             <li>Brindar información veraz sobre su identidad, dirección y datos fiscales.</li>
             <li>Honrar todos los cupones activos publicados en la plataforma.</li>
             <li>
-              Pagar la suscripción mensual de <strong>$25.000 ARS finales</strong> (sin
+              Pagar la suscripción mensual de <strong>$50.000 ARS finales</strong> (sin
               permanencia, sin cargos adicionales) por adelantado vía Mercado Pago.
             </li>
             <li>
@@ -94,7 +94,7 @@ export function TerminosPage() {
 
         <Section title="5. Plan y pagos">
           <p>
-            El plan estándar tiene un costo final de <strong>$25.000 ARS por mes</strong> (sin
+            El plan estándar tiene un costo final de <strong>$50.000 ARS por mes</strong> (sin
             IVA discriminado adicional, sin cargos por permanencia). La suscripción es mensual y
             se renueva automáticamente vía Mercado Pago hasta que el comercio la cancele desde
             su panel.

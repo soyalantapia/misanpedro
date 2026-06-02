@@ -274,30 +274,30 @@ export function AdminSignupPage() {
   }
 
   return (
-    <div className="bg-violet-mesh min-h-[100svh] bg-primary-50 px-4 pt-8 pb-12 sm:px-6">
+    <div className="bg-violet-mesh min-h-[100svh] bg-bg px-4 pt-8 pb-12 sm:px-6">
       <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
         <Link
           to="/admin/login"
-          className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-neutral-500 hover:text-neutral-900"
+          className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink"
         >
           <ChevronLeft size={16} /> Volver al login
         </Link>
 
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta">
             <Store size={26} />
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-accent-700">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-brand-strong">
               Sumá tu comercio · 3 meses gratis
             </p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900">
+            <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">
               {step === 'datos' && 'Datos del comercio'}
               {step === 'fiscal' && 'Datos fiscales'}
               {step === 'pago' && 'Empezá gratis'}
               {step === 'listo' && '¡Bienvenido!'}
             </h1>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-ink-soft">
               {step === 'datos' && '3 minutos · Sin tarjeta'}
               {step === 'fiscal' && 'Opcional — para tu factura más adelante'}
               {step === 'pago' && '3 meses gratis · sin tarjeta · acceso completo'}
@@ -327,7 +327,7 @@ export function AdminSignupPage() {
             <button
               type="button"
               onClick={discardDraft}
-              className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-status-info-fg ring-1 ring-status-info/30 hover:bg-status-info/10"
+              className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-status-info-fg ring-1 ring-status-info/30 hover:bg-status-info/10"
             >
               Empezar de cero
             </button>
@@ -335,7 +335,7 @@ export function AdminSignupPage() {
         )}
 
         {step === 'datos' && (
-          <div className="flex flex-col gap-4 rounded-3xl bg-white p-5 shadow-floating ring-1 ring-neutral-100">
+          <div className="flex flex-col gap-4 rounded-3xl bg-surface p-5 shadow-floating ring-1 ring-line">
             <Field
               label="Nombre del comercio"
               required
@@ -390,12 +390,12 @@ export function AdminSignupPage() {
               }
             />
             <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
                 Ubicación en el mapa <span className="text-status-error">*</span>
               </span>
               <Suspense
                 fallback={
-                  <div className="h-[240px] animate-pulse rounded-2xl bg-neutral-100 ring-1 ring-neutral-200" />
+                  <div className="h-[240px] animate-pulse rounded-2xl bg-surface-2 ring-1 ring-line" />
                 }
               >
                 <LocationPicker
@@ -426,13 +426,13 @@ export function AdminSignupPage() {
                 />
               }
             />
-            <p className="text-[11px] text-neutral-500">
+            <p className="text-[11px] text-ink-soft">
               <Clock size={10} className="mr-1 inline" />
               Los horarios de atención los cargás después desde el panel.
             </p>
 
-            <div className="my-2 border-t border-neutral-100" />
-            <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+            <div className="my-2 border-t border-line" />
+            <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
               Cuenta del responsable
             </p>
 
@@ -482,7 +482,7 @@ export function AdminSignupPage() {
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       aria-pressed={showPassword}
-                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
+                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-ink-faint transition-colors hover:bg-surface-2 hover:text-ink"
                     >
                       {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -501,7 +501,7 @@ export function AdminSignupPage() {
             <button
               type="button"
               onClick={goNext}
-              className="mt-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5"
+              className="mt-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-6 py-3.5 text-base font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
             >
               Continuar <ChevronRight size={16} />
             </button>
@@ -567,7 +567,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
             key={i}
             className={cn(
               'h-1 flex-1 rounded-full transition-colors',
-              i <= strength.score ? colors[strength.score] : 'bg-neutral-200',
+              i <= strength.score ? colors[strength.score] : 'bg-surface-2',
             )}
           />
         ))}
@@ -575,7 +575,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
       <p className={cn('text-[11px] font-semibold', textColors[strength.score])}>
         {strength.label}
         {strength.hint && (
-          <span className="ml-1 font-normal text-neutral-500">· {strength.hint}</span>
+          <span className="ml-1 font-normal text-ink-soft">· {strength.hint}</span>
         )}
       </p>
     </div>
@@ -609,8 +609,8 @@ function Stepper({ step }: { step: Step }) {
               i < activeIdx
                 ? 'bg-status-success-bg text-status-success-fg'
                 : i === activeIdx
-                  ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-cta'
-                  : 'bg-white text-neutral-400 ring-1 ring-neutral-200',
+                  ? 'bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta'
+                  : 'bg-surface text-ink-faint ring-1 ring-line',
             )}
           >
             {i < activeIdx ? <CheckCircle2 size={11} aria-hidden="true" /> : <span>{i + 1}</span>}
@@ -621,7 +621,7 @@ function Stepper({ step }: { step: Step }) {
               aria-hidden="true"
               className={cn(
                 'h-0.5 w-6 rounded',
-                i < activeIdx ? 'bg-status-success' : 'bg-neutral-200',
+                i < activeIdx ? 'bg-status-success' : 'bg-surface-2',
               )}
             />
           )}
@@ -645,7 +645,7 @@ function FiscalStep({
   onNext: () => void
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-3xl bg-white p-5 shadow-floating ring-1 ring-neutral-100">
+    <div className="flex flex-col gap-4 rounded-3xl bg-surface p-5 shadow-floating ring-1 ring-line">
       <p className="rounded-xl bg-status-info-bg p-3 text-xs leading-snug text-status-info-fg">
         <Receipt className="mb-1 inline" size={14} /> Necesitamos estos datos para emitirte la factura
         C de la suscripción mensual. Si no facturás, podés poner tus datos personales.
@@ -716,14 +716,14 @@ function FiscalStep({
         <button
           type="button"
           onClick={onBack}
-          className="rounded-2xl bg-primary-100 px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-primary-200"
+          className="rounded-2xl bg-surface-2 px-4 py-3 text-sm font-bold text-ink hover:bg-surface-2"
         >
           Volver
         </button>
         <button
           type="button"
           onClick={onNext}
-          className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-4 py-3 text-sm font-bold text-white shadow-cta hover:-translate-y-0.5"
+          className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-4 py-3 text-sm font-bold text-on-brand shadow-cta hover:-translate-y-0.5"
         >
           Continuar <ChevronRight size={16} />
         </button>
@@ -749,25 +749,25 @@ function PagoStep({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <div className="overflow-hidden rounded-3xl bg-white shadow-floating ring-1 ring-neutral-100">
-        <div className="bg-gradient-to-br from-accent-400 to-accent-600 p-5 text-white">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
+      <div className="overflow-hidden rounded-3xl bg-surface shadow-floating ring-1 ring-line">
+        <div className="bg-gradient-to-br from-brand to-brand-strong p-5 text-on-brand">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-surface/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
             <Sparkles size={11} /> Plan estándar comercio
           </div>
           <p className="mt-3 text-5xl font-bold tracking-tight">
             3 meses
-            <span className="ml-2 text-3xl font-bold text-accent-50">gratis</span>
+            <span className="ml-2 text-3xl font-bold text-on-brand">gratis</span>
           </p>
-          <p className="mt-1 text-xs text-accent-50/90">
+          <p className="mt-1 text-xs text-on-brand/90">
             Sin tarjeta · Sin MercadoPago · Cancelás cuando quieras
           </p>
         </div>
         <div className="px-5 pt-4 pb-3">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-accent-700">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-brand-strong">
             Todo ilimitado · sin letra chica
           </p>
         </div>
-        <ul className="flex flex-col gap-2 px-5 pb-5 text-sm text-neutral-700">
+        <ul className="flex flex-col gap-2 px-5 pb-5 text-sm text-ink">
           <Bullet>
             <Highlight>Cupones ilimitados</Highlight> activos al mismo tiempo
           </Bullet>
@@ -802,19 +802,19 @@ function PagoStep({
         </p>
       </div>
 
-      <label className="flex items-start gap-3 rounded-2xl bg-white p-4 ring-1 ring-neutral-200 cursor-pointer">
+      <label className="flex items-start gap-3 rounded-2xl bg-surface p-4 ring-1 ring-line cursor-pointer">
         <input
           type="checkbox"
           checked={acceptedTc}
           onChange={(e) => onAcceptTc(e.target.checked)}
-          className="mt-0.5 h-5 w-5 shrink-0 rounded accent-accent-500"
+          className="mt-0.5 h-5 w-5 shrink-0 rounded accent-brand"
         />
-        <span className="text-xs leading-snug text-neutral-700">
+        <span className="text-xs leading-snug text-ink">
           Acepto los{' '}
           <Link
             to="/legal/terminos"
             target="_blank"
-            className="font-bold text-accent-700 underline-offset-2 hover:underline"
+            className="font-bold text-brand-strong underline-offset-2 hover:underline"
           >
             Términos y Condiciones
           </Link>{' '}
@@ -822,7 +822,7 @@ function PagoStep({
           <Link
             to="/legal/privacidad"
             target="_blank"
-            className="font-bold text-accent-700 underline-offset-2 hover:underline"
+            className="font-bold text-brand-strong underline-offset-2 hover:underline"
           >
             Política de Privacidad
           </Link>
@@ -841,10 +841,10 @@ function PagoStep({
         onClick={onPay}
         disabled={submitting || !acceptedTc}
         className={cn(
-          'mt-1 flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-bold text-white shadow-cta transition-all',
+          'mt-1 flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-bold text-on-brand shadow-cta transition-all',
           acceptedTc && !submitting
-            ? 'bg-gradient-to-br from-accent-400 to-accent-600 hover:-translate-y-0.5'
-            : 'cursor-not-allowed bg-neutral-300 text-neutral-500 shadow-none',
+            ? 'bg-gradient-to-br from-brand to-brand-strong hover:-translate-y-0.5'
+            : 'cursor-not-allowed bg-surface-2 text-ink-soft shadow-none',
         )}
       >
         {submitting ? (
@@ -865,7 +865,7 @@ function PagoStep({
         type="button"
         onClick={onBack}
         disabled={submitting}
-        className="text-center text-xs font-semibold text-neutral-500 hover:text-neutral-900 disabled:opacity-50"
+        className="text-center text-xs font-semibold text-ink-soft hover:text-ink disabled:opacity-50"
       >
         Volver a editar los datos fiscales
       </button>
@@ -875,12 +875,12 @@ function PagoStep({
 
 function ListoStep({ form }: { form: Form }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-3xl bg-white p-8 text-center shadow-floating ring-1 ring-neutral-100">
+    <div className="flex flex-col items-center gap-3 rounded-3xl bg-surface p-8 text-center shadow-floating ring-1 ring-line">
       <div className="grid h-16 w-16 place-items-center rounded-3xl bg-status-success-bg text-status-success-fg">
         <CheckCircle2 size={32} />
       </div>
-      <h3 className="text-xl font-bold text-neutral-900">¡{form.nombreComercio} ya está dentro!</h3>
-      <p className="text-sm text-neutral-500">
+      <h3 className="text-xl font-bold text-ink">¡{form.nombreComercio} ya está dentro!</h3>
+      <p className="text-sm text-ink-soft">
         Te enviamos un email a <strong>{form.emailAdmin}</strong> con los próximos pasos. Te
         estamos redirigiendo al panel…
       </p>
@@ -889,7 +889,7 @@ function ListoStep({ form }: { form: Form }) {
 }
 
 function Highlight({ children }: { children: React.ReactNode }) {
-  return <span className="font-bold text-neutral-900">{children}</span>
+  return <span className="font-bold text-ink">{children}</span>
 }
 
 function Bullet({ children }: { children: React.ReactNode }) {
@@ -902,7 +902,7 @@ function Bullet({ children }: { children: React.ReactNode }) {
 }
 
 const inputCls =
-  'w-full rounded-2xl bg-white px-4 py-3 text-sm text-neutral-900 ring-1 ring-neutral-200 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400'
+  'w-full rounded-2xl bg-surface px-4 py-3 text-sm text-ink ring-1 ring-line placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand'
 
 function Field({
   label,
@@ -921,13 +921,13 @@ function Field({
   return (
     <label className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
           {label} {required && <span className="text-status-error">*</span>}
         </span>
-        {hint && <span className="text-[11px] tabular-nums text-neutral-400">{hint}</span>}
+        {hint && <span className="text-[11px] tabular-nums text-ink-faint">{hint}</span>}
       </div>
       {input}
-      {help && <p className="text-[11px] text-neutral-400">{help}</p>}
+      {help && <p className="text-[11px] text-ink-faint">{help}</p>}
     </label>
   )
 }

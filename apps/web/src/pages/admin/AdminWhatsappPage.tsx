@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import QRCode from 'qrcode'
 import {
@@ -76,7 +77,7 @@ export function AdminWhatsappPage() {
   if (status.loading && !status.data) {
     return (
       <div className="grid min-h-[40svh] place-items-center" role="status" aria-live="polite">
-        <RefreshCw size={20} className="animate-spin text-accent-500" aria-hidden="true" />
+        <RefreshCw size={20} className="animate-spin text-brand" aria-hidden="true" />
         <span className="sr-only">Cargando estado de WhatsApp…</span>
       </div>
     )
@@ -168,32 +169,32 @@ function ConnectionScreen({ onConnected }: { onConnected: () => void }) {
         {/* N5: chip "Promociones" → "WhatsApp" para coincidir con el label
             del nav (post-F17). Antes había dos palabras distintas para la
             misma sección, lo cual confundía. */}
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong">
           <MessageCircle size={12} /> WhatsApp
         </div>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
           Conectá WhatsApp Business
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-soft">
           Para mandar mensajes masivos a tus clientes tenés que conectar tu cuenta de
           WhatsApp Business escaneando un QR. Es lo mismo que WhatsApp Web.
         </p>
       </header>
 
-      <div className="rounded-3xl bg-white p-6 shadow-floating ring-1 ring-neutral-100">
+      <div className="rounded-3xl bg-surface p-6 shadow-floating ring-1 ring-line">
         <div className="flex flex-col items-center gap-4">
-          <div className="rounded-3xl bg-white p-3 ring-2 ring-accent-100">
+          <div className="rounded-3xl bg-surface p-3 ring-2 ring-line">
             {/* N4: si el QR todavía no llegó del backend (stream SSE),
                 mostramos un placeholder con spinner para no dejar al usuario
                 en limbo. Antes el canvas quedaba vacío sin feedback. */}
             {!wa.qr || wa.qr === 'STUB_QR_PLACEHOLDER' ? (
               <div
-                className="grid h-60 w-60 place-items-center text-xs text-neutral-400"
+                className="grid h-60 w-60 place-items-center text-xs text-ink-faint"
                 role="status"
                 aria-live="polite"
               >
                 <div className="flex flex-col items-center gap-2">
-                  <RefreshCw size={20} className="animate-spin text-accent-500" aria-hidden="true" />
+                  <RefreshCw size={20} className="animate-spin text-brand" aria-hidden="true" />
                   <span>Generando QR…</span>
                 </div>
               </div>
@@ -202,10 +203,10 @@ function ConnectionScreen({ onConnected }: { onConnected: () => void }) {
             )}
           </div>
           <div className="text-center">
-            <p className="text-xs font-bold uppercase tracking-widest text-accent-700">
+            <p className="text-xs font-bold uppercase tracking-widest text-brand-strong">
               Escaneá este QR desde tu celular
             </p>
-            <ol className="mt-3 space-y-1.5 text-left text-xs text-neutral-700">
+            <ol className="mt-3 space-y-1.5 text-left text-xs text-ink">
               <Step n={1}>Abrí WhatsApp en el celular del comercio</Step>
               <Step n={2}>
                 Andá a <b>Configuración &rsaquo; Dispositivos vinculados</b>
@@ -229,19 +230,21 @@ function ConnectionScreen({ onConnected }: { onConnected: () => void }) {
         </p>
       </div>
 
-      {/* N6: subido 96px arriba del fondo (bottom-24) para no quedar tapado
-          por el bottom nav floating del MerchantShell (que vive en bottom-3
-          con ~68px de altura). Antes este CTA quedaba invisible en mobile. */}
-      <div
-        className="fixed inset-x-0 bottom-24 z-30 border-t border-neutral-100 bg-white shadow-floating md:bottom-0"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-      >
+      {/* Barra de acción "conectar": portaleada a body para escapar el
+          containing-block del transform (animate-fade-up). Va en bottom-24 en
+          mobile para no quedar tapada por el bottom-nav flotante, y bottom-0 en
+          desktop (sin nav). */}
+      {createPortal(
+        <div
+          className="fixed inset-x-0 bottom-24 z-30 border-t border-line bg-bg shadow-floating md:bottom-0"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={handleConnect}
             disabled={connecting}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-6 py-3.5 text-base font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5 disabled:opacity-60"
           >
             {connecting ? (
               <>
@@ -253,11 +256,13 @@ function ConnectionScreen({ onConnected }: { onConnected: () => void }) {
               </>
             )}
           </button>
-          <p className="text-center text-[11px] text-neutral-400">
+          <p className="text-center text-[11px] text-ink-faint">
             El QR y el estado de conexión se sincronizan con el servidor en tiempo real.
           </p>
         </div>
-      </div>
+        </div>,
+        document.body,
+      )}
     </div>
   )
 }
@@ -265,7 +270,7 @@ function ConnectionScreen({ onConnected }: { onConnected: () => void }) {
 function Step({ n, children }: { n: number; children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2">
-      <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-accent-100 text-[10px] font-bold tabular-nums text-accent-700">
+      <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-soft text-[10px] font-bold tabular-nums text-brand-strong">
         {n}
       </span>
       <span>{children}</span>
@@ -445,19 +450,19 @@ function ComposerScreen({
     <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
       <header className="flex flex-col gap-1.5">
         {/* N5: chip alineado con el nav. */}
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong">
           <MessageCircle size={12} /> WhatsApp
         </div>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
           WhatsApp masivo
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-soft">
           Montá la campaña ahora y se envía en el momento. Hasta {MAX_PER_MONTH} envíos por mes.
         </p>
       </header>
 
       <div className="flex items-center gap-3 rounded-2xl bg-status-success-bg p-3 text-status-success-fg">
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-status-success text-white">
+        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-status-success text-on-brand">
           <Check size={14} />
         </div>
         <div className="flex-1 min-w-0">
@@ -469,29 +474,29 @@ function ComposerScreen({
         <button
           type="button"
           onClick={() => setConfirmDisconnect(true)}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/40 px-2.5 py-1 text-[11px] font-bold transition-all hover:bg-white"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface/40 px-2.5 py-1 text-[11px] font-bold transition-all hover:bg-surface"
           aria-label="Desconectar"
         >
           <Power size={11} /> Desconectar
         </button>
       </div>
 
-      <div className="rounded-3xl bg-gradient-to-br from-accent-400 to-accent-600 p-5 text-white shadow-floating">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-accent-50/80">
+      <div className="rounded-3xl bg-gradient-to-br from-brand to-brand-strong p-5 text-on-brand shadow-floating">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-on-brand/80">
           Cupo este mes
         </p>
         <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight">
           {remaining}/{MAX_PER_MONTH}
         </p>
-        <p className="mt-1 text-xs text-accent-50/80">
+        <p className="mt-1 text-xs text-on-brand/80">
           {sentThisMonth} {sentThisMonth === 1 ? 'campaña enviada' : 'campañas enviadas'} ·{' '}
           {remaining > 0
             ? `Te quedan ${remaining} ${remaining === 1 ? 'envío' : 'envíos'}`
             : 'Cupo agotado'}
         </p>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/20">
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface/20">
           <div
-            className="h-full rounded-full bg-white transition-all duration-300"
+            className="h-full rounded-full bg-surface transition-all duration-300"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -510,25 +515,25 @@ function ComposerScreen({
                 className={cn(
                   'flex items-start gap-3 rounded-2xl p-3 text-left transition-all',
                   selected
-                    ? 'bg-accent-50 ring-2 ring-accent-500'
-                    : 'bg-white ring-1 ring-neutral-200 hover:ring-neutral-300',
+                    ? 'bg-brand-soft ring-2 ring-brand'
+                    : 'bg-surface ring-1 ring-line hover:ring-line',
                 )}
               >
                 <span
                   className={cn(
                     'mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full',
                     selected
-                      ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white'
-                      : 'ring-2 ring-neutral-200',
+                      ? 'bg-gradient-to-br from-brand to-brand-strong text-on-brand'
+                      : 'ring-2 ring-line',
                   )}
                 >
                   {selected && <Check size={10} strokeWidth={3} />}
                 </span>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-neutral-900">{a.label}</p>
-                  <p className="text-xs text-neutral-500">{a.desc}</p>
+                  <p className="text-sm font-bold text-ink">{a.label}</p>
+                  <p className="text-xs text-ink-soft">{a.desc}</p>
                 </div>
-                <span className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-bold tabular-nums text-neutral-700">
+                <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-bold tabular-nums text-ink">
                   {count}
                 </span>
               </button>
@@ -549,12 +554,12 @@ function ComposerScreen({
                 className={cn(
                   'rounded-2xl p-3 text-left transition-all',
                   selected
-                    ? 'bg-accent-50 ring-2 ring-accent-500'
-                    : 'bg-white ring-1 ring-neutral-200 hover:ring-neutral-300',
+                    ? 'bg-brand-soft ring-2 ring-brand'
+                    : 'bg-surface ring-1 ring-line hover:ring-line',
                 )}
               >
-                <p className="text-sm font-bold text-neutral-900">{t.name}</p>
-                <p className="mt-1 text-xs text-neutral-500 line-clamp-2">{t.body}</p>
+                <p className="text-sm font-bold text-ink">{t.name}</p>
+                <p className="mt-1 text-xs text-ink-soft line-clamp-2">{t.body}</p>
               </button>
             )
           })}
@@ -592,15 +597,15 @@ function ComposerScreen({
       </Section>
 
       <div>
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
           Vista previa
         </p>
         <div className="rounded-2xl bg-[#075e54] p-1.5 shadow-card">
-          <div className="rounded-xl bg-[#dcf8c6] px-3 py-2 text-sm text-neutral-900 shadow-sm">
+          <div className="rounded-xl bg-[#dcf8c6] px-3 py-2 text-sm text-ink shadow-sm">
             {rendered}
           </div>
         </div>
-        <p className="mt-1 text-[11px] text-neutral-400">
+        <p className="mt-1 text-[11px] text-ink-faint">
           Así lo recibe el cliente en WhatsApp.
         </p>
       </div>
@@ -620,21 +625,21 @@ function ComposerScreen({
 
       {apiCampaigns.data && apiCampaigns.data.campaigns.length > 0 && phase.kind === 'idle' && (
         <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
             Historial
           </p>
           <div className="flex flex-col gap-2">
             {apiCampaigns.data.campaigns.slice(0, 5).map((c) => (
               <div
                 key={c.id}
-                className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-card ring-1 ring-neutral-100"
+                className="flex items-center gap-3 rounded-2xl bg-surface p-3 shadow-card ring-1 ring-line"
               >
                 <div className="grid h-9 w-9 place-items-center rounded-xl bg-status-success-bg text-status-success-fg">
                   <Send size={14} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm font-bold text-neutral-900">{c.text}</p>
-                  <p className="text-[11px] text-neutral-500">
+                  <p className="truncate text-sm font-bold text-ink">{c.text}</p>
+                  <p className="text-[11px] text-ink-soft">
                     {formatRedeemedDate(c.sentAt)} · {c.sentCount}{' '}
                     {c.sentCount === 1 ? 'enviado' : 'enviados'}
                     {c.failedCount > 0 ? ` · ${c.failedCount} fallaron` : ''}
@@ -654,9 +659,9 @@ function ComposerScreen({
         </p>
       </div>
 
-      {phase.kind === 'idle' && (
+      {phase.kind === 'idle' && createPortal(
         <div
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating"
+          className="fixed inset-x-0 bottom-24 z-30 border-t border-line bg-bg shadow-floating md:bottom-0"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">
@@ -669,7 +674,7 @@ function ComposerScreen({
                 porcentaje.trim().length === 0 ||
                 vigencia.trim().length === 0
               }
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 px-6 py-3.5 text-base font-bold text-white shadow-cta transition-all duration-200 hover:-translate-y-0.5 hover:from-accent-500 hover:to-accent-700 active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-6 py-3.5 text-base font-bold text-on-brand shadow-cta transition-all duration-200 hover:-translate-y-0.5 hover:from-brand-strong hover:to-brand-strong active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send size={16} />
               {remaining === 0
@@ -684,12 +689,13 @@ function ComposerScreen({
             </button>
             <Link
               to="/admin"
-              className="text-center text-xs font-semibold text-neutral-500 hover:text-neutral-900"
+              className="text-center text-xs font-semibold text-ink-soft hover:text-ink"
             >
               Volver al inicio
             </Link>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       <ConfirmDialog
@@ -728,7 +734,7 @@ function SendingProgress({
 }) {
   const pct = Math.round(progress * 100)
   return (
-    <div className="rounded-3xl bg-gradient-to-br from-accent-400 to-accent-600 p-5 text-white shadow-floating">
+    <div className="rounded-3xl bg-gradient-to-br from-brand to-brand-strong p-5 text-on-brand shadow-floating">
       <div className="flex items-center gap-2">
         <RefreshCw size={14} className="animate-spin" />
         <p className="text-[11px] font-bold uppercase tracking-widest">Enviando…</p>
@@ -736,12 +742,12 @@ function SendingProgress({
       <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight">
         {sentSoFar}/{total}
       </p>
-      <p className="mt-1 text-xs text-accent-50/90">
+      <p className="mt-1 text-xs text-on-brand/90">
         WhatsApp está entregando los mensajes. No cierres esta pestaña.
       </p>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/20">
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface/20">
         <div
-          className="h-full rounded-full bg-white transition-all duration-200"
+          className="h-full rounded-full bg-surface transition-all duration-200"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -763,7 +769,7 @@ function SendingDoneSummary({
   return (
     <div className="flex flex-col gap-3 rounded-3xl bg-status-success-bg p-5 text-status-success-fg">
       <div className="flex items-center gap-2">
-        <div className="grid h-8 w-8 place-items-center rounded-full bg-status-success text-white">
+        <div className="grid h-8 w-8 place-items-center rounded-full bg-status-success text-on-brand">
           <Check size={14} />
         </div>
         <div>
@@ -783,7 +789,7 @@ function SendingDoneSummary({
       <button
         type="button"
         onClick={onReset}
-        className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-white px-4 py-2 text-xs font-bold text-status-success-fg shadow-card hover:-translate-y-0.5 transition-all"
+        className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-surface px-4 py-2 text-xs font-bold text-status-success-fg shadow-card hover:-translate-y-0.5 transition-all"
       >
         <Send size={12} /> Montar otra campaña
       </button>
@@ -801,7 +807,7 @@ function SmallStat({
   tooltip?: string
 }) {
   return (
-    <div className="rounded-xl bg-white/60 p-2 text-center" title={tooltip}>
+    <div className="rounded-xl bg-surface/60 p-2 text-center" title={tooltip}>
       <p className="text-lg font-bold tabular-nums">{value ?? '—'}</p>
       <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">{label}</p>
     </div>
@@ -819,7 +825,7 @@ function Section({
 }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+      <h2 className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
         <Icon size={11} aria-hidden="true" /> {title}
       </h2>
       {children}
@@ -828,12 +834,12 @@ function Section({
 }
 
 const inputCls =
-  'w-full rounded-2xl bg-white px-4 py-3 text-sm text-neutral-900 ring-1 ring-neutral-200 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400'
+  'w-full rounded-2xl bg-surface px-4 py-3 text-sm text-ink ring-1 ring-line placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand'
 
 function Field({ label, input }: { label: string; input: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+      <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
         {label}
       </span>
       {input}

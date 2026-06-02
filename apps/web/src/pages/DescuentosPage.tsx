@@ -419,7 +419,7 @@ function SearchBar({ search, onSearch }: { search: string; onSearch: (v: string)
         type="search"
         value={search}
         onChange={(e) => onSearch(e.target.value)}
-        placeholder="Buscar comercio, rubro o descuento…"
+        placeholder="Buscar comercio o descuento"
         aria-label="Buscar comercios o descuentos"
         className="w-full rounded-2xl bg-fin-surface py-3.5 pl-10 pr-12 text-sm text-fin-ink ring-1 ring-fin-line placeholder:text-fin-faint focus:outline-none focus:ring-2 focus:ring-fin-lime"
       />

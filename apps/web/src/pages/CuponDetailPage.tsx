@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   ChevronLeft,
@@ -215,10 +216,11 @@ export function CuponDetailPage() {
         </div>
       </div>
 
-      <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-fin-line bg-fin-surface/95 backdrop-blur-xl"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
+      {createPortal(
+        <div
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-fin-line bg-fin-surface/95 backdrop-blur-xl"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-3 sm:px-6">
           <button
             type="button"
@@ -235,7 +237,9 @@ export function CuponDetailPage() {
             </p>
           )}
         </div>
-      </div>
+        </div>,
+        document.body,
+      )}
     </div>
   )
 }

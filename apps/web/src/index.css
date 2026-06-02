@@ -81,26 +81,68 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* ── Tema vecino "Club de ahorro" (light) ──────────────────────
-     Fondo blanco, amigable. El lime sigue siendo el acento de marca.
-     Convive con la paleta light del panel admin (accent violet). */
-  --color-fin-bg: #ffffff;
-  --color-fin-surface: #f7f8f9;
-  --color-fin-surface2: #eef0f3;
-  --color-fin-line: #e2e5ea;
-  --color-fin-ink: #0f1923;
-  --color-fin-soft: #5a6474;
-  --color-fin-faint: #9aa3b0;
-  --color-fin-lime: #5db800;
-  --color-fin-lime2: #4ea000;
-  --color-fin-violet: #5347c8;
-  --color-fin-up: #059669;
-  --color-fin-danger: #e11d48;
+  /* ─────────────────────────────────────────────────────────────
+     TOKENS SEMÁNTICOS (single source of truth)
+     Cambiar un valor acá impacta vecino + admin en TODA la app.
+     Reglas:
+       - Estos tokens son el ÚNICO lugar donde se define color.
+       - Componentes/páginas consumen SOLO estos tokens semánticos,
+         nunca hex sueltos ni escalas como `accent-500`.
+       - `fin-*` queda como alias por compatibilidad con el vecino.
+     ───────────────────────────────────────────────────────────── */
+  /* Marca (verde "club de ahorro") */
+  --color-brand: #5db800;
+  --color-brand-strong: #4ea000;
+  --color-brand-soft: #eaf7dd;
+  --color-on-brand: #ffffff;
 
-  --shadow-fin-glow: 0 0 0 1px rgba(93, 184, 0, 0.18),
+  /* Superficies */
+  --color-bg: #ffffff;
+  --color-surface: #f7f8f9;
+  --color-surface-2: #eef0f3;
+  --color-line: #e2e5ea;
+
+  /* Texto */
+  --color-ink: #0f1923;
+  --color-ink-soft: #5a6474;
+  --color-ink-faint: #9aa3b0;
+
+  /* Acentos secundarios (poco uso, contextuales) */
+  --color-accent-violet: #5347c8;
+  --color-up: #059669;
+  --color-danger: #e11d48;
+
+  /* Sombras semánticas */
+  --shadow-brand-glow: 0 0 0 1px rgba(93, 184, 0, 0.18),
     0 8px 24px -8px rgba(93, 184, 0, 0.22);
-  --shadow-fin-card: 0 1px 3px rgba(15, 25, 35, 0.06),
+  --shadow-surface-card: 0 1px 3px rgba(15, 25, 35, 0.06),
     0 4px 16px -4px rgba(15, 25, 35, 0.08);
+
+  /* Override del CTA viejo para que el degradé use marca verde
+     (antes glow violet). Mantiene la utility `shadow-cta` que ya
+     se usa en cientos de lugares del admin viejo. */
+  --shadow-cta: 0 1px 2px rgba(15, 15, 15, 0.06),
+    0 8px 16px -8px rgba(93, 184, 0, 0.5);
+
+  /* ── Alias `fin-*` (compatibilidad del vecino) ─────────────────
+     Mapeamos cada token del vecino al semántico. Tailwind v4 acepta
+     que un --color- referencie otro --color- vía var(). El vecino
+     sigue usando `bg-fin-bg`, `text-fin-ink`, etc. sin cambios. */
+  --color-fin-bg: var(--color-bg);
+  --color-fin-surface: var(--color-surface);
+  --color-fin-surface2: var(--color-surface-2);
+  --color-fin-line: var(--color-line);
+  --color-fin-ink: var(--color-ink);
+  --color-fin-soft: var(--color-ink-soft);
+  --color-fin-faint: var(--color-ink-faint);
+  --color-fin-lime: var(--color-brand);
+  --color-fin-lime2: var(--color-brand-strong);
+  --color-fin-violet: var(--color-accent-violet);
+  --color-fin-up: var(--color-up);
+  --color-fin-danger: var(--color-danger);
+
+  --shadow-fin-glow: var(--shadow-brand-glow);
+  --shadow-fin-card: var(--shadow-surface-card);
 }
 
 :root {
@@ -122,8 +164,8 @@ body,
 body {
   min-height: 100dvh;
   font-family: var(--font-sans);
-  background: var(--color-primary-50);
-  color: var(--color-neutral-900);
+  background: var(--color-bg);
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;

@@ -17,19 +17,19 @@ export function AdminValidarPage() {
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
       <header className="flex flex-col gap-1.5">
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-accent-700">
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong">
           <ScanLine size={12} /> Validar
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+        <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
           Validar cupón
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-soft">
           El cliente abre la app, te muestra el QR o el código de 6 dígitos. Lo validás y confirmás
           el canje.
         </p>
       </header>
 
-      <div role="group" aria-label="Modo de validación" className="grid grid-cols-2 rounded-full bg-primary-100 p-1 ring-1 ring-neutral-100">
+      <div role="group" aria-label="Modo de validación" className="grid grid-cols-2 rounded-full bg-surface-2 p-1 ring-1 ring-line">
         <button
           type="button"
           aria-pressed={mode === 'qr'}
@@ -37,8 +37,8 @@ export function AdminValidarPage() {
           className={cn(
             'inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200',
             mode === 'qr'
-              ? 'bg-white text-neutral-900 shadow-card'
-              : 'text-neutral-500 hover:text-neutral-800',
+              ? 'bg-surface text-ink shadow-card'
+              : 'text-ink-soft hover:text-ink',
           )}
         >
           <Camera size={13} /> Escanear QR
@@ -50,8 +50,8 @@ export function AdminValidarPage() {
           className={cn(
             'inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200',
             mode === 'code'
-              ? 'bg-white text-neutral-900 shadow-card'
-              : 'text-neutral-500 hover:text-neutral-800',
+              ? 'bg-surface text-ink shadow-card'
+              : 'text-ink-soft hover:text-ink',
           )}
         >
           <Keyboard size={13} /> Código manual
@@ -99,8 +99,8 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+      <div className="rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
           Pedile el código al cliente
         </p>
         <input
@@ -112,7 +112,7 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
           placeholder="000000"
           maxLength={6}
           aria-label="Código de canje de 6 dígitos"
-          className="mt-3 w-full rounded-2xl bg-primary-50 px-6 py-5 text-center font-mono text-4xl font-bold tracking-[0.4em] tabular-nums text-neutral-900 ring-2 ring-accent-300 focus:outline-none focus:ring-accent-500"
+          className="mt-3 w-full rounded-2xl bg-bg px-6 py-5 text-center font-mono text-4xl font-bold tracking-[0.4em] tabular-nums text-ink ring-2 ring-brand focus:outline-none focus:ring-brand"
         />
         <div className="mt-3 grid grid-cols-6 gap-1.5">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -120,7 +120,7 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
               key={i}
               className={cn(
                 'h-1 rounded-full',
-                i < trimmed.length ? 'bg-accent-500' : 'bg-primary-200',
+                i < trimmed.length ? 'bg-brand' : 'bg-surface-2',
               )}
             />
           ))}
@@ -144,12 +144,12 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
 
       {!ready && (
         <>
-          <p className="text-center text-xs text-neutral-400">
+          <p className="text-center text-xs text-ink-faint">
             Ingresá los 6 dígitos para validar.{' '}
             <button
               type="button"
               onClick={onSwitch}
-              className="font-bold text-accent-700 underline-offset-2 hover:underline"
+              className="font-bold text-brand-strong underline-offset-2 hover:underline"
             >
               Mejor escaneá el QR
             </button>
@@ -226,22 +226,22 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="relative aspect-square overflow-hidden rounded-3xl bg-neutral-900 shadow-card">
+      <div className="relative aspect-square overflow-hidden rounded-3xl bg-ink shadow-card">
         {scanState === 'starting' || scanState === 'scanning' ? (
           <div id={containerId} className="absolute inset-0" />
         ) : (
-          <div className="grid h-full place-items-center text-center text-sm text-white/80">
+          <div className="grid h-full place-items-center text-center text-sm text-on-brand/80">
             {scanState === 'idle' && (
               <button
                 type="button"
                 onClick={() => setScanState('starting')}
                 className="flex flex-col items-center gap-3 px-6"
               >
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white/10">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-surface/10">
                   <Camera size={26} />
                 </div>
                 <p className="font-bold">Activar cámara</p>
-                <p className="text-xs text-white/60">
+                <p className="text-xs text-on-brand/60">
                   Vamos a pedirte permiso para usar la cámara
                 </p>
               </button>
@@ -253,7 +253,7 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
                 <button
                   type="button"
                   onClick={onSwitch}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-surface px-4 py-2 text-xs font-bold text-ink"
                 >
                   <Hash size={13} /> Usar código manual
                 </button>
@@ -264,12 +264,12 @@ function ScanMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
       </div>
 
       {scanState === 'idle' && (
-        <p className="text-center text-xs text-neutral-500">
+        <p className="text-center text-xs text-ink-soft">
           ¿Problemas con la cámara?{' '}
           <button
             type="button"
             onClick={onSwitch}
-            className="font-bold text-accent-700 underline-offset-2 hover:underline"
+            className="font-bold text-brand-strong underline-offset-2 hover:underline"
           >
             Ingresar código manual
           </button>
@@ -394,7 +394,7 @@ function ResultPanel({
           <button
             type="button"
             onClick={onRetry}
-            className="self-start rounded-full bg-white px-4 py-2 text-xs font-bold text-status-error-fg shadow-card ring-1 ring-status-error/20 transition-all hover:-translate-y-0.5"
+            className="self-start rounded-full bg-surface px-4 py-2 text-xs font-bold text-status-error-fg shadow-card ring-1 ring-status-error/20 transition-all hover:-translate-y-0.5"
           >
             Probar otro código
           </button>
@@ -405,7 +405,7 @@ function ResultPanel({
   return (
     <div className="flex flex-col gap-3 rounded-3xl bg-status-success-bg p-5 text-status-success-fg ring-1 ring-status-success/20">
       <div className="flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-status-success text-white animate-pulse-soft">
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-status-success text-on-brand animate-pulse-soft">
           ✓
         </div>
         <div className="flex-1">
@@ -419,7 +419,7 @@ function ResultPanel({
         <button
           type="button"
           onClick={onConfirm}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-status-success px-5 py-3 text-sm font-bold text-white shadow-cta-success transition-all hover:-translate-y-0.5"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-status-success px-5 py-3 text-sm font-bold text-on-brand shadow-cta-success transition-all hover:-translate-y-0.5"
         >
           Confirmar canje <ArrowRight size={14} />
         </button>

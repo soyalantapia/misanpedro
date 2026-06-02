@@ -60,26 +60,26 @@ export function NotificationsBell({ compact = false }: { compact?: boolean }) {
         type="button"
         onClick={toggle}
         aria-label="Notificaciones"
-        className={`relative grid ${sizeClass} place-items-center rounded-full bg-primary-100 text-neutral-500 transition-colors hover:bg-primary-200 hover:text-neutral-900`}
+        className={`relative grid ${sizeClass} place-items-center rounded-full bg-surface-2 text-ink-soft transition-colors hover:bg-surface-2 hover:text-ink`}
       >
         <Bell size={16} />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-status-error-fg px-1 text-[10px] font-bold text-white ring-2 ring-white">
+          <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-status-error-fg px-1 text-[10px] font-bold text-on-brand ring-2 ring-white">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white p-3 shadow-floating ring-1 ring-neutral-100">
+        <div className="absolute right-0 top-full z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-surface p-3 shadow-floating ring-1 ring-line">
           <div className="flex items-center justify-between px-1 pb-2">
-            <p className="text-sm font-bold text-neutral-900">Actividad reciente</p>
+            <p className="text-sm font-bold text-ink">Actividad reciente</p>
             <div className="flex items-center gap-2">
               {events.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setConfirmClear(true)}
-                  className="text-[11px] font-semibold text-neutral-400 hover:text-neutral-700"
+                  className="text-[11px] font-semibold text-ink-faint hover:text-ink"
                 >
                   Limpiar
                 </button>
@@ -88,7 +88,7 @@ export function NotificationsBell({ compact = false }: { compact?: boolean }) {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Cerrar"
-                className="grid h-6 w-6 place-items-center rounded-full text-neutral-400 hover:bg-primary-100 hover:text-neutral-700"
+                className="grid h-6 w-6 place-items-center rounded-full text-ink-faint hover:bg-surface-2 hover:text-ink"
               >
                 <X size={12} />
               </button>
@@ -97,10 +97,10 @@ export function NotificationsBell({ compact = false }: { compact?: boolean }) {
 
           {events.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-3 py-8 text-center">
-              <div className="grid h-10 w-10 place-items-center rounded-full bg-primary-100 text-neutral-400">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-surface-2 text-ink-faint">
                 <Bell size={16} />
               </div>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-ink-soft">
                 Sin actividad por ahora. Los canjes y activaciones aparecen acá en tiempo real.
               </p>
             </div>
@@ -118,22 +118,22 @@ export function NotificationsBell({ compact = false }: { compact?: boolean }) {
                     <button
                       type="button"
                       onClick={goTo}
-                      className="flex w-full items-start gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-primary-50"
+                      className="flex w-full items-start gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-bg"
                     >
                       <span
                         className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full ${
                           e.type === 'redemption.created'
-                            ? 'bg-accent-50 text-accent-600'
+                            ? 'bg-brand-soft text-brand-strong'
                             : 'bg-status-success-bg text-status-success-fg'
                         }`}
                       >
                         <Icon size={12} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-semibold text-neutral-800">
+                        <p className="truncate text-xs font-semibold text-ink">
                           {eventLine(e)}
                         </p>
-                        <p className="text-[10px] text-neutral-400">{timeAgo(e.receivedAt)}</p>
+                        <p className="text-[10px] text-ink-faint">{timeAgo(e.receivedAt)}</p>
                       </div>
                     </button>
                   </li>

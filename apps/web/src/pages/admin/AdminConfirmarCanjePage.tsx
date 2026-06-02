@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, CheckCircle2 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
@@ -123,33 +124,33 @@ export function AdminConfirmarCanjePage() {
     <div className="animate-fade-up mx-auto flex w-full max-w-md flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
       <Link
         to="/admin/validar"
-        className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-neutral-500 hover:text-neutral-900"
+        className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink"
       >
         <ChevronLeft size={16} /> Volver a Validar
       </Link>
 
       <header className="flex flex-col gap-1.5">
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
           Confirmar canje
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-soft">
           Verificá los datos antes de confirmar. Esta acción no se puede deshacer.
         </p>
       </header>
 
-      <div className="flex flex-col items-center gap-2 rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
-        <div className="grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-accent-400 to-accent-600 text-white text-base font-bold shadow-cta">
+      <div className="flex flex-col items-center gap-2 rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
+        <div className="grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-brand to-brand-strong text-on-brand text-base font-bold shadow-cta">
           {initials || '··'}
         </div>
         <div className="text-center">
-          <p className="text-base font-bold text-neutral-900">{customerName}</p>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+          <p className="text-base font-bold text-ink">{customerName}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-faint">
             Cliente Mi San Pedro
           </p>
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 rounded-3xl bg-white p-5 shadow-card ring-1 ring-neutral-100">
+      <div className="flex flex-col gap-2 rounded-3xl bg-surface p-5 shadow-card ring-1 ring-line">
         <Row label="Descuento" value={`${view.porcentaje}% OFF`} />
         <Row label="Cupón" value={view.couponTitulo} />
         <Row label="Código" value={formatCode(view.codigoNumerico)} mono />
@@ -157,11 +158,11 @@ export function AdminConfirmarCanjePage() {
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+        <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
           Monto sin descuento <span className="text-status-error-fg">*</span>
         </span>
         <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-faint">
             $
           </span>
           <input
@@ -175,10 +176,10 @@ export function AdminConfirmarCanjePage() {
             }}
             placeholder="0"
             maxLength={8}
-            className="w-full rounded-2xl bg-white py-3.5 pl-8 pr-4 text-sm text-neutral-900 shadow-card ring-1 ring-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent-400"
+            className="w-full rounded-2xl bg-surface py-3.5 pl-8 pr-4 text-sm text-ink shadow-card ring-1 ring-line placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
-        <p className="text-[11px] text-neutral-400">
+        <p className="text-[11px] text-ink-faint">
           Precio de lista antes del {view.porcentaje}% — lo usamos para calcular cuánto ahorró el cliente.
           {ahorroPreview !== null && (
             <span className="ml-1 font-bold text-status-success-fg">
@@ -188,15 +189,16 @@ export function AdminConfirmarCanjePage() {
         </p>
       </label>
 
-      <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white shadow-floating"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
+      {createPortal(
+        <div
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg shadow-floating"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
         <div className="mx-auto flex w-full max-w-2xl items-stretch gap-2 px-4 py-3 sm:px-6">
           <Link
             to="/admin/validar"
             aria-label="Volver a Validar"
-            className="flex shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-primary-100 px-4 py-3.5 text-sm font-bold text-neutral-700 ring-1 ring-neutral-200 transition-all hover:-translate-y-0.5 hover:bg-primary-200"
+            className="flex shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-surface-2 px-4 py-3.5 text-sm font-bold text-ink ring-1 ring-line transition-all hover:-translate-y-0.5 hover:bg-surface-2"
           >
             <ChevronLeft size={16} /> Volver
           </Link>
@@ -204,22 +206,24 @@ export function AdminConfirmarCanjePage() {
             type="button"
             onClick={handleConfirm}
             disabled={submitting}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-status-success px-6 py-3.5 text-base font-bold text-white shadow-cta-success transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-status-success px-6 py-3.5 text-base font-bold text-on-brand shadow-cta-success transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
           >
             <CheckCircle2 size={18} />
             {submitting ? 'Confirmando…' : 'Confirmar canje'}
           </button>
         </div>
-      </div>
+        </div>,
+        document.body,
+      )}
     </div>
   )
 }
 
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-dashed border-neutral-100 py-1.5 text-sm last:border-b-0">
-      <span className="text-neutral-500">{label}</span>
-      <span className={`font-bold text-neutral-900 ${mono ? 'font-mono tracking-widest' : ''}`}>
+    <div className="flex items-center justify-between gap-3 border-b border-dashed border-line py-1.5 text-sm last:border-b-0">
+      <span className="text-ink-soft">{label}</span>
+      <span className={`font-bold text-ink ${mono ? 'font-mono tracking-widest' : ''}`}>
         {value}
       </span>
     </div>
