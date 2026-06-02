@@ -127,6 +127,23 @@ export async function sendOtpCode(to: string, code: string) {
   })
 }
 
+// Comercio — código OTP para entrar al panel (login passwordless)
+export async function sendMerchantOtpCode(to: string, code: string) {
+  return sendEmail({
+    to,
+    subject: `Tu código para el panel: ${code}`,
+    html: wrap(
+      'Acceso al panel del comercio',
+      `
+        <p style="text-align:center;font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin:24px 0;color:#695ede">${code}</p>
+        <p>Usalo para entrar al panel de tu comercio en <strong>Mi San Pedro</strong>. Vence en 5 minutos.</p>
+        <p style="font-size:13px;color:#8b8589">Si no pediste este código, ignorá este email — nadie entró a tu cuenta.</p>
+      `,
+    ),
+    text: `Tu código para el panel Mi San Pedro: ${code}. Vence en 5 minutos.`,
+  })
+}
+
 // Vecino — confirmación post-canje
 export async function sendUserRedemption(input: {
   to: string

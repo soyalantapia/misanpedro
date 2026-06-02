@@ -93,6 +93,18 @@ export const merchantLoginSchema = z.object({
   password: z.string().min(3, 'Mínimo 3 caracteres'),
 })
 
+// ─── Login OTP del comercio (passwordless) ────────────────────────────
+// El comercio entra con un código de 6 dígitos al email (igual que el vecino),
+// sin contraseña. `purpose: 'merchant'` separa estos OTP de los del vecino.
+export const merchantOtpRequestSchema = z.object({
+  email: z.string().email().toLowerCase(),
+})
+
+export const merchantOtpVerifySchema = z.object({
+  email: z.string().email().toLowerCase(),
+  code: z.string().regex(/^\d{6}$/, 'Código de 6 dígitos'),
+})
+
 /**
  * URL para usar en <a href=...> — sólo esquemas seguros que el browser
  * NO ejecuta como código. Bloquea `javascript:`, `data:` (cuando va a
@@ -160,7 +172,9 @@ export const merchantSignupSchema = z.object({
   admin: z.object({
     nombre: z.string().min(3),
     email: z.string().email().toLowerCase(),
-    password: z.string().min(8, 'Mínimo 8 caracteres'),
+    // OTP-only: el alta ya no exige contraseña. Se mantiene opcional por
+    // compatibilidad con clientes viejos que todavía la manden (se ignora).
+    password: z.string().min(8, 'Mínimo 8 caracteres').optional(),
   }),
   /** Código de referido (opcional): el comercio que invitó a este. */
   ref: z.string().trim().max(40).optional(),
@@ -341,6 +355,8 @@ export type UserRegisterInput = z.infer<typeof userRegisterSchema>
 export type OtpRequestInput = z.infer<typeof otpRequestSchema>
 export type OtpVerifyInput = z.infer<typeof otpVerifySchema>
 export type MerchantLoginInput = z.infer<typeof merchantLoginSchema>
+export type MerchantOtpRequestInput = z.infer<typeof merchantOtpRequestSchema>
+export type MerchantOtpVerifyInput = z.infer<typeof merchantOtpVerifySchema>
 export type MerchantSignupInput = z.infer<typeof merchantSignupSchema>
 export type CouponCreateInput = z.infer<typeof couponCreateSchema>
 export type CouponUpdateInput = z.infer<typeof couponUpdateSchema>

@@ -114,13 +114,14 @@ userAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
     return c.json({ ok: true })
   }
 
-  // Limpiar OTPs previos del email POR TENANT.
-  await Otp.deleteMany({ appId, email })
+  // Limpiar OTPs previos del email POR TENANT (solo los del vecino).
+  await Otp.deleteMany({ appId, email, purpose: 'user' })
 
   const code = generateOtp()
   await Otp.create({
     appId,
     email,
+    purpose: 'user',
     codeHash: sha256(code),
     expiresAt: new Date(Date.now() + OTP_TTL_MS),
   })
@@ -143,7 +144,7 @@ userAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
   }
   const { email, code } = parsed.data
 
-  const otp = await Otp.findOne({ appId, email })
+  const otp = await Otp.findOne({ appId, email, purpose: 'user' })
   if (!otp || otp.consumedAt) {
     return c.json({ ok: false, error: 'código inválido' }, 401)
   }

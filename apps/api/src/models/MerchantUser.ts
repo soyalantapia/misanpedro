@@ -6,7 +6,11 @@ const merchantUserSchema = new Schema(
     appId: { type: Types.ObjectId, ref: 'App', required: true, index: true },
     merchantId: { type: Types.ObjectId, ref: 'Merchant', required: true, index: true },
     email: { type: String, required: true, lowercase: true },
-    passwordHash: { type: String, required: true },
+    // OTP-only: el login es passwordless. passwordHash queda OPCIONAL —
+    // los comercios nuevos se crean sin contraseña; los viejos conservan su
+    // hash (sin uso). Sigue disponible si en el futuro se reactiva el login
+    // por password.
+    passwordHash: { type: String },
     nombre: { type: String, required: true },
     rol: { type: String, enum: ['admin', 'cajero'], default: 'admin' },
     lastLoginAt: { type: Date },

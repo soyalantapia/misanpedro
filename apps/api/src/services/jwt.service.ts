@@ -4,10 +4,18 @@ import { env } from '@/env'
 import { RefreshToken } from '@/models'
 
 // Access token: 1h. Suficiente para no fragmentar la sesión del cajero pero
-// corto para limitar el daño si se filtra. El refresh token rota cada uso
-// y vive 30 días — así un cajero típico no vuelve a loguearse en todo el mes.
+// corto para limitar el daño si se filtra. El refresh token vive 30 días para
+// vecino/owner.
+//
+// EXCEPCIÓN comercio (merchant_user): la sesión del panel NO debe cerrarse
+// nunca salvo logout explícito (decisión de producto). Su refresh se emite
+// "sin vencimiento" (fecha muy lejana) y NO se rota en /refresh — ver
+// merchant-auth.ts. Logout / logout-all siguen siendo la única salida.
 const ACCESS_TTL = '1h'
-const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 días
+const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 días (vecino/owner)
+// Fecha "infinita" para el refresh del comercio. No es Date.now()-relativa para
+// no depender del reloj al emitir; es un absoluto bien lejano.
+const NEVER_EXPIRES_AT = new Date('2099-12-31T23:59:59.000Z')
 
 export type Subject = 'user' | 'merchant_user' | 'owner'
 
@@ -37,10 +45,14 @@ export async function issueRefreshToken(input: {
   subjectId: string
   userAgent?: string
   ip?: string
+  /** Forzar refresh sin vencimiento. Default: true para merchant_user. */
+  neverExpires?: boolean
 }): Promise<{ token: string; expiresAt: Date }> {
   const token = randomBytes(48).toString('base64url')
   const tokenHash = sha256(token)
-  const expiresAt = new Date(Date.now() + REFRESH_TTL_MS)
+  // El comercio nunca expira por defecto (sesión persistente del panel).
+  const neverExpires = input.neverExpires ?? input.subjectType === 'merchant_user'
+  const expiresAt = neverExpires ? NEVER_EXPIRES_AT : new Date(Date.now() + REFRESH_TTL_MS)
   await RefreshToken.create({
     tokenHash,
     subjectType: input.subjectType,
