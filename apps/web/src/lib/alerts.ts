@@ -3,14 +3,12 @@ import type { Categoria } from './types'
 import { getTenantSnapshot } from './tenant'
 
 /**
- * Sistema de alertas del vecino (client-side).
+ * Sistema de alertas del vecino (client-side, estilo Despegar).
  *
- * - La vecina elige categorías que le interesan (vacío = todas).
- * - Detectamos cupones "nuevos" desde una línea de base: en el primer uso
- *   marcamos todos los cupones actuales como vistos, así sólo los que aparecen
- *   DESPUÉS cuentan como novedad (badge en la campana).
- * - Todo persiste en localStorage por tenant. El push real (notificación del
- *   sistema) se engancha aparte en lib/push.ts.
+ * La vecina PACTA varias alertas, cada una con sus criterios (rubros, % mínimo,
+ * comercio puntual). Cada cupón nuevo que matchea alguna alerta activa entra al
+ * feed combinado y cuenta como novedad (badge en la campana). Persistente en
+ * localStorage por tenant. El push real se engancha en lib/push.ts.
  */
 
 export type AlertCoupon = {
@@ -22,18 +20,36 @@ export type AlertCoupon = {
   categoria: Categoria
 }
 
-type Prefs = { categories: Categoria[]; pushEnabled: boolean }
+export type Alert = {
+  id: string
+  categorias: Categoria[] // [] = todas
+  minDescuento: number // 0 = cualquiera
+  merchantSlug?: string // opcional: un comercio puntual
+  merchantNombre?: string
+  activa: boolean
+  createdAt: number
+}
+
+type Store = { alerts: Alert[]; pushEnabled: boolean }
 
 const RECENT_MS = 21 * 24 * 60 * 60 * 1000
 
 function slug() {
   return getTenantSnapshot().slug ?? 'default'
 }
-function prefsKey() {
-  return `msp.alerts.prefs.${slug()}`
+function storeKey() {
+  return `msp.alerts.v2.${slug()}`
 }
 function seenKey() {
   return `msp.alerts.seen.${slug()}`
+}
+
+function genId(): string {
+  try {
+    return crypto.randomUUID()
+  } catch {
+    return 'a' + Math.random().toString(36).slice(2, 10)
+  }
 }
 
 /** Timestamp (ms) embebido en un ObjectId de Mongo. */
@@ -43,20 +59,32 @@ function objectIdTime(id: string): number {
   return Number.isFinite(ts) ? ts * 1000 : 0
 }
 
-function loadPrefs(): Prefs {
+function loadStore(): Store {
   try {
-    const raw = localStorage.getItem(prefsKey())
+    const raw = localStorage.getItem(storeKey())
     if (raw) {
       const p = JSON.parse(raw)
       return {
-        categories: Array.isArray(p.categories) ? p.categories : [],
+        alerts: Array.isArray(p.alerts) ? p.alerts : [],
+        pushEnabled: !!p.pushEnabled,
+      }
+    }
+    // Migración suave desde v1 (una preferencia de categorías → una alerta).
+    const v1 = localStorage.getItem(`msp.alerts.prefs.${slug()}`)
+    if (v1) {
+      const p = JSON.parse(v1)
+      const cats: Categoria[] = Array.isArray(p.categories) ? p.categories : []
+      return {
+        alerts: cats.length
+          ? [{ id: genId(), categorias: cats, minDescuento: 0, activa: true, createdAt: Date.now() }]
+          : [],
         pushEnabled: !!p.pushEnabled,
       }
     }
   } catch {
     /* noop */
   }
-  return { categories: [], pushEnabled: false }
+  return { alerts: [], pushEnabled: false }
 }
 
 function loadSeen(): Set<string> {
@@ -70,15 +98,14 @@ function loadSeen(): Set<string> {
 }
 
 let coupons: AlertCoupon[] = []
-let prefs: Prefs = loadPrefs()
+let store: Store = loadStore()
 let seen: Set<string> = loadSeen()
 let initialized = seen.size > 0
-
 const listeners = new Set<() => void>()
 
-function persistPrefs() {
+function persistStore() {
   try {
-    localStorage.setItem(prefsKey(), JSON.stringify(prefs))
+    localStorage.setItem(storeKey(), JSON.stringify(store))
   } catch {
     /* noop */
   }
@@ -91,34 +118,54 @@ function persistSeen() {
   }
 }
 
-function matchesPrefs(c: AlertCoupon): boolean {
-  if (prefs.categories.length === 0) return true
-  return prefs.categories.includes(c.categoria)
+export function matchesAlert(c: AlertCoupon, a: Alert): boolean {
+  if (a.categorias.length && !a.categorias.includes(c.categoria)) return false
+  if (a.minDescuento && c.porcentaje < a.minDescuento) return false
+  if (a.merchantSlug && c.merchantSlug !== a.merchantSlug) return false
+  return true
 }
 
-function recentMatching(): AlertCoupon[] {
+function activeAlerts(): Alert[] {
+  return store.alerts.filter((a) => a.activa)
+}
+
+function recentSorted(list: AlertCoupon[]): AlertCoupon[] {
   const cutoff = Date.now() - RECENT_MS
-  return coupons
-    .filter((c) => matchesPrefs(c) && objectIdTime(c.id) >= cutoff)
+  return list
+    .filter((c) => objectIdTime(c.id) >= cutoff)
     .sort((a, b) => objectIdTime(b.id) - objectIdTime(a.id))
+}
+
+/** Cupones recientes que matchean UNA alerta puntual. */
+export function couponsForAlert(alertId: string): AlertCoupon[] {
+  const a = store.alerts.find((x) => x.id === alertId)
+  if (!a) return []
+  return recentSorted(coupons.filter((c) => matchesAlert(c, a)))
+}
+
+/** Cupones recientes que matchean CUALQUIER alerta activa (feed combinado). */
+function recentMatchingAny(): AlertCoupon[] {
+  const active = activeAlerts()
+  if (active.length === 0) return []
+  return recentSorted(coupons.filter((c) => active.some((a) => matchesAlert(c, a))))
 }
 
 export type AlertsSnapshot = {
   feed: AlertCoupon[]
   unread: number
-  categories: Categoria[]
+  alerts: Alert[]
   pushEnabled: boolean
 }
 
 let snapshot: AlertsSnapshot = computeSnapshot()
 
 function computeSnapshot(): AlertsSnapshot {
-  const feed = recentMatching()
+  const feed = recentMatchingAny()
   return {
     feed,
     unread: feed.filter((c) => !seen.has(c.id)).length,
-    categories: prefs.categories,
-    pushEnabled: prefs.pushEnabled,
+    alerts: store.alerts,
+    pushEnabled: store.pushEnabled,
   }
 }
 
@@ -129,7 +176,6 @@ function notify() {
 
 /** El watcher (campana) llama esto con el catálogo actual. */
 export function setAlertCoupons(list: AlertCoupon[]) {
-  // Dedupe: si los ids no cambiaron, no recomputamos (evita renders en loop).
   const sameLength = list.length === coupons.length
   const sameIds = sameLength && list.every((c, i) => c.id === coupons[i]?.id)
   if (sameIds) return
@@ -145,7 +191,7 @@ export function setAlertCoupons(list: AlertCoupon[]) {
 
 export function markAllSeen() {
   let changed = false
-  for (const c of recentMatching()) {
+  for (const c of recentMatchingAny()) {
     if (!seen.has(c.id)) {
       seen.add(c.id)
       changed = true
@@ -157,21 +203,53 @@ export function markAllSeen() {
   }
 }
 
-export function setCategories(categories: Categoria[]) {
-  prefs = { ...prefs, categories }
-  persistPrefs()
+export function addAlert(input: {
+  categorias?: Categoria[]
+  minDescuento?: number
+  merchantSlug?: string
+  merchantNombre?: string
+}): Alert {
+  const a: Alert = {
+    id: genId(),
+    categorias: input.categorias ?? [],
+    minDescuento: input.minDescuento ?? 0,
+    merchantSlug: input.merchantSlug || undefined,
+    merchantNombre: input.merchantNombre || undefined,
+    activa: true,
+    createdAt: Date.now(),
+  }
+  store = { ...store, alerts: [a, ...store.alerts] }
+  persistStore()
+  notify()
+  return a
+}
+
+export function removeAlert(id: string) {
+  store = { ...store, alerts: store.alerts.filter((a) => a.id !== id) }
+  persistStore()
   notify()
 }
 
-export function toggleCategory(cat: Categoria) {
-  const has = prefs.categories.includes(cat)
-  setCategories(has ? prefs.categories.filter((c) => c !== cat) : [...prefs.categories, cat])
+export function toggleAlert(id: string) {
+  store = {
+    ...store,
+    alerts: store.alerts.map((a) => (a.id === id ? { ...a, activa: !a.activa } : a)),
+  }
+  persistStore()
+  notify()
 }
 
 export function setPushEnabled(on: boolean) {
-  prefs = { ...prefs, pushEnabled: on }
-  persistPrefs()
+  store = { ...store, pushEnabled: on }
+  persistStore()
   notify()
+}
+
+/** Categorías para el push: unión de las alertas activas; [] = todas (si alguna sigue "todas"). */
+export function pushCategories(): Categoria[] {
+  const active = activeAlerts()
+  if (active.length === 0 || active.some((a) => a.categorias.length === 0)) return []
+  return [...new Set(active.flatMap((a) => a.categorias))]
 }
 
 export function getAlertsSnapshot() {

@@ -146,7 +146,7 @@ export function RegistroPage() {
   }
 
   return (
-    <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
+    <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pt-6 pb-16 sm:px-6 sm:pt-10">
       <Link
         to="/"
         className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-fin-soft hover:text-fin-ink"
@@ -202,26 +202,44 @@ export function RegistroPage() {
             />
           }
         />
-        <Field
-          label="DNI"
-          required
-          fieldKey="dni"
-          icon={IdCard}
-          help="Sólo números, sin puntos"
-          error={errors.dni}
-          input={
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              maxLength={9}
-              value={form.dni}
-              onChange={(e) => update('dni', e.target.value.replace(/\D/g, ''))}
-              placeholder="30123456"
-              className={iconInputCls}
-            />
-          }
-        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="DNI"
+            required
+            fieldKey="dni"
+            icon={IdCard}
+            help="Sólo números, sin puntos"
+            error={errors.dni}
+            input={
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={9}
+                value={form.dni}
+                onChange={(e) => update('dni', e.target.value.replace(/\D/g, ''))}
+                placeholder="30123456"
+                className={iconInputCls}
+              />
+            }
+          />
+          <Field
+            label="Fecha de nacimiento"
+            required
+            fieldKey="fechaNacimiento"
+            help="Tenés que ser mayor de 16"
+            error={errors.fechaNacimiento}
+            input={
+              <input
+                type="date"
+                value={form.fechaNacimiento}
+                onChange={(e) => update('fechaNacimiento', e.target.value)}
+                className={inputCls}
+                max={new Date().toISOString().slice(0, 10)}
+              />
+            }
+          />
+        </div>
         <Field
           label="Email"
           required
@@ -255,7 +273,7 @@ export function RegistroPage() {
                   setPais(e.target.value)
                   setWhatsapp(e.target.value, waNumero)
                 }}
-                className={`${inputCls} w-32 shrink-0`}
+                className={`${selectCls} w-28 shrink-0`}
               >
                 {COUNTRY_CODES.map((c) => (
                   <option key={c.iso} value={c.iso}>
@@ -284,23 +302,6 @@ export function RegistroPage() {
             </div>
           }
         />
-        <Field
-          label="Fecha de nacimiento"
-          required
-          fieldKey="fechaNacimiento"
-          help="Tenés que ser mayor de 16"
-          error={errors.fechaNacimiento}
-          input={
-            <input
-              type="date"
-              value={form.fechaNacimiento}
-              onChange={(e) => update('fechaNacimiento', e.target.value)}
-              className={inputCls}
-              max={new Date().toISOString().slice(0, 10)}
-            />
-          }
-        />
-
         <label
           data-field="acceptedTc"
           className="mt-2 flex items-start gap-3 rounded-2xl bg-fin-surface p-4 ring-1 ring-fin-line shadow-fin-card"
@@ -361,6 +362,11 @@ export function RegistroPage() {
 
 const inputCls =
   'w-full rounded-2xl bg-fin-surface px-4 py-3.5 text-sm text-fin-ink ring-1 ring-fin-line placeholder:text-fin-faint focus:outline-none focus:ring-2 focus:ring-fin-lime'
+
+// Igual que inputCls pero SIN w-full (el select del país tiene ancho fijo, si no
+// pisa el w-32 y aplasta el input del número de WhatsApp).
+const selectCls =
+  'rounded-2xl bg-fin-surface px-3 py-3.5 text-sm text-fin-ink ring-1 ring-fin-line focus:outline-none focus:ring-2 focus:ring-fin-lime'
 
 const iconInputCls =
   'w-full rounded-2xl bg-fin-surface py-3.5 pl-11 pr-4 text-sm text-fin-ink ring-1 ring-fin-line placeholder:text-fin-faint focus:outline-none focus:ring-2 focus:ring-fin-lime'

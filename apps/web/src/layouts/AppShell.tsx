@@ -3,21 +3,25 @@ import { Tag, Map, CheckCircle2, User, Bell } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { OfflineBanner } from '@/components/OfflineBanner'
 import { RedemptionWatcher } from '@/components/RedemptionWatcher'
-import { AlertsBell } from '@/components/AlertsBell'
+import { useAlertCouponsSync } from '@/components/AlertsBell'
+import { useAlerts } from '@/lib/alerts'
 import { useTenant } from '@/lib/tenant'
 
-// Orden: Mapa · Canjeados · [Descuentos centro] · Alertas · Perfil
+// Orden: Mapa · Canjeados · [Cupones centro, FAB sobresalido] · Alertas · Perfil
 const links = [
-  { to: '/mapa', label: 'Mapa', icon: Map, end: false },
-  { to: '/canjeados', label: 'Canjeados', icon: CheckCircle2, end: false },
-  { to: '/', label: 'Descuentos', icon: Tag, end: true },
-  { to: '/alertas', label: 'Alertas', icon: Bell, end: false },
-  { to: '/perfil', label: 'Perfil', icon: User, end: false },
+  { to: '/mapa', label: 'Mapa', icon: Map, end: false, center: false },
+  { to: '/canjeados', label: 'Canjeados', icon: CheckCircle2, end: false, center: false },
+  { to: '/', label: 'Cupones', icon: Tag, end: true, center: true },
+  { to: '/alertas', label: 'Alertas', icon: Bell, end: false, center: false },
+  { to: '/perfil', label: 'Perfil', icon: User, end: false, center: false },
 ]
 
 export function AppShell() {
   const tenant = useTenant()
   const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  // El sync del catálogo de alertas vivía en la campana; ahora vive acá (la campana se quitó).
+  useAlertCouponsSync()
+  const { unread } = useAlerts()
   return (
     <div className="flex min-h-[100svh] flex-col bg-fin-bg text-fin-ink md:flex-row">
       {/* Sidebar (md+) */}
@@ -33,7 +37,6 @@ export function AppShell() {
             <p className="truncate text-base font-bold text-fin-ink">{appName}</p>
             <p className="text-xs font-medium text-fin-faint">Descuentos vecinales</p>
           </div>
-          <AlertsBell />
         </div>
         <nav aria-label="Navegación principal" className="flex flex-col gap-1 px-3">
           {links.map(({ to, label, icon: Icon, end }) => (
@@ -54,6 +57,11 @@ export function AppShell() {
                 <>
                   <Icon size={18} className={cn('transition-colors', isActive ? 'text-fin-lime' : 'text-fin-faint group-hover:text-fin-ink')} />
                   {label}
+                  {to === '/alertas' && unread > 0 && (
+                    <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-status-error px-1 text-[10px] font-bold text-on-brand">
+                      {unread > 9 ? '9+' : unread}
+                    </span>
+                  )}
                 </>
               )}
             </NavLink>
@@ -69,9 +77,6 @@ export function AppShell() {
           </div>
           <span className="truncate text-[15px] font-bold leading-none text-fin-ink">{appName}</span>
         </Link>
-        <div className="flex shrink-0 items-center gap-2">
-          <AlertsBell />
-        </div>
       </header>
 
       <main className="flex-1 overflow-x-hidden pb-32 md:pb-0">
@@ -86,23 +91,61 @@ export function AppShell() {
         className="fixed inset-x-3 bottom-3 z-30 rounded-3xl bg-fin-surface/95 p-1.5 ring-1 ring-fin-line shadow-fin-card backdrop-blur-xl md:hidden"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="flex items-center justify-around">
-          {links.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                cn(
-                  'flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-2.5 text-[11px] font-semibold transition-all duration-200',
-                  isActive ? 'bg-fin-lime text-fin-bg shadow-fin-glow' : 'text-fin-soft',
-                )
-              }
-            >
-              <Icon size={20} />
-              {label}
-            </NavLink>
-          ))}
+        <div className="flex items-end justify-around">
+          {links.map(({ to, label, icon: Icon, end, center }) =>
+            center ? (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                aria-label={label}
+                className="flex flex-1 flex-col items-center gap-1"
+              >
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={cn(
+                        '-mt-9 grid h-16 w-16 place-items-center rounded-full bg-fin-lime text-fin-bg ring-4 ring-fin-bg shadow-fin-glow transition-transform duration-200',
+                        isActive ? 'scale-105' : 'hover:scale-105',
+                      )}
+                    >
+                      <Icon size={26} />
+                    </span>
+                    <span
+                      className={cn(
+                        'text-[11px] font-bold transition-colors',
+                        isActive ? 'text-fin-lime' : 'text-fin-soft',
+                      )}
+                    >
+                      {label}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+            ) : (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  cn(
+                    'flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-2.5 text-[11px] font-semibold transition-all duration-200',
+                    isActive ? 'bg-fin-lime text-fin-bg shadow-fin-glow' : 'text-fin-soft',
+                  )
+                }
+              >
+                <span className="relative">
+                  <Icon size={20} />
+                  {to === '/alertas' && unread > 0 && (
+                    <span className="absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-status-error px-1 text-[9px] font-bold text-on-brand ring-2 ring-fin-surface">
+                      {unread > 9 ? '9+' : unread}
+                    </span>
+                  )}
+                </span>
+                {label}
+              </NavLink>
+            ),
+          )}
         </div>
       </nav>
     </div>
