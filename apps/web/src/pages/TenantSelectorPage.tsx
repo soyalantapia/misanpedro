@@ -94,7 +94,7 @@ export function TenantSelectorPage() {
                   <span
                     className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-lg font-black text-white shadow"
                     style={{
-                      background: `linear-gradient(135deg, ${t.brand?.primaryColor ?? '#695ede'}, ${t.brand?.accentColor ?? '#4239a3'})`,
+                      background: `linear-gradient(135deg, ${t.brand?.primaryColor ?? 'var(--color-brand)'}, ${t.brand?.accentColor ?? 'var(--color-brand-strong)'})`,
                     }}
                   >
                     {t.ciudad?.[0]?.toUpperCase() ?? 'C'}

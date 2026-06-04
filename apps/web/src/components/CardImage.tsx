@@ -23,88 +23,37 @@ import {
 import type { Categoria } from '@/lib/types'
 import { cn } from '@/lib/cn'
 
+// Placeholder por categoría: superficie en TINTE CLARO + ícono en el color de la
+// categoría. Antes eran gradientes saturados full-bleed que (a) se fundían con el
+// naranja de marca en los rubros cálidos y (b) chocaban con el verde de "ahorrás"
+// en los rubros verdes. Con tinte claro, cada rubro se distingue sin competir con
+// la marca ni con el semáforo de ahorro, y el naranja queda reservado para acciones.
 type Variant = {
-  bg: string
+  tint: string // fondo claro (superficie)
+  ink: string // color del ícono / acento de la categoría
   Icon: LucideIcon
 }
 
 const variants: Record<Categoria, Variant> = {
-  gastronomia: {
-    bg: 'from-amber-300 via-amber-400 to-orange-500',
-    Icon: UtensilsCrossed,
-  },
-  cafeteria: {
-    bg: 'from-amber-200 via-orange-300 to-amber-600',
-    Icon: Coffee,
-  },
-  panaderia: {
-    bg: 'from-yellow-200 via-amber-300 to-orange-400',
-    Icon: Croissant,
-  },
-  supermercado: {
-    bg: 'from-emerald-300 via-teal-400 to-cyan-600',
-    Icon: ShoppingCart,
-  },
-  kiosco: {
-    bg: 'from-cyan-300 via-sky-400 to-blue-600',
-    Icon: StoreIcon,
-  },
-  indumentaria: {
-    bg: 'from-pink-300 via-rose-400 to-fuchsia-600',
-    Icon: Shirt,
-  },
-  calzado: {
-    bg: 'from-fuchsia-300 via-pink-400 to-rose-600',
-    Icon: Footprints,
-  },
-  belleza: {
-    bg: 'from-rose-300 via-pink-400 to-pink-600',
-    Icon: Sparkles,
-  },
-  salud: {
-    bg: 'from-teal-300 via-emerald-400 to-emerald-600',
-    Icon: Stethoscope,
-  },
-  farmacia: {
-    bg: 'from-green-300 via-emerald-400 to-teal-600',
-    Icon: Pill,
-  },
-  hogar: {
-    bg: 'from-lime-300 via-green-400 to-emerald-600',
-    Icon: Sofa,
-  },
-  libreria: {
-    bg: 'from-orange-300 via-amber-400 to-red-500',
-    Icon: BookOpen,
-  },
-  ferreteria: {
-    bg: 'from-zinc-300 via-slate-400 to-gray-600',
-    Icon: Hammer,
-  },
-  tecnologia: {
-    bg: 'from-indigo-300 via-blue-400 to-violet-600',
-    Icon: Laptop,
-  },
-  mascotas: {
-    bg: 'from-orange-300 via-rose-400 to-red-500',
-    Icon: PawPrint,
-  },
-  deporte: {
-    bg: 'from-lime-300 via-emerald-400 to-green-600',
-    Icon: Dumbbell,
-  },
-  servicios: {
-    bg: 'from-sky-300 via-blue-400 to-indigo-600',
-    Icon: Wrench,
-  },
-  inmobiliaria: {
-    bg: 'from-slate-400 via-blue-500 to-indigo-700',
-    Icon: Building2,
-  },
-  otro: {
-    bg: 'from-neutral-300 via-zinc-400 to-stone-500',
-    Icon: Tag,
-  },
+  gastronomia: { tint: 'bg-amber-100', ink: 'text-amber-900', Icon: UtensilsCrossed },
+  cafeteria: { tint: 'bg-orange-100', ink: 'text-orange-900', Icon: Coffee },
+  panaderia: { tint: 'bg-yellow-100', ink: 'text-yellow-900', Icon: Croissant },
+  supermercado: { tint: 'bg-teal-100', ink: 'text-teal-900', Icon: ShoppingCart },
+  kiosco: { tint: 'bg-sky-100', ink: 'text-sky-900', Icon: StoreIcon },
+  indumentaria: { tint: 'bg-pink-100', ink: 'text-pink-800', Icon: Shirt },
+  calzado: { tint: 'bg-rose-100', ink: 'text-rose-800', Icon: Footprints },
+  belleza: { tint: 'bg-fuchsia-100', ink: 'text-fuchsia-800', Icon: Sparkles },
+  salud: { tint: 'bg-emerald-100', ink: 'text-emerald-900', Icon: Stethoscope },
+  farmacia: { tint: 'bg-green-100', ink: 'text-green-900', Icon: Pill },
+  hogar: { tint: 'bg-lime-100', ink: 'text-lime-900', Icon: Sofa },
+  libreria: { tint: 'bg-red-100', ink: 'text-red-900', Icon: BookOpen },
+  ferreteria: { tint: 'bg-slate-200', ink: 'text-slate-700', Icon: Hammer },
+  tecnologia: { tint: 'bg-indigo-100', ink: 'text-indigo-900', Icon: Laptop },
+  mascotas: { tint: 'bg-rose-100', ink: 'text-rose-800', Icon: PawPrint },
+  deporte: { tint: 'bg-lime-100', ink: 'text-lime-900', Icon: Dumbbell },
+  servicios: { tint: 'bg-blue-100', ink: 'text-blue-900', Icon: Wrench },
+  inmobiliaria: { tint: 'bg-slate-100', ink: 'text-slate-800', Icon: Building2 },
+  otro: { tint: 'bg-stone-100', ink: 'text-stone-700', Icon: Tag },
 }
 
 export function CardImage({
@@ -116,11 +65,11 @@ export function CardImage({
   categoria: Categoria
   className?: string
   size?: 'sm' | 'md' | 'lg'
-  /** URL o dataURL — si está, reemplaza el gradiente categórico */
+  /** URL o dataURL — si está, reemplaza el placeholder categórico */
   coverImageUrl?: string
 }) {
   const v = variants[categoria]
-  const iconSize = size === 'lg' ? 64 : size === 'sm' ? 28 : 44
+  const iconSize = size === 'lg' ? 88 : size === 'sm' ? 34 : 60
 
   if (coverImageUrl) {
     // MO16: width/height intrínsecos para reservar layout y evitar CLS.
@@ -144,16 +93,11 @@ export function CardImage({
   }
 
   return (
-    <div
-      className={cn(
-        'relative overflow-hidden bg-gradient-to-br text-on-brand/90',
-        v.bg,
-        className,
-      )}
-    >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.3),transparent_55%)]" />
+    <div className={cn('relative overflow-hidden', v.tint, className)}>
+      {/* leve brillo para que no quede plano */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.55),transparent_60%)]" />
       <div className="absolute inset-0 grid place-items-center">
-        <v.Icon size={iconSize} strokeWidth={1.6} />
+        <v.Icon size={iconSize} strokeWidth={2} className={v.ink} />
       </div>
     </div>
   )

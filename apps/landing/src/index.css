@@ -1,19 +1,20 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Brand — verde "club de ahorro" (#5db800), mismo que la app (vecino+admin).
-     La escala `accent-*` se reapunta a verde: cambiar acá re-tematiza toda la
-     landing sin tocar las secciones (que usan bg-accent-*, text-accent-*, …). */
-  --color-accent-50: #f2fbe7;
-  --color-accent-100: #e3f6c9;
-  --color-accent-200: #c8ed98;
-  --color-accent-300: #a6e05c;
-  --color-accent-400: #84cf2b;
-  --color-accent-500: #5db800;
-  --color-accent-600: #4ea000;
-  --color-accent-700: #3d7d00;
-  --color-accent-800: #316200;
-  --color-accent-900: #284f00;
+  /* Brand — violeta Deenex (#695EDE), el mismo de la app (vecino+admin) y la
+     landing del vecino. La escala `accent-*` re-tematiza toda la landing sin
+     tocar las secciones (que usan bg-accent-*, text-accent-*, …). */
+  --color-brand: #ea580c; /* ← KNOB único: cambiá este hex y se re-tematiza toda la landing */
+  --color-accent-50: color-mix(in srgb, var(--color-brand) 8%, white);
+  --color-accent-100: color-mix(in srgb, var(--color-brand) 15%, white);
+  --color-accent-200: color-mix(in srgb, var(--color-brand) 30%, white);
+  --color-accent-300: color-mix(in srgb, var(--color-brand) 50%, white);
+  --color-accent-400: color-mix(in srgb, var(--color-brand) 74%, white);
+  --color-accent-500: var(--color-brand);
+  --color-accent-600: color-mix(in srgb, var(--color-brand), black 15%);
+  --color-accent-700: color-mix(in srgb, var(--color-brand), black 33%);
+  --color-accent-800: color-mix(in srgb, var(--color-brand), black 48%);
+  --color-accent-900: color-mix(in srgb, var(--color-brand), black 62%);
 
   /* Neutral grays — Deenex */
   --color-neutral-50: #f6f5f6;

@@ -11,7 +11,7 @@ const SANPEDRO: [number, number] = [-33.6797, -59.6669]
 function merchantIcon(label: string) {
   return L.divIcon({
     className: 'msp-pin',
-    html: `<div style="width:38px;height:38px;border-radius:9999px;background:linear-gradient(135deg,#5db800,#4ea000);box-shadow:0 4px 10px -2px rgba(93,184,0,.5);border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:11px;font-family:Satoshi,system-ui,sans-serif;line-height:1;">${label}</div>`,
+    html: `<div style="width:38px;height:38px;border-radius:9999px;background:linear-gradient(135deg,var(--color-brand),var(--color-brand-strong));box-shadow:0 4px 10px -2px color-mix(in srgb, var(--color-brand) 50%, transparent);border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:11px;font-family:Satoshi,system-ui,sans-serif;line-height:1;">${label}</div>`,
     iconSize: [38, 38],
     iconAnchor: [19, 19],
     popupAnchor: [0, -20],

@@ -2,16 +2,17 @@
 
 @theme {
   /* Brand — violet #695EDE (mismo que la PWA) */
-  --color-accent-50: #f0eefd;
-  --color-accent-100: #e0ddfb;
-  --color-accent-200: #c1bcf7;
-  --color-accent-300: #9d96f1;
-  --color-accent-400: #7e74e7;
-  --color-accent-500: #695ede;
-  --color-accent-600: #5347c8;
-  --color-accent-700: #4239a3;
-  --color-accent-800: #332b80;
-  --color-accent-900: #231d5e;
+  --color-brand: #ea580c; /* ← KNOB único: cambiá este hex y se re-tematiza toda la landing del vecino */
+  --color-accent-50: color-mix(in srgb, var(--color-brand) 8%, white);
+  --color-accent-100: color-mix(in srgb, var(--color-brand) 15%, white);
+  --color-accent-200: color-mix(in srgb, var(--color-brand) 30%, white);
+  --color-accent-300: color-mix(in srgb, var(--color-brand) 50%, white);
+  --color-accent-400: color-mix(in srgb, var(--color-brand) 74%, white);
+  --color-accent-500: var(--color-brand);
+  --color-accent-600: color-mix(in srgb, var(--color-brand), black 15%);
+  --color-accent-700: color-mix(in srgb, var(--color-brand), black 33%);
+  --color-accent-800: color-mix(in srgb, var(--color-brand), black 48%);
+  --color-accent-900: color-mix(in srgb, var(--color-brand), black 62%);
 
   /* Neutrals — cool, premium */
   --color-neutral-50: #f8f8fa;
@@ -64,17 +65,18 @@
 
   .animate-float { animation: float 6s ease-in-out infinite; }
   .animate-float-slow { animation: float 9s ease-in-out infinite; }
-  .animate-blob { animation: blob 20s ease-in-out infinite; }
-  .animate-blob-2 { animation: blob 26s ease-in-out infinite reverse; }
+  /* .animate-blob / .animate-blob-2: la animación corre SOLO en desktop (ver @media abajo).
+     En mobile (celu de gama baja) los blobs quedan estáticos, sin costo de GPU. */
   .animate-gradient { background-size: 220% 220%; animation: gradient-pan 7s ease infinite; }
   .animate-pulse-ring { animation: pulse-ring 2.6s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
   .marquee { animation: marquee 34s linear infinite; }
 
   .bg-grid {
+    /* Grilla tintada con la marca (sigue el knob --color-brand, no hardcodeada). */
     background-image:
-      linear-gradient(to right, rgba(105, 94, 222, 0.06) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(105, 94, 222, 0.06) 1px, transparent 1px);
+      linear-gradient(to right, color-mix(in srgb, var(--color-accent-500) 7%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--color-accent-500) 7%, transparent) 1px, transparent 1px);
     background-size: 40px 40px;
   }
 
@@ -110,13 +112,20 @@
   50% { background-position: 100% 50%; }
 }
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(105, 94, 222, 0.5); }
-  70% { box-shadow: 0 0 0 16px rgba(105, 94, 222, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(105, 94, 222, 0); }
+  /* Anillo del CTA en color de marca (sigue el knob --color-brand). */
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent-500) 50%, transparent); }
+  70% { box-shadow: 0 0 0 16px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-100%); }
+}
+
+/* Blobs decorativos animados solo en desktop (en mobile quedan estáticos). */
+@media (min-width: 768px) {
+  .animate-blob { animation: blob 20s ease-in-out infinite; }
+  .animate-blob-2 { animation: blob 26s ease-in-out infinite reverse; }
 }
 
 @media (prefers-reduced-motion: reduce) {

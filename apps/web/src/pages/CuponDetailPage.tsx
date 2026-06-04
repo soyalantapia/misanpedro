@@ -15,7 +15,7 @@ import { useCoupon } from '@/lib/couponsStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { CATEGORIAS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
 import { activationActions, useActivationByCoupon, useUser } from '@/lib/stores'
-import { formatHorariosSemana, formatVigencia } from '@/lib/format'
+import { formatHorariosSemana, formatVigencia, calcAhorro, formatMoney } from '@/lib/format'
 import { api, ApiError, tokens } from '@/lib/api'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 import { useToast } from '@/components/Toast'
@@ -95,6 +95,9 @@ export function CuponDetailPage() {
   }
 
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
+  const ahorroEstimado = coupon.precioReferencia
+    ? Math.round((coupon.precioReferencia * coupon.porcentaje) / 100)
+    : calcAhorro(coupon.porcentaje)
 
   async function handleActivate() {
     if (!coupon) return
@@ -150,7 +153,7 @@ export function CuponDetailPage() {
         <Link
           to="/"
           aria-label="Volver"
-          className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-fin-bg/80 text-fin-ink shadow-fin-card backdrop-blur transition-all hover:-translate-y-0.5"
+          className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-fin-bg text-fin-ink shadow-fin-card ring-1 ring-fin-line transition-all hover:-translate-y-0.5"
         >
           <ChevronLeft size={20} />
         </Link>
@@ -176,6 +179,11 @@ export function CuponDetailPage() {
           </h1>
           <p className="text-xs font-medium text-fin-soft">{formatVigencia(coupon.vigenciaHasta)}</p>
         </header>
+
+        <div className="rounded-2xl border border-fin-up/25 bg-fin-up/10 px-4 py-3.5">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-fin-soft">Con este cupón ahorrás</p>
+          <p className="text-2xl font-extrabold text-fin-up">~{formatMoney(ahorroEstimado)}</p>
+        </div>
 
         <Section title="Descripción" body={coupon.descripcion} />
         <Section title="Cómo usarlo" body={coupon.condiciones} />
@@ -279,7 +287,7 @@ function ShareButton({ title, text }: { title: string; text: string }) {
       type="button"
       onClick={handleShare}
       aria-label="Compartir descuento"
-      className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-fin-bg/80 text-fin-ink shadow-fin-card backdrop-blur transition-all hover:-translate-y-0.5 hover:text-fin-lime"
+      className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-fin-bg text-fin-ink shadow-fin-card ring-1 ring-fin-line transition-all hover:-translate-y-0.5 hover:text-fin-lime"
     >
       {copied ? <span className="text-xs font-bold">✓</span> : <Share2 size={18} />}
     </button>

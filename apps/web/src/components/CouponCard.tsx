@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
 import { CardImage } from './CardImage'
 import { CATEGORIAS, type Coupon, type Merchant } from '@/lib/types'
-import { formatVigencia, distanceLabel } from '@/lib/format'
+import { formatVigencia, distanceLabel, calcAhorro, formatMoney } from '@/lib/format'
 
 export function CouponCard({
   coupon,
@@ -16,6 +16,9 @@ export function CouponCard({
   index?: number
 }) {
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
+  const ahorro = coupon.precioReferencia
+    ? Math.round((coupon.precioReferencia * coupon.porcentaje) / 100)
+    : calcAhorro(coupon.porcentaje)
   return (
     <Link
       to={`/cupon/${coupon.id}`}
@@ -28,12 +31,12 @@ export function CouponCard({
           coverImageUrl={coupon.imagenUrl ?? merchant.coverImageUrl}
           className="h-36 w-full"
         />
-        <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-fin-bg/80 px-3 py-1 font-bold text-fin-lime shadow-fin-card backdrop-blur-md ring-1 ring-fin-lime/30">
+        <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-fin-bg px-3 py-1.5 font-bold text-fin-lime shadow-floating ring-1 ring-fin-line">
           <span className="text-base tabular-nums">{coupon.porcentaje}%</span>
           <span className="ml-1 text-[10px] font-extrabold tracking-widest">OFF</span>
         </span>
         {distanceKm !== undefined && (
-          <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-fin-bg/75 px-2.5 py-1 text-[11px] font-semibold text-fin-ink backdrop-blur-md">
+          <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-fin-bg px-2.5 py-1 text-[11px] font-semibold text-fin-ink shadow-fin-card ring-1 ring-fin-line">
             <MapPin size={11} />
             {distanceLabel(distanceKm)}
           </span>
@@ -44,6 +47,7 @@ export function CouponCard({
           {cat} · {merchant.nombre}
         </p>
         <h3 className="text-base font-bold leading-tight text-fin-ink">{coupon.titulo}</h3>
+        <p className="text-sm font-extrabold text-fin-up">Ahorrás ~{formatMoney(ahorro)}</p>
         <p className="mt-auto text-xs font-medium text-fin-soft">
           {formatVigencia(coupon.vigenciaHasta)}
         </p>

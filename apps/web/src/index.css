@@ -25,17 +25,18 @@
   --color-neutral-900: #333132;
   --color-neutral-950: #272526;
 
-  /* Brand accent — violet Deenex (#695EDE) */
-  --color-accent-50: #f0eefd;
-  --color-accent-100: #e0ddfb;
-  --color-accent-200: #c1bcf7;
-  --color-accent-300: #9d96f1;
-  --color-accent-400: #7e74e7;
-  --color-accent-500: #695ede;
-  --color-accent-600: #5347c8;
-  --color-accent-700: #4239a3;
-  --color-accent-800: #332b80;
-  --color-accent-900: #231d5e;
+  /* Brand accent — escala DERIVADA del único knob --color-brand (más abajo).
+     NO tocar estos valores: cambiá --color-brand y toda la escala se recalcula. */
+  --color-accent-50: color-mix(in srgb, var(--color-brand) 8%, white);
+  --color-accent-100: color-mix(in srgb, var(--color-brand) 15%, white);
+  --color-accent-200: color-mix(in srgb, var(--color-brand) 30%, white);
+  --color-accent-300: color-mix(in srgb, var(--color-brand) 50%, white);
+  --color-accent-400: color-mix(in srgb, var(--color-brand) 74%, white);
+  --color-accent-500: var(--color-brand);
+  --color-accent-600: color-mix(in srgb, var(--color-brand), black 15%);
+  --color-accent-700: color-mix(in srgb, var(--color-brand), black 33%);
+  --color-accent-800: color-mix(in srgb, var(--color-brand), black 48%);
+  --color-accent-900: color-mix(in srgb, var(--color-brand), black 62%);
 
   /* Categorías (semánticas, no brand) */
   --color-cat-bebida: #0ea5e9;
@@ -90,11 +91,14 @@
          nunca hex sueltos ni escalas como `accent-500`.
        - `fin-*` queda como alias por compatibilidad con el vecino.
      ───────────────────────────────────────────────────────────── */
-  /* Marca (verde "club de ahorro") */
-  --color-brand: #5db800;
-  --color-brand-strong: #4ea000;
-  --color-brand-soft: #eaf7dd;
-  --color-on-brand: #ffffff;
+  /* ━━━ EL ÚNICO KNOB DE COLOR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Cambiá SOLO esta línea (un hex) y se re-tematiza TODO (vecino +
+     admin): escala accent, sombras, texturas y pines. */
+  --color-brand: #ea580c;
+  /* derivados — NO tocar (salen de --color-brand vía color-mix) */
+  --color-brand-strong: color-mix(in srgb, var(--color-brand), black 18%);
+  --color-brand-soft: color-mix(in srgb, var(--color-brand) 14%, white);
+  --color-on-brand: #ffffff; /* texto sobre la marca; si probás un color CLARO, poné un ink oscuro (#0f1923) */
 
   /* Superficies */
   --color-bg: #ffffff;
@@ -113,8 +117,8 @@
   --color-danger: #e11d48;
 
   /* Sombras semánticas */
-  --shadow-brand-glow: 0 0 0 1px rgba(93, 184, 0, 0.18),
-    0 8px 24px -8px rgba(93, 184, 0, 0.22);
+  --shadow-brand-glow: 0 0 0 1px color-mix(in srgb, var(--color-brand) 18%, transparent),
+    0 8px 24px -8px color-mix(in srgb, var(--color-brand) 22%, transparent);
   --shadow-surface-card: 0 1px 3px rgba(15, 25, 35, 0.06),
     0 4px 16px -4px rgba(15, 25, 35, 0.08);
 
@@ -122,7 +126,7 @@
      (antes glow violet). Mantiene la utility `shadow-cta` que ya
      se usa en cientos de lugares del admin viejo. */
   --shadow-cta: 0 1px 2px rgba(15, 15, 15, 0.06),
-    0 8px 16px -8px rgba(93, 184, 0, 0.5);
+    0 8px 16px -8px color-mix(in srgb, var(--color-brand) 50%, transparent);
 
   /* ── Alias `fin-*` (compatibilidad del vecino) ─────────────────
      Mapeamos cada token del vecino al semántico. Tailwind v4 acepta
@@ -422,15 +426,15 @@ input:focus-visible {
 
 /* Textura sutil de puntos para superficies claras (hero/wallet). */
 .bg-fin-grid {
-  background-image: radial-gradient(rgba(93, 184, 0, 0.10) 1px, transparent 1px);
+  background-image: radial-gradient(color-mix(in srgb, var(--color-brand) 10%, transparent) 1px, transparent 1px);
   background-size: 22px 22px;
 }
 
 /* Mesh de acento para el héroe del ahorro (light). */
 .bg-fin-mesh {
   background-image:
-    radial-gradient(ellipse at top right, rgba(93, 184, 0, 0.10), transparent 55%),
-    radial-gradient(ellipse at bottom left, rgba(83, 71, 200, 0.07), transparent 55%);
+    radial-gradient(ellipse at top right, color-mix(in srgb, var(--color-brand) 10%, transparent), transparent 55%),
+    radial-gradient(ellipse at bottom left, color-mix(in srgb, var(--color-brand-strong) 8%, transparent), transparent 55%);
 }
 
 @keyframes count-pop {
