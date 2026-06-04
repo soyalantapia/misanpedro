@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MiSanPedro — Manual de Marca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#ea580c; --brand-l:#fb8a3c; --brand-d:#c2410c;
+    --ink:#17161f; --black:#0d0c13; --soft:#6f6c7c; --faint:#9c99a6;
+    --line:#e4e3ea; --bg:#f4f4f6; --green:#059669;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5}
+  .page{max-width:980px;margin:0 auto;padding:0 24px}
+  section{padding:64px 0;border-top:1px solid var(--line)}
+  section:first-of-type{border-top:none}
+  .kicker{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.16em;color:var(--brand)}
+  h2{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:8px 0 6px}
+  h3{font-size:15px;font-weight:800;letter-spacing:.02em;margin:0 0 10px;text-transform:uppercase;color:var(--soft);font-size:12px;letter-spacing:.12em}
+  p{color:#3a3845;font-size:15px;max-width:62ch}
+  .lead{font-size:17px;color:#3a3845}
+  .wm{font-family:'Manrope';font-weight:800;letter-spacing:-.035em}
+  .wm .mi{color:var(--brand)}
+  .wm.dk{color:#fff}
+  .lock{display:inline-flex;align-items:center;gap:14px}
+  .lock.stack{flex-direction:column;gap:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .box{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px;display:flex;align-items:center;justify-content:center}
+  .box.dk{background:var(--ink);border-color:#2a2933}
+  .cap{font-size:12px;color:var(--soft);margin-top:8px;text-align:center}
+  svg{display:block}
+  /* cover */
+  .cover{min-height:62vh;display:flex;flex-direction:column;justify-content:center;gap:22px;padding:80px 0 40px}
+  .cover .big{font-size:clamp(38px,7vw,64px);font-weight:800;letter-spacing:-.03em;line-height:1}
+  .toc{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;font-weight:600}
+  .toc a{color:var(--soft);text-decoration:none}.toc a:hover{color:var(--brand)}
+  /* swatches */
+  .sw{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#fff}
+  .sw .chip{height:90px}
+  .sw .meta{padding:12px 14px}
+  .sw .nm{font-weight:800;font-size:14px}
+  .sw .cd{font-size:12px;color:var(--soft);font-family:'Sora',monospace;margin-top:3px;line-height:1.5}
+  /* type */
+  .type-spec{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+  .aa{font-family:'Manrope';font-weight:800;font-size:54px;line-height:1}
+  .weights span{display:inline-block;margin-right:14px;font-size:20px}
+  /* clearspace */
+  .cs{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:38px;display:flex;justify-content:center}
+  .cs .guide{position:absolute;border:1px dashed #f0b78c}
+  /* dont */
+  .dont{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px;display:flex;align-items:center;justify-content:center;min-height:120px;overflow:hidden}
+  .dont .x{position:absolute;top:10px;right:12px;width:24px;height:24px;border-radius:50%;background:#e11d48;color:#fff;font-weight:800;display:grid;place-items:center;font-size:14px}
+  .ok .x{background:var(--green)}
+  .badge{display:inline-block;font-size:11px;font-weight:800;color:#fff;background:var(--brand);border-radius:20px;padding:3px 10px}
+  .note{font-size:12px;color:var(--soft);margin-top:6px}
+  .dl{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;text-decoration:none;color:var(--ink);font-weight:700;font-size:13px}
+  .dl:hover{border-color:var(--brand)}
+  .row{display:flex;flex-wrap:wrap;gap:12px}
+  @media(max-width:680px){.grid2,.grid3,.grid4{grid-template-columns:1fr 1fr}.aa{font-size:40px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- COVER -->
+  <header class="cover">
+    <span class="lock" style="font-size:34px">
+      <svg width="60" height="60" viewBox="0 0 64 64"><defs><linearGradient id="cv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#cv)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round" opacity=".85"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg>
+      <span class="wm"><span class="mi">Mi</span>SanPedro</span>
+    </span>
+    <div>
+      <div class="kicker">Manual de marca · v1.0 · 2026</div>
+      <div class="big">El club de ahorro<br>de San Pedro.</div>
+    </div>
+    <p class="lead">Esta guía define cómo se ve y suena MiSanPedro. Seguirla mantiene la marca consistente, reconocible y confiable en todos lados — del feed de Instagram al sello en la puerta del comercio.</p>
+    <nav class="toc">
+      <a href="#marca">01 La marca</a><a href="#logo">02 Logotipo</a><a href="#versiones">03 Versiones</a>
+      <a href="#area">04 Construcción</a><a href="#minimo">05 Tamaño mínimo</a><a href="#dont">06 Usos incorrectos</a>
+      <a href="#color">07 Color</a><a href="#tipo">08 Tipografía</a><a href="#sello">09 El sello</a>
+      <a href="#voz">10 Tono de voz</a><a href="#apps">11 Aplicaciones</a><a href="#dl">12 Descargas</a>
+    </nav>
+  </header>
+
+  <!-- 01 LA MARCA -->
+  <section id="marca">
+    <div class="kicker">01</div><h2>La marca</h2>
+    <p class="lead">MiSanPedro es <b>el club de ahorro de San Pedro</b>: una app gratis donde el vecino encuentra descuentos reales en los comercios de siempre, y los comercios traen clientes que vuelven.</p>
+    <div class="grid2" style="margin-top:24px">
+      <div class="box" style="flex-direction:column;align-items:flex-start;gap:6px">
+        <h3>Descriptor</h3>
+        <div style="font-family:'Sora';font-weight:700;font-size:22px">El club de ahorro de San Pedro</div>
+      </div>
+      <div class="box" style="flex-direction:column;align-items:flex-start;gap:6px">
+        <h3>Tagline</h3>
+        <div style="font-family:'Sora';font-weight:700;font-size:22px">Tu plata <span style="color:var(--brand)">rinde más</span></div>
+      </div>
+    </div>
+    <p style="margin-top:20px"><b>Personalidad:</b> cercana, honesta y digna. Hablamos de igual a igual con el vecino, sin tecnicismos y sin hacerlo sentir “pobre”. El ahorro es algo inteligente, no una limosna.</p>
+  </section>
+
+  <!-- 02 LOGOTIPO -->
+  <section id="logo">
+    <div class="kicker">02</div><h2>Logotipo</h2>
+    <p>El logo combina un <b>isotipo de cupón</b> (sello redondo) con el <b>wordmark MiSanPedro</b>. Van siempre juntos. El isotipo puede usarse solo en espacios chicos o como sello/sticker.</p>
+    <div class="box" style="margin-top:24px;padding:48px">
+      <span class="lock" style="font-size:46px">
+        <svg width="82" height="82" viewBox="0 0 64 64"><defs><linearGradient id="l2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#l2)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round" opacity=".85"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg>
+        <span class="wm"><span class="mi">Mi</span>SanPedro</span>
+      </span>
+    </div>
+    <div class="grid2" style="margin-top:16px">
+      <div>
+        <h3>Isotipo — el sello</h3>
+        <p style="font-size:14px">Un cupón redondo con perforado y “%”. Es el corazón de la marca: dice “descuento” al instante y funciona como sello físico.</p>
+      </div>
+      <div>
+        <h3>Wordmark — MiSanPedro</h3>
+        <p style="font-size:14px">Siempre <b>todo junto</b> (una sola palabra). <b>“Mi” en naranja</b> <span style="color:var(--brand)">#ea580c</span>, <b>“SanPedro” en negro</b> <span style="color:var(--ink)">#17161f</span>. Nunca separar en “Mi San Pedro”.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 VERSIONES -->
+  <section id="versiones">
+    <div class="kicker">03</div><h2>Versiones</h2>
+    <p>Elegí la versión según el espacio y el fondo.</p>
+    <div class="grid3" style="margin-top:24px">
+      <div><div class="box" style="height:130px"><span class="lock"><svg width="40" height="40" viewBox="0 0 64 64"><defs><linearGradient id="v1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#v1)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span class="wm" style="font-size:22px"><span class="mi">Mi</span>SanPedro</span></span></div><div class="cap">Horizontal (principal)</div></div>
+      <div><div class="box" style="height:130px"><span class="lock stack"><svg width="40" height="40" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="url(#v1)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span class="wm" style="font-size:19px"><span class="mi">Mi</span>SanPedro</span></span></div><div class="cap">Apilado</div></div>
+      <div><div class="box" style="height:130px"><svg width="58" height="58" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="url(#v1)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg></div><div class="cap">Solo isotipo</div></div>
+      <div><div class="box dk" style="height:130px"><span class="lock"><svg width="40" height="40" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="url(#v1)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span class="wm dk" style="font-size:22px"><span class="mi">Mi</span>SanPedro</span></span></div><div class="cap">Negativo (fondo oscuro)</div></div>
+      <div><div class="box" style="height:130px"><span class="lock"><svg width="40" height="40" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#17161f"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round" opacity=".6"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span class="wm" style="font-size:22px;color:#17161f">MiSanPedro</span></span></div><div class="cap">Monocromo (1 tinta)</div></div>
+      <div><div class="box dk" style="height:130px;background:#fff"><span class="lock"><svg width="40" height="40" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="none" stroke="#ea580c" stroke-width="3"/><circle cx="32" cy="32" r="22" fill="none" stroke="#ea580c" stroke-width="1.6" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#ea580c" text-anchor="middle">%</text></svg><span class="wm" style="font-size:22px"><span class="mi">Mi</span>SanPedro</span></span></div><div class="cap">Outline (sobre foto clara)</div></div>
+    </div>
+  </section>
+
+  <!-- 04 CONSTRUCCION / AREA -->
+  <section id="area">
+    <div class="kicker">04</div><h2>Construcción y área de protección</h2>
+    <p>Definimos <b>X = el diámetro del sello</b>. Dejá un margen mínimo de <b>½ X</b> libre de otros elementos alrededor del logo. Nunca lo apretes contra bordes ni textos.</p>
+    <div class="cs" style="margin-top:24px">
+      <div class="guide" style="inset:18px"></div>
+      <span class="lock" style="padding:22px">
+        <svg width="48" height="48" viewBox="0 0 64 64"><defs><linearGradient id="cs1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#cs1)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg>
+        <span class="wm" style="font-size:28px"><span class="mi">Mi</span>SanPedro</span>
+      </span>
+    </div>
+    <p class="note">La línea punteada marca el área de protección (½ X). El logo nunca invade esa zona.</p>
+  </section>
+
+  <!-- 05 MINIMO -->
+  <section id="minimo">
+    <div class="kicker">05</div><h2>Tamaño mínimo</h2>
+    <p>Por debajo de estos tamaños el logo pierde legibilidad. Si no entra, usá <b>solo el isotipo</b>.</p>
+    <div class="grid2" style="margin-top:24px">
+      <div class="box" style="gap:18px"><span class="lock"><svg width="22" height="22" viewBox="0 0 64 64"><defs><linearGradient id="m1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#m1)"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span class="wm" style="font-size:13px"><span class="mi">Mi</span>SanPedro</span></span><span class="cap" style="margin:0">Lockup · mín. 120px / 28mm de ancho</span></div>
+      <div class="box" style="gap:18px"><svg width="16" height="16" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="url(#m1)"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span class="cap" style="margin:0">Isotipo (favicon) · mín. 16px</span></div>
+    </div>
+  </section>
+
+  <!-- 06 USOS INCORRECTOS -->
+  <section id="dont">
+    <div class="kicker">06</div><h2>Usos incorrectos</h2>
+    <p>El logo se respeta tal cual. Estos errores rompen la marca:</p>
+    <div class="grid3" style="margin-top:24px">
+      <div><div class="dont"><span class="x">✕</span><span class="lock" style="transform:scaleX(1.5)"><svg width="34" height="34" viewBox="0 0 64 64"><defs><linearGradient id="d1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#d1)"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span class="wm" style="font-size:18px"><span class="mi">Mi</span>SanPedro</span></span></div><div class="cap">No deformar / estirar</div></div>
+      <div><div class="dont"><span class="x">✕</span><span class="lock"><svg width="34" height="34" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#5347c8"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span class="wm" style="font-size:18px;color:#5347c8">MiSanPedro</span></span></div><div class="cap">No recolorear</div></div>
+      <div><div class="dont"><span class="x">✕</span><span class="lock" style="transform:rotate(-12deg)"><svg width="34" height="34" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="url(#d1)"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span class="wm" style="font-size:18px"><span class="mi">Mi</span>SanPedro</span></span></div><div class="cap">No rotar</div></div>
+      <div><div class="dont"><span class="x">✕</span><span class="lock"><svg width="34" height="34" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="url(#d1)"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span class="wm" style="font-size:18px"><span class="mi">Mi</span> San Pedro</span></span></div><div class="cap">No separar el wordmark</div></div>
+      <div><div class="dont"><span class="x">✕</span><span class="lock" style="font-style:italic;font-family:Georgia,serif"><svg width="34" height="34" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="url(#d1)"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span style="font-size:18px;font-weight:700"><span style="color:#ea580c">Mi</span>SanPedro</span></span></div><div class="cap">No cambiar la tipografía</div></div>
+      <div><div class="dont" style="background:#e9d8c8"><span class="x">✕</span><span class="lock"><svg width="34" height="34" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="url(#d1)"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg><span class="wm" style="font-size:18px"><span class="mi">Mi</span>SanPedro</span></span></div><div class="cap">No usar sobre fondo de bajo contraste</div></div>
+    </div>
+  </section>
+
+  <!-- 07 COLOR -->
+  <section id="color">
+    <div class="kicker">07</div><h2>Color</h2>
+    <p>El <b>naranja</b> es la marca y la acción. El <b>verde</b> es exclusivo del ahorro (“Ahorrás ~$X”). Los neutros son la estructura.</p>
+    <h3 style="margin-top:24px">Primarios</h3>
+    <div class="grid4">
+      <div class="sw"><div class="chip" style="background:linear-gradient(135deg,#fb8a3c,#ea580c)"></div><div class="meta"><div class="nm">Naranja marca</div><div class="cd">HEX #EA580C<br>RGB 234 88 12<br>degradé #FB8A3C→#EA580C</div></div></div>
+      <div class="sw"><div class="chip" style="background:#17161f"></div><div class="meta"><div class="nm">Negro / Tinta</div><div class="cd">HEX #17161F<br>RGB 23 22 31</div></div></div>
+      <div class="sw"><div class="chip" style="background:#059669"></div><div class="meta"><div class="nm">Verde ahorro</div><div class="cd">HEX #059669<br>RGB 5 150 105</div></div></div>
+      <div class="sw"><div class="chip" style="background:#ffffff;border-bottom:1px solid var(--line)"></div><div class="meta"><div class="nm">Blanco</div><div class="cd">HEX #FFFFFF<br>RGB 255 255 255</div></div></div>
+    </div>
+    <h3 style="margin-top:28px">Neutros (estructura)</h3>
+    <div class="grid4">
+      <div class="sw"><div class="chip" style="background:#f8f8fa;border-bottom:1px solid var(--line)"></div><div class="meta"><div class="nm">Neutral 50</div><div class="cd">#F8F8FA</div></div></div>
+      <div class="sw"><div class="chip" style="background:#e4e3ea"></div><div class="meta"><div class="nm">Neutral 200</div><div class="cd">#E4E3EA</div></div></div>
+      <div class="sw"><div class="chip" style="background:#9c99a6"></div><div class="meta"><div class="nm">Neutral 400</div><div class="cd">#9C99A6</div></div></div>
+      <div class="sw"><div class="chip" style="background:#6f6c7c"></div><div class="meta"><div class="nm">Neutral 500</div><div class="cd">#6F6C7C</div></div></div>
+    </div>
+    <p class="note">Regla: el naranja se reserva para marca, botones y acentos. El verde NO se usa de decoración — solo comunica ahorro.</p>
+  </section>
+
+  <!-- 08 TIPOGRAFIA -->
+  <section id="tipo">
+    <div class="kicker">08</div><h2>Tipografía</h2>
+    <div class="grid2" style="margin-top:22px;align-items:start">
+      <div class="type-spec">
+        <div class="aa">Aa</div>
+        <div style="font-weight:800;font-size:20px;margin-top:10px">Manrope</div>
+        <div class="note">Titulares, wordmark y UI. Pesos: 800 (black), 700, 600, 500, 400.</div>
+        <div class="weights" style="margin-top:14px">
+          <span style="font-weight:800">Aa</span><span style="font-weight:700">Aa</span><span style="font-weight:600">Aa</span><span style="font-weight:400">Aa</span>
+        </div>
+      </div>
+      <div class="type-spec">
+        <div class="aa" style="font-family:'Sora'">%</div>
+        <div style="font-weight:800;font-size:20px;margin-top:10px;font-family:'Sora'">Sora</div>
+        <div class="note">Acento del isotipo (el “%”) y números destacados. Peso 800/700.</div>
+        <div style="margin-top:14px;font-family:'Sora';font-weight:800;font-size:24px;color:var(--brand)">−25% · 2x1</div>
+      </div>
+    </div>
+    <h3 style="margin-top:28px">Jerarquía</h3>
+    <div class="type-spec">
+      <div style="font-family:'Manrope';font-weight:800;font-size:34px;letter-spacing:-.02em">Tu plata rinde más</div>
+      <div style="font-weight:700;font-size:19px;margin-top:10px">Subtítulo en Manrope 700</div>
+      <div style="font-size:15px;color:#3a3845;margin-top:8px">Cuerpo en Manrope 400/500. Cómodo de leer en celular, sin tecnicismos.</div>
+    </div>
+    <p class="note">En la app y la web se usa la <b>system font</b> por performance (celular de gama baja). Manrope/Sora se reservan para piezas de marca (placas, cartelería, presentaciones).</p>
+  </section>
+
+  <!-- 09 EL SELLO -->
+  <section id="sello">
+    <div class="kicker">09</div><h2>El sello como recurso</h2>
+    <p>Más allá del logo, el sello es un <b>elemento gráfico</b>: úsalo como sticker en redes, watermark sobre fotos, y como <b>calco físico en la puerta del comercio</b> (“Comercio adherido”). El perforado del borde puede convertirse en textura/patrón.</p>
+    <div class="grid3" style="margin-top:24px">
+      <div class="box dk" style="height:140px"><svg width="78" height="78" viewBox="0 0 64 64"><defs><linearGradient id="se1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#se1)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg></div>
+      <div class="box" style="height:140px"><svg width="78" height="78" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#fff" stroke="#ea580c" stroke-width="2"/><circle cx="32" cy="32" r="22" fill="none" stroke="#ea580c" stroke-width="1.6" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#ea580c" text-anchor="middle">%</text></svg></div>
+      <div class="box" style="height:140px;background:linear-gradient(135deg,#fb8a3c,#ea580c)"><svg width="78" height="78" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#fff"/><circle cx="32" cy="32" r="22" fill="none" stroke="#ea580c" stroke-width="1.6" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#ea580c" text-anchor="middle">%</text></svg></div>
+    </div>
+  </section>
+
+  <!-- 10 VOZ -->
+  <section id="voz">
+    <div class="kicker">10</div><h2>Tono de voz</h2>
+    <div class="grid2" style="margin-top:22px;align-items:start">
+      <div class="box ok" style="flex-direction:column;align-items:flex-start;gap:8px;padding:22px"><span class="x" style="position:static;width:auto;height:auto;border-radius:8px;padding:3px 10px;font-size:12px">SÍ</span>
+        <ul style="margin:6px 0 0;padding-left:18px;font-size:14px;color:#3a3845;line-height:1.7">
+          <li>Rioplatense, cercano: “tu plata”, “el mandado”, “lo de siempre”.</li>
+          <li>Digno: decir <b>“tu ciudad”</b>, nunca “pueblo”.</li>
+          <li>Concreto: “Ahorrás ~$1.200”, no “grandes beneficios”.</li>
+          <li>Siempre <b>“comercios”</b> / “comercios adheridos”.</li>
+        </ul>
+      </div>
+      <div class="box" style="flex-direction:column;align-items:flex-start;gap:8px;padding:22px;border-color:#f3c0cb"><span style="background:#e11d48;color:#fff;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:800">NO</span>
+        <ul style="margin:6px 0 0;padding-left:18px;font-size:14px;color:#3a3845;line-height:1.7">
+          <li>Nada <b>trucho</b>: cero testimonios o comercios falsos.</li>
+          <li>Nunca la palabra <b>“fundador”</b>.</li>
+          <li>Sin tecnicismos ni inglés innecesario.</li>
+          <li>No prometer lo que no se cumple.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 APLICACIONES -->
+  <section id="apps">
+    <div class="kicker">11</div><h2>Aplicaciones</h2>
+    <p>El logo probado en contexto — app icon, redes, WhatsApp, sello en la puerta, cartelería, remera del street team y plancha de calcos.</p>
+    <div class="row" style="margin-top:18px">
+      <a class="dl" href="logo-contexto.html">Ver aplicaciones (1) →</a>
+      <a class="dl" href="logo-contexto-2.html">Ver aplicaciones (2) →</a>
+      <a class="dl" href="index.html">Todos los boards →</a>
+    </div>
+  </section>
+
+  <!-- 12 DESCARGAS -->
+  <section id="dl" style="padding-bottom:80px">
+    <div class="kicker">12</div><h2>Descargas</h2>
+    <p>Archivos vectoriales (SVG) de la marca:</p>
+    <div class="row" style="margin-top:18px">
+      <a class="dl" href="isotipo-sello.svg" download>⬇ Isotipo · sello (SVG)</a>
+      <a class="dl" href="isotipo-cupon.svg" download>⬇ Isotipo · cupón cuadrado (SVG)</a>
+    </div>
+    <p class="note" style="margin-top:18px">El lockup vive como componente React (<code>Logo.tsx</code>) y sigue el color de marca automáticamente. Para imprenta, vectorizar el wordmark (outlines) antes de exportar.</p>
+    <p class="note" style="margin-top:36px;border-top:1px solid var(--line);padding-top:24px">MiSanPedro · Manual de marca v1.0 · El club de ahorro de San Pedro</p>
+  </section>
+
+</div>
+</body>
+</html>
