@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi San Pedro — Exploración de logo (cupón)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#ea580c; --brand-d:#c2410c; --brand-l:#fb8a3c;
+    --ink:#17161f; --soft:#6f6c7c; --line:#e4e3ea; --green:#059669; --bg:#f8f8fa;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:40px 28px 80px}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px}
+  .sub{color:var(--soft);font-size:14px;margin:0 0 32px}
+  h2{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--soft);margin:40px 0 16px;border-top:1px solid var(--line);padding-top:24px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .card .tag{font-size:11px;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:.08em}
+  .dark{background:var(--ink);border-color:#2a2933}
+  .dark .tag{color:#9c99a6}
+  .lockrow{display:flex;flex-direction:column;gap:14px}
+  .lock{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px 30px;display:flex;align-items:center;gap:30px;flex-wrap:wrap}
+  .lock.dark{background:var(--ink);border-color:#2a2933}
+  /* Wordmark */
+  .wm{font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-.02em;font-size:30px;line-height:1;color:var(--ink);white-space:nowrap}
+  .wm .mi{color:var(--brand)}
+  .wm.on-dark{color:#fff}
+  .wm.sora{font-family:'Sora',sans-serif;font-weight:700}
+  .lockup{display:inline-flex;align-items:center;gap:14px}
+  .lockup.stack{flex-direction:column;gap:12px}
+  .lockup.stack .wm{font-size:24px}
+  .mono{font-size:11px;color:var(--soft)}
+  svg{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mi San Pedro — Logo (isotipo de cupón)</h1>
+  <p class="sub">Varias versiones del isotipo de cupón + el lockup con "Mi San Pedro". Elegí el cupón y el armado que más te gusten y los pulimos.</p>
+
+  <!-- =================== ISOTIPOS =================== -->
+  <h2>1 · Isotipos de cupón (elegí el estilo)</h2>
+  <div class="grid">
+
+    <!-- A: cupón sólido + % -->
+    <div class="card">
+      <svg width="84" height="84" viewBox="0 0 64 64">
+        <defs>
+          <linearGradient id="gA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mA"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask>
+        </defs>
+        <rect width="64" height="64" rx="15" fill="url(#gA)" mask="url(#mA)"/>
+        <line x1="44" y1="11" x2="44" y2="53" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".8"/>
+        <text x="23" y="41" font-family="Sora,sans-serif" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text>
+      </svg>
+      <span class="tag">A · sólido + %</span>
+    </div>
+
+    <!-- B: cupón sólido + M -->
+    <div class="card">
+      <svg width="84" height="84" viewBox="0 0 64 64">
+        <defs>
+          <linearGradient id="gB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mB"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="2" cy="32" r="6" fill="#000"/><circle cx="62" cy="32" r="6" fill="#000"/></mask>
+        </defs>
+        <rect width="64" height="64" rx="15" fill="url(#gB)" mask="url(#mB)"/>
+        <text x="32" y="43" font-family="Sora,sans-serif" font-weight="800" font-size="30" fill="#fff" text-anchor="middle">M</text>
+      </svg>
+      <span class="tag">B · sólido + M</span>
+    </div>
+
+    <!-- C: cupón outline + % -->
+    <div class="card">
+      <svg width="84" height="84" viewBox="0 0 64 64">
+        <defs>
+          <mask id="mC"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask>
+        </defs>
+        <g mask="url(#mC)">
+          <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#fff" stroke="#ea580c" stroke-width="3"/>
+        </g>
+        <line x1="44" y1="11" x2="44" y2="53" stroke="#ea580c" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".85"/>
+        <text x="23" y="41" font-family="Sora,sans-serif" font-weight="800" font-size="26" fill="#ea580c" text-anchor="middle">%</text>
+      </svg>
+      <span class="tag">C · outline + %</span>
+    </div>
+
+    <!-- D: cupón + check (ahorro, verde) -->
+    <div class="card">
+      <svg width="84" height="84" viewBox="0 0 64 64">
+        <defs>
+          <linearGradient id="gD" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mD"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask>
+        </defs>
+        <rect width="64" height="64" rx="15" fill="url(#gD)" mask="url(#mD)"/>
+        <line x1="44" y1="11" x2="44" y2="53" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".8"/>
+        <path d="M14 33 l6 6 l11 -13" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="tag">D · cupón + check</span>
+    </div>
+
+    <!-- E: cupón vertical + % (notches laterales) -->
+    <div class="card">
+      <svg width="84" height="84" viewBox="0 0 64 64">
+        <defs>
+          <linearGradient id="gE" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mE"><rect x="10" y="6" width="44" height="52" rx="11" fill="#fff"/><circle cx="10" cy="32" r="5" fill="#000"/><circle cx="54" cy="32" r="5" fill="#000"/></mask>
+        </defs>
+        <rect x="10" y="6" width="44" height="52" rx="11" fill="url(#gE)" mask="url(#mE)"/>
+        <line x1="18" y1="32" x2="46" y2="32" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".8"/>
+        <text x="32" y="27" font-family="Sora,sans-serif" font-weight="800" font-size="17" fill="#fff" text-anchor="middle">%</text>
+        <text x="32" y="50" font-family="Sora,sans-serif" font-weight="800" font-size="11" fill="#fff" text-anchor="middle" opacity=".9">OFF</text>
+      </svg>
+      <span class="tag">E · vertical + % OFF</span>
+    </div>
+
+    <!-- F: cupón minimal, esquina doblada (sin letra) -->
+    <div class="card">
+      <svg width="84" height="84" viewBox="0 0 64 64">
+        <defs>
+          <linearGradient id="gF" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mF"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="2" cy="32" r="6" fill="#000"/><circle cx="62" cy="32" r="6" fill="#000"/></mask>
+        </defs>
+        <rect width="64" height="64" rx="15" fill="url(#gF)" mask="url(#mF)"/>
+        <circle cx="22" cy="32" r="3" fill="#fff"/>
+        <circle cx="32" cy="32" r="3" fill="#fff"/>
+        <circle cx="42" cy="32" r="3" fill="#fff"/>
+      </svg>
+      <span class="tag">F · minimal (3 puntos)</span>
+    </div>
+  </div>
+
+  <!-- =================== LOCKUPS =================== -->
+  <h2>2 · Lockup horizontal — isotipo + Mi San Pedro</h2>
+  <div class="lockrow">
+    <div class="lock">
+      <span class="lockup">
+        <svg width="52" height="52" viewBox="0 0 64 64">
+          <defs><linearGradient id="gL1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mL1"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask></defs>
+          <rect width="64" height="64" rx="15" fill="url(#gL1)" mask="url(#mL1)"/>
+          <line x1="44" y1="11" x2="44" y2="53" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".8"/>
+          <text x="23" y="41" font-family="Sora,sans-serif" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text>
+        </svg>
+        <span class="wm"><span class="mi">Mi</span> San Pedro</span>
+      </span>
+      <span class="tag">Cupón A + "Mi" en naranja</span>
+    </div>
+
+    <div class="lock">
+      <span class="lockup">
+        <svg width="52" height="52" viewBox="0 0 64 64">
+          <defs><linearGradient id="gL2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mL2"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="2" cy="32" r="6" fill="#000"/><circle cx="62" cy="32" r="6" fill="#000"/></mask></defs>
+          <rect width="64" height="64" rx="15" fill="url(#gL2)" mask="url(#mL2)"/>
+          <text x="32" y="43" font-family="Sora,sans-serif" font-weight="800" font-size="30" fill="#fff" text-anchor="middle">M</text>
+        </svg>
+        <span class="wm">Mi San Pedro</span>
+      </span>
+      <span class="tag">Cupón B (M) + wordmark dark</span>
+    </div>
+
+    <div class="lock">
+      <span class="lockup">
+        <svg width="52" height="52" viewBox="0 0 64 64">
+          <defs><mask id="mL3"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask></defs>
+          <g mask="url(#mL3)"><rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#fff" stroke="#ea580c" stroke-width="3"/></g>
+          <line x1="44" y1="11" x2="44" y2="53" stroke="#ea580c" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".85"/>
+          <text x="23" y="41" font-family="Sora,sans-serif" font-weight="800" font-size="26" fill="#ea580c" text-anchor="middle">%</text>
+        </svg>
+        <span class="wm sora">Mi San Pedro</span>
+      </span>
+      <span class="tag">Cupón C (outline) + wordmark Sora</span>
+    </div>
+  </div>
+
+  <!-- =================== DARK =================== -->
+  <h2>3 · Sobre fondo oscuro</h2>
+  <div class="lockrow">
+    <div class="lock dark">
+      <span class="lockup">
+        <svg width="52" height="52" viewBox="0 0 64 64">
+          <defs><linearGradient id="gD1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mD1"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask></defs>
+          <rect width="64" height="64" rx="15" fill="url(#gD1)" mask="url(#mD1)"/>
+          <line x1="44" y1="11" x2="44" y2="53" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".8"/>
+          <text x="23" y="41" font-family="Sora,sans-serif" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text>
+        </svg>
+        <span class="wm on-dark"><span class="mi">Mi</span> San Pedro</span>
+      </span>
+      <span class="tag">Lockup en negativo</span>
+    </div>
+  </div>
+
+  <!-- =================== STACK + FAVICON =================== -->
+  <h2>4 · Apilado · favicon · escala chica</h2>
+  <div class="grid">
+    <div class="card">
+      <span class="lockup stack">
+        <svg width="58" height="58" viewBox="0 0 64 64">
+          <defs><linearGradient id="gS1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mS1"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask></defs>
+          <rect width="64" height="64" rx="15" fill="url(#gS1)" mask="url(#mS1)"/>
+          <line x1="44" y1="11" x2="44" y2="53" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".8"/>
+          <text x="23" y="41" font-family="Sora,sans-serif" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text>
+        </svg>
+        <span class="wm"><span class="mi">Mi</span> San Pedro</span>
+      </span>
+      <span class="tag">Apilado (vertical)</span>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:16px">
+        <svg width="40" height="40" viewBox="0 0 64 64">
+          <defs><linearGradient id="gF1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mF1"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask></defs>
+          <rect width="64" height="64" rx="15" fill="url(#gF1)" mask="url(#mF1)"/>
+          <line x1="44" y1="11" x2="44" y2="53" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".8"/>
+          <text x="23" y="41" font-family="Sora,sans-serif" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text>
+        </svg>
+        <svg width="24" height="24" viewBox="0 0 64 64">
+          <defs><linearGradient id="gF2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mF2"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask></defs>
+          <rect width="64" height="64" rx="15" fill="url(#gF2)" mask="url(#mF2)"/>
+          <line x1="44" y1="11" x2="44" y2="53" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".8"/>
+          <text x="23" y="41" font-family="Sora,sans-serif" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text>
+        </svg>
+        <svg width="16" height="16" viewBox="0 0 64 64">
+          <defs><linearGradient id="gF3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient>
+          <mask id="mF3"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask></defs>
+          <rect width="64" height="64" rx="15" fill="url(#gF3)" mask="url(#mF3)"/>
+          <line x1="44" y1="11" x2="44" y2="53" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".8"/>
+          <text x="23" y="41" font-family="Sora,sans-serif" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text>
+        </svg>
+      </div>
+      <span class="tag">Favicon / escala (40·24·16px)</span>
+    </div>
+
+    <div class="card dark">
+      <span class="lockup stack">
+        <svg width="58" height="58" viewBox="0 0 64 64">
+          <defs><mask id="mMono"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask></defs>
+          <rect width="64" height="64" rx="15" fill="#fff" mask="url(#mMono)"/>
+          <line x1="44" y1="11" x2="44" y2="53" stroke="#17161f" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" opacity=".5"/>
+          <text x="23" y="41" font-family="Sora,sans-serif" font-weight="800" font-size="26" fill="#17161f" text-anchor="middle">%</text>
+        </svg>
+        <span class="wm on-dark">Mi San Pedro</span>
+      </span>
+      <span class="tag">Monocromo (1 tinta)</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
