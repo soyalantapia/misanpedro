@@ -37,6 +37,9 @@ const PlanPage = lazy(() =>
 const PerfilPage = lazy(() =>
   import('@/pages/PerfilPage').then((m) => ({ default: m.PerfilPage })),
 )
+const AlertasPage = lazy(() =>
+  import('@/pages/AlertasPage').then((m) => ({ default: m.AlertasPage })),
+)
 const NotFoundPage = lazy(() =>
   import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
 )
@@ -159,6 +162,7 @@ export default function App() {
               <Route index element={<DescuentosPage />} />
               <Route path="mapa" element={<MapaPage />} />
               <Route path="canjeados" element={<CanjeadosPage />} />
+              <Route path="alertas" element={<AlertasPage />} />
               <Route path="perfil" element={<PerfilPage />} />
             </Route>
 

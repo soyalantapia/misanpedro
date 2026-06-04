@@ -1,15 +1,17 @@
 import { Outlet, NavLink, Link } from 'react-router-dom'
-import { Tag, Map, CheckCircle2, User } from 'lucide-react'
+import { Tag, Map, CheckCircle2, User, Bell } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { OfflineBanner } from '@/components/OfflineBanner'
 import { RedemptionWatcher } from '@/components/RedemptionWatcher'
 import { AlertsBell } from '@/components/AlertsBell'
 import { useTenant } from '@/lib/tenant'
 
+// Orden: Mapa · Canjeados · [Descuentos centro] · Alertas · Perfil
 const links = [
-  { to: '/', label: 'Descuentos', icon: Tag, end: true },
   { to: '/mapa', label: 'Mapa', icon: Map, end: false },
   { to: '/canjeados', label: 'Canjeados', icon: CheckCircle2, end: false },
+  { to: '/', label: 'Descuentos', icon: Tag, end: true },
+  { to: '/alertas', label: 'Alertas', icon: Bell, end: false },
   { to: '/perfil', label: 'Perfil', icon: User, end: false },
 ]
 
