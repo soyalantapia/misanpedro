@@ -11,7 +11,7 @@ const EJEMPLOS = [
 ] as const
 
 const PUNTOS = [
-  'Descuentos reales en comercios de necesidad',
+  'En la verdu, la carni, el almacén y la farmacia de todos los días',
   'En lo que comprás todas las semanas',
   'Se suma solo, sin que cambies nada',
 ] as const
@@ -26,9 +26,20 @@ export function AhorroTangible() {
             Un poco en cada compra. <span className="text-gradient">Un montón a fin de mes.</span>
           </h2>
           <p className="mt-6 text-pretty text-lg leading-relaxed text-neutral-600">
-            No es un descuento suelto: es ahorrar en todo lo que comprás cada semana. Sumá la verdu, la carne,
-            el pan, la farmacia… y mirá lo que te queda en el bolsillo.
+            La docena de facturas del domingo. El asado del finde. Los remedios del mes. La verdura de la
+            semana. En todo eso pagás menos — y a fin de mes se nota en el bolsillo.
           </p>
+          <div className="mt-7 flex flex-wrap items-center gap-x-7 gap-y-4">
+            <div>
+              <p className="text-3xl font-black text-accent-700 sm:text-4xl">Hasta 2x1</p>
+              <p className="mt-0.5 text-sm font-medium text-neutral-500">en los comercios de siempre</p>
+            </div>
+            <div className="hidden h-10 w-px bg-neutral-200 sm:block" />
+            <div>
+              <p className="text-3xl font-black text-accent-700 sm:text-4xl">Cada semana</p>
+              <p className="mt-0.5 text-sm font-medium text-neutral-500">descuentos nuevos</p>
+            </div>
+          </div>
           <ul className="mt-7 space-y-3">
             {PUNTOS.map((t) => (
               <li key={t} className="flex items-start gap-2.5 text-neutral-700">
@@ -43,7 +54,7 @@ export function AhorroTangible() {
             href={ENTER_URL}
             className="group mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-accent-500/50"
           >
-            Ver cuánto ahorrás
+            Entrá y mirá los descuentos
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
           </a>
         </AnimatedSection>

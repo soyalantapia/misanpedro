@@ -12,6 +12,20 @@ const APP_URL_RAW = import.meta.env.VITE_APP_URL ?? 'https://soyalantapia.github
 export const APP_URL = APP_URL_RAW.replace(/\/$/, '')
 
 // Home del vecino = catálogo de descuentos (HashRouter → /#/).
-export const ENTER_URL = `${APP_URL}/#/`
+// MEDICIÓN: reenvía las UTM/ref de la landing a la PWA, para atribuir qué comercio/QR/canal
+// trajo al vecino. El query va ANTES del hash para que la app lo lea desde location.search.
+function buildEnterUrl(): string {
+  if (typeof window === 'undefined') return `${APP_URL}/#/`
+  const incoming = new URLSearchParams(window.location.search)
+  const fwd = new URLSearchParams()
+  for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'ref']) {
+    const v = incoming.get(k)
+    if (v) fwd.set(k, v)
+  }
+  const qs = fwd.toString()
+  return qs ? `${APP_URL}/?${qs}#/` : `${APP_URL}/#/`
+}
+
+export const ENTER_URL = buildEnterUrl()
 
 export const SUPPORT_EMAIL = 'hola@misanpedro.app'

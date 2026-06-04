@@ -30,7 +30,7 @@ export function Nav() {
     <header
       className={[
         'sticky top-0 z-50 transition-all duration-300',
-        scrolled ? 'glass border-b border-neutral-200/70 shadow-sm' : 'bg-transparent',
+        scrolled ? 'border-b border-neutral-200/70 bg-white/95 shadow-sm' : 'bg-transparent',
       ].join(' ')}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-6">

@@ -12,7 +12,7 @@ const STEPS = [
     icon: Hash,
     n: '2',
     title: 'Mostrás tu código',
-    body: 'Te aparece un código. En la caja del local lo mostrás, así de simple.',
+    body: 'Te aparece un código para mostrar en la caja del local. La primera vez te pedimos un dato para identificarte; después, directo.',
   },
   {
     icon: Check,
@@ -53,6 +53,11 @@ export function HowItWorks() {
           </AnimatedSection>
         ))}
       </div>
+
+      <p className="mx-auto mt-12 max-w-xl text-center text-sm leading-relaxed text-neutral-500">
+        ¿Por qué te hacen el descuento? Porque al comercio le conviene que vuelvas. Vos pagás menos; ellos
+        te ganan como cliente. Ganan los dos.
+      </p>
     </section>
   )
 }

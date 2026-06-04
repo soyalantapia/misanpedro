@@ -3,7 +3,11 @@ import { AnimatedSection } from '@/components/AnimatedSection'
 
 const RAZONES = [
   { icon: Sparkles, title: 'Gratis, siempre', body: 'No pagás nada por usar la app. El que ahorra sos vos.' },
-  { icon: Heart, title: 'De acá', body: 'Comercios de San Pedro de verdad, los que ya conocés.' },
+  {
+    icon: Heart,
+    title: 'De acá, para acá',
+    body: 'Comercios de San Pedro de verdad. Sos parte del club de ahorro de tu ciudad.',
+  },
   {
     icon: BadgeCheck,
     title: 'Sin vueltas',
@@ -22,7 +26,7 @@ export function PorQue() {
       <AnimatedSection className="mx-auto max-w-2xl text-center">
         <span className="text-xs font-bold uppercase tracking-widest text-accent-700">Por qué Mi San Pedro</span>
         <h2 className="mt-4 text-balance text-[clamp(2rem,5vw,3.2rem)] font-black leading-[1.05] tracking-tight text-neutral-900">
-          Ahorrar, fácil y sin trampa
+          Sin trampa, como tiene que ser.
         </h2>
       </AnimatedSection>
 

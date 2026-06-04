@@ -6,8 +6,8 @@ export function FinalCTA() {
   return (
     <section className="px-5 pb-24 pt-8 sm:px-6 sm:pb-32">
       <AnimatedSection className="relative mx-auto max-w-5xl overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-accent-500 via-accent-600 to-accent-800 px-6 py-16 text-center text-white shadow-2xl shadow-accent-500/30 sm:px-12 sm:py-24">
-        <div className="animate-blob pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/15 blur-3xl" />
-        <div className="animate-blob-2 pointer-events-none absolute -bottom-20 right-0 h-72 w-72 rounded-full bg-accent-300/30 blur-3xl" />
+        <div aria-hidden className="animate-blob pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/15 blur-3xl" />
+        <div aria-hidden className="animate-blob-2 pointer-events-none absolute -bottom-20 right-0 h-72 w-72 rounded-full bg-accent-300/30 blur-3xl" />
         <div className="relative">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-widest ring-1 ring-white/25 backdrop-blur">
             <Sparkles size={11} /> Gratis para vecinos
