@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Deploys apps/web/dist a la rama gh-pages (root).
-// Preserva los subdirectorios /comercios/ (landing) y /vecino/ (landing-vecino).
+// Preserva /comercios/ (landing), /vecino/ (landing-vecino) y /logos/ (kit de marca).
 // Asume que ya corriste `pnpm --filter @misanpedro/web build`.
 
 import { execSync } from 'node:child_process'
@@ -12,7 +12,7 @@ const ROOT = process.cwd().endsWith('/apps/web')
   ? join(process.cwd(), '../..')
   : process.cwd()
 const DIST = join(ROOT, 'apps/web/dist')
-const PRESERVED_DIRS = ['comercios', 'vecino'] // landings viven acá, no las pises
+const PRESERVED_DIRS = ['comercios', 'vecino', 'logos'] // landings + kit de marca, no los pises
 
 if (!existsSync(DIST)) {
   console.error(`❌ No existe ${DIST}. Corré primero: pnpm --filter @misanpedro/web build`)
