@@ -253,8 +253,9 @@ export function PushToggle() {
         </button>
       </div>
       {pushState === 'denied' && (
-        <p className="mt-2 text-[11px] text-fin-danger">
-          Activá las notificaciones en los permisos del navegador para este sitio.
+        <p className="mt-2 text-[11px] text-fin-soft">
+          Las notificaciones están bloqueadas en tu navegador. Activalas desde los permisos del
+          sitio para recibir los avisos.
         </p>
       )}
       {pushMsg && <p className="mt-2 text-[11px] text-fin-soft">{pushMsg}</p>}

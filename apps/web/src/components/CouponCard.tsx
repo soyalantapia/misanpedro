@@ -9,16 +9,40 @@ export function CouponCard({
   merchant,
   distanceKm,
   index = 0,
+  compact = false,
 }: {
   coupon: Coupon
   merchant: Merchant
   distanceKm?: number
   index?: number
+  compact?: boolean
 }) {
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
   const ahorro = coupon.precioReferencia
     ? Math.round((coupon.precioReferencia * coupon.porcentaje) / 100)
     : calcAhorro(coupon.porcentaje)
+
+  // Variante compacta: en la página del comercio el rubro y el nombre ya están
+  // en el header → sin imagen repetida ni eyebrow redundante.
+  if (compact) {
+    return (
+      <Link
+        to={`/cupon/${coupon.id}`}
+        style={{ animationDelay: `${index * 60}ms` }}
+        className="animate-fade-up group flex items-center gap-3 rounded-2xl bg-fin-surface p-3 ring-1 ring-fin-line shadow-fin-card transition-all duration-200 hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-fin-lime"
+      >
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-fin-lime text-fin-bg shadow-fin-glow">
+          <span className="text-sm font-extrabold leading-none tabular-nums">{coupon.porcentaje}%</span>
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-sm font-bold leading-tight text-fin-ink">{coupon.titulo}</h3>
+          <p className="text-sm font-extrabold text-fin-up">Ahorrás ~{formatMoney(ahorro)}</p>
+          <p className="text-[11px] font-medium text-fin-soft">{formatVigencia(coupon.vigenciaHasta)}</p>
+        </div>
+      </Link>
+    )
+  }
+
   return (
     <Link
       to={`/cupon/${coupon.id}`}

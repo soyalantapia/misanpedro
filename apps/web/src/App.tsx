@@ -109,10 +109,10 @@ function PageSuspenseFallback() {
     <div
       role="status"
       aria-live="polite"
-      className="grid min-h-[60svh] place-items-center bg-primary-50"
+      className="grid min-h-[60svh] place-items-center bg-fin-bg"
     >
       <div className="flex flex-col items-center gap-3">
-        <div className="h-10 w-10 animate-pulse rounded-2xl bg-accent-100" />
+        <div className="h-10 w-10 animate-pulse rounded-2xl bg-fin-surface2" />
         <span className="sr-only">Cargando…</span>
       </div>
     </div>
@@ -160,6 +160,7 @@ export default function App() {
 
             <Route element={<AppShell />}>
               <Route index element={<DescuentosPage />} />
+              <Route path="locales" element={<DescuentosPage mode="locales" />} />
               <Route path="mapa" element={<MapaPage />} />
               <Route path="canjeados" element={<CanjeadosPage />} />
               <Route path="alertas" element={<AlertasPage />} />

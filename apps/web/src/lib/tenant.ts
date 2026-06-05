@@ -235,11 +235,9 @@ function applyBrandingToDom(t: TenantConfig) {
   if (t.brand?.accentColor) root.style.setProperty('--tenant-accent', t.brand.accentColor)
   // <title> dinámico
   if (t.nombre) document.title = `${t.nombre} · Descuentos del barrio`
-  // theme-color del manifest/safari
-  if (t.brand?.primaryColor) {
-    const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', t.brand.primaryColor)
-  }
+  // theme-color: lo fija el index.html con el naranja de marca. NO lo pisamos
+  // con brand.primaryColor del tenant (quedó stale en violeta y la app es
+  // single-knob: el color real sale de --color-brand en el build).
 }
 
 /**

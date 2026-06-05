@@ -256,9 +256,9 @@ export function MerchantDetailPage() {
               Este comercio no tiene descuentos activos en este momento.
             </p>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-2.5">
               {coupons.map((c, i) => (
-                <CouponCard key={c.id} coupon={c} merchant={merchant} index={i} />
+                <CouponCard key={c.id} coupon={c} merchant={merchant} index={i} compact />
               ))}
             </div>
           )}
@@ -284,7 +284,7 @@ export function MerchantDetailPage() {
             href={mapsUrl}
             target="_blank"
             rel="noreferrer noopener"
-            className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-fin-lime hover:text-fin-lime2"
+            className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-fin-lime2 hover:text-fin-ink"
           >
             Abrir en Google Maps <ExternalLink size={12} />
           </a>

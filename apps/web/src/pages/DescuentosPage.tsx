@@ -1,9 +1,9 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, MapPin, SlidersHorizontal, X, Sparkles } from 'lucide-react'
 import { MERCHANTS, getMerchant } from '@/data/mockData'
 import { useCoupons } from '@/lib/couponsStore'
-import { ViewToggle, type View } from '@/components/ViewToggle'
+import { type View } from '@/components/ViewToggle'
 import { CategoryChips } from '@/components/CategoryChips'
 import { CouponCard } from '@/components/CouponCard'
 import { MerchantCard } from '@/components/MerchantCard'
@@ -15,8 +15,6 @@ import { useApiMerchants, useApiCoupons } from '@/lib/apiQueries'
 import type { ApiMerchant, ApiCoupon } from '@/lib/api'
 import { SavingsWallet } from '@/components/features/SavingsWallet'
 import { OCASIONES } from '@/lib/ocasiones'
-
-const VIEW_KEY = 'misanpedro.view'
 
 /** Timestamp (ms) embebido en un ObjectId de Mongo — para ordenar "más nuevos". */
 function objectIdTime(id: string): number {
@@ -61,11 +59,9 @@ function apiCouponToLocal(c: ApiCoupon, merchantSlug: string): Coupon {
   }
 }
 
-export function DescuentosPage() {
-  const [view, setView] = useState<View>(() => {
-    if (typeof window === 'undefined') return 'descuento'
-    return window.localStorage.getItem(VIEW_KEY) === 'local' ? 'local' : 'descuento'
-  })
+export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'locales' }) {
+  // La vista la define la ruta: "/" = cupones, "/locales" = locales.
+  const view: View = mode === 'locales' ? 'local' : 'descuento'
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
   const [categoria, setCategoria] = useState<Categoria | null>(null)
@@ -102,10 +98,6 @@ export function DescuentosPage() {
       getMerchantById: getMerchant,
     }
   }, [apiMerchantsRes.data, apiCouponsRes.data, localCoupons])
-
-  useEffect(() => {
-    window.localStorage.setItem(VIEW_KEY, view)
-  }, [view])
 
   const userCoords = geo.status === 'granted' ? geo.coords : null
   const geoAvailable = geo.status === 'granted'
@@ -205,8 +197,15 @@ export function DescuentosPage() {
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 pt-5 pb-8 sm:px-6 sm:pt-8">
-      {/* Héroe: billetera de ahorro del vecino */}
-      <SavingsWallet />
+      {/* Héroe: billetera de ahorro del vecino (solo en Cupones) */}
+      {mode === 'cupones' && <SavingsWallet />}
+
+      {mode === 'locales' && (
+        <header className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight text-fin-ink">Locales</h1>
+          <p className="text-sm text-fin-soft">Comercios adheridos de San Pedro.</p>
+        </header>
+      )}
 
       {isGlobalEmpty ? (
         <EmptyState
@@ -218,27 +217,28 @@ export function DescuentosPage() {
         <>
           <SearchBar search={search} onSearch={setSearch} />
 
-          <ViewToggle value={view} onChange={setView} />
-
-          {/* Categorías + ubicación + filtros, todo en la misma fila */}
+          {/* Categorías a pantalla completa. Ubicación + Filtros ocultos por
+              ahora — se reubican más adelante (NO borrar). */}
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <CategoryChips selected={categoria} onChange={setCategoria} />
             </div>
-            <GeoButton state={geo.status} onRequest={requestGeo} />
-            <button
-              type="button"
-              onClick={() => setSheetOpen(true)}
-              className="relative inline-flex shrink-0 items-center gap-1.5 rounded-full bg-fin-surface2 px-3.5 py-2 text-xs font-bold text-fin-ink ring-1 ring-fin-line transition-all hover:-translate-y-0.5"
-            >
-              <SlidersHorizontal size={13} className="text-fin-lime" />
-              Filtros
-              {activeFilterCount > 0 && (
-                <span className="grid h-4 min-w-4 place-items-center rounded-full bg-fin-lime px-1 text-[10px] font-bold text-fin-bg">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
+            <div className="hidden">
+              <GeoButton state={geo.status} onRequest={requestGeo} />
+              <button
+                type="button"
+                onClick={() => setSheetOpen(true)}
+                className="relative inline-flex shrink-0 items-center gap-1.5 rounded-full bg-fin-surface2 px-3.5 py-2 text-xs font-bold text-fin-ink ring-1 ring-fin-line transition-all hover:-translate-y-0.5"
+              >
+                <SlidersHorizontal size={13} className="text-fin-lime" />
+                Filtros
+                {activeFilterCount > 0 && (
+                  <span className="grid h-4 min-w-4 place-items-center rounded-full bg-fin-lime px-1 text-[10px] font-bold text-fin-bg">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Chips de filtros activos (removibles) */}

@@ -79,7 +79,7 @@ function SavingsCta() {
 
 export function SavingsWallet() {
   const loggedIn = !!(tokens.get('user').access || tokens.get('user').refresh)
-  const { data } = useApiMyActivations('canjeado')
+  const { data } = useApiMyActivations('canjeado', loggedIn)
 
   if (!loggedIn) return <SavingsCta />
 

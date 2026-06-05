@@ -7,7 +7,6 @@ import {
   IdCard,
   Cake,
   ShieldCheck,
-  Download,
   Trash2,
   AlertTriangle,
   LogOut,
@@ -19,6 +18,8 @@ import { useUser, userActions, demoStoreActions } from '@/lib/stores'
 import { formatBirthdate } from '@/lib/format'
 import { useToast } from '@/components/Toast'
 import { SUPPORT_EMAIL, getSupportLink } from '@/lib/tenant'
+import { SavingsWallet } from '@/components/features/SavingsWallet'
+import { ClubCard } from '@/components/features/ClubCard'
 
 const SUPPORT = getSupportLink('Hola, necesito ayuda con mis datos en Mi San Pedro.')
 
@@ -26,34 +27,10 @@ export function PerfilPage() {
   const user = useUser()
   const navigate = useNavigate()
   const toast = useToast()
-  const [exporting, setExporting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   if (!user) return <Navigate to="/datos" replace />
-
-  async function handleExport() {
-    setExporting(true)
-    try {
-      const data = await habeasData.exportMyData()
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: 'application/json;charset=utf-8',
-      })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `mis-datos-misanpedro-${new Date().toISOString().slice(0, 10)}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-      toast.success('Listo', 'Tu archivo de datos personales está descargado.')
-    } catch (err) {
-      toast.error('No se pudo exportar', err instanceof ApiError ? err.message : 'Sin conexión')
-    } finally {
-      setExporting(false)
-    }
-  }
 
   async function handleDelete() {
     setDeleting(true)
@@ -90,6 +67,12 @@ export function PerfilPage() {
         <ChevronLeft size={16} /> Volver
       </Link>
 
+      {/* Lo que venís ahorrando — arriba de todo */}
+      <SavingsWallet />
+
+      {/* EL CLUB — niveles del mes (Bronce/Plata/Oro) */}
+      <ClubCard />
+
       <header className="flex flex-col gap-1.5">
         <h1 className="text-2xl font-bold tracking-tight text-fin-ink sm:text-3xl">{user.nombre}</h1>
         <p className="text-sm text-fin-soft">Datos personales y privacidad.</p>
@@ -121,15 +104,6 @@ export function PerfilPage() {
         <p className="mt-2 text-xs text-fin-soft">
           Tenés derecho a acceder, rectificar, suprimir y oponerte al uso de tus datos.
         </p>
-
-        <button
-          type="button"
-          onClick={handleExport}
-          disabled={exporting}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-fin-surface2 px-4 py-3 text-sm font-bold text-fin-ink ring-1 ring-fin-line transition-colors hover:bg-fin-line disabled:opacity-60"
-        >
-          <Download size={14} /> {exporting ? 'Generando…' : 'Exportar mis datos (JSON)'}
-        </button>
 
         {confirmDelete ? (
           <div className="mt-3 rounded-2xl border border-fin-danger/30 bg-fin-danger/10 p-3">

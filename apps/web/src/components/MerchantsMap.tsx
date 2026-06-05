@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -40,16 +40,42 @@ function FitBounds({ points }: { points: [number, number][] }) {
   return null
 }
 
+/** Vuela al local enfocado desde la lista y abre su popup. */
+function FlyToFocused({
+  focused,
+  byId,
+  markerRefs,
+}: {
+  focused?: { id: string; seq: number } | null
+  byId: Map<string, Merchant>
+  markerRefs: { current: Map<string, L.Marker> }
+}) {
+  const map = useMap()
+  useEffect(() => {
+    if (!focused) return
+    const m = byId.get(focused.id)
+    if (!m || !m.lat || !m.lng) return
+    map.flyTo([m.lat, m.lng], Math.max(map.getZoom(), 16), { duration: 0.6 })
+    const mk = markerRefs.current.get(focused.id)
+    if (!mk) return
+    const t = setTimeout(() => mk.openPopup(), 400)
+    return () => clearTimeout(t)
+  }, [focused, byId, map, markerRefs])
+  return null
+}
+
 export default function MerchantsMap({
   merchants,
   coupons,
   userCoords,
   center,
+  focused,
 }: {
   merchants: Merchant[]
   coupons: Coupon[]
   userCoords: Coords | null
   center?: { lat: number; lng: number }
+  focused?: { id: string; seq: number } | null
 }) {
   const pins = useMemo(() => {
     return merchants
@@ -66,6 +92,9 @@ export default function MerchantsMap({
     () => pins.map((p) => [p.m.lat, p.m.lng]),
     [pins],
   )
+
+  const byId = useMemo(() => new Map(merchants.map((m) => [m.id, m])), [merchants])
+  const markerRefs = useRef<Map<string, L.Marker>>(new Map())
 
   const initialCenter: [number, number] = userCoords
     ? [userCoords.lat, userCoords.lng]
@@ -89,6 +118,7 @@ export default function MerchantsMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitBounds points={points} />
+        <FlyToFocused focused={focused} byId={byId} markerRefs={markerRefs} />
         {userCoords && (
           <Marker position={[userCoords.lat, userCoords.lng]} icon={userIcon()}>
             <Popup>Estás acá</Popup>
@@ -97,7 +127,15 @@ export default function MerchantsMap({
         {pins.map(({ m, maxPct, count }) => {
           const catLabel = CATEGORIAS.find((c) => c.id === m.categoria)?.label ?? m.categoria
           return (
-            <Marker key={m.id} position={[m.lat, m.lng]} icon={merchantIcon(maxPct > 0 ? `${maxPct}%` : '•')}>
+            <Marker
+              key={m.id}
+              position={[m.lat, m.lng]}
+              icon={merchantIcon(maxPct > 0 ? `${maxPct}%` : '•')}
+              ref={(ref) => {
+                if (ref) markerRefs.current.set(m.id, ref)
+                else markerRefs.current.delete(m.id)
+              }}
+            >
               <Popup>
                 <div className="min-w-[180px]">
                   <p className="text-sm font-bold text-ink">{m.nombre}</p>

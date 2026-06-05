@@ -86,10 +86,16 @@ export function useApiCoupons(filter?: { categoria?: string; merchant?: string }
 
 // ─── Activations vecino ──────────────────────────────────────────────
 
-export function useApiMyActivations(status?: 'activo' | 'canjeado' | 'expirado' | 'cancelado') {
+export function useApiMyActivations(
+  status?: 'activo' | 'canjeado' | 'expirado' | 'cancelado',
+  enabled = true,
+) {
   return useAsync(
-    () => api.activations.mine(status).then((r) => r.activations),
-    [status],
+    () =>
+      enabled
+        ? api.activations.mine(status).then((r) => r.activations)
+        : Promise.resolve([] as ApiActivation[]),
+    [status, enabled],
   )
 }
 
