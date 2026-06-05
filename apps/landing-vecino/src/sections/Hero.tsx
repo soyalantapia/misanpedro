@@ -1,5 +1,6 @@
 import { ArrowRight, Check, Sparkles, Search, TicketCheck, Croissant, ShoppingCart, Pill } from 'lucide-react'
 import { ENTER_URL } from '@/lib/cn'
+import { Logo } from '@/components/Logo'
 
 export function Hero() {
   return (
@@ -128,12 +129,7 @@ function PhoneMockup() {
           <div className="px-3 pb-4 pt-1.5">
             {/* Top bar */}
             <div className="flex items-center justify-between pb-2.5">
-              <div className="flex items-center gap-1.5">
-                <span className="grid h-5 w-5 place-items-center rounded-md bg-gradient-to-br from-accent-500 to-accent-700 text-[9px] font-black text-white">
-                  M
-                </span>
-                <span className="text-[11px] font-extrabold tracking-tight text-neutral-900">Mi San Pedro</span>
-              </div>
+              <Logo markSize={18} textClass="text-[11px]" />
               <span className="text-[8px] font-bold uppercase tracking-wider text-neutral-400">San Pedro</span>
             </div>
 

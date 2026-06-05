@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { ENTER_URL } from '@/lib/cn'
+import { Logo } from '@/components/Logo'
 
 const LINKS = [
   { href: '#como-funciona', label: 'Cómo funciona' },
@@ -34,11 +35,8 @@ export function Nav() {
       ].join(' ')}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-6">
-        <a href="#top" className="flex items-center gap-2 font-bold tracking-tight">
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 text-white shadow-lg shadow-accent-500/30">
-            <span className="text-sm font-black">M</span>
-          </span>
-          <span className="text-base text-neutral-900">Mi San Pedro</span>
+        <a href="#top" className="flex items-center">
+          <Logo markSize={34} textClass="text-base" />
         </a>
 
         <nav className="hidden gap-7 text-sm font-medium text-neutral-500 md:flex">

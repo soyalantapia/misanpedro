@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MiSanPedro — más pruebas (set 2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Sora:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--brand:#ea580c;--ink:#17161f;--soft:#6f6c7c;--line:#e4e3ea;--bg:#eef0f3}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:40px 28px 80px}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px}
+  .sub{color:var(--soft);font-size:14px;margin:0 0 26px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start}
+  .card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;overflow:hidden}
+  .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--soft);margin:0 0 14px}
+  .wm{font-family:'Manrope';font-weight:800;letter-spacing:-.03em;color:var(--ink)}
+  .wm .mi{color:var(--brand)}
+  svg{display:block}
+  /* IG story */
+  .story{aspect-ratio:9/16;border-radius:16px;position:relative;overflow:hidden;background:linear-gradient(160deg,#fb8a3c,#ea580c 60%,#c2410c);color:#fff;padding:16px;display:flex;flex-direction:column}
+  .bars{display:flex;gap:4px}
+  .bars span{height:3px;flex:1;background:rgba(255,255,255,.4);border-radius:2px}
+  .bars span.on{background:#fff}
+  .story .head{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;font-weight:700}
+  .story .mid{margin:auto 0;text-align:center}
+  .story .mid .k{font-family:'Sora';font-weight:800;font-size:26px;line-height:1.05}
+  .story .foot{text-align:center;font-size:11px;opacity:.9}
+  /* poster */
+  .wall{background:repeating-linear-gradient(90deg,#d8d2c8,#d8d2c8 16px,#d2ccc2 16px,#d2ccc2 32px);border-radius:14px;padding:18px;display:flex;justify-content:center}
+  .poster{background:#fff;border-radius:6px;width:78%;padding:18px 14px;text-align:center;box-shadow:0 14px 30px -16px rgba(0,0,0,.45);position:relative}
+  .poster .big{font-family:'Sora';font-weight:800;font-size:20px;line-height:1.05;margin:10px 0 4px}
+  .poster .big .o{color:var(--brand)}
+  .poster .sm{font-size:10px;color:var(--soft)}
+  .qr{width:54px;height:54px;margin:10px auto 4px;border-radius:6px;background:
+     conic-gradient(#000 25%,#fff 0 50%,#000 0 75%,#fff 0) 0 0/14px 14px}
+  .tape{position:absolute;top:-8px;left:50%;transform:translateX(-50%) rotate(-3deg);width:54px;height:16px;background:rgba(234,88,12,.25);border:1px dashed rgba(234,88,12,.5)}
+  /* remera */
+  .tee-wrap{background:#f3f4f6;border-radius:14px;height:230px;display:flex;align-items:center;justify-content:center;position:relative}
+  .chest{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:7px}
+  /* splash */
+  .pscreen{background:#fff;border:8px solid #17161f;border-radius:30px;height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+  .dots{display:flex;gap:5px}
+  .dots i{width:7px;height:7px;border-radius:50%;background:var(--brand);opacity:.4}
+  .dots i:nth-child(2){opacity:.7}.dots i:nth-child(3){opacity:1}
+  /* email */
+  .mail{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .mail .from{padding:10px 12px;font-size:12px;border-bottom:1px solid var(--line)}
+  .mail .from b{font-weight:800}
+  .mail .banner{background:linear-gradient(135deg,#fb8a3c,#ea580c);padding:16px;display:flex;align-items:center;gap:9px}
+  .mail .body{padding:14px 12px;font-size:12px;color:#333}
+  .mailcpn{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;align-items:center;gap:9px;font-weight:700}
+  .pill{margin-left:auto;background:var(--brand);color:#fff;border-radius:20px;font-size:11px;font-weight:800;padding:3px 9px}
+  /* sticker sheet */
+  .sheet{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;place-items:center}
+  .die{border:1px dashed #cbd0d8;border-radius:50%;padding:4px;display:grid;place-items:center}
+  .die.sq{border-radius:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MiSanPedro — más pruebas (set 2)</h1>
+  <p class="sub">Aplicaciones para el lanzamiento y la calle: story, cartel, remera del street team, splash de la app, email y plancha de calcos.</p>
+
+  <div class="grid">
+
+    <!-- IG STORY -->
+    <div class="card">
+      <p class="lbl">9 · Instagram Story</p>
+      <div class="story">
+        <div class="bars"><span class="on"></span><span></span><span></span></div>
+        <div class="head">
+          <svg width="22" height="22" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#fff"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#ea580c" text-anchor="middle">%</text></svg>
+          misanpedro · ahora
+        </div>
+        <div class="mid">
+          <svg width="64" height="64" viewBox="0 0 64 64" style="margin:0 auto 10px"><circle cx="32" cy="32" r="30" fill="#fff"/><circle cx="32" cy="32" r="22" fill="none" stroke="#ea580c" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#ea580c" text-anchor="middle">%</text></svg>
+          <div class="k">2x1 en la<br>carnicería</div>
+          <div style="font-size:11px;margin-top:6px;opacity:.9">solo esta semana</div>
+        </div>
+        <div class="foot">↑ Entrá y mirá · <b><span style="color:#fff">Mi</span>SanPedro</b></div>
+      </div>
+    </div>
+
+    <!-- POSTER -->
+    <div class="card">
+      <p class="lbl">10 · Cartel en la calle</p>
+      <div class="wall">
+        <div class="poster">
+          <span class="tape"></span>
+          <svg width="48" height="48" viewBox="0 0 64 64" style="margin:0 auto"><defs><linearGradient id="po" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#po)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg>
+          <div class="big">Tu plata<br><span class="o">rinde más</span></div>
+          <div class="sm">El club de ahorro de San Pedro</div>
+          <div class="qr"></div>
+          <div class="sm"><b>Entrá gratis</b> · misanpedro.app</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REMERA -->
+    <div class="card">
+      <p class="lbl">11 · Remera del street team</p>
+      <div class="tee-wrap">
+        <svg width="200" height="200" viewBox="0 0 100 100">
+          <path d="M35 13 C39 22 61 22 65 13 L84 21 L94 41 L80 49 L76 43 L76 93 L24 93 L24 43 L20 49 L6 41 L16 21 Z" fill="#ea580c"/>
+        </svg>
+        <div class="chest">
+          <svg width="40" height="40" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#fff"/><circle cx="32" cy="32" r="22" fill="none" stroke="#ea580c" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#ea580c" text-anchor="middle">%</text></svg>
+          <span class="wm" style="color:#fff;font-size:15px"><span style="color:#fff">Mi</span>SanPedro</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPLASH -->
+    <div class="card">
+      <p class="lbl">12 · Splash de la app</p>
+      <div class="pscreen">
+        <svg width="72" height="72" viewBox="0 0 64 64"><defs><linearGradient id="sp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#sp)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg>
+        <span class="wm" style="font-size:22px"><span class="mi">Mi</span>SanPedro</span>
+        <span style="font-size:11px;color:var(--soft)">Tu plata rinde más</span>
+        <span class="dots"><i></i><i></i><i></i></span>
+      </div>
+    </div>
+
+    <!-- EMAIL -->
+    <div class="card">
+      <p class="lbl">13 · Email / newsletter</p>
+      <div class="mail">
+        <div class="from">De: <b>MiSanPedro</b> · Asunto: 🎟️ Tus descuentos de esta semana</div>
+        <div class="banner">
+          <svg width="34" height="34" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#fff"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#ea580c" text-anchor="middle">%</text></svg>
+          <span class="wm" style="color:#fff;font-size:18px"><span style="color:#fff">Mi</span>SanPedro</span>
+        </div>
+        <div class="body">Hola 👋 Estos son los descuentos cerca tuyo:
+          <div class="mailcpn"><span style="color:var(--brand)">●</span> Verdulería <span class="pill">−25%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STICKER SHEET -->
+    <div class="card">
+      <p class="lbl">14 · Plancha de calcos / stickers</p>
+      <div class="sheet">
+        <div class="die"><svg width="50" height="50" viewBox="0 0 64 64"><defs><linearGradient id="s1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#s1)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg></div>
+        <div class="die sq"><svg width="50" height="50" viewBox="0 0 64 64"><defs><linearGradient id="s2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient><mask id="s2m"><rect width="64" height="64" rx="15" fill="#fff"/><circle cx="44" cy="2" r="6" fill="#000"/><circle cx="44" cy="62" r="6" fill="#000"/></mask></defs><rect width="64" height="64" rx="15" fill="url(#s2)" mask="url(#s2m)"/><text x="23" y="41" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg></div>
+        <div class="die"><svg width="50" height="50" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#fff" stroke="#ea580c" stroke-width="2"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#ea580c" text-anchor="middle">%</text></svg></div>
+        <div class="die sq" style="border-radius:8px"><svg width="56" height="34" viewBox="0 0 64 40"><rect x="2" y="6" width="60" height="28" rx="7" fill="#ea580c"/><text x="32" y="28" font-family="Sora" font-weight="800" font-size="16" fill="#fff" text-anchor="middle">−2x1</text></svg></div>
+        <div class="die sq" style="border-color:transparent"><span class="wm" style="font-size:13px"><span class="mi">Mi</span>SanPedro</span></div>
+        <div class="die"><svg width="50" height="50" viewBox="0 0 64 64"><defs><linearGradient id="s3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#s3)"/><text x="32" y="42" font-family="Sora" font-weight="800" font-size="26" fill="#fff" text-anchor="middle">%</text></svg></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
