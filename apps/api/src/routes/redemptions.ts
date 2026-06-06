@@ -170,17 +170,28 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
   activation.ahorroEstimado = ahorroEstimado
   await activation.save()
 
-  const redemption = await Redemption.create({
-    appId,
-    activationId: activation._id,
-    couponId: coupon._id,
-    merchantId: coupon.merchantId,
-    userId: activation.userId,
-    merchantUserId: auth.sub,
-    montoTicket,
-    ahorroEstimado,
-    redeemedAt: activation.redeemedAt,
-  })
+  let redemption
+  try {
+    redemption = await Redemption.create({
+      appId,
+      activationId: activation._id,
+      couponId: coupon._id,
+      merchantId: coupon.merchantId,
+      userId: activation.userId,
+      merchantUserId: auth.sub,
+      montoTicket,
+      ahorroEstimado,
+      redeemedAt: activation.redeemedAt,
+    })
+  } catch (err) {
+    // Carrera / doble-tap: el índice único {activationId} garantiza UN solo
+    // canje. Si otra confirmación simultánea ya lo registró, devolvemos un
+    // "ya canjeado" limpio en vez de un 500 con el error crudo de Mongo.
+    if ((err as { code?: number })?.code === 11000) {
+      return c.json({ ok: false, error: 'ya canjeado' }, 409)
+    }
+    throw err
+  }
 
   coupon.stockUsado = (coupon.stockUsado ?? 0) + 1
   await coupon.save()
