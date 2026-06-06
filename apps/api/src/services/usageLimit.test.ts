@@ -85,3 +85,34 @@ describe('evaluarUsoLimite — defaults (cupón viejo sin config)', () => {
     expect(r.bloqueado).toBe(true)
   })
 })
+
+describe('evaluarUsoLimite — bordes y casos límite', () => {
+  it('semana: canje EXACTO hace 7 días sigue contando (>= inicio → bloquea)', () => {
+    const justo = new Date(NOW.getTime() - 7 * DIA)
+    expect(evaluarUsoLimite({ usoMaxPorPersona: 1, usoVentana: 'semana' }, [justo], NOW).bloqueado).toBe(true)
+  })
+  it('semana: canje 7 días + 1ms ya quedó fuera de la ventana', () => {
+    const fuera = new Date(NOW.getTime() - 7 * DIA - 1)
+    expect(evaluarUsoLimite({ usoMaxPorPersona: 1, usoVentana: 'semana' }, [fuera], NOW).bloqueado).toBe(false)
+  })
+  it('usoMaxPorPersona 0 se trata como 1 (Math.max)', () => {
+    expect(evaluarUsoLimite({ usoMaxPorPersona: 0, usoVentana: 'devida' }, [haceDias(1)], NOW).bloqueado).toBe(true)
+  })
+  it('ilimitado ignora usoMaxPorPersona (no bloquea ni con varios)', () => {
+    expect(
+      evaluarUsoLimite({ usoMaxPorPersona: 1, usoVentana: 'ilimitado' }, [haceDias(0), haceDias(0)], NOW).bloqueado,
+    ).toBe(false)
+  })
+  it('usoMax 2 bloqueado: nextDisponible usa el MÁS VIEJO de la ventana (no el más nuevo)', () => {
+    const viejo = haceDias(6)
+    const nuevo = haceDias(1)
+    const r = evaluarUsoLimite({ usoMaxPorPersona: 2, usoVentana: 'semana' }, [nuevo, viejo], NOW)
+    expect(r.bloqueado).toBe(true)
+    expect(r.nextDisponible).toBe(new Date(viejo.getTime() + 7 * DIA).toISOString())
+  })
+  it('sin canjes nunca bloquea (todas las ventanas)', () => {
+    for (const v of ['devida', 'semana', 'quincena', 'mes', 'ilimitado'] as const) {
+      expect(evaluarUsoLimite({ usoMaxPorPersona: 1, usoVentana: v }, [], NOW).bloqueado).toBe(false)
+    }
+  })
+})

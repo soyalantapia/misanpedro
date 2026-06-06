@@ -14,6 +14,15 @@ El tope **bloquea en activar Y en confirmar**, es **por persona** y **por cupón
 | UI comercio (selector + precarga) | ✅ |
 | UI vecino (devida / temporal) | ✅ |
 | Regresión + edge | ✅ |
+| **Ampliación máximo** (integración DB + races + bordes) | ✅ |
+
+## Ampliación — Testeo MÁXIMO (2026-06-06)
+- **Integración con Mongo real (in-memory, `mongodb-memory-server`) — 8/8** sobre el guard `checkUsoLimite` end-to-end (query + decisión): devida; **semana/mes que VUELVEN a liberar** (canjes backdateados); aislamiento por persona y por cupón; usoMax 2 (cuenta solo dentro de la ventana); ilimitado; y **backward-compat con cupón SIN los campos** (insert crudo → `{1,devida}` bloquea). Cubre lo que el unit puro no podía (la ventana que vuelve + el cupón viejo) **con DB real**.
+- **Unit ampliado (17)**: bordes — canje EXACTO a 7 días (cuenta), 7d+1ms (fuera), `usoMax 0`→1, ilimitado ignora max, `nextDisponible` usa el más viejo, sin-canjes nunca bloquea.
+- **Concurrencia / races (live):** 2 activaciones simultáneas → **misma activación** (dedup, no 2 activas); 2 confirmaciones simultáneas → **integridad OK: exactamente 1 canje** (índice único `{activationId}`); el límite sigue (3º → 409).
+  - 🐛→✅ **Hallazgo + fix:** la doble-confirmación (o doble-tap del cajero) devolvía un **HTTP 500 crudo (`E11000`)**. `confirm` ahora **captura el 11000 → "ya canjeado" (409) limpio**. El dato nunca estuvo en riesgo (el índice único garantiza 1 canje); ahora la respuesta es prolija. *(Pre-existente; surgió en el testeo máximo.)*
+- **UI:** badge **"Ya lo usaste"** verificado también en la **card del home** (además del detalle).
+- **Suite api total: 77/77** (17 unit + 8 integración + 52 existentes) · typecheck 6/6.
 
 ---
 
@@ -58,5 +67,5 @@ El tope **bloquea en activar Y en confirmar**, es **por persona** y **por cupón
 - `usoMaxPorPersona`/`usoVentana` fuera de rango → rechazados por Zod (min 1 / max 99 / enum). ✅
 
 ## Notas
-- **B9 (stock):** el tope de stock global **no está enforced** como bloqueo en el flujo de canje (pre-existente). Si se quiere, es un fix aparte en `activations`/`confirm` (chequear `stockUsado >= stockMaximo`). **No** es parte de esta feature.
+- **B9 (stock):** el "stock global" hoy es **feature muerta**: `stockMaximo` **no está en el schema del cupón** → no se puede setear por API, y nunca se enforce (solo incrementa `stockUsado`). Se intentó agregar enforcement y se **revirtió** (código inservible sin forma de setear el tope + fuera de scope). Es una **feature aparte** (schema + UI + enforcement), no parte del límite por persona.
 - El smoke creó datos de prueba en la **DB de dev** (descartables). **Signup comercio 3/hora** y **OTP-request 5/hora** → para re-correr, usar el token de comercio vigente o esperar la ventana.
