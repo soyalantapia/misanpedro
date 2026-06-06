@@ -6,6 +6,7 @@ import { Activation, Coupon, Merchant, User } from '@/models'
 import { requireUserAuth } from '@/middleware/auth'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { publish } from '@/services/notifications.service'
+import { checkUsoLimite } from '@/services/usageLimit'
 
 export const activationsRoutes = new Hono()
 
@@ -79,6 +80,21 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
   }
   if (coupon.vigenciaHasta.getTime() < Date.now()) {
     return c.json({ ok: false, error: 'cupón vencido' }, 400)
+  }
+
+  // Límite de uso por persona: contamos canjes previos del (usuario × cupón).
+  // El dedupe de activación ACTIVA (más abajo) no alcanza: hay que contar canjes.
+  const limite = await checkUsoLimite(appId, coupon._id, auth.sub, coupon)
+  if (limite.bloqueado) {
+    return c.json(
+      {
+        ok: false,
+        error: 'Ya usaste este cupón el máximo de veces permitido.',
+        motivo: 'limite_por_persona',
+        nextDisponible: limite.nextDisponible,
+      },
+      409,
+    )
   }
 
   // Si el usuario ya tiene una activación activa para este cupón, devolverla.

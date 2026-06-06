@@ -242,6 +242,14 @@ export const couponCreateSchema = z.object({
   franjaHasta: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Hora válida HH:MM').nullable().optional(),
   /** Producto estrella / gancho (para el copy). */
   productoGancho: z.string().max(60).nullable().optional(),
+  // ─── Límite de uso por persona ───────────────────────────────────────
+  /** Cuántas veces puede usarlo cada persona dentro de la ventana. Default 1. */
+  usoMaxPorPersona: z.number().int().min(1, 'Mínimo 1').max(99, 'Máximo 99').optional().default(1),
+  /** Ventana del límite. Default 'devida' (una vez en el historial). */
+  usoVentana: z
+    .enum(['devida', 'semana', 'quincena', 'mes', 'ilimitado'])
+    .optional()
+    .default('devida'),
   estado: z.enum(['activo', 'pausado']).default('activo'),
 })
 

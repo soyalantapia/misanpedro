@@ -19,6 +19,7 @@ import { useMerchant } from '@/lib/merchantsStore'
 import { CATEGORIAS, SERVICIOS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
 import { formatHorariosSemana, isOpenNow } from '@/lib/format'
 import { useApiMerchant } from '@/lib/apiQueries'
+import { useUsoEstado } from '@/lib/usoLimite'
 
 const MiniMap = lazy(() => import('@/components/MiniMap'))
 
@@ -48,6 +49,7 @@ export function MerchantDetailPage() {
   const apiRes = useApiMerchant(id)
   const apiMerchant = apiRes.data?.merchant ?? null
   const apiCoupons = apiRes.data?.coupons ?? null
+  const getUsoEstado = useUsoEstado()
 
   const merchant: Merchant | undefined = apiMerchant
     ? {
@@ -88,6 +90,8 @@ export function MerchantDetailPage() {
         imagenUrl: c.imagenUrl ?? undefined,
         estado: c.estado as Coupon['estado'],
         diasAplica: c.diasAplica,
+        usoMaxPorPersona: c.usoMaxPorPersona,
+        usoVentana: c.usoVentana,
       }))
     : localCoupons.filter((c) => c.estado === 'activo')
 
@@ -258,7 +262,7 @@ export function MerchantDetailPage() {
           ) : (
             <div className="flex flex-col gap-2.5">
               {coupons.map((c, i) => (
-                <CouponCard key={c.id} coupon={c} merchant={merchant} index={i} compact />
+                <CouponCard key={c.id} coupon={c} merchant={merchant} index={i} compact usoEstado={getUsoEstado(c)} />
               ))}
             </div>
           )}

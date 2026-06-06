@@ -114,6 +114,10 @@ export type Coupon = {
   franjaHasta?: string
   /** Producto estrella / gancho (para el copy). */
   productoGancho?: string
+  /** Cuántas veces puede usar el cupón cada persona dentro de la ventana (default 1). */
+  usoMaxPorPersona?: number
+  /** Ventana del límite de uso por persona (default 'devida'). */
+  usoVentana?: 'devida' | 'semana' | 'quincena' | 'mes' | 'ilimitado'
 }
 
 export type ActivationStatus = 'activo' | 'canjeado' | 'expirado' | 'cancelado'

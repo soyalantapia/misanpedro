@@ -12,6 +12,7 @@ import { rateLimit } from '@/middleware/security'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { sendUserRedemption } from '@/services/email.service'
 import { publish } from '@/services/notifications.service'
+import { checkUsoLimite } from '@/services/usageLimit'
 
 export const redemptionsRoutes = new Hono()
 
@@ -142,6 +143,21 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
   }
   if (coupon.vigenciaHasta.getTime() < Date.now()) {
     return c.json({ ok: false, error: 'el cupón está vencido' }, 409)
+  }
+
+  // Re-chequeo del límite de uso por persona (carreras / códigos viejos):
+  // el guard de activación pudo no correr (código de antes) o haber carrera.
+  const limite = await checkUsoLimite(appId, coupon._id, activation.userId, coupon)
+  if (limite.bloqueado) {
+    return c.json(
+      {
+        ok: false,
+        error: 'Este vecino ya usó el cupón el máximo de veces permitido.',
+        motivo: 'limite_por_persona',
+        nextDisponible: limite.nextDisponible,
+      },
+      409,
+    )
   }
 
   const ahorroEstimado = montoTicket

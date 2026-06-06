@@ -50,6 +50,8 @@ type FormState = {
   franjaDesde: string
   franjaHasta: string
   productoGancho: string
+  usoMaxPorPersona: number
+  usoVentana: 'devida' | 'semana' | 'quincena' | 'mes' | 'ilimitado'
 }
 
 const empty: FormState = {
@@ -69,6 +71,8 @@ const empty: FormState = {
   franjaDesde: '',
   franjaHasta: '',
   productoGancho: '',
+  usoMaxPorPersona: 1,
+  usoVentana: 'devida',
 }
 
 function defaultExpiry(): string {
@@ -315,6 +319,8 @@ export function AdminCuponEditPage() {
         franjaDesde: existing.franjaDesde ?? '',
         franjaHasta: existing.franjaHasta ?? '',
         productoGancho: existing.productoGancho ?? '',
+        usoMaxPorPersona: existing.usoMaxPorPersona ?? 1,
+        usoVentana: existing.usoVentana ?? 'devida',
       })
     } else {
       setForm(empty)
@@ -381,6 +387,8 @@ export function AdminCuponEditPage() {
       tipoOferta: form.tipoOferta,
       exclusiva: form.exclusiva,
       productoGancho: clr(form.productoGancho.trim() || undefined),
+      usoMaxPorPersona: form.usoMaxPorPersona,
+      usoVentana: form.usoVentana,
       estado: existing?.estado === 'pausado' ? 'pausado' : 'activo',
     }
     try {
@@ -436,6 +444,15 @@ export function AdminCuponEditPage() {
 
 const PASOS = ['objetivo', 'jugada', 'gancho', 'plata', 'cuando', 'publicar'] as const
 type Paso = (typeof PASOS)[number]
+
+/** Opciones del selector "¿cada cuánto puede usarlo cada persona?" → setean usoVentana (usoMax 1). */
+const USO_OPCIONES: { ventana: FormState['usoVentana']; label: string }[] = [
+  { ventana: 'devida', label: 'Una sola vez' },
+  { ventana: 'semana', label: 'Una vez por semana' },
+  { ventana: 'quincena', label: 'Una vez cada 15 días' },
+  { ventana: 'mes', label: 'Una vez por mes' },
+  { ventana: 'ilimitado', label: 'Sin límite' },
+]
 
 function Asesor({
   form,
@@ -710,6 +727,35 @@ function Asesor({
               {buildDiasAplica(form.dias, form.franjaDesde, form.franjaHasta, '') || 'Sin restricción: aplica siempre.'}
             </p>
           )}
+
+          <div className="mt-2 flex flex-col gap-2 border-t border-line pt-3">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
+              ¿Cada cuánto puede usarlo cada persona?
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {USO_OPCIONES.map((o) => {
+                const sel = form.usoVentana === o.ventana
+                return (
+                  <button
+                    key={o.ventana}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, usoVentana: o.ventana, usoMaxPorPersona: 1 }))}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
+                      sel
+                        ? 'bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta'
+                        : 'bg-surface text-ink ring-1 ring-line hover:bg-bg'
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-[11px] text-ink-faint">
+              Evita que la misma persona lo use de más y te coma el margen.
+            </p>
+          </div>
+
           <NavBtns onPrev={prev} onNext={next} nextLabel="Ver mi cupón" nextDisabled={franjaInvalida} />
         </Step>
       )}

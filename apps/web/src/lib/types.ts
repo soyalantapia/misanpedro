@@ -142,6 +142,10 @@ export type Coupon = {
   imagenUrl?: string
   estado: CouponEstado
   diasAplica?: string
+  /** Límite de uso por persona (default 1). */
+  usoMaxPorPersona?: number
+  /** Ventana del límite (default 'devida'). */
+  usoVentana?: 'devida' | 'semana' | 'quincena' | 'mes' | 'ilimitado'
 }
 
 export type ActivationStatus = 'activo' | 'canjeado' | 'expirado' | 'cancelado'

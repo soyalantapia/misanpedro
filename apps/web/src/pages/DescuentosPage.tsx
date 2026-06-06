@@ -6,6 +6,7 @@ import { useCoupons } from '@/lib/couponsStore'
 import { type View } from '@/components/ViewToggle'
 import { CategoryChips } from '@/components/CategoryChips'
 import { CouponCard } from '@/components/CouponCard'
+import { useUsoEstado } from '@/lib/usoLimite'
 import { MerchantCard } from '@/components/MerchantCard'
 import { EmptyState } from '@/components/EmptyState'
 import { FilterSheet, type SortMode, type MinPct } from '@/components/FilterSheet'
@@ -56,6 +57,8 @@ function apiCouponToLocal(c: ApiCoupon, merchantSlug: string): Coupon {
     imagenUrl: c.imagenUrl ?? undefined,
     estado: c.estado as Coupon['estado'],
     diasAplica: c.diasAplica,
+    usoMaxPorPersona: c.usoMaxPorPersona,
+    usoVentana: c.usoVentana,
   }
 }
 
@@ -72,6 +75,7 @@ export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'local
   const localCoupons = useCoupons()
   const apiMerchantsRes = useApiMerchants()
   const apiCouponsRes = useApiCoupons()
+  const getUsoEstado = useUsoEstado()
 
   // Si el API responde, usamos sus datos; si está caído, fallback al store local.
   const { merchants, COUPONS, getMerchantById } = useMemo(() => {
@@ -293,7 +297,7 @@ export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'local
                       ? distanceKm(userCoords, { lat: m.lat, lng: m.lng })
                       : undefined
                   return [
-                    <CouponCard key={c.id} coupon={c} merchant={m} distanceKm={dist} index={i} />,
+                    <CouponCard key={c.id} coupon={c} merchant={m} distanceKm={dist} index={i} usoEstado={getUsoEstado(c)} />,
                   ]
                 })
                 // "Armá tu plan" como corte en la 3ª fila (tras ~4 cupones).
