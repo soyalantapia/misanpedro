@@ -365,7 +365,9 @@ function ComposerScreen({
     setPhase({ kind: 'sending', progress: 0, total, sentSoFar: 0 })
 
     const recipientNumbers = recipients
-      .map((r) => r.user.whatsapp.replace(/\D/g, ''))
+      // El contacto del vecino ahora es `telefono` (onboarding sin fricción);
+      // caemos a `whatsapp` por compatibilidad con clientes viejos.
+      .map((r) => (r.user.whatsapp ?? r.user.telefono ?? '').replace(/\D/g, ''))
       .filter((n) => n.length >= 8)
 
     // POST /wa/campaign: el backend procesa con rate-limit anti-ban (delay

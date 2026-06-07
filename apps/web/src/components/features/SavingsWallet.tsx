@@ -56,7 +56,7 @@ function Sparkline({ values }: { values: number[] }) {
 function SavingsCta() {
   return (
     <Link
-      to="/datos"
+      to="/"
       className="bg-fin-mesh group relative block overflow-hidden rounded-3xl bg-fin-surface p-5 ring-1 ring-fin-line shadow-fin-card"
     >
       <div className="bg-fin-grid absolute inset-0 opacity-60" />
@@ -67,9 +67,9 @@ function SavingsCta() {
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-bold uppercase tracking-widest text-fin-lime">Tu billetera de ahorro</p>
           <p className="mt-0.5 text-lg font-extrabold leading-tight text-fin-ink">
-            Empezá a ahorrar en tu barrio
+            Canjeá tu primer descuento
           </p>
-          <p className="text-xs text-fin-soft">Activá cupones, canjeálos y mirá cuánto juntás.</p>
+          <p className="text-xs text-fin-soft">Activá un cupón y mirá cuánto vas juntando. Sin registro.</p>
         </div>
         <ArrowUpRight size={20} className="text-fin-soft transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
       </div>

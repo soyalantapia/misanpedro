@@ -86,6 +86,31 @@ export const otpVerifySchema = z.object({
   code: z.string().regex(/^\d{6}$/, 'Código de 6 dígitos'),
 })
 
+// ─── Onboarding sin fricción (vecino): claim por teléfono ───────────────
+
+/** Normaliza un teléfono argentino a su forma canónica (solo dígitos, sin
+ *  código de país 54, sin prefijo móvil 9, sin trunk 0) para que el match sea
+ *  consistente entre dispositivos: "+54 9 3329 555444" y "3329 555444" caen
+ *  al mismo valor. El teléfono ES la identidad del vecino. */
+export function normalizeTelefono(raw: string): string {
+  let d = (raw || '').replace(/\D/g, '')
+  if (d.startsWith('54')) d = d.slice(2) // país
+  if (d.startsWith('9')) d = d.slice(1) // móvil
+  if (d.startsWith('0')) d = d.slice(1) // trunk
+  return d
+}
+
+/** Captura LIVIANA al primer canje: nombre + teléfono + T&C. SIN OTP ni email.
+ *  La verificación la hace el cajero en persona (compra presencial). */
+export const userClaimSchema = z.object({
+  nombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80, 'Máximo 80 caracteres'),
+  telefono: z
+    .string()
+    .transform((s) => normalizeTelefono(s))
+    .pipe(z.string().regex(/^\d{8,13}$/, 'Poné tu celular con código de área')),
+  acceptedTc: z.literal(true, { error: 'Necesitamos que aceptes los términos' }),
+})
+
 // ─── Auth comercio ────────────────────────────────────────────────────
 
 export const merchantLoginSchema = z.object({
@@ -355,6 +380,7 @@ export const merchantUpdateSchema = z.object({
 // ─── Tipos derivados ──────────────────────────────────────────────────
 
 export type UserRegisterInput = z.infer<typeof userRegisterSchema>
+export type UserClaimInput = z.infer<typeof userClaimSchema>
 export type OtpRequestInput = z.infer<typeof otpRequestSchema>
 export type OtpVerifyInput = z.infer<typeof otpVerifySchema>
 export type MerchantLoginInput = z.infer<typeof merchantLoginSchema>

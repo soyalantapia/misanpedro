@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { HashRouter, Routes, Route, Outlet } from 'react-router-dom'
+import { HashRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom'
 import { AppShell } from '@/layouts/AppShell'
 import { MerchantShell } from '@/layouts/MerchantShell'
 import { ToastProvider } from '@/components/Toast'
@@ -166,6 +166,11 @@ export default function App() {
               <Route path="alertas" element={<AlertasPage />} />
               <Route path="perfil" element={<PerfilPage />} />
             </Route>
+
+            {/* Rutas obsoletas del onboarding viejo (registro/login OTP) →
+                redirigen al nuevo modelo: /datos es la captura liviana al canjear. */}
+            <Route path="registro" element={<Navigate to="/datos" replace />} />
+            <Route path="login" element={<Navigate to="/" replace />} />
 
             {/* Legal */}
             <Route path="legal/terminos" element={<TerminosPage />} />

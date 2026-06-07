@@ -260,10 +260,12 @@ export type ApiMerchantSession = {
 export type ApiUserSession = {
   id: string
   nombre: string
-  dni: string
-  email: string
-  whatsapp: string
-  fechaNacimiento: string
+  telefono: string
+  // ─── Legacy / opcionales (cuentas viejas; las nuevas solo traen nombre+telefono) ───
+  dni?: string
+  email?: string
+  whatsapp?: string
+  fechaNacimiento?: string
 }
 
 // ─── Auth merchant ───────────────────────────────────────────────────
@@ -402,45 +404,19 @@ export const subscription = {
 // ─── Auth vecino ─────────────────────────────────────────────────────
 
 export const userApi = {
-  async register(payload: {
-    dni: string
-    nombre: string
-    email: string
-    whatsapp: string
-    fechaNacimiento: string
-    acceptedTc: true
-  }) {
+  /**
+   * Captura LIVIANA al primer canje: nombre + teléfono (SIN OTP ni email).
+   * Guarda un token permanente (sin refresh — la identidad es el teléfono).
+   * Si el teléfono ya existía, el backend RECUPERA la cuenta (y su ahorro).
+   */
+  async claim(payload: { nombre: string; telefono: string; acceptedTc: true }) {
     const data = await request<{
+      ok: boolean
       accessToken: string
-      refreshToken: string
       user: ApiUserSession
-    }>('/auth/register', json(payload))
-    tokens.set('user', data.accessToken, data.refreshToken)
+    }>('/auth/claim', json(payload))
+    tokens.set('user', data.accessToken)
     return data
-  },
-  async requestOtp(email: string) {
-    return request<{ ok: boolean; _debugCode?: string }>(
-      '/auth/request-otp',
-      json({ email }),
-    )
-  },
-  async verifyOtp(email: string, code: string) {
-    const data = await request<{
-      accessToken: string
-      refreshToken: string
-      user: ApiUserSession
-    }>('/auth/verify-otp', json({ email, code }))
-    tokens.set('user', data.accessToken, data.refreshToken)
-    return data
-  },
-  async logout() {
-    const refresh = localStorage.getItem(STORAGE.user.refresh)
-    try {
-      if (refresh) await request('/auth/logout', json({ refreshToken: refresh }))
-    } catch {
-      /* noop */
-    }
-    tokens.clear('user')
   },
   async me() {
     return request<{ ok: boolean; user: ApiUserSession }>('/auth/me', { subject: 'user' })
