@@ -133,9 +133,9 @@ export function AdminDashboardPage() {
               Empezá a recibir tus primeros canjes
             </p>
             <ol className="mt-1 list-decimal pl-4 text-xs leading-relaxed text-brand-strong/90">
+              <li>Completá tu perfil (foto + horarios) para que los vecinos te elijan.</li>
               <li>{merchantCoupons.length === 0 ? 'Creá tu primer descuento desde "Mis cupones".' : 'Los vecinos ya pueden ver tus descuentos.'}</li>
               <li>Cuando un cliente llegue al local, escaneá su QR o ingresá su código en "Validar".</li>
-              <li>Acá vas a ver el detalle del impacto: ahorro, ingresos y nuevos clientes.</li>
             </ol>
           </div>
         </section>
