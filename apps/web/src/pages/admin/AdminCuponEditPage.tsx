@@ -172,7 +172,7 @@ function sugerirJugada(objetivo: Objetivo, categoria: string, gancho: string): J
     return {
       label: 'Cliente nuevo agresivo',
       why: 'Un golpe fuerte la primera vez: si el trabajo es bueno, vuelven a precio lleno.',
-      titulo: `40% OFF en tu primera vez`,
+      titulo: `Descuento de bienvenida en tu primera vez`,
       descripcion: `Descuento de bienvenida en ${g} para quien todavía no te conoce. Una sola vez por persona.`,
       porcentaje: 40,
       tipoOferta: 'porcentaje',
@@ -187,8 +187,8 @@ function sugerirJugada(objetivo: Objetivo, categoria: string, gancho: string): J
       return {
         label: 'Última hornada / fin del día',
         why: 'En vez de tirarlo, lo vendés con descuento fuerte al final del día.',
-        titulo: `40% en ${g} al cierre`,
-        descripcion: `Lo que queda al final del día, con 40%. Hasta agotar.`,
+        titulo: `Descuento en ${g} al cierre`,
+        descripcion: `Lo que queda al final del día, con descuento. Hasta agotar.`,
         porcentaje: 40,
         tipoOferta: 'porcentaje',
         exclusiva: true,
@@ -200,8 +200,8 @@ function sugerirJugada(objetivo: Objetivo, categoria: string, gancho: string): J
     return {
       label: 'Liquidá lo que no rota',
       why: 'Hacés caja con lo parado y liberás espacio para lo nuevo.',
-      titulo: `40% en ${g} marcado`,
-      descripcion: `Selección marcada con 40%. Hasta agotar stock.`,
+      titulo: `Liquidación: ${g} marcado`,
+      descripcion: `Selección marcada en liquidación. Hasta agotar stock.`,
       porcentaje: 40,
       tipoOferta: 'porcentaje',
       exclusiva: true,
@@ -214,8 +214,8 @@ function sugerirJugada(objetivo: Objetivo, categoria: string, gancho: string): J
     return {
       label: 'Costumbre semanal',
       why: 'El mismo día, todas las semanas: el vecino arma su rutina alrededor tuyo.',
-      titulo: `Martes de ${g}: 20% off`,
-      descripcion: `Todos los martes, 20% en ${g}. La costumbre que te hace elegir.`,
+      titulo: `Martes de ${g}`,
+      descripcion: `Todos los martes, descuento en ${g}. La costumbre que te hace elegir.`,
       porcentaje: 20,
       tipoOferta: 'porcentaje',
       exclusiva: true,
@@ -229,8 +229,8 @@ function sugerirJugada(objetivo: Objetivo, categoria: string, gancho: string): J
     return {
       label: 'Happy hour en la hora muerta',
       why: 'Movés la franja vacía de la tarde sin tocar tus horarios pico.',
-      titulo: `50% en ${g} de 15 a 18`,
-      descripcion: `Mitad de precio en ${g} en la franja floja de la tarde, de lunes a jueves. Llenás las mesas vacías sin resignar tus horarios pico.`,
+      titulo: `Happy hour: ${g} de 15 a 18`,
+      descripcion: `Descuento en ${g} en la franja floja de la tarde, de lunes a jueves. Llenás las mesas vacías sin resignar tus horarios pico.`,
       porcentaje: 50,
       tipoOferta: 'porcentaje',
       exclusiva: true,
@@ -243,8 +243,8 @@ function sugerirJugada(objetivo: Objetivo, categoria: string, gancho: string): J
   return {
     label: 'Día flojo con descuento',
     why: 'Concentrás demanda el día más muerto de tu semana.',
-    titulo: `Martes: 25% en ${g}`,
-    descripcion: `Los martes, 25% en ${g}. Para mover el día más flojo.`,
+    titulo: `Martes de ${g}`,
+    descripcion: `Los martes, descuento en ${g}. Para mover el día más flojo.`,
     porcentaje: NECESIDAD.has(categoria) ? 15 : 25,
     tipoOferta: 'porcentaje',
     exclusiva: true,
@@ -487,7 +487,9 @@ export function AdminCuponEditPage() {
 //  ASESOR (paso a paso)
 // ════════════════════════════════════════════════════════════════════════
 
-const PASOS = ['objetivo', 'jugada', 'gancho', 'plata', 'cuando', 'publicar'] as const
+// PM-elite T3: el gancho (producto estrella) va ANTES de la jugada, así la
+// jugada y su título salen con el producto real interpolado (no genérico).
+const PASOS = ['objetivo', 'gancho', 'jugada', 'plata', 'cuando', 'publicar'] as const
 type Paso = (typeof PASOS)[number]
 
 /** Opciones del selector "¿cada cuánto puede usarlo cada persona?" → setean usoVentana (usoMax 1). */
@@ -616,7 +618,7 @@ function Asesor({
                 <button
                   key={o.id}
                   type="button"
-                  onClick={() => { update('objetivo', o.id); setPaso('jugada') }}
+                  onClick={() => { update('objetivo', o.id); setPaso('gancho') }}
                   className={`flex flex-col gap-1.5 rounded-2xl p-4 text-left ring-1 transition-all hover:-translate-y-0.5 ${
                     sel ? 'bg-brand-soft ring-brand' : 'bg-surface ring-line hover:ring-line'
                   }`}
@@ -656,7 +658,7 @@ function Asesor({
             </div>
           ) : (
             <p className="rounded-2xl bg-surface p-4 text-sm leading-snug text-ink-soft shadow-card ring-1 ring-line">
-              Volvé un paso y elegí qué querés lograr y te propongo una jugada concreta. O seguí y armalo a mano.
+              Volvé y elegí qué querés lograr y te propongo una jugada concreta. O seguí y armalo a mano.
             </p>
           )}
           <NavBtns onPrev={prev} onNext={next} nextLabel={jugada ? 'Prefiero armarlo yo' : 'Siguiente'} />
@@ -664,7 +666,7 @@ function Asesor({
       )}
 
       {paso === 'gancho' && (
-        <Step title="¿Cuál es tu producto estrella?" hint="El gancho concreto que hace que el vecino quiera venir.">
+        <Step title="¿Cuál es tu producto estrella?" hint="Decímelo primero y te propongo la jugada justa con ese gancho.">
           <input
             type="text"
             value={form.productoGancho}
