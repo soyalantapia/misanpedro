@@ -15,6 +15,8 @@ import {
   CreditCard,
   Gift,
   BarChart3,
+  WifiOff,
+  RotateCw,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useRedemptionsForMerchant } from '@/lib/merchantQueries'
@@ -93,6 +95,38 @@ export function AdminDashboardPage() {
       return s + (r.ahorroEstimado * 100) / c.porcentaje
     }, 0)
   const ventasTotal = apiStats.data?.canjes ?? redemptions.length
+
+  // PM-elite T4: en PROD, si el API falló, mostramos "sin conexión" en vez de
+  // datos locales/mock fantasma (panel del comercio = fuente de verdad del API).
+  const apiFailed =
+    import.meta.env.PROD &&
+    (!!apiStats.error || !!apiRecent.error || !!apiCupones.error)
+  if (apiFailed) {
+    return (
+      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 px-4 py-20 text-center">
+        <div className="grid h-14 w-14 place-items-center rounded-full bg-surface-2 text-ink-soft ring-1 ring-line">
+          <WifiOff size={24} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-bold text-ink">Sin conexión</h2>
+          <p className="text-sm text-ink-soft">
+            No pudimos cargar tu panel. Revisá tu conexión y reintentá.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            apiStats.refetch()
+            apiRecent.refetch()
+            apiCupones.refetch()
+          }}
+          className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-sm font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
+        >
+          <RotateCw size={16} /> Reintentar
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">

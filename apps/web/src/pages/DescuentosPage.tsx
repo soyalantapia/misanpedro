@@ -1,6 +1,6 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, MapPin, SlidersHorizontal, X, Sparkles } from 'lucide-react'
+import { Search, MapPin, SlidersHorizontal, X, Sparkles, WifiOff, RotateCw } from 'lucide-react'
 import { MERCHANTS, getMerchant } from '@/data/mockData'
 import { useCoupons } from '@/lib/couponsStore'
 import { type View } from '@/components/ViewToggle'
@@ -78,6 +78,15 @@ export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'local
         merchants: apiMerchants,
         COUPONS: apiCouponsLocal,
         getMerchantById: (id: string) => map.get(id),
+      }
+    }
+    // PM-elite T4: en PROD no caemos a datos mock si el API no respondió — el
+    // vecino no debe ver descuentos fantasma. El mock queda solo para dev/demo.
+    if (import.meta.env.PROD) {
+      return {
+        merchants: [] as Merchant[],
+        COUPONS: [] as Coupon[],
+        getMerchantById: (_id: string): Merchant | undefined => undefined,
       }
     }
     return {
@@ -161,6 +170,9 @@ export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'local
   )
   const isGlobalEmpty = merchants.length === 0 && visibleCouponsCount === 0
   const isLoading = apiMerchantsRes.loading || apiCouponsRes.loading
+  // PM-elite T4: en PROD, si el API falló, mostramos "sin conexión" en vez de mock.
+  const apiFailed =
+    import.meta.env.PROD && (!!apiMerchantsRes.error || !!apiCouponsRes.error)
 
   const activeFilterCount = (minPct > 0 ? 1 : 0) + (sort !== 'descuento' ? 1 : 0)
   const resultCount = view === 'descuento' ? filteredCoupons.length : filteredMerchants.length
@@ -179,6 +191,30 @@ export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'local
             <div key={i} className="h-32 animate-pulse rounded-3xl bg-fin-surface" style={{ animationDelay: `${i * 60}ms` }} />
           ))}
         </div>
+      </div>
+    )
+  }
+
+  if (apiFailed) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 pt-16 pb-8 sm:px-6">
+        <EmptyState
+          icon={WifiOff}
+          title="Sin conexión"
+          description="No pudimos cargar los descuentos. Revisá tu conexión y reintentá."
+          action={
+            <button
+              type="button"
+              onClick={() => {
+                apiMerchantsRes.refetch()
+                apiCouponsRes.refetch()
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl bg-fin-lime px-5 py-3 text-sm font-bold text-fin-bg transition-all hover:-translate-y-0.5"
+            >
+              <RotateCw size={16} /> Reintentar
+            </button>
+          }
+        />
       </div>
     )
   }

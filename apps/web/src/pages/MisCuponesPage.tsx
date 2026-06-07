@@ -31,14 +31,19 @@ export function MisCuponesPage() {
       string,
       { id: string; titulo: string; porcentaje: number; merchantId: string }
     >()
-    localCoupons.forEach((c) =>
-      map.set(c.id, {
-        id: c.id,
-        titulo: c.titulo,
-        porcentaje: c.porcentaje,
-        merchantId: c.merchantId,
-      }),
-    )
+    // PM-elite T4: en PROD el catálogo mock no resuelve detalles (datos fantasma);
+    // solo lo usamos en dev/demo. Las activaciones del vecino (su billetera) son
+    // reales/locales y se siguen mostrando igual.
+    if (!import.meta.env.PROD) {
+      localCoupons.forEach((c) =>
+        map.set(c.id, {
+          id: c.id,
+          titulo: c.titulo,
+          porcentaje: c.porcentaje,
+          merchantId: c.merchantId,
+        }),
+      )
+    }
     if (apiCouponsRes.data && apiMerchantsRes.data) {
       const idToSlug = new Map(apiMerchantsRes.data.map((m) => [m.id, m.slug]))
       apiCouponsRes.data.forEach((c) => {
@@ -55,8 +60,11 @@ export function MisCuponesPage() {
   const getCoupon = (id: string) => couponMap.get(id)
   const getMerchantBySlug = (slug: string | undefined) => {
     if (!slug) return undefined
-    const local = getMerchant(slug)
-    if (local) return local
+    // PM-elite T4: en PROD no usamos el merchant mock; solo datos del API.
+    if (!import.meta.env.PROD) {
+      const local = getMerchant(slug)
+      if (local) return local
+    }
     const apiM = apiMerchantsRes.data?.find((m) => m.slug === slug)
     if (!apiM) return undefined
     return {
