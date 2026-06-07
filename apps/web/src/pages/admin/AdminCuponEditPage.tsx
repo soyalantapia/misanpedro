@@ -455,18 +455,18 @@ export function AdminCuponEditPage() {
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-44 sm:px-6 sm:pt-10 md:pb-32">
       <Link to="/admin/cupones" className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink">
-        <ChevronLeft size={16} /> Mis cupones
+        <ChevronLeft size={16} /> Mis descuentos
       </Link>
 
       <header className="flex flex-col gap-2">
         <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong">
-          {isEdit ? <Tag size={12} /> : <Sparkles size={12} />} {isEdit ? 'Editar cupón' : 'Nuevo cupón'}
+          {isEdit ? <Tag size={12} /> : <Sparkles size={12} />} {isEdit ? 'Editar descuento' : 'Nuevo descuento'}
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-          Armemos un cupón fuerte
+          Armemos un descuento fuerte
         </h1>
         <p className="text-sm text-ink-soft">
-          Te hago unas preguntas y salís con un cupón que el vecino no quiera dejar pasar.
+          Te hago unas preguntas y salís con un descuento que el vecino no quiera dejar pasar.
         </p>
       </header>
 
@@ -653,7 +653,7 @@ function Asesor({
                 <Check size={16} /> Usar esta jugada
               </button>
               <p className="text-center text-[11px] text-ink-faint">
-                Cargo todo esto en el cupón y lo revisás antes de publicar.
+                Cargo todo esto en el descuento y lo revisás antes de publicar.
               </p>
             </div>
           ) : (
@@ -908,7 +908,7 @@ function Asesor({
           <FuerzaMeter fuerza={fuerza} />
           <Preview merchant={merchant} form={form} money={money} />
 
-          <Field label="Título del cupón" hint={`${form.titulo.length}/60`}>
+          <Field label="Título del descuento" hint={`${form.titulo.length}/60`}>
             <input
               type="text"
               value={form.titulo}
@@ -930,7 +930,7 @@ function Asesor({
             />
           </Field>
 
-          <Field label="Foto del cupón (opcional)">
+          <Field label="Foto del descuento (opcional)">
             <ImagenCuponInput value={form.imagenUrl} onChange={(v) => update('imagenUrl', v)} />
           </Field>
 
@@ -939,7 +939,7 @@ function Asesor({
           <WizardBar>
             <button type="button" onClick={prev} className={btnGhost}><ArrowLeft size={16} /> Atrás</button>
             <button type="button" onClick={onPublicar} disabled={submitting} className={`${btnPrimary} flex-1`}>
-              <Save size={16} /> {submitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Publicar cupón'}
+              <Save size={16} /> {submitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Publicar descuento'}
             </button>
           </WizardBar>
         </Step>
@@ -1080,7 +1080,7 @@ function FuerzaMeter({ fuerza }: { fuerza: { nivel: 'Fuerte' | 'Media' | 'Floja'
   return (
     <div className="flex flex-col gap-2 rounded-2xl bg-surface p-4 shadow-card ring-1 ring-line">
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">Fuerza del cupón</span>
+        <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">Fuerza del descuento</span>
         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${color}`}>{fuerza.nivel}</span>
       </div>
       {fuerza.mejora && (

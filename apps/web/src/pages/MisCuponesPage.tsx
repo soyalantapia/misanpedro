@@ -146,7 +146,7 @@ export function MisCuponesPage() {
       const a = activationActions.reactivate(activationId)
       setReactivating(null)
       if (a) {
-        toast.success('Cupón reactivado', 'Tenés 30 minutos para usarlo.')
+        toast.success('Cupón reactivado', 'Tenés el código listo para usar.')
         navigate(`/activacion/${a.id}`)
       }
     }
