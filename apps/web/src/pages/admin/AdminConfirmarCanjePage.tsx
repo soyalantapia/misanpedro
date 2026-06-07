@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, CheckCircle2 } from 'lucide-react'
@@ -21,6 +21,7 @@ export function AdminConfirmarCanjePage() {
   const navigate = useNavigate()
   const toast = useToast()
   const [monto, setMonto] = useState('')
+  const [montoTouched, setMontoTouched] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   // Combinamos: si vino del API y la validación fue OK, usamos el cache.
@@ -31,6 +32,7 @@ export function AdminConfirmarCanjePage() {
         codigoNumerico: apiCached.codigo,
         porcentaje: apiCached.porcentaje,
         couponTitulo: apiCached.couponTitulo,
+        precioReferencia: apiCached.precioReferencia,
         customerName: apiCached.customerName,
         activatedAt: apiCached.activatedAt ?? new Date().toISOString(),
         source: 'api' as const,
@@ -41,11 +43,22 @@ export function AdminConfirmarCanjePage() {
           codigoNumerico: localActivation.codigoNumerico,
           porcentaje: localCoupon.porcentaje,
           couponTitulo: localCoupon.titulo,
+          precioReferencia: localCoupon.precioReferencia,
           customerName: localUser?.nombre ?? 'Vecino registrado',
           activatedAt: localActivation.activatedAt,
           source: 'local' as const,
         }
       : null
+
+  // PM-elite T1: pre-cargamos el monto con el precio de referencia del cupón.
+  // Así el cajero confirma de un toque, sin tipear nada. Solo una vez (y no si
+  // el cajero ya tocó el campo o lo limpió a propósito).
+  const precioRef = view?.precioReferencia
+  useEffect(() => {
+    if (!montoTouched && monto === '' && precioRef && precioRef > 0) {
+      setMonto(String(precioRef))
+    }
+  }, [precioRef, montoTouched, monto])
 
   if (!view || !session) return <Navigate to="/admin/validar" replace />
   if (
@@ -66,19 +79,16 @@ export function AdminConfirmarCanjePage() {
 
   async function handleConfirm() {
     if (!view) return
-    // El monto del ticket es obligatorio: sin él, las stats del comercio
-    // quedan contaminadas (canje cuenta pero ahorro/ingresos=0).
-    const monto_n = monto ? parseInt(monto.replace(/\D/g, ''), 10) : NaN
-    if (!Number.isFinite(monto_n) || monto_n <= 0) {
-      toast.error(
-        'Falta el monto',
-        'Ingresá el monto sin descuento para que el canje quede registrado bien.',
-      )
-      return
-    }
+    // PM-elite T1 (métrica norte): el monto es OPCIONAL — el canje NUNCA se
+    // bloquea por falta de monto. Si el cajero no lo tocó/lo dejó en 0, mandamos
+    // undefined y el backend estima el ahorro desde el precioReferencia.
+    const parsed = monto ? parseInt(monto.replace(/\D/g, ''), 10) : NaN
+    const monto_n =
+      Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
     // Cap razonable de plausibilidad: un ticket de >$10M ARS en un comercio
-    // de barrio casi seguro es un typo. Bloqueamos para no contaminar LTV.
-    if (monto_n > 10_000_000) {
+    // de barrio casi seguro es un typo. Solo bloqueamos si efectivamente hay
+    // un número absurdo cargado (no por estar vacío).
+    if (monto_n != null && monto_n > 10_000_000) {
       toast.error(
         'Monto demasiado alto',
         '¿Seguro que el ticket es de más de $10.000.000? Revisá el número.',
@@ -107,9 +117,13 @@ export function AdminConfirmarCanjePage() {
       }
     }
 
-    // Local fallback
+    // Local fallback (dev/demo). Si no hay monto, usamos el precio de referencia.
     if (localActivation && localCoupon) {
-      confirmRedemption(localActivation.id, localCoupon.porcentaje, monto_n)
+      confirmRedemption(
+        localActivation.id,
+        localCoupon.porcentaje,
+        monto_n ?? localCoupon.precioReferencia,
+      )
       toast.success('Canje confirmado', `${customerName} usó su descuento del ${localCoupon.porcentaje}%`)
       navigate('/admin', { replace: true })
     }
@@ -159,7 +173,10 @@ export function AdminConfirmarCanjePage() {
 
       <label className="flex flex-col gap-1.5">
         <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
-          Monto sin descuento <span className="text-status-error-fg">*</span>
+          Monto sin descuento{' '}
+          <span className="font-semibold normal-case tracking-normal text-ink-faint">
+            (opcional)
+          </span>
         </span>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-faint">
@@ -172,6 +189,7 @@ export function AdminConfirmarCanjePage() {
             onChange={(e) => {
               // Cap a 8 dígitos (max 99.999.999 ARS) para evitar typos de zeros
               const cleaned = e.target.value.replace(/\D/g, '').slice(0, 8)
+              setMontoTouched(true)
               setMonto(cleaned)
             }}
             placeholder="0"
@@ -180,7 +198,9 @@ export function AdminConfirmarCanjePage() {
           />
         </div>
         <p className="text-[11px] text-ink-faint">
-          Precio de lista antes del {view.porcentaje}% — lo usamos para calcular cuánto ahorró el cliente.
+          {precioRef
+            ? 'Pre-cargado con el precio de lista. Ajustalo si el ticket fue otro, o confirmá así nomás.'
+            : `Si lo cargás, calculamos cuánto ahorró el cliente sobre el ${view.porcentaje}%. Podés confirmar sin cargarlo.`}
           {ahorroPreview !== null && (
             <span className="ml-1 font-bold text-status-success-fg">
               Ahorro estimado: {formatMoney(ahorroPreview)}

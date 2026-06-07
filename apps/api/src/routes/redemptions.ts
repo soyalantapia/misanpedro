@@ -42,6 +42,9 @@ function serializeForValidation(
       porcentaje: coupon.porcentaje,
       condiciones: coupon.condiciones,
       merchantId: coupon.merchantId.toString(),
+      // PM-elite T1: el FE pre-carga el monto del canje con este precio normal,
+      // así el cajero confirma de un toque sin tipear nada.
+      precioReferencia: coupon.precioReferencia,
     },
     user: {
       id: user._id.toString(),
@@ -161,12 +164,17 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
     )
   }
 
+  // PM-elite T1: el monto es OPCIONAL. Si el cajero no lo tipeó, usamos el
+  // `precioReferencia` del cupón para estimar el ahorro (precio normal de lista).
+  // Si tampoco hay precioReferencia, el ahorro queda en 0 pero el canje se
+  // confirma igual — el monto NUNCA bloquea el canje.
+  const montoEfectivo = montoTicket ?? coupon.precioReferencia ?? undefined
   // Ahorro por tipo de oferta (precio_fijo = diferencia; resto = % del ticket).
-  const ahorroEstimado = calcAhorroCanje(coupon, montoTicket)
+  const ahorroEstimado = calcAhorroCanje(coupon, montoEfectivo ?? 0)
 
   activation.status = 'canjeado'
   activation.redeemedAt = new Date()
-  activation.montoTicket = montoTicket
+  activation.montoTicket = montoEfectivo
   activation.ahorroEstimado = ahorroEstimado
   await activation.save()
 
@@ -179,7 +187,7 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
       merchantId: coupon.merchantId,
       userId: activation.userId,
       merchantUserId: auth.sub,
-      montoTicket,
+      montoTicket: montoEfectivo,
       ahorroEstimado,
       redeemedAt: activation.redeemedAt,
     })

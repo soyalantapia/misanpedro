@@ -309,18 +309,18 @@ export const redeemByPayloadSchema = z.object({
 
 export const confirmRedemptionSchema = z.object({
   activationId: z.string(),
-  // montoTicket es OBLIGATORIO: si el cajero confirma sin meter el monto,
-  // las stats del comercio quedan contaminadas (canje cuenta pero ahorro
-  // e ingresos=0). Mejor forzar a que lo ingrese — son 2 segundos extras
-  // de typing y la data del comercio queda limpia.
-  // Tope máximo $10M: el frontend ya lo valida (AdminConfirmarCanjePage), pero
-  // el backend es la fuente de verdad — sin este .max() un request directo al
-  // API (o un typo de ceros) registra montos absurdos que inflan las métricas
-  // del comercio (ingresos/ahorro). Audit v11: encontrado probando $999.999.999.
+  // montoTicket es OPCIONAL (PM-elite T1, métrica norte): el canje NUNCA debe
+  // trabarse porque el cajero no tipeó el monto. Si no viene, el backend calcula
+  // el ahorro desde el `precioReferencia` del cupón; si tampoco hay, ahorro=0
+  // pero el canje se confirma igual.
+  // Tope máximo $10M: el backend es la fuente de verdad — sin este .max() un
+  // request directo al API (o un typo de ceros) registra montos absurdos que
+  // inflan las métricas del comercio (ingresos/ahorro).
   montoTicket: z
     .number()
-    .positive('El monto del ticket es obligatorio')
-    .max(10_000_000, 'El monto parece demasiado alto — revisalo'),
+    .positive('El monto debe ser un número positivo')
+    .max(10_000_000, 'El monto parece demasiado alto — revisalo')
+    .optional(),
 })
 
 // ─── Merchant edit ────────────────────────────────────────────────────

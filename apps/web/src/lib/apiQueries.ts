@@ -116,6 +116,8 @@ export type ValidationResult =
       porcentaje: number
       couponTitulo: string
       couponId: string
+      /** Precio normal de lista (ARS) — el canje pre-carga el monto con esto. */
+      precioReferencia?: number
       customerName: string
       customerDni: string
       expiresAt: string
@@ -152,6 +154,7 @@ export function useApiValidateByCode(code: string): {
           porcentaje: v.coupon.porcentaje,
           couponTitulo: v.coupon.titulo,
           couponId: v.coupon.id,
+          precioReferencia: v.coupon.precioReferencia,
           customerName: v.user.nombre,
           customerDni: v.user.dni,
           expiresAt: v.expiresAt,
