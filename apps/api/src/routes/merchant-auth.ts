@@ -75,6 +75,10 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
   // sin pago ni MercadoPago. freeTrialUntil es informativo (no corta nada por ahora).
   const freeTrialUntil = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
   const referralCode = await generateReferralCode(appId)
+  // Datos fiscales (cuit / razonSocial / condicionFiscal / direccionFiscal): NO se
+  // piden en el alta (onboarding sin fricción). El modelo los tiene opcionales y
+  // quedan vacíos; se completarán recién cuando se active el cobro. No los
+  // esperamos ni requerimos acá.
   const merchant = await Merchant.create({
     appId,
     slug,

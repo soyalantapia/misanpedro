@@ -7,15 +7,14 @@ import {
   CheckCircle2,
   Sparkles,
   Clock,
-  Receipt,
-  Lock,
+  Tag,
+  ImagePlus,
 } from 'lucide-react'
 import { CATEGORIAS, type Categoria } from '@/lib/types'
 import { merchantAuth } from '@/lib/merchantStore'
 import { useToast } from '@/components/Toast'
 import { Select } from '@/components/Select'
 import { cn } from '@/lib/cn'
-import { validateCuit } from '@/lib/validations/cuit'
 import { useTenant } from '@/lib/tenant'
 
 // Leaflet es pesado (~150KB) — lo bajamos como chunk aparte y sólo cuando
@@ -26,8 +25,9 @@ const LocationPicker = lazy(() =>
 
 const SANPEDRO_CENTER = { lat: -33.6797, lng: -59.6669 }
 
-type Step = 'datos' | 'fiscal' | 'pago' | 'listo'
-type CondicionFiscal = 'monotributo' | 'responsable_inscripto'
+// Alta MÍNIMA: solo datos del comercio + cuenta. NADA fiscal (CUIT/razón social/
+// condición/domicilio se piden recién cuando se active el cobro — ver Fase 4).
+type Step = 'datos' | 'listo'
 
 type Form = {
   nombreComercio: string
@@ -40,10 +40,6 @@ type Form = {
   horarios: string
   emailAdmin: string
   nombreAdmin: string
-  cuit: string
-  razonSocial: string
-  condicionFiscal: CondicionFiscal
-  direccionFiscal: string
   acceptedTc: boolean
 }
 
@@ -58,10 +54,6 @@ const empty: Form = {
   horarios: '',
   emailAdmin: '',
   nombreAdmin: '',
-  cuit: '',
-  razonSocial: '',
-  condicionFiscal: 'monotributo' as CondicionFiscal,
-  direccionFiscal: '',
   acceptedTc: false,
 }
 
@@ -80,7 +72,6 @@ function loadDraft(): Partial<Form> | null {
     const raw = localStorage.getItem(DRAFT_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as StoredDraft
-    // Sanitizamos: solo conservamos campos string conocidos.
     return parsed && typeof parsed === 'object' ? parsed : null
   } catch {
     return null
@@ -89,10 +80,8 @@ function loadDraft(): Partial<Form> | null {
 
 function saveDraft(form: Form) {
   try {
-    // acceptedTc no se persiste al draft (consent fresco cada vez)
     const { acceptedTc: __, ...rest } = form
     void __
-    // Si está todo vacío, no escribimos basura al storage.
     const someFilled = Object.values(rest).some(
       (v) => typeof v === 'string' && v.trim().length > 0,
     )
@@ -115,8 +104,6 @@ function clearDraft() {
 }
 
 export function AdminSignupPage() {
-  // Siempre arrancamos en 'datos' al recargar: el usuario tiene que volver
-  // a ingresar la contraseña (no se persiste) y re-aceptar los TyC.
   const [step, setStep] = useState<Step>('datos')
   const [form, setForm] = useState<Form>(() => {
     const draft = loadDraft()
@@ -136,8 +123,6 @@ export function AdminSignupPage() {
   const [searchParams] = useSearchParams()
   const refCode = searchParams.get('ref')?.trim() || undefined
 
-  // Persistimos el form en localStorage en cada cambio. No persistimos
-  // password ni acceptedTc (ver saveDraft). Tampoco después de "listo".
   useEffect(() => {
     if (step === 'listo') return
     saveDraft(form)
@@ -149,7 +134,6 @@ export function AdminSignupPage() {
     if (draftRestored) setDraftRestored(false)
   }
 
-  // Seteamos lat+lng juntas para no dejar un estado intermedio (lat sin lng).
   function setLocation(ll: { lat: number; lng: number }) {
     setForm((f) => ({ ...f, lat: ll.lat, lng: ll.lng }))
     setError(null)
@@ -170,49 +154,17 @@ export function AdminSignupPage() {
     if (form.lat == null || form.lng == null)
       return 'Marcá la ubicación de tu comercio en el mapa'
     if (!form.telefono.trim()) return 'Falta el teléfono'
-    // Los horarios ya no son obligatorios al signup — se completan en el panel
     if (form.nombreAdmin.trim().length < 3) return 'Falta tu nombre completo'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAdmin)) return 'Email inválido'
     return null
   }
 
-  function validateFiscal(): string | null {
-    // Validación AFIP del CUIT: 11 dígitos, prefijo válido (20,23,24,27,30...),
-    // dígito verificador correcto. Bloquea typos que generarían facturas mal.
-    const cuitCheck = validateCuit(form.cuit)
-    if (!cuitCheck.ok) return cuitCheck.error
-    if (form.razonSocial.trim().length < 3) return 'Falta la razón social'
-    if (form.direccionFiscal.trim().length < 5) return 'Falta la dirección fiscal'
-    return null
-  }
+  // Alta en UN paso: validar datos + T&C → crear el comercio (sin fiscal, sin pago).
+  async function handleSignup() {
+    const err = validateDatos()
+    if (err) return setError(err)
+    if (!form.acceptedTc) return setError('Tenés que aceptar los términos y condiciones')
 
-  // setStep wrapper: limpia errores acumulados de pasos previos para que no
-  // queden "colgados" en la UI cuando el usuario navega entre steps.
-  function goToStep(next: Step) {
-    setError(null)
-    setStep(next)
-  }
-
-  function goNext() {
-    if (step === 'datos') {
-      const err = validateDatos()
-      if (err) return setError(err)
-      goToStep('fiscal')
-      return
-    }
-    if (step === 'fiscal') {
-      const err = validateFiscal()
-      if (err) return setError(err)
-      goToStep('pago')
-      return
-    }
-  }
-
-  async function handlePay() {
-    if (!form.acceptedTc) {
-      setError('Tenés que aceptar los términos y condiciones')
-      return
-    }
     setSubmitting(true)
     setError(null)
 
@@ -220,17 +172,13 @@ export function AdminSignupPage() {
       comercio: {
         nombre: form.nombreComercio.trim(),
         categoria: form.categoria,
-        categoriaOtro:
-          form.categoria === 'otro' ? form.categoriaOtro.trim() : undefined,
+        categoriaOtro: form.categoria === 'otro' ? form.categoriaOtro.trim() : undefined,
         direccion: form.direccion.trim(),
         lat: form.lat ?? undefined,
         lng: form.lng ?? undefined,
         telefono: form.telefono.trim(),
         horarios: form.horarios.trim(),
-        cuit: form.cuit.trim(),
-        razonSocial: form.razonSocial.trim(),
-        condicionFiscal: form.condicionFiscal,
-        direccionFiscal: form.direccionFiscal.trim(),
+        // Sin datos fiscales: se piden recién cuando se active el cobro.
       },
       admin: {
         nombre: form.nombreAdmin.trim(),
@@ -239,26 +187,22 @@ export function AdminSignupPage() {
       ref: refCode,
       acceptedTc: true,
     })
+
     if (result.ok) {
       // Comercio creado y ACTIVO con 3 meses gratis — sin pago ni MercadoPago.
-      // Entra directo al panel y ya es visible para los vecinos.
+      // Ya es visible para los vecinos. Lo llevamos a completar su perfil.
       clearDraft()
       setSubmitting(false)
       setStep('listo')
-      toast.success('¡Listo! Tenés 3 meses gratis', 'Tu comercio ya es visible para los vecinos.')
-      setTimeout(() => navigate('/admin', { replace: true }), 1500)
+      toast.success('¡Listo! Tu comercio ya está dentro', 'Visible para los vecinos. Sumale tu perfil.')
       return
     }
-    // El API rechazó el signup. Mostramos error y volvemos al primer paso si
-    // el problema fue de email. No hay fallback local — todos los comercios
-    // deben existir en la DB para poder validar cupones, recibir pagos, etc.
     setSubmitting(false)
     if (
       result.error.toLowerCase().includes('email') ||
       result.error.toLowerCase().includes('ya registrado')
     ) {
       setError(result.error)
-      setStep('datos')
       return
     }
     setError(result.error || 'No pudimos crear el comercio. Reintentá en un momento.')
@@ -283,21 +227,17 @@ export function AdminSignupPage() {
               Sumá tu comercio · 3 meses gratis
             </p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">
-              {step === 'datos' && 'Datos del comercio'}
-              {step === 'fiscal' && 'Datos fiscales'}
-              {step === 'pago' && 'Empezá gratis'}
+              {step === 'datos' && 'Sumá tu comercio'}
               {step === 'listo' && '¡Bienvenido!'}
             </h1>
             <p className="mt-1 text-sm text-ink-soft">
-              {step === 'datos' && '3 minutos · Sin tarjeta'}
-              {step === 'fiscal' && 'Opcional — para tu factura más adelante'}
-              {step === 'pago' && '3 meses gratis · sin tarjeta · acceso completo'}
-              {step === 'listo' && 'Te estamos llevando al panel…'}
+              {step === 'datos' && '2 minutos · Sin tarjeta · Sin trámites'}
+              {step === 'listo' && 'Ya estás dentro — sumale tu perfil'}
             </p>
           </div>
         </div>
 
-        {refCode && (
+        {refCode && step === 'datos' && (
           <div className="flex items-center gap-2.5 rounded-2xl bg-status-success-bg px-4 py-3 text-status-success-fg ring-1 ring-status-success/20">
             <span aria-hidden className="text-lg leading-none">👋</span>
             <p className="text-xs leading-snug">
@@ -313,7 +253,7 @@ export function AdminSignupPage() {
           <div className="flex items-center justify-between gap-3 rounded-2xl bg-status-info-bg px-4 py-3 text-status-info-fg ring-1 ring-status-info/20">
             <p className="text-xs leading-snug">
               <strong>Recuperamos tus datos</strong> de la última vez que estuviste acá. Revisalos y
-              completá la contraseña antes de continuar.
+              terminá el alta.
             </p>
             <button
               type="button"
@@ -391,9 +331,7 @@ export function AdminSignupPage() {
               >
                 <LocationPicker
                   value={
-                    form.lat != null && form.lng != null
-                      ? { lat: form.lat, lng: form.lng }
-                      : null
+                    form.lat != null && form.lng != null ? { lat: form.lat, lng: form.lng } : null
                   }
                   onChange={setLocation}
                   address={form.direccion}
@@ -419,7 +357,7 @@ export function AdminSignupPage() {
             />
             <p className="text-[11px] text-ink-soft">
               <Clock size={10} className="mr-1 inline" />
-              Los horarios de atención los cargás después desde el panel.
+              Las fotos y los horarios los cargás después, en un toque, desde el panel.
             </p>
 
             <div className="my-2 border-t border-line" />
@@ -454,48 +392,85 @@ export function AdminSignupPage() {
               }
             />
             <p className="rounded-xl bg-brand-soft px-3 py-2 text-xs font-medium text-brand-strong">
-              No necesitás contraseña: cada vez que entres al panel te mandamos
-              un código de acceso a este email.
+              No necesitás contraseña: cada vez que entres al panel te mandamos un código de acceso a
+              este email.
             </p>
 
+            {/* Tranquilidad del plan, sin paso de "pago" (no se cobra nada ahora). */}
+            <div className="rounded-2xl bg-status-success-bg p-3.5 text-status-success-fg ring-1 ring-status-success/20">
+              <p className="flex items-center gap-1.5 text-sm font-bold">
+                <Sparkles size={14} /> 3 meses gratis · todo incluido
+              </p>
+              <p className="mt-0.5 text-xs leading-snug">
+                Cupones, validaciones y clientes ilimitados. Sin tarjeta, sin MercadoPago. Cancelás
+                cuando quieras.
+              </p>
+            </div>
+
+            <label className="flex items-start gap-3 rounded-2xl bg-surface p-4 ring-1 ring-line cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.acceptedTc}
+                onChange={(e) => update('acceptedTc', e.target.checked)}
+                className="mt-0.5 h-5 w-5 shrink-0 rounded accent-brand"
+              />
+              <span className="text-xs leading-snug text-ink">
+                Acepto los{' '}
+                <Link
+                  to="/legal/terminos"
+                  target="_blank"
+                  className="font-bold text-brand-strong underline-offset-2 hover:underline"
+                >
+                  Términos y Condiciones
+                </Link>{' '}
+                y la{' '}
+                <Link
+                  to="/legal/privacidad"
+                  target="_blank"
+                  className="font-bold text-brand-strong underline-offset-2 hover:underline"
+                >
+                  Política de Privacidad
+                </Link>
+                . Confirmo que tengo facultades para representar al comercio.
+              </span>
+            </label>
+
             {error && (
-              <p role="alert" className="rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
+              <p
+                role="alert"
+                className="rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg"
+              >
                 {error}
               </p>
             )}
 
             <button
               type="button"
-              onClick={goNext}
-              className="mt-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-6 py-3.5 text-base font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
+              onClick={handleSignup}
+              disabled={submitting || !form.acceptedTc}
+              className={cn(
+                'mt-1 flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold text-on-brand shadow-cta transition-all',
+                form.acceptedTc && !submitting
+                  ? 'bg-gradient-to-br from-brand to-brand-strong hover:-translate-y-0.5'
+                  : 'cursor-not-allowed bg-surface-2 text-ink-soft shadow-none',
+              )}
             >
-              Continuar <ChevronRight size={16} />
+              {submitting ? (
+                <>
+                  <Clock size={16} className="animate-pulse" /> Creando tu comercio…
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} /> Crear mi comercio gratis
+                </>
+              )}
             </button>
           </div>
         )}
 
-        {step === 'fiscal' && (
-          <FiscalStep
-            form={form}
-            update={update}
-            error={error}
-            onBack={() => goToStep('datos')}
-            onNext={goNext}
-          />
+        {step === 'listo' && (
+          <ListoStep form={form} onGoTo={(to) => navigate(to, { replace: true })} />
         )}
-
-        {step === 'pago' && (
-          <PagoStep
-            submitting={submitting}
-            error={error}
-            acceptedTc={form.acceptedTc}
-            onAcceptTc={(v) => update('acceptedTc', v)}
-            onPay={handlePay}
-            onBack={() => goToStep('fiscal')}
-          />
-        )}
-
-        {step === 'listo' && <ListoStep form={form} />}
       </div>
     </div>
   )
@@ -504,8 +479,6 @@ export function AdminSignupPage() {
 function Stepper({ step }: { step: Step }) {
   const steps: { id: Step; label: string }[] = [
     { id: 'datos', label: 'Datos' },
-    { id: 'fiscal', label: 'Fiscal' },
-    { id: 'pago', label: 'Pago' },
     { id: 'listo', label: 'Listo' },
   ]
   const activeIdx = steps.findIndex((s) => s.id === step)
@@ -538,10 +511,7 @@ function Stepper({ step }: { step: Step }) {
           {i < steps.length - 1 && (
             <span
               aria-hidden="true"
-              className={cn(
-                'h-0.5 w-6 rounded',
-                i < activeIdx ? 'bg-status-success' : 'bg-surface-2',
-              )}
+              className={cn('h-0.5 w-6 rounded', i < activeIdx ? 'bg-status-success' : 'bg-surface-2')}
             />
           )}
         </div>
@@ -550,273 +520,64 @@ function Stepper({ step }: { step: Step }) {
   )
 }
 
-function FiscalStep({
-  form,
-  update,
-  error,
-  onBack,
-  onNext,
-}: {
-  form: Form
-  update: <K extends keyof Form>(key: K, value: Form[K]) => void
-  error: string | null
-  onBack: () => void
-  onNext: () => void
-}) {
+/**
+ * Paso final: NO es un muro. Empuja (sin obligar) a completar el perfil
+ * (foto + horarios = la vidriera del comercio) y a crear el primer descuento.
+ * El comercio ya quedó activo y visible; puede ir directo al panel.
+ */
+function ListoStep({ form, onGoTo }: { form: Form; onGoTo: (to: string) => void }) {
   return (
-    <div className="flex flex-col gap-4 rounded-3xl bg-surface p-5 shadow-floating ring-1 ring-line">
-      <p className="rounded-xl bg-status-info-bg p-3 text-xs leading-snug text-status-info-fg">
-        <Receipt className="mb-1 inline" size={14} /> Necesitamos estos datos para emitirte la factura
-        C de la suscripción mensual. Si no facturás, podés poner tus datos personales.
-      </p>
-      <Field
-        label="CUIT"
-        required
-        input={
-          <input
-            type="text"
-            autoComplete="off"
-            value={form.cuit}
-            onChange={(e) => update('cuit', e.target.value)}
-            placeholder="Ej: 20-12345678-9"
-            className={inputCls}
-          />
-        }
-      />
-      <Field
-        label="Razón social"
-        required
-        input={
-          <input
-            type="text"
-            value={form.razonSocial}
-            onChange={(e) => update('razonSocial', e.target.value)}
-            placeholder="Ej: Tu Nombre Apellido o Nombre Comercio S.A."
-            className={inputCls}
-          />
-        }
-      />
-      <Field
-        label="Condición fiscal"
-        required
-        input={
-          <Select<CondicionFiscal>
-            value={form.condicionFiscal}
-            onChange={(v) => update('condicionFiscal', v)}
-            options={[
-              { value: 'monotributo', label: 'Monotributista' },
-              { value: 'responsable_inscripto', label: 'Responsable Inscripto' },
-            ]}
-            ariaLabel="Condición fiscal"
-          />
-        }
-      />
-      <Field
-        label="Domicilio fiscal"
-        required
-        input={
-          <input
-            type="text"
-            value={form.direccionFiscal}
-            onChange={(e) => update('direccionFiscal', e.target.value)}
-            placeholder="Misma del comercio si corresponde"
-            className={inputCls}
-          />
-        }
-      />
-
-      {error && (
-        <p className="rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
-          {error}
-        </p>
-      )}
-
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={onBack}
-          className="rounded-2xl bg-surface-2 px-4 py-3 text-sm font-bold text-ink hover:bg-surface-2"
-        >
-          Volver
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-4 py-3 text-sm font-bold text-on-brand shadow-cta hover:-translate-y-0.5"
-        >
-          Continuar <ChevronRight size={16} />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function PagoStep({
-  submitting,
-  error,
-  acceptedTc,
-  onAcceptTc,
-  onPay,
-  onBack,
-}: {
-  submitting: boolean
-  error: string | null
-  acceptedTc: boolean
-  onAcceptTc: (v: boolean) => void
-  onPay: () => void
-  onBack: () => void
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="overflow-hidden rounded-3xl bg-surface shadow-floating ring-1 ring-line">
-        <div className="bg-gradient-to-br from-brand to-brand-strong p-5 text-on-brand">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-surface/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
-            <Sparkles size={11} /> Plan estándar comercio
-          </div>
-          <p className="mt-3 text-5xl font-bold tracking-tight">
-            3 meses
-            <span className="ml-2 text-3xl font-bold text-on-brand">gratis</span>
-          </p>
-          <p className="mt-1 text-xs text-on-brand/90">
-            Sin tarjeta · Sin MercadoPago · Cancelás cuando quieras
-          </p>
+    <div className="flex flex-col gap-4 rounded-3xl bg-surface p-6 shadow-floating ring-1 ring-line">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <div className="grid h-16 w-16 place-items-center rounded-3xl bg-status-success-bg text-status-success-fg">
+          <CheckCircle2 size={32} />
         </div>
-        <div className="px-5 pt-4 pb-3">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-brand-strong">
-            Todo ilimitado · sin letra chica
-          </p>
-        </div>
-        <ul className="flex flex-col gap-2 px-5 pb-5 text-sm text-ink">
-          <Bullet>
-            <Highlight>Cupones ilimitados</Highlight> activos al mismo tiempo
-          </Bullet>
-          <Bullet>
-            <Highlight>Validaciones ilimitadas</Highlight> por QR + código manual
-          </Bullet>
-          <Bullet>
-            <Highlight>Clientes ilimitados</Highlight> en tu base, exportables a CSV
-          </Bullet>
-          <Bullet>
-            <Highlight>Mensajes WhatsApp ilimitados</Highlight> a clientes individuales
-          </Bullet>
-          <Bullet>
-            <Highlight>Campañas masivas WhatsApp</Highlight> · 4 envíos / mes
-          </Bullet>
-          <Bullet>
-            <Highlight>Estadísticas en tiempo real</Highlight> de canjes, ahorro y patrones
-          </Bullet>
-          <Bullet>
-            <Highlight>Notas internas</Highlight> sobre cada cliente (historial, preferencias)
-          </Bullet>
-          <Bullet>
-            <Highlight>Soporte por WhatsApp</Highlight> para todos los comercios adheridos
-          </Bullet>
-        </ul>
-      </div>
-
-      <div className="rounded-3xl bg-status-info-bg p-4 text-status-info-fg ring-1 ring-status-info/20">
-        <p className="text-xs leading-snug">
-          <strong>Sin compromiso:</strong> arrancás con <strong>3 meses gratis</strong> y acceso
-          completo a todo. No te pedimos tarjeta ni datos de pago para empezar.
+        <h3 className="text-xl font-bold text-ink">¡{form.nombreComercio} ya está dentro!</h3>
+        <p className="text-sm text-ink-soft">
+          Ya sos visible para los vecinos. Dale un toque más para que te elijan:
         </p>
       </div>
 
-      <label className="flex items-start gap-3 rounded-2xl bg-surface p-4 ring-1 ring-line cursor-pointer">
-        <input
-          type="checkbox"
-          checked={acceptedTc}
-          onChange={(e) => onAcceptTc(e.target.checked)}
-          className="mt-0.5 h-5 w-5 shrink-0 rounded accent-brand"
-        />
-        <span className="text-xs leading-snug text-ink">
-          Acepto los{' '}
-          <Link
-            to="/legal/terminos"
-            target="_blank"
-            className="font-bold text-brand-strong underline-offset-2 hover:underline"
-          >
-            Términos y Condiciones
-          </Link>{' '}
-          y la{' '}
-          <Link
-            to="/legal/privacidad"
-            target="_blank"
-            className="font-bold text-brand-strong underline-offset-2 hover:underline"
-          >
-            Política de Privacidad
-          </Link>
-          . Confirmo que tengo facultades para representar al comercio.
+      <button
+        type="button"
+        onClick={() => onGoTo('/admin/comercio')}
+        className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-brand to-brand-strong p-4 text-left text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface/20">
+          <ImagePlus size={20} />
         </span>
-      </label>
-
-      {error && (
-        <p className="rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
-          {error}
-        </p>
-      )}
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold">Completá tu perfil</span>
+          <span className="block text-xs text-on-brand/85">
+            Foto + horarios: así los vecinos te ven mejor en la app.
+          </span>
+        </span>
+        <ChevronRight size={18} className="shrink-0" />
+      </button>
 
       <button
         type="button"
-        onClick={onPay}
-        disabled={submitting || !acceptedTc}
-        className={cn(
-          'mt-1 flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-bold text-on-brand shadow-cta transition-all',
-          acceptedTc && !submitting
-            ? 'bg-gradient-to-br from-brand to-brand-strong hover:-translate-y-0.5'
-            : 'cursor-not-allowed bg-surface-2 text-ink-soft shadow-none',
-        )}
+        onClick={() => onGoTo('/admin/cupones/nuevo')}
+        className="flex items-center gap-3 rounded-2xl bg-surface p-4 text-left text-ink ring-1 ring-line transition-all hover:-translate-y-0.5"
       >
-        {submitting ? (
-          <>
-            <Clock size={16} className="animate-pulse" /> Activando…
-          </>
-        ) : !acceptedTc ? (
-          <>
-            <Lock size={16} /> Aceptá los términos para continuar
-          </>
-        ) : (
-          <>
-            <Sparkles size={16} /> Empezar gratis
-          </>
-        )}
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-strong">
+          <Tag size={20} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold">Creá tu primer descuento</span>
+          <span className="block text-xs text-ink-soft">El gancho para que el vecino te visite.</span>
+        </span>
+        <ChevronRight size={18} className="shrink-0 text-ink-faint" />
       </button>
+
       <button
         type="button"
-        onClick={onBack}
-        disabled={submitting}
-        className="text-center text-xs font-semibold text-ink-soft hover:text-ink disabled:opacity-50"
+        onClick={() => onGoTo('/admin')}
+        className="text-center text-xs font-semibold text-ink-soft hover:text-ink"
       >
-        Volver a editar los datos fiscales
+        Después lo hago — ir al panel
       </button>
     </div>
-  )
-}
-
-function ListoStep({ form }: { form: Form }) {
-  return (
-    <div className="flex flex-col items-center gap-3 rounded-3xl bg-surface p-8 text-center shadow-floating ring-1 ring-line">
-      <div className="grid h-16 w-16 place-items-center rounded-3xl bg-status-success-bg text-status-success-fg">
-        <CheckCircle2 size={32} />
-      </div>
-      <h3 className="text-xl font-bold text-ink">¡{form.nombreComercio} ya está dentro!</h3>
-      <p className="text-sm text-ink-soft">
-        Te enviamos un email a <strong>{form.emailAdmin}</strong> con los próximos pasos. Te
-        estamos redirigiendo al panel…
-      </p>
-    </div>
-  )
-}
-
-function Highlight({ children }: { children: React.ReactNode }) {
-  return <span className="font-bold text-ink">{children}</span>
-}
-
-function Bullet({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2">
-      <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-status-success" />
-      {children}
-    </li>
   )
 }
 
