@@ -151,8 +151,9 @@ export function AdminSignupPage() {
     if (form.categoria === 'otro' && form.categoriaOtro.trim().length < 2)
       return 'Indicá qué tipo de comercio es'
     if (form.direccion.trim().length < 5) return 'Falta una dirección válida'
-    if (form.lat == null || form.lng == null)
-      return 'Marcá la ubicación de tu comercio en el mapa'
+    // PM-elite T2: el pin NO es obligatorio. Lo geocodificamos solo desde la
+    // dirección (LocationPicker) y, si no hay, el backend ubica el comercio en
+    // el centro de la ciudad. El alta nunca se traba por el mapa.
     if (!form.telefono.trim()) return 'Falta el teléfono'
     if (form.nombreAdmin.trim().length < 3) return 'Falta tu nombre completo'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAdmin)) return 'Email inválido'
@@ -322,8 +323,15 @@ export function AdminSignupPage() {
             />
             <div className="flex flex-col gap-1.5">
               <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
-                Ubicación en el mapa <span className="text-status-error">*</span>
+                Ubicación en el mapa{' '}
+                <span className="font-semibold normal-case tracking-normal text-ink-faint">
+                  (opcional)
+                </span>
               </span>
+              <p className="-mt-0.5 text-[11px] text-ink-soft">
+                La ubicamos sola con tu dirección. Ajustá el pin solo si querés
+                afinar la puerta exacta.
+              </p>
               <Suspense
                 fallback={
                   <div className="h-[240px] animate-pulse rounded-2xl bg-surface-2 ring-1 ring-line" />

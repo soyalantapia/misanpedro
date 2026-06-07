@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -73,6 +73,7 @@ export function LocationPicker({
   const [geocoding, setGeocoding] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [flyTo, setFlyTo] = useState<{ lat: number; lng: number; nonce: number } | null>(null)
+  const autoTriedRef = useRef<string>('')
 
   async function geocode() {
     if (address.trim().length < 4) {
@@ -101,6 +102,22 @@ export function LocationPicker({
       setGeocoding(false)
     }
   }
+
+  // PM-elite T2: geocodificamos SOLA la dirección (debounce). Si todavía no hay
+  // pin y la dirección es razonable, la buscamos automáticamente para que el
+  // comercio no tenga que tocar el mapa. Una vez por dirección; si ya hay pin
+  // (lo marcó o lo movió) no lo pisamos.
+  useEffect(() => {
+    const q = address.trim()
+    if (value || q.length < 6) return
+    if (autoTriedRef.current === q) return
+    const t = setTimeout(() => {
+      autoTriedRef.current = q
+      void geocode()
+    }, 900)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, value])
 
   const initialCenter: [number, number] = value ? [value.lat, value.lng] : [center.lat, center.lng]
 
