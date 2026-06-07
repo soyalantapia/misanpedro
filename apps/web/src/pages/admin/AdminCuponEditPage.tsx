@@ -36,6 +36,8 @@ type FormState = {
   porcentaje: number
   /** Precio normal por persona (texto en el form; se manda como number). Público. */
   precioReferencia: string
+  /** Precio final con el cupón (texto; se manda como number). Solo precio_fijo. Público. */
+  precioFijo: string
   /** Costo aprox del comercio (texto; se manda como number). PRIVADO. */
   costoReferencia: string
   /** Imagen del cupón (data:image/* base64 o URL). Opcional. */
@@ -60,6 +62,7 @@ const empty: FormState = {
   condiciones: '',
   porcentaje: 30,
   precioReferencia: '',
+  precioFijo: '',
   costoReferencia: '',
   imagenUrl: '',
   vigenciaHasta: defaultExpiry(),
@@ -150,14 +153,18 @@ type Jugada = {
   franjaHasta: string
 }
 
-/** Cruza objetivo + rubro y PROPONE una jugada concreta (no la pregunta en abstracto). */
+/** Cruza objetivo + rubro y PROPONE una jugada concreta (no la pregunta en abstracto).
+ *  El TÍTULO no hornea el % (lo muestra el badge/preview en tiempo real): así nunca
+ *  contradice el % real si el costo lo capa. El gancho ya viene cargado (paso previo),
+ *  así que la jugada interpola el producto real. La jugada también sugiere el TIPO. */
 function sugerirJugada(objetivo: Objetivo, categoria: string, gancho: string): Jugada {
   const g = gancho.trim() || 'tu producto estrella'
+  const gT = gancho.trim() || 'el local'
   if (objetivo === 'traer_nuevos') {
     return {
       label: 'Cliente nuevo agresivo',
       why: 'Un golpe fuerte la primera vez: si el trabajo es bueno, vuelven a precio lleno.',
-      titulo: `40% OFF en tu primera vez`,
+      titulo: `Bienvenida: tu primera vez en ${gT}`,
       descripcion: `Descuento de bienvenida en ${g} para quien todavía no te conoce. Una sola vez por persona.`,
       porcentaje: 40,
       tipoOferta: 'porcentaje',
@@ -172,8 +179,8 @@ function sugerirJugada(objetivo: Objetivo, categoria: string, gancho: string): J
       return {
         label: 'Última hornada / fin del día',
         why: 'En vez de tirarlo, lo vendés con descuento fuerte al final del día.',
-        titulo: `40% en ${g} al cierre`,
-        descripcion: `Lo que queda al final del día, con 40%. Hasta agotar.`,
+        titulo: `Última hornada de ${gT}`,
+        descripcion: `Lo que queda al final del día, con descuento fuerte. Hasta agotar.`,
         porcentaje: 40,
         tipoOferta: 'porcentaje',
         exclusiva: true,
@@ -185,8 +192,8 @@ function sugerirJugada(objetivo: Objetivo, categoria: string, gancho: string): J
     return {
       label: 'Liquidá lo que no rota',
       why: 'Hacés caja con lo parado y liberás espacio para lo nuevo.',
-      titulo: `40% en ${g} marcado`,
-      descripcion: `Selección marcada con 40%. Hasta agotar stock.`,
+      titulo: `Liquidación de ${gT}`,
+      descripcion: `Selección marcada con descuento. Hasta agotar stock.`,
       porcentaje: 40,
       tipoOferta: 'porcentaje',
       exclusiva: true,
@@ -199,8 +206,8 @@ function sugerirJugada(objetivo: Objetivo, categoria: string, gancho: string): J
     return {
       label: 'Costumbre semanal',
       why: 'El mismo día, todas las semanas: el vecino arma su rutina alrededor tuyo.',
-      titulo: `Martes de ${g}: 20% off`,
-      descripcion: `Todos los martes, 20% en ${g}. La costumbre que te hace elegir.`,
+      titulo: `Martes de ${gT}`,
+      descripcion: `Todos los martes, ${g} con descuento. La costumbre que te hace elegir.`,
       porcentaje: 20,
       tipoOferta: 'porcentaje',
       exclusiva: true,
@@ -214,22 +221,22 @@ function sugerirJugada(objetivo: Objetivo, categoria: string, gancho: string): J
     return {
       label: 'Happy hour en la hora muerta',
       why: 'Movés la franja vacía de la tarde sin tocar tus horarios pico.',
-      titulo: `50% en ${g} de 15 a 18`,
-      descripcion: `Mitad de precio en ${g} en la franja floja de la tarde, de lunes a jueves. Llenás las mesas vacías sin resignar tus horarios pico.`,
+      titulo: `Happy hour de ${gT}`,
+      descripcion: `${g} a precio especial en la franja floja de la tarde, de lunes a jueves. Llenás las mesas vacías sin resignar tus horarios pico.`,
       porcentaje: 50,
-      tipoOferta: 'porcentaje',
+      tipoOferta: 'happy_hour',
       exclusiva: true,
       dias: ['lun', 'mar', 'mie', 'jue'],
       franjaDesde: '15:00',
       franjaHasta: '18:00',
     }
   }
-  // necesidad u otros: día flojo de la semana
+  // necesidad u otros: día flojo (sin franja → porcentaje, no happy hour)
   return {
     label: 'Día flojo con descuento',
     why: 'Concentrás demanda el día más muerto de tu semana.',
-    titulo: `Martes: 25% en ${g}`,
-    descripcion: `Los martes, 25% en ${g}. Para mover el día más flojo.`,
+    titulo: `Martes flojo en ${gT}`,
+    descripcion: `Los martes, ${g} con descuento. Para mover el día más flojo.`,
     porcentaje: NECESIDAD.has(categoria) ? 15 : 25,
     tipoOferta: 'porcentaje',
     exclusiva: true,
@@ -256,9 +263,24 @@ function corajeMsg(objetivo: Objetivo | '', m: ReturnType<typeof calcMoney> | nu
 // ─── Medidor de fuerza (avisa cuando es FLOJO, no cuando es grande) ─────────
 function calcFuerza(form: FormState): { nivel: 'Fuerte' | 'Media' | 'Floja'; mejora: string } {
   let score = 0
-  const grande = form.porcentaje >= 30 || form.tipoOferta === 'dos_por_uno'
+  // "grande": para precio_fijo lo medimos por el ahorro EQUIVALENTE (≥30% del precio
+  // normal). Sin precio de referencia no penalizamos (no hay con qué comparar).
+  let grande: boolean
+  let mejoraDescuento: string
+  if (form.tipoOferta === 'precio_fijo') {
+    const pr = Number(form.precioReferencia)
+    const pf = Number(form.precioFijo)
+    const tienePr = form.precioReferencia.trim() !== '' && Number.isFinite(pr) && pr > 0
+    const tienePf = form.precioFijo.trim() !== '' && Number.isFinite(pf) && pf > 0
+    const pctEquiv = tienePr && tienePf && pr > pf ? ((pr - pf) / pr) * 100 : 0
+    grande = !tienePr || pctEquiv >= 30
+    mejoraDescuento = 'Bajá un poco el precio con el cupón: si el ahorro no llega al 30%, casi no mueve a nadie.'
+  } else {
+    grande = form.porcentaje >= 30 || form.tipoOferta === 'dos_por_uno'
+    if (!grande && form.porcentaje >= 15) score += 1
+    mejoraDescuento = 'Subí el descuento. Menos de 30% casi no mueve a nadie de su rutina; animate al número grande.'
+  }
   if (grande) score += 2
-  else if (form.porcentaje >= 15) score += 1
   if (form.exclusiva) score += 1
   if (form.productoGancho.trim()) score += 1
   if (form.dias.length > 0 || (form.franjaDesde && form.franjaHasta)) score += 1
@@ -266,7 +288,7 @@ function calcFuerza(form: FormState): { nivel: 'Fuerte' | 'Media' | 'Floja'; mej
 
   let mejora = ''
   if (!grande)
-    mejora = 'Subí el descuento. Menos de 30% casi no mueve a nadie de su rutina; animate al número grande.'
+    mejora = mejoraDescuento
   else if (!form.exclusiva)
     mejora = 'Marcalo exclusivo de la app. Si se consigue igual en la puerta, no le das motivo para bajarla.'
   else if (!form.productoGancho.trim())
@@ -308,6 +330,7 @@ export function AdminCuponEditPage() {
         condiciones: existing.condiciones ?? '',
         porcentaje: existing.porcentaje,
         precioReferencia: existing.precioReferencia != null ? String(existing.precioReferencia) : '',
+        precioFijo: existing.precioFijo != null ? String(existing.precioFijo) : '',
         costoReferencia: existing.costoReferencia != null ? String(existing.costoReferencia) : '',
         imagenUrl: existing.imagenUrl ?? '',
         vigenciaHasta: isoToDate(existing.vigenciaHasta),
@@ -360,6 +383,27 @@ export function AdminCuponEditPage() {
       toast.error('Falta la vigencia', 'Indicá hasta cuándo aplica.')
       return
     }
+    // Reglas por TIPO de oferta:
+    if (form.tipoOferta === 'happy_hour' && !(form.franjaDesde && form.franjaHasta)) {
+      toast.error('Falta la franja', 'El happy hour necesita un horario (ej. 15 a 18 hs). Cargalo en "¿Cuándo aplica?".')
+      return
+    }
+    if (form.tipoOferta === 'precio_fijo') {
+      const pf = Number(form.precioFijo)
+      const pr = Number(form.precioReferencia)
+      if (!form.precioFijo.trim() || !(pf > 0)) {
+        toast.error('Falta el precio con el cupón', 'En "precio fijo" tenés que poner a cuánto lo dejás.')
+        return
+      }
+      if (!form.precioReferencia.trim() || !(pr > 0)) {
+        toast.error('Falta el precio normal', 'Lo necesito para calcular cuánto ahorra el vecino.')
+        return
+      }
+      if (pf >= pr) {
+        toast.error('Revisá los precios', 'El precio con el cupón tiene que ser MENOR al precio normal.')
+        return
+      }
+    }
     setSubmitting(true)
     const num = (s: string) => {
       const n = Number(s)
@@ -370,12 +414,21 @@ export function AdminCuponEditPage() {
     const clr = <T,>(v: T | undefined): T | null | undefined => (v !== undefined ? v : isEdit ? null : undefined)
     // Una franja necesita AMBOS extremos; si falta uno, no es franja.
     const franjaOk = !!(form.franjaDesde && form.franjaHasta)
+    const precioRefNum = num(form.precioReferencia)
+    const precioFijoNum = num(form.precioFijo)
+    // precio_fijo: el % se DERIVA del ahorro (precio normal − precio con cupón) para
+    // mantener consistente el modelo (porcentaje es requerido) y los chips/% del vecino.
+    const porcentajeFinal =
+      form.tipoOferta === 'precio_fijo' && precioRefNum && precioFijoNum && precioRefNum > precioFijoNum
+        ? Math.max(1, Math.round(((precioRefNum - precioFijoNum) / precioRefNum) * 100))
+        : form.porcentaje
     const apiPayload = {
       titulo: form.titulo.trim(),
       descripcion: form.descripcion.trim(),
       condiciones: form.condiciones.trim(),
-      porcentaje: form.porcentaje,
-      precioReferencia: num(form.precioReferencia),
+      porcentaje: porcentajeFinal,
+      precioReferencia: precioRefNum,
+      precioFijo: clr(form.tipoOferta === 'precio_fijo' ? precioFijoNum : undefined),
       costoReferencia: clr(num(form.costoReferencia)),
       imagenUrl: clr(form.imagenUrl.trim() || undefined),
       vigenciaHasta: dateToIso(form.vigenciaHasta),
@@ -394,10 +447,10 @@ export function AdminCuponEditPage() {
     try {
       if (isEdit && id) {
         await api.merchantCoupons.update(id, apiPayload)
-        toast.success('Cupón actualizado')
+        toast.success('Descuento actualizado')
       } else {
         await api.merchantCoupons.create(apiPayload)
-        toast.success('Cupón creado', 'Ya está visible para los vecinos.')
+        toast.success('Descuento creado', 'Ya está visible para los vecinos.')
       }
       navigate('/admin/cupones', { replace: true })
     } catch (err) {
@@ -410,18 +463,18 @@ export function AdminCuponEditPage() {
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-44 sm:px-6 sm:pt-10 md:pb-32">
       <Link to="/admin/cupones" className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink">
-        <ChevronLeft size={16} /> Mis cupones
+        <ChevronLeft size={16} /> Mis descuentos
       </Link>
 
       <header className="flex flex-col gap-2">
         <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong">
-          {isEdit ? <Tag size={12} /> : <Sparkles size={12} />} {isEdit ? 'Editar cupón' : 'Nuevo cupón'}
+          {isEdit ? <Tag size={12} /> : <Sparkles size={12} />} {isEdit ? 'Editar descuento' : 'Nuevo descuento'}
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-          Armemos un cupón fuerte
+          Armemos un descuento fuerte
         </h1>
         <p className="text-sm text-ink-soft">
-          Te hago unas preguntas y salís con un cupón que el vecino no quiera dejar pasar.
+          Te hago unas preguntas y salís con un descuento que el vecino no quiera dejar pasar.
         </p>
       </header>
 
@@ -442,7 +495,10 @@ export function AdminCuponEditPage() {
 //  ASESOR (paso a paso)
 // ════════════════════════════════════════════════════════════════════════
 
-const PASOS = ['objetivo', 'jugada', 'gancho', 'plata', 'cuando', 'publicar'] as const
+// Orden: el GANCHO (producto estrella) va ANTES de la jugada, así la jugada y
+// el copy salen con el producto real (antes el gancho se pedía después y los
+// títulos quedaban genéricos).
+const PASOS = ['objetivo', 'gancho', 'jugada', 'plata', 'cuando', 'publicar'] as const
 type Paso = (typeof PASOS)[number]
 
 /** Opciones del selector "¿cada cuánto puede usarlo cada persona?" → setean usoVentana (usoMax 1). */
@@ -558,7 +614,7 @@ function Asesor({
                 <button
                   key={o.id}
                   type="button"
-                  onClick={() => { update('objetivo', o.id); setPaso('jugada') }}
+                  onClick={() => { update('objetivo', o.id); setPaso('gancho') }}
                   className={`flex flex-col gap-1.5 rounded-2xl p-4 text-left ring-1 transition-all hover:-translate-y-0.5 ${
                     sel ? 'bg-brand-soft ring-brand' : 'bg-surface ring-line hover:ring-line'
                   }`}
@@ -761,11 +817,11 @@ function Asesor({
       )}
 
       {paso === 'publicar' && (
-        <Step title="Tu cupón" hint="Así lo ve el vecino. Revisá, ajustá y publicá.">
+        <Step title="Tu descuento" hint="Así lo ve el vecino. Revisá, ajustá y publicá.">
           <FuerzaMeter fuerza={fuerza} />
-          <Preview merchant={merchant} form={form} money={money} />
+          <Preview merchant={merchant} form={form} money={money} pctDisplay={pctDisplay} />
 
-          <Field label="Título del cupón" hint={`${form.titulo.length}/60`}>
+          <Field label="Título del descuento" hint={`${form.titulo.length}/60`}>
             <input
               type="text"
               value={form.titulo}
@@ -787,7 +843,7 @@ function Asesor({
             />
           </Field>
 
-          <Field label="Foto del cupón (opcional)">
+          <Field label="Foto del descuento (opcional)">
             <ImagenCuponInput value={form.imagenUrl} onChange={(v) => update('imagenUrl', v)} />
           </Field>
 
@@ -796,7 +852,7 @@ function Asesor({
           <WizardBar>
             <button type="button" onClick={prev} className={btnGhost}><ArrowLeft size={16} /> Atrás</button>
             <button type="button" onClick={onPublicar} disabled={submitting} className={`${btnPrimary} flex-1`}>
-              <Save size={16} /> {submitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Publicar cupón'}
+              <Save size={16} /> {submitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Publicar descuento'}
             </button>
           </WizardBar>
         </Step>

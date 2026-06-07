@@ -221,6 +221,9 @@ export const couponCreateSchema = z.object({
   /** Precio normal aproximado por persona (ARS). Opcional — alimenta el
    *  planificador del vecino. */
   precioReferencia: z.number().positive().optional(),
+  /** Precio FINAL con el cupón (ARS) — SOLO para tipoOferta 'precio_fijo'.
+   *  Define el cupón (lo que el vecino paga). Público. */
+  precioFijo: z.number().positive().nullable().optional(),
   /** Imagen del cupón (data:image/* base64 o URL http/https). Se muestra en la
    *  tarjeta que ve el vecino. Opcional. */
   imagenUrl: safeImageSrcSchema.optional().nullable(),

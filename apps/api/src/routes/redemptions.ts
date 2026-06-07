@@ -160,9 +160,14 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
     )
   }
 
-  const ahorroEstimado = montoTicket
-    ? Math.round((montoTicket * coupon.porcentaje) / 100)
-    : 0
+  // El ahorro depende del TIPO de oferta:
+  //  · precio_fijo  → lo que el vecino se ahorra sobre lo que gastó (ticket − precio fijo).
+  //  · porcentaje / happy_hour → el % del ticket.
+  const ahorroEstimado = !montoTicket
+    ? 0
+    : coupon.tipoOferta === 'precio_fijo' && coupon.precioFijo != null
+      ? Math.max(0, Math.round(montoTicket - coupon.precioFijo))
+      : Math.round((montoTicket * coupon.porcentaje) / 100)
 
   activation.status = 'canjeado'
   activation.redeemedAt = new Date()

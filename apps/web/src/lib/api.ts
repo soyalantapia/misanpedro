@@ -217,6 +217,8 @@ export type ApiCoupon = {
   porcentaje: number
   /** Precio normal aproximado por persona (ARS, opcional). */
   precioReferencia?: number
+  /** Precio FINAL con el cupón (ARS) — solo para tipoOferta 'precio_fijo'. */
+  precioFijo?: number
   vigenciaHasta: string
   diasAplica?: string
   estado: string

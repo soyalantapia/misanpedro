@@ -94,6 +94,8 @@ export type Coupon = {
   porcentaje: number
   /** Precio normal aproximado por persona (ARS, opcional). */
   precioReferencia?: number
+  /** Precio FINAL con el cupón (ARS) — solo para tipoOferta 'precio_fijo'. */
+  precioFijo?: number
   vigenciaHasta: string
   imagenSeed: string
   estado: CouponEstado

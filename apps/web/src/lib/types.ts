@@ -136,12 +136,19 @@ export type Coupon = {
   porcentaje: number
   /** Precio normal aproximado por persona (ARS, opcional) — para el planificador. */
   precioReferencia?: number
+  /** Precio FINAL con el cupón (ARS) — solo para tipoOferta 'precio_fijo'. */
+  precioFijo?: number
   vigenciaHasta: string
   imagenSeed: string
   /** Imagen propia del cupón (data:image/* o URL). Pisa la portada del comercio. */
   imagenUrl?: string
   estado: CouponEstado
   diasAplica?: string
+  /** Tipo de oferta (default 'porcentaje'). */
+  tipoOferta?: 'porcentaje' | 'dos_por_uno' | 'precio_fijo' | 'happy_hour'
+  /** Franja horaria (HH:MM) — clave para happy_hour. */
+  franjaDesde?: string
+  franjaHasta?: string
   /** Límite de uso por persona (default 1). */
   usoMaxPorPersona?: number
   /** Ventana del límite (default 'devida'). */

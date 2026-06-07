@@ -12,6 +12,8 @@ const couponSchema = new Schema(
     /** Precio normal aproximado POR PERSONA (ARS, opcional) — alimenta el
      *  planificador "Armá tu plan" del vecino para estimar cuánto le queda. */
     precioReferencia: { type: Number, min: 0 },
+    /** Precio FINAL con el cupón (ARS) — solo para tipoOferta 'precio_fijo'. Público. */
+    precioFijo: { type: Number, min: 0 },
     vigenciaHasta: { type: Date, required: true, index: true },
     imagenUrl: { type: String },
     diasAplica: { type: String },
