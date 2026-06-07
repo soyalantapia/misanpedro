@@ -1,37 +1,31 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Comerciante · smoke E2E', () => {
-  test('login admin carga con campos email + password', async ({ page }) => {
+  test('login admin es OTP (email + "Enviar código", sin contraseña)', async ({ page }) => {
     await page.goto('/#/admin/login')
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    await expect(page.getByLabel(/Email/i)).toBeVisible()
-    await expect(page.getByLabel(/Contraseña/i)).toBeVisible()
-    await expect(page.getByRole('button', { name: /Ingresar|Iniciar/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Enviar código/i })).toBeVisible()
+    await expect(page.getByText(/te mandamos un código/i)).toBeVisible()
+    // Ya NO hay login con contraseña (migró a OTP)
+    await expect(page.getByLabel(/Contraseña/i)).toHaveCount(0)
   })
 
-  test('signup admin muestra pricing $25.000 final (B1)', async ({ page }) => {
+  test('signup admin: 3 meses gratis (sin tarjeta)', async ({ page }) => {
     await page.goto('/#/admin/registro')
-    // Stepper visible
     await expect(page.getByText(/Datos del comercio/i).first()).toBeVisible()
-    // Precio visible en el header del signup
-    await expect(page.getByText(/\$25\.000/)).toBeVisible()
+    await expect(page.getByText(/3 meses gratis/i).first()).toBeVisible()
   })
 
-  test('legales: T&C incluye identidad jurídica B2 + precio B1', async ({ page }) => {
+  test('legales T&C: $50.000 ARS finales + identidad jurídica', async ({ page }) => {
     await page.goto('/#/legal/terminos')
-    // B2: CUIT del responsable visible
-    await expect(page.getByText(/20-43316638-9/)).toBeVisible()
-    // B2: condición fiscal monotributo
+    await expect(page.getByText(/\$50\.000 ARS finales/i).first()).toBeVisible()
+    await expect(page.getByText(/20-43316638-9/).first()).toBeVisible()
     await expect(page.getByText(/Monotributista/i).first()).toBeVisible()
-    // B1: precio $25.000 final, sin mención de "+ IVA"
-    await expect(page.getByText(/\$25\.000 ARS finales/i)).toBeVisible()
-    await expect(page.getByText(/factura C/i).first()).toBeVisible()
   })
 
-  test('legales: Privacidad incluye responsable Ley 25.326', async ({ page }) => {
+  test('legales Privacidad: responsable Ley 25.326', async ({ page }) => {
     await page.goto('/#/legal/privacidad')
     await expect(page.getByText(/Ley 25.326/i).first()).toBeVisible()
-    await expect(page.getByText(/20-43316638-9/)).toBeVisible()
+    await expect(page.getByText(/20-43316638-9/).first()).toBeVisible()
     await expect(page.getByText(/Alan Naim Tapia/)).toBeVisible()
   })
 })

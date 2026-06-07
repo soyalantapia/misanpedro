@@ -29,6 +29,8 @@ const redemptionSchema = new Schema(
 redemptionSchema.index({ appId: 1, redeemedAt: -1 })
 redemptionSchema.index({ merchantId: 1, redeemedAt: -1 })
 redemptionSchema.index({ merchantId: 1, userId: 1 })
+// Para contar usos por persona de un cupón (límite de uso por persona).
+redemptionSchema.index({ couponId: 1, userId: 1 })
 
 export type RedemptionDoc = InferSchemaType<typeof redemptionSchema> & {
   _id: string

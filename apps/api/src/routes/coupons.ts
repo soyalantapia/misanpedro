@@ -35,6 +35,10 @@ export function serializeCoupon(c: any, merchant?: any, opts: { includePrivate?:
     productoGancho: c.productoGancho,
     alcance: c.alcance ?? 'puntual',
     mostrarAhorroVecino: c.mostrarAhorroVecino ?? true,
+    // Límite de uso por persona (público — el vecino lo usa para mostrar "usado").
+    // Cupones viejos sin estos campos → defaults seguros {1, 'devida'}.
+    usoMaxPorPersona: c.usoMaxPorPersona ?? 1,
+    usoVentana: c.usoVentana ?? 'devida',
     // ─── PRIVADO del comercio: NUNCA al vecino. Solo en respuestas del
     //     propio comercio (mine/list, create, patch). ───────────────────
     ...(opts.includePrivate
@@ -228,6 +232,8 @@ couponsRoutes.patch('/:id', requireMerchantAuth, requireMerchantActive, async (c
   if (data.productoGancho !== undefined) coupon.productoGancho = data.productoGancho ?? undefined
   if (data.alcance !== undefined) coupon.alcance = data.alcance
   if (data.mostrarAhorroVecino !== undefined) coupon.mostrarAhorroVecino = data.mostrarAhorroVecino
+  if (data.usoMaxPorPersona !== undefined) coupon.usoMaxPorPersona = data.usoMaxPorPersona
+  if (data.usoVentana !== undefined) coupon.usoVentana = data.usoVentana
   await coupon.save()
   return c.json({ ok: true, coupon: serializeCoupon(coupon, undefined, { includePrivate: true }) })
 })

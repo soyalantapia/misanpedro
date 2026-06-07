@@ -25,6 +25,15 @@ const couponSchema = new Schema(
     },
     stockMaximo: { type: Number },
     stockUsado: { type: Number, default: 0 },
+    // ─── Límite de uso por persona ───────────────────────────────────────
+    /** Cuántas veces puede usar el cupón cada persona dentro de la ventana. */
+    usoMaxPorPersona: { type: Number, default: 1, min: 1 },
+    /** Ventana del límite: devida (histórico) | semana(7) | quincena(15) | mes(30) | ilimitado. */
+    usoVentana: {
+      type: String,
+      enum: ['devida', 'semana', 'quincena', 'mes', 'ilimitado'],
+      default: 'devida',
+    },
     // ─── Asesor de cupones (todos opcionales, backward-compatible) ───────
     /** Costo aprox del comercio (PRIVADO — nunca se serializa al vecino). */
     costoReferencia: { type: Number, min: 0 },

@@ -273,6 +273,14 @@ export const couponCreateSchema = z.object({
   alcance: z.enum(['puntual', 'categoria']).optional(),
   /** Mostrar el ahorro en pesos al vecino (default true). Si false → solo el %. */
   mostrarAhorroVecino: z.boolean().optional(),
+  // ─── Límite de uso por persona ───────────────────────────────────────
+  /** Cuántas veces puede usarlo cada persona dentro de la ventana. Default 1. */
+  usoMaxPorPersona: z.number().int().min(1, 'Mínimo 1').max(99, 'Máximo 99').optional().default(1),
+  /** Ventana del límite. Default 'devida' (una vez en el historial). */
+  usoVentana: z
+    .enum(['devida', 'semana', 'quincena', 'mes', 'ilimitado'])
+    .optional()
+    .default('devida'),
   estado: z.enum(['activo', 'pausado']).default('activo'),
 })
 

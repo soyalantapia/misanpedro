@@ -13,6 +13,7 @@ import { rateLimit } from '@/middleware/security'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { sendUserRedemption } from '@/services/email.service'
 import { publish } from '@/services/notifications.service'
+import { checkUsoLimite } from '@/services/usageLimit'
 
 export const redemptionsRoutes = new Hono()
 
@@ -145,6 +146,21 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
     return c.json({ ok: false, error: 'el cupón está vencido' }, 409)
   }
 
+  // Re-chequeo del límite de uso por persona (carreras / códigos viejos):
+  // el guard de activación pudo no correr (código de antes) o haber carrera.
+  const limite = await checkUsoLimite(appId, coupon._id, activation.userId, coupon)
+  if (limite.bloqueado) {
+    return c.json(
+      {
+        ok: false,
+        error: 'Este vecino ya usó el cupón el máximo de veces permitido.',
+        motivo: 'limite_por_persona',
+        nextDisponible: limite.nextDisponible,
+      },
+      409,
+    )
+  }
+
   // Ahorro por tipo de oferta (precio_fijo = diferencia; resto = % del ticket).
   const ahorroEstimado = calcAhorroCanje(coupon, montoTicket)
 
@@ -154,17 +170,28 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
   activation.ahorroEstimado = ahorroEstimado
   await activation.save()
 
-  const redemption = await Redemption.create({
-    appId,
-    activationId: activation._id,
-    couponId: coupon._id,
-    merchantId: coupon.merchantId,
-    userId: activation.userId,
-    merchantUserId: auth.sub,
-    montoTicket,
-    ahorroEstimado,
-    redeemedAt: activation.redeemedAt,
-  })
+  let redemption
+  try {
+    redemption = await Redemption.create({
+      appId,
+      activationId: activation._id,
+      couponId: coupon._id,
+      merchantId: coupon.merchantId,
+      userId: activation.userId,
+      merchantUserId: auth.sub,
+      montoTicket,
+      ahorroEstimado,
+      redeemedAt: activation.redeemedAt,
+    })
+  } catch (err) {
+    // Carrera / doble-tap: el índice único {activationId} garantiza UN solo
+    // canje. Si otra confirmación simultánea ya lo registró, devolvemos un
+    // "ya canjeado" limpio en vez de un 500 con el error crudo de Mongo.
+    if ((err as { code?: number })?.code === 11000) {
+      return c.json({ ok: false, error: 'ya canjeado' }, 409)
+    }
+    throw err
+  }
 
   coupon.stockUsado = (coupon.stockUsado ?? 0) + 1
   await coupon.save()

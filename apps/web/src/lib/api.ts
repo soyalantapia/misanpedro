@@ -239,6 +239,9 @@ export type ApiCoupon = {
   // ─── Solo en respuestas del propio comercio (mine/list, create, patch) ───
   costoReferencia?: number
   objetivo?: 'traer_nuevos' | 'llenar_flojos' | 'vaciar_stock' | 'fidelizar'
+  // ─── Límite de uso por persona (público) ───
+  usoMaxPorPersona?: number
+  usoVentana?: 'devida' | 'semana' | 'quincena' | 'mes' | 'ilimitado'
   merchant?: Pick<ApiMerchant, 'id' | 'slug' | 'nombre' | 'categoria' | 'logoSeed' | 'cover'>
 }
 

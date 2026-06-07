@@ -29,5 +29,7 @@ export function apiCouponToLocal(c: ApiCoupon, merchantId: string): Coupon {
     productoGancho: c.productoGancho,
     franjaDesde: c.franjaDesde,
     franjaHasta: c.franjaHasta,
+    usoMaxPorPersona: c.usoMaxPorPersona,
+    usoVentana: c.usoVentana,
   }
 }

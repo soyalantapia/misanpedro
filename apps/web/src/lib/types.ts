@@ -156,6 +156,11 @@ export type Coupon = {
   /** Franja horaria (HH:MM) — clave para happy_hour. */
   franjaDesde?: string
   franjaHasta?: string
+  // ─── Límite de uso por persona ───
+  /** Cuántas veces puede usar el cupón cada persona (default 1). */
+  usoMaxPorPersona?: number
+  /** Ventana del límite (default 'devida'). */
+  usoVentana?: 'devida' | 'semana' | 'quincena' | 'mes' | 'ilimitado'
 }
 
 export type ActivationStatus = 'activo' | 'canjeado' | 'expirado' | 'cancelado'

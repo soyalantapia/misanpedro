@@ -21,6 +21,7 @@ import { valorCupon, franjaTexto } from '@/lib/cuponValor'
 import { api, ApiError, tokens } from '@/lib/api'
 import { apiCouponToLocal } from '@/lib/apiCoupon'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
+import { useUsoEstado, textoDisponible } from '@/lib/usoLimite'
 import { useToast } from '@/components/Toast'
 
 export function CuponDetailPage() {
@@ -34,6 +35,7 @@ export function CuponDetailPage() {
 
   const apiCouponsRes = useApiCoupons()
   const apiMerchantsRes = useApiMerchants()
+  const getUsoEstado = useUsoEstado()
   const apiCoupon = apiCouponsRes.data?.find((c) => c.id === id) ?? null
   const apiMerchantRaw =
     apiCoupon && apiMerchantsRes.data
@@ -87,6 +89,10 @@ export function CuponDetailPage() {
 
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
   const v = valorCupon(coupon)
+  const uso = getUsoEstado(coupon)
+  // Si tiene una activación activa (código sin canjear), lo dejamos verla.
+  const bloqueado = uso.bloqueado && !existing
+  const dispoTxt = bloqueado ? textoDisponible(uso.nextDisponible) : null
 
   async function handleActivate() {
     if (!coupon) return
@@ -263,13 +269,20 @@ export function CuponDetailPage() {
           <button
             type="button"
             onClick={handleActivate}
-            disabled={submitting}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-fin-lime px-6 py-4 text-base font-bold text-fin-bg shadow-fin-glow transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
+            disabled={submitting || bloqueado}
+            className={`flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-bold transition-all duration-200 disabled:opacity-70 ${
+              bloqueado
+                ? 'bg-fin-surface2 text-fin-soft'
+                : 'bg-fin-lime text-fin-bg shadow-fin-glow hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]'
+            }`}
           >
-            {submitting ? 'Activando…' : existing ? 'Ver mi cupón activo' : 'Canjear descuento'}
-            <ArrowRight size={18} />
+            {submitting ? 'Activando…' : bloqueado ? 'Ya lo usaste' : existing ? 'Ver mi cupón activo' : 'Canjear descuento'}
+            {!bloqueado && <ArrowRight size={18} />}
           </button>
-          {!user && (
+          {bloqueado && dispoTxt && (
+            <p className="px-2 text-center text-[11px] font-semibold text-fin-soft">{dispoTxt}</p>
+          )}
+          {!user && !bloqueado && (
             <p className="px-2 text-center text-[11px] text-fin-soft">
               Te vamos a pedir tus datos una sola vez. Solo al primer canje.
             </p>
