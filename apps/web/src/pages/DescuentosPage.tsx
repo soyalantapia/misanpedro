@@ -12,7 +12,8 @@ import { FilterSheet, type SortMode, type MinPct } from '@/components/FilterShee
 import { useGeolocation, distanceKm } from '@/lib/geo'
 import { CATEGORIAS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
 import { useApiMerchants, useApiCoupons } from '@/lib/apiQueries'
-import type { ApiMerchant, ApiCoupon } from '@/lib/api'
+import type { ApiMerchant } from '@/lib/api'
+import { apiCouponToLocal } from '@/lib/apiCoupon'
 import { SavingsWallet } from '@/components/features/SavingsWallet'
 import { OCASIONES } from '@/lib/ocasiones'
 
@@ -42,22 +43,7 @@ function apiMerchantToLocal(m: ApiMerchant): Merchant {
   }
 }
 
-function apiCouponToLocal(c: ApiCoupon, merchantSlug: string): Coupon {
-  return {
-    id: c.id,
-    merchantId: merchantSlug,
-    titulo: c.titulo,
-    descripcion: c.descripcion,
-    condiciones: c.condiciones ?? '',
-    porcentaje: c.porcentaje,
-    precioReferencia: c.precioReferencia,
-    vigenciaHasta: c.vigenciaHasta,
-    imagenSeed: 'custom',
-    imagenUrl: c.imagenUrl ?? undefined,
-    estado: c.estado as Coupon['estado'],
-    diasAplica: c.diasAplica,
-  }
-}
+// apiCouponToLocal vive en @/lib/apiCoupon (mapeo único con los campos de valor).
 
 export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'locales' }) {
   // La vista la define la ruta: "/" = cupones, "/locales" = locales.

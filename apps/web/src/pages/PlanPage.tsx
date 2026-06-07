@@ -9,7 +9,8 @@ import { cuponesDeOcasion, type CuponMatch } from '@/lib/planner'
 import { CouponCard } from '@/components/CouponCard'
 import { EmptyState } from '@/components/EmptyState'
 import type { Categoria, Coupon, Merchant } from '@/lib/types'
-import type { ApiCoupon, ApiMerchant } from '@/lib/api'
+import type { ApiMerchant } from '@/lib/api'
+import { apiCouponToLocal } from '@/lib/apiCoupon'
 
 type Step = 'ganas' | 'resultados'
 
@@ -29,23 +30,6 @@ function apiMerchantToLocal(m: ApiMerchant): Merchant {
     mapsUrl: m.mapsUrl,
     logoSeed: m.logoSeed,
     destacado: m.destacado,
-  }
-}
-
-function apiCouponToLocal(c: ApiCoupon, merchantSlug: string): Coupon {
-  return {
-    id: c.id,
-    merchantId: merchantSlug,
-    titulo: c.titulo,
-    descripcion: c.descripcion,
-    condiciones: c.condiciones ?? '',
-    porcentaje: c.porcentaje,
-    precioReferencia: c.precioReferencia,
-    vigenciaHasta: c.vigenciaHasta,
-    imagenSeed: 'custom',
-    imagenUrl: c.imagenUrl ?? undefined,
-    estado: c.estado as Coupon['estado'],
-    diasAplica: c.diasAplica,
   }
 }
 

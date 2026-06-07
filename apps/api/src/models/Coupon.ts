@@ -12,6 +12,8 @@ const couponSchema = new Schema(
     /** Precio normal aproximado POR PERSONA (ARS, opcional) — alimenta el
      *  planificador "Armá tu plan" del vecino para estimar cuánto le queda. */
     precioReferencia: { type: Number, min: 0 },
+    /** Precio FINAL con el cupón (ARS) — solo para tipoOferta 'precio_fijo'. Público. */
+    precioFijo: { type: Number, min: 0 },
     vigenciaHasta: { type: Date, required: true, index: true },
     imagenUrl: { type: String },
     diasAplica: { type: String },
@@ -37,8 +39,12 @@ const couponSchema = new Schema(
     /** Franja horaria (HH:MM). */
     franjaDesde: { type: String },
     franjaHasta: { type: String },
-    /** Producto estrella / gancho (para el copy). */
+    /** Sobre QUÉ aplica: el producto (si es puntual) o la categoría (si 'categoria'). */
     productoGancho: { type: String },
+    /** Alcance del descuento: 'puntual' (un producto) | 'categoria' (varios). */
+    alcance: { type: String, default: 'puntual' },
+    /** Si false, el vecino NO ve pesos (solo el %), aunque haya precio. Público. */
+    mostrarAhorroVecino: { type: Boolean, default: true },
   },
   { timestamps: true },
 )

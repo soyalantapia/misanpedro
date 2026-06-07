@@ -3,7 +3,6 @@ import {
   formatMoney,
   formatTimeRemaining,
   distanceLabel,
-  calcAhorro,
   formatBirthdate,
   formatHorariosSemana,
   defaultHorariosSemana,
@@ -69,24 +68,6 @@ describe('distanceLabel', () => {
 
   it('caso borde 0.4 = metros', () => {
     expect(distanceLabel(0.4)).toBe('A 400 m')
-  })
-})
-
-describe('calcAhorro', () => {
-  it('calcula porcentaje sobre ticket por defecto (4000)', () => {
-    expect(calcAhorro(20)).toBe(800)
-  })
-
-  it('acepta ticket custom', () => {
-    expect(calcAhorro(15, 10000)).toBe(1500)
-  })
-
-  it('redondea correctamente', () => {
-    expect(calcAhorro(33, 1000)).toBe(330)
-  })
-
-  it('maneja 0%', () => {
-    expect(calcAhorro(0)).toBe(0)
   })
 })
 

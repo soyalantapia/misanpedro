@@ -136,12 +136,26 @@ export type Coupon = {
   porcentaje: number
   /** Precio normal aproximado por persona (ARS, opcional) — para el planificador. */
   precioReferencia?: number
+  /** Precio final con el cupón (ARS) — solo tipoOferta 'precio_fijo'. */
+  precioFijo?: number
   vigenciaHasta: string
   imagenSeed: string
   /** Imagen propia del cupón (data:image/* o URL). Pisa la portada del comercio. */
   imagenUrl?: string
   estado: CouponEstado
   diasAplica?: string
+  // ─── Sistema de valor del cupón ───
+  /** Tipo de oferta (default 'porcentaje'). */
+  tipoOferta?: 'porcentaje' | 'dos_por_uno' | 'precio_fijo' | 'happy_hour'
+  /** Alcance: 'puntual' (un producto) | 'categoria' (varios). Para % / happy_hour. */
+  alcance?: 'puntual' | 'categoria'
+  /** Mostrar el ahorro en pesos al vecino (default true). Si false → solo el %. */
+  mostrarAhorroVecino?: boolean
+  /** Sobre qué aplica (el producto si es puntual, la categoría si es 'categoria'). */
+  productoGancho?: string
+  /** Franja horaria (HH:MM) — clave para happy_hour. */
+  franjaDesde?: string
+  franjaHasta?: string
 }
 
 export type ActivationStatus = 'activo' | 'canjeado' | 'expirado' | 'cancelado'

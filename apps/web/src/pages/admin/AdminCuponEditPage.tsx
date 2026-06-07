@@ -36,6 +36,8 @@ type FormState = {
   porcentaje: number
   /** Precio normal por persona (texto en el form; se manda como number). Público. */
   precioReferencia: string
+  /** Precio final con el cupón (texto; se manda como number). Solo precio_fijo. Público. */
+  precioFijo: string
   /** Costo aprox del comercio (texto; se manda como number). PRIVADO. */
   costoReferencia: string
   /** Imagen del cupón (data:image/* base64 o URL). Opcional. */
@@ -45,6 +47,10 @@ type FormState = {
   diasAplica: string
   objetivo: Objetivo | ''
   tipoOferta: TipoOferta
+  /** Alcance: 'puntual' (un producto) | 'categoria' (varios). Para % / happy_hour. */
+  alcance: 'puntual' | 'categoria'
+  /** Mostrar el ahorro en pesos al vecino (toggle). Default true. */
+  mostrarAhorroVecino: boolean
   exclusiva: boolean
   dias: DiaSemana[]
   franjaDesde: string
@@ -58,18 +64,27 @@ const empty: FormState = {
   condiciones: '',
   porcentaje: 30,
   precioReferencia: '',
+  precioFijo: '',
   costoReferencia: '',
   imagenUrl: '',
   vigenciaHasta: defaultExpiry(),
   diasAplica: '',
   objetivo: '',
   tipoOferta: 'porcentaje',
+  alcance: 'puntual',
+  mostrarAhorroVecino: true,
   exclusiva: true,
   dias: [],
   franjaDesde: '',
   franjaHasta: '',
   productoGancho: '',
 }
+
+const TIPOS: { id: TipoOferta; label: string }[] = [
+  { id: 'porcentaje', label: 'Porcentaje' },
+  { id: 'happy_hour', label: 'Happy hour' },
+  { id: 'precio_fijo', label: 'Precio fijo' },
+]
 
 function defaultExpiry(): string {
   return addDays(new Date(), 30).toISOString().slice(0, 10)
@@ -304,12 +319,15 @@ export function AdminCuponEditPage() {
         condiciones: existing.condiciones ?? '',
         porcentaje: existing.porcentaje,
         precioReferencia: existing.precioReferencia != null ? String(existing.precioReferencia) : '',
+        precioFijo: existing.precioFijo != null ? String(existing.precioFijo) : '',
         costoReferencia: existing.costoReferencia != null ? String(existing.costoReferencia) : '',
         imagenUrl: existing.imagenUrl ?? '',
         vigenciaHasta: isoToDate(existing.vigenciaHasta),
         diasAplica: existing.diasAplica ?? '',
         objetivo: existing.objetivo ?? '',
         tipoOferta: existing.tipoOferta ?? 'porcentaje',
+        alcance: existing.alcance ?? 'puntual',
+        mostrarAhorroVecino: existing.mostrarAhorroVecino ?? true,
         exclusiva: existing.exclusiva ?? true,
         dias: Array.isArray(existing.dias) ? existing.dias : [],
         franjaDesde: existing.franjaDesde ?? '',
@@ -354,6 +372,22 @@ export function AdminCuponEditPage() {
       toast.error('Falta la vigencia', 'Indicá hasta cuándo aplica.')
       return
     }
+    if (form.tipoOferta === 'happy_hour' && !(form.franjaDesde && form.franjaHasta)) {
+      toast.error('Falta la franja', 'El happy hour necesita un horario (ej. 15 a 18 hs) en "¿Cuándo aplica?".')
+      return
+    }
+    if (form.tipoOferta === 'precio_fijo') {
+      const pf = Number(form.precioFijo)
+      const pr = Number(form.precioReferencia)
+      if (!form.precioFijo.trim() || !(pf > 0)) {
+        toast.error('Falta el precio con el cupón', 'En "precio fijo" poné a cuánto lo dejás.')
+        return
+      }
+      if (form.precioReferencia.trim() && pr > 0 && pf >= pr) {
+        toast.error('Revisá los precios', 'El precio con el cupón tiene que ser MENOR al precio normal.')
+        return
+      }
+    }
     setSubmitting(true)
     const num = (s: string) => {
       const n = Number(s)
@@ -364,12 +398,21 @@ export function AdminCuponEditPage() {
     const clr = <T,>(v: T | undefined): T | null | undefined => (v !== undefined ? v : isEdit ? null : undefined)
     // Una franja necesita AMBOS extremos; si falta uno, no es franja.
     const franjaOk = !!(form.franjaDesde && form.franjaHasta)
+    const precioRefNum = num(form.precioReferencia)
+    const precioFijoVal = num(form.precioFijo)
+    // precio_fijo: el % se DERIVA del ahorro (precio normal − precio con cupón) para
+    // mantener consistente el modelo (porcentaje requerido) y el badge del vecino.
+    const porcentajeFinal =
+      form.tipoOferta === 'precio_fijo' && precioRefNum && precioFijoVal && precioRefNum > precioFijoVal
+        ? Math.max(1, Math.round(((precioRefNum - precioFijoVal) / precioRefNum) * 100))
+        : form.porcentaje
     const apiPayload = {
       titulo: form.titulo.trim(),
       descripcion: form.descripcion.trim(),
       condiciones: form.condiciones.trim(),
-      porcentaje: form.porcentaje,
-      precioReferencia: num(form.precioReferencia),
+      porcentaje: porcentajeFinal,
+      precioReferencia: precioRefNum,
+      precioFijo: clr(form.tipoOferta === 'precio_fijo' ? precioFijoVal : undefined),
       costoReferencia: clr(num(form.costoReferencia)),
       imagenUrl: clr(form.imagenUrl.trim() || undefined),
       vigenciaHasta: dateToIso(form.vigenciaHasta),
@@ -379,6 +422,8 @@ export function AdminCuponEditPage() {
       franjaHasta: clr(franjaOk ? form.franjaHasta : undefined),
       objetivo: clr(form.objetivo || undefined),
       tipoOferta: form.tipoOferta,
+      alcance: form.alcance,
+      mostrarAhorroVecino: form.mostrarAhorroVecino,
       exclusiva: form.exclusiva,
       productoGancho: clr(form.productoGancho.trim() || undefined),
       estado: existing?.estado === 'pausado' ? 'pausado' : 'activo',
@@ -467,12 +512,25 @@ function Asesor({
 
   const precio = Number(form.precioReferencia)
   const costo = Number(form.costoReferencia)
-  const money =
-    form.precioReferencia.trim() && Number.isFinite(precio) && precio > 0
-      ? calcMoney(precio, form.porcentaje, form.costoReferencia.trim() && costo > 0 ? costo : undefined)
-      : null
+  const precioFijoNum = Number(form.precioFijo)
   const tienePrecio = form.precioReferencia.trim() !== '' && Number.isFinite(precio) && precio > 0
   const tieneCosto = form.costoReferencia.trim() !== '' && Number.isFinite(costo) && costo > 0
+  const tieneFijo = form.precioFijo.trim() !== '' && Number.isFinite(precioFijoNum) && precioFijoNum > 0
+  const esPrecioFijo = form.tipoOferta === 'precio_fijo'
+  // El MOTOR DE PLATA siempre usa el precio (aunque el toggle de mostrar al
+  // vecino esté OFF): es la cuenta interna del comercio (margen + ahorro).
+  const money = esPrecioFijo
+    ? tieneFijo
+      ? {
+          vecinoPaga: precioFijoNum,
+          ahorro: tienePrecio ? Math.max(0, precio - precioFijoNum) : 0,
+          margen: tieneCosto ? precioFijoNum - costo : null,
+          pierdePlata: tieneCosto && precioFijoNum < costo,
+        }
+      : null
+    : tienePrecio
+      ? calcMoney(precio, form.porcentaje, tieneCosto && costo > 0 ? costo : undefined)
+      : null
   // El costo no puede igualar ni superar al precio (no habría margen ni a 0% off).
   const costoMayorQuePrecio = tienePrecio && tieneCosto && costo >= precio
   // Máximo % de descuento que NO te deja vender bajo costo (múltiplo de 5). Sin
@@ -604,7 +662,31 @@ function Asesor({
       )}
 
       {paso === 'plata' && (
-        <Step title="Hagamos la cuenta" hint="Poné el precio normal y movés el descuento. El costo es opcional y privado.">
+        <Step title="Hagamos la cuenta" hint="Elegí el tipo de oferta y poné los números. El costo es privado.">
+          {/* TIPO de oferta (define qué inputs y cómo lo ve el vecino) */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">Tipo de oferta</span>
+            <div className="grid grid-cols-3 gap-1.5">
+              {TIPOS.map((t) => {
+                const sel = form.tipoOferta === t.id
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => update('tipoOferta', t.id)}
+                    className={`rounded-xl px-2 py-2 text-xs font-bold ring-1 transition-all ${
+                      sel
+                        ? 'bg-gradient-to-br from-brand to-brand-strong text-on-brand ring-brand shadow-cta'
+                        : 'bg-surface text-ink ring-line hover:bg-bg'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-2.5">
             <MoneyInput label="Precio normal" value={form.precioReferencia} onChange={(v) => update('precioReferencia', v)} placeholder="6000" />
             <MoneyInput label="Tu costo (privado)" value={form.costoReferencia} onChange={(v) => update('costoReferencia', v)} placeholder="2500" />
@@ -615,27 +697,65 @@ function Asesor({
             </p>
           )}
 
-          <div className="mt-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">Descuento</span>
-              <span className="text-lg font-bold tabular-nums text-brand-strong">{form.porcentaje}%</span>
-            </div>
-            <input
-              type="range"
-              min={5}
-              max={maxDescuento}
-              step={5}
-              value={Math.min(form.porcentaje, maxDescuento)}
-              onChange={(e) => update('porcentaje', Number(e.target.value))}
-              className="mt-1 w-full accent-brand"
+          {esPrecioFijo ? (
+            <MoneyInput
+              label="Precio con el cupón"
+              value={form.precioFijo}
+              onChange={(v) => update('precioFijo', v)}
+              placeholder="4000"
             />
-            <div className="flex justify-between text-[10px] text-ink-faint"><span>5%</span><span>{maxDescuento}%</span></div>
-            {tieneCosto && !costoMayorQuePrecio && maxDescuento < 70 && (
-              <p className="mt-1 text-[11px] text-ink-soft">
-                Tope <span className="font-bold text-ink">{maxDescuento}%</span> para no vender bajo tu costo.
-              </p>
-            )}
-          </div>
+          ) : (
+            <>
+              <div className="mt-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">Descuento</span>
+                  <span className="text-lg font-bold tabular-nums text-brand-strong">{form.porcentaje}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={maxDescuento}
+                  step={5}
+                  value={Math.min(form.porcentaje, maxDescuento)}
+                  onChange={(e) => update('porcentaje', Number(e.target.value))}
+                  className="mt-1 w-full accent-brand"
+                />
+                <div className="flex justify-between text-[10px] text-ink-faint"><span>5%</span><span>{maxDescuento}%</span></div>
+                {tieneCosto && !costoMayorQuePrecio && maxDescuento < 70 && (
+                  <p className="mt-1 text-[11px] text-ink-soft">
+                    Tope <span className="font-bold text-ink">{maxDescuento}%</span> para no vender bajo tu costo.
+                  </p>
+                )}
+              </div>
+
+              {/* ALCANCE: sobre un producto puntual o una categoría/varios */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">¿Sobre qué aplica?</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {([['puntual', 'Un producto'], ['categoria', 'Categoría / varios']] as const).map(([id, label]) => {
+                    const sel = form.alcance === id
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => update('alcance', id)}
+                        className={`rounded-xl px-2 py-2 text-xs font-bold ring-1 transition-all ${
+                          sel ? 'bg-brand-soft text-brand-strong ring-brand' : 'bg-surface text-ink ring-line hover:bg-bg'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="text-[11px] text-ink-faint">
+                  {form.alcance === 'categoria'
+                    ? 'El "precio normal" es el PROMEDIO de la categoría — el vecino ve el ahorro como orientativo (~).'
+                    : 'El "precio normal" es el de ese producto — el vecino ve el ahorro exacto.'}
+                </p>
+              </div>
+            </>
+          )}
 
           {money ? (
             <div className="flex flex-col gap-2 rounded-2xl bg-surface p-4 shadow-card ring-1 ring-line">
@@ -652,24 +772,45 @@ function Asesor({
               {money.margen != null && (
                 <p className={`text-center text-xs font-semibold ${money.pierdePlata ? 'text-status-error-fg' : 'text-status-success-fg'}`}>
                   {money.pierdePlata
-                    ? `⚠ Estás abajo del costo: perdés ${fmtMoney(Math.abs(money.margen))} por venta. Bajá el descuento.`
+                    ? `⚠ Estás abajo del costo: perdés ${fmtMoney(Math.abs(money.margen))} por venta. ${esPrecioFijo ? 'Subí el precio.' : 'Bajá el descuento.'}`
                     : `Te queda ${fmtMoney(money.margen)} de margen por venta.`}
                 </p>
               )}
-              {!money.pierdePlata && corajeMsg(form.objetivo, money) && (
+              {!money.pierdePlata && !esPrecioFijo && corajeMsg(form.objetivo, money) && (
                 <p className="rounded-xl bg-brand-soft px-3 py-2 text-center text-xs font-medium text-brand-strong">
                   {corajeMsg(form.objetivo, money)}
                 </p>
               )}
               <p className="border-t border-line pt-2 text-center text-[11px] text-ink-soft">
-                💡 El precio y el costo son <span className="font-bold text-brand-strong">solo para vos</span>: te calculamos margen y ahorro. No se publican en la app.
+                💡 El <span className="font-bold text-brand-strong">costo es privado</span> (solo tu margen). El precio se le muestra al vecino solo si dejás el ahorro en pesos activado.
               </p>
             </div>
           ) : (
             <p className="text-[11px] text-ink-faint">
-              Poné el precio normal y te muestro cuánto paga el vecino, cuánto se ahorra y tu margen. Es solo para vos: no se publica.
+              {esPrecioFijo
+                ? 'Poné el precio con el cupón (y el normal) y te calculo el ahorro y tu margen.'
+                : 'Poné el precio normal y te muestro cuánto paga el vecino, cuánto se ahorra y tu margen.'}
             </p>
           )}
+
+          {/* Toggle: ¿mostrar el ahorro en pesos al vecino? (no aplica a precio_fijo) */}
+          {!esPrecioFijo && tienePrecio && (
+            <label className="flex items-center justify-between gap-3 rounded-2xl bg-surface p-3.5 ring-1 ring-line">
+              <span className="min-w-0 text-xs font-semibold text-ink">
+                Mostrarle el ahorro en pesos al vecino
+                <span className="block text-[11px] font-normal text-ink-soft">
+                  Si lo apagás, ve solo el “{form.porcentaje}% OFF”.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={form.mostrarAhorroVecino}
+                onChange={(e) => update('mostrarAhorroVecino', e.target.checked)}
+                className="h-5 w-5 shrink-0 accent-brand"
+              />
+            </label>
+          )}
+
           <NavBtns onPrev={prev} onNext={next} nextDisabled={costoMayorQuePrecio} />
         </Step>
       )}

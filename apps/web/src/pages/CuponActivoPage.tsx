@@ -7,7 +7,6 @@ import { useToast } from '@/components/Toast'
 import { activationActions, useActivation } from '@/lib/stores'
 import { getMerchant } from '@/data/mockData'
 import { useCoupon } from '@/lib/couponsStore'
-import { calcAhorro } from '@/lib/format'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 import { api, ApiError, tokens } from '@/lib/api'
 
@@ -63,7 +62,6 @@ export function CuponActivoPage() {
 
     let cancelled = false
     const actId = activation.id
-    const couponPorcentaje = coupon?.porcentaje ?? 0
     let ticks = 0
     const MAX_TICKS = 72
     async function check() {
@@ -80,7 +78,7 @@ export function CuponActivoPage() {
         if (res.activation.status === 'canjeado') {
           activationActions.markRedeemed(
             actId,
-            res.activation.ahorroEstimado ?? calcAhorro(couponPorcentaje),
+            res.activation.ahorroEstimado ?? 0,
             res.activation.montoTicket,
           )
           toast.success('¡Cupón canjeado!', 'El comercio confirmó tu descuento.')
