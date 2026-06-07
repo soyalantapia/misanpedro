@@ -1,8 +1,62 @@
 import { Link } from 'react-router-dom'
-import { MapPin } from 'lucide-react'
+import { MapPin, Zap } from 'lucide-react'
 import { CardImage } from './CardImage'
 import { CATEGORIAS, type Coupon, type Merchant } from '@/lib/types'
-import { formatVigencia, distanceLabel, calcAhorro, formatMoney } from '@/lib/format'
+import { formatVigencia, distanceLabel, formatMoney } from '@/lib/format'
+import { valorCupon, franjaTexto, type ValorDisplay } from '@/lib/cuponValor'
+
+/**
+ * Valor HONESTO del cupón — nunca inventa pesos. Ramifica por tipo/alcance/
+ * precio/toggle (ver valorCupon). El ahorro en verde (--color-up), el % en marca.
+ */
+function ValorLinea({ v }: { v: ValorDisplay }) {
+  if (v.modo === 'precio_fijo') {
+    return (
+      <p className="text-sm font-extrabold text-fin-ink">
+        Pagás {formatMoney(v.precioFijo ?? 0)}
+        {v.ahorro != null && (
+          <span className="ml-1.5 text-fin-up">· ahorrás {formatMoney(v.ahorro)}</span>
+        )}
+      </p>
+    )
+  }
+  if (v.modo === 'pesos_exacto') {
+    return (
+      <p className="text-sm font-bold text-fin-ink">
+        Pagás {formatMoney(v.paga ?? 0)} ·{' '}
+        <span className="font-extrabold text-fin-up">ahorrás {formatMoney(v.ahorro ?? 0)}</span>
+      </p>
+    )
+  }
+  if (v.modo === 'pesos_aprox') {
+    return (
+      <p className="text-sm font-extrabold text-fin-up">
+        Ahorrás ~{formatMoney(v.ahorro ?? 0)}
+        {v.precioRef != null && (
+          <span className="font-medium text-fin-soft"> (en una de {formatMoney(v.precioRef)})</span>
+        )}
+      </p>
+    )
+  }
+  // solo_pct — sin pesos (toggle OFF o sin precio)
+  return (
+    <p className="text-sm font-extrabold text-fin-lime">
+      {v.porcentaje}% OFF
+      {v.sobre && <span className="font-semibold text-fin-soft"> en {v.sobre}</span>}
+    </p>
+  )
+}
+
+/** Chip "⚡ Oportunidad" + franja, para happy_hour. */
+function HappyChip({ v }: { v: ValorDisplay }) {
+  if (!v.esHappyHour) return null
+  const f = franjaTexto(v.franja)
+  return (
+    <span className="inline-flex w-fit items-center gap-1 rounded-full bg-fin-lime/15 px-2 py-0.5 text-[11px] font-bold text-fin-lime ring-1 ring-fin-lime/30">
+      <Zap size={11} /> Oportunidad{f ? ` · ${f}` : ''}
+    </span>
+  )
+}
 
 export function CouponCard({
   coupon,
@@ -18,12 +72,8 @@ export function CouponCard({
   compact?: boolean
 }) {
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
-  const ahorro = coupon.precioReferencia
-    ? Math.round((coupon.precioReferencia * coupon.porcentaje) / 100)
-    : calcAhorro(coupon.porcentaje)
+  const v = valorCupon(coupon)
 
-  // Variante compacta: en la página del comercio el rubro y el nombre ya están
-  // en el header → sin imagen repetida ni eyebrow redundante.
   if (compact) {
     return (
       <Link
@@ -36,8 +86,12 @@ export function CouponCard({
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-bold leading-tight text-fin-ink">{coupon.titulo}</h3>
-          <p className="text-sm font-extrabold text-fin-up">Ahorrás ~{formatMoney(ahorro)}</p>
-          <p className="text-[11px] font-medium text-fin-soft">{formatVigencia(coupon.vigenciaHasta)}</p>
+          <ValorLinea v={v} />
+          <p className="text-[11px] font-medium text-fin-soft">
+            {v.esHappyHour && franjaTexto(v.franja)
+              ? `⚡ Solo ${franjaTexto(v.franja)}`
+              : formatVigencia(coupon.vigenciaHasta)}
+          </p>
         </div>
       </Link>
     )
@@ -71,7 +125,8 @@ export function CouponCard({
           {cat} · {merchant.nombre}
         </p>
         <h3 className="text-base font-bold leading-tight text-fin-ink">{coupon.titulo}</h3>
-        <p className="text-sm font-extrabold text-fin-up">Ahorrás ~{formatMoney(ahorro)}</p>
+        <HappyChip v={v} />
+        <ValorLinea v={v} />
         <p className="mt-auto text-xs font-medium text-fin-soft">
           {formatVigencia(coupon.vigenciaHasta)}
         </p>

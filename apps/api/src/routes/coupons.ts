@@ -19,6 +19,7 @@ export function serializeCoupon(c: any, merchant?: any, opts: { includePrivate?:
     condiciones: c.condiciones,
     porcentaje: c.porcentaje,
     precioReferencia: c.precioReferencia,
+    precioFijo: c.precioFijo,
     vigenciaHasta: c.vigenciaHasta?.toISOString?.() ?? c.vigenciaHasta,
     diasAplica: c.diasAplica,
     estado: c.estado,
@@ -32,6 +33,8 @@ export function serializeCoupon(c: any, merchant?: any, opts: { includePrivate?:
     franjaDesde: c.franjaDesde,
     franjaHasta: c.franjaHasta,
     productoGancho: c.productoGancho,
+    alcance: c.alcance ?? 'puntual',
+    mostrarAhorroVecino: c.mostrarAhorroVecino ?? true,
     // ─── PRIVADO del comercio: NUNCA al vecino. Solo en respuestas del
     //     propio comercio (mine/list, create, patch). ───────────────────
     ...(opts.includePrivate
@@ -208,6 +211,7 @@ couponsRoutes.patch('/:id', requireMerchantAuth, requireMerchantActive, async (c
   if (data.condiciones !== undefined) coupon.condiciones = data.condiciones
   if (data.porcentaje !== undefined) coupon.porcentaje = data.porcentaje
   if (data.precioReferencia !== undefined) coupon.precioReferencia = data.precioReferencia
+  if (data.precioFijo !== undefined) coupon.precioFijo = data.precioFijo ?? undefined
   if (data.imagenUrl !== undefined) coupon.imagenUrl = data.imagenUrl ?? undefined
   if (data.vigenciaHasta !== undefined) coupon.vigenciaHasta = new Date(data.vigenciaHasta)
   if (data.diasAplica !== undefined) coupon.diasAplica = data.diasAplica
@@ -222,6 +226,8 @@ couponsRoutes.patch('/:id', requireMerchantAuth, requireMerchantActive, async (c
   if (data.franjaDesde !== undefined) coupon.franjaDesde = data.franjaDesde ?? undefined
   if (data.franjaHasta !== undefined) coupon.franjaHasta = data.franjaHasta ?? undefined
   if (data.productoGancho !== undefined) coupon.productoGancho = data.productoGancho ?? undefined
+  if (data.alcance !== undefined) coupon.alcance = data.alcance
+  if (data.mostrarAhorroVecino !== undefined) coupon.mostrarAhorroVecino = data.mostrarAhorroVecino
   await coupon.save()
   return c.json({ ok: true, coupon: serializeCoupon(coupon, undefined, { includePrivate: true }) })
 })

@@ -82,8 +82,11 @@ export type CouponEstado = 'activo' | 'pausado' | 'agotado' | 'vencido'
 /** Objetivo comercial del cupón. Guía al asesor; es PRIVADO (no se muestra al vecino). */
 export type CuponObjetivo = 'traer_nuevos' | 'llenar_flojos' | 'vaciar_stock' | 'fidelizar'
 
-/** Tipo de oferta. La cuponera arranca en 'porcentaje'. */
+/** Tipo de oferta. La cuponera arranca en 'porcentaje'. ('dos_por_uno' = legacy, no se ofrece.) */
 export type TipoOferta = 'porcentaje' | 'dos_por_uno' | 'precio_fijo' | 'happy_hour'
+
+/** Alcance del descuento: un producto puntual o una categoría / varios. */
+export type Alcance = 'puntual' | 'categoria'
 
 export type Coupon = {
   id: string
@@ -94,6 +97,8 @@ export type Coupon = {
   porcentaje: number
   /** Precio normal aproximado por persona (ARS, opcional). */
   precioReferencia?: number
+  /** Precio final con el cupón (ARS) — solo tipoOferta 'precio_fijo'. */
+  precioFijo?: number
   vigenciaHasta: string
   imagenSeed: string
   estado: CouponEstado
@@ -112,8 +117,12 @@ export type Coupon = {
   /** Franja horaria (HH:MM). */
   franjaDesde?: string
   franjaHasta?: string
-  /** Producto estrella / gancho (para el copy). */
+  /** Producto estrella / gancho (sobre qué aplica). */
   productoGancho?: string
+  /** Alcance: 'puntual' | 'categoria' (para porcentaje / happy_hour). */
+  alcance?: Alcance
+  /** Mostrar el ahorro en pesos al vecino (default true). */
+  mostrarAhorroVecino?: boolean
 }
 
 export type ActivationStatus = 'activo' | 'canjeado' | 'expirado' | 'cancelado'

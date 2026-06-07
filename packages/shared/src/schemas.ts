@@ -246,6 +246,8 @@ export const couponCreateSchema = z.object({
   /** Precio normal aproximado por persona (ARS). Opcional — alimenta el
    *  planificador del vecino. */
   precioReferencia: z.number().positive().optional(),
+  /** Precio FINAL con el cupón (ARS) — solo para tipoOferta 'precio_fijo'. Público. */
+  precioFijo: z.number().positive().nullable().optional(),
   /** Imagen del cupón (data:image/* base64 o URL http/https). Se muestra en la
    *  tarjeta que ve el vecino. Opcional. */
   imagenUrl: safeImageSrcSchema.optional().nullable(),
@@ -265,8 +267,12 @@ export const couponCreateSchema = z.object({
   /** Franja horaria HH:MM (00:00–23:59). */
   franjaDesde: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Hora válida HH:MM').nullable().optional(),
   franjaHasta: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Hora válida HH:MM').nullable().optional(),
-  /** Producto estrella / gancho (para el copy). */
+  /** Producto estrella / gancho (sobre qué aplica). */
   productoGancho: z.string().max(60).nullable().optional(),
+  /** Alcance: 'puntual' (un producto) | 'categoria' (varios). Para %/happy_hour. */
+  alcance: z.enum(['puntual', 'categoria']).optional(),
+  /** Mostrar el ahorro en pesos al vecino (default true). Si false → solo el %. */
+  mostrarAhorroVecino: z.boolean().optional(),
   estado: z.enum(['activo', 'pausado']).default('activo'),
 })
 

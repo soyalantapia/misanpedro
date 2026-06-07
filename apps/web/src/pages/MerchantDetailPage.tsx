@@ -17,6 +17,7 @@ import { CouponCard } from '@/components/CouponCard'
 import { useCouponsByMerchant } from '@/lib/couponsStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { CATEGORIAS, SERVICIOS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
+import { apiCouponToLocal } from '@/lib/apiCoupon'
 import { formatHorariosSemana, isOpenNow } from '@/lib/format'
 import { useApiMerchant } from '@/lib/apiQueries'
 
@@ -76,19 +77,7 @@ export function MerchantDetailPage() {
     : localMerchant
 
   const coupons: Coupon[] = apiCoupons
-    ? apiCoupons.map((c: any) => ({
-        id: c.id,
-        merchantId: apiMerchant?.slug ?? id ?? '',
-        titulo: c.titulo,
-        descripcion: c.descripcion,
-        condiciones: c.condiciones ?? '',
-        porcentaje: c.porcentaje,
-        vigenciaHasta: c.vigenciaHasta,
-        imagenSeed: 'custom',
-        imagenUrl: c.imagenUrl ?? undefined,
-        estado: c.estado as Coupon['estado'],
-        diasAplica: c.diasAplica,
-      }))
+    ? apiCoupons.map((c: any) => apiCouponToLocal(c, apiMerchant?.slug ?? id ?? ''))
     : localCoupons.filter((c) => c.estado === 'activo')
 
   if (!merchant && !apiRes.loading) return <Navigate to="/" replace />

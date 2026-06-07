@@ -217,6 +217,8 @@ export type ApiCoupon = {
   porcentaje: number
   /** Precio normal aproximado por persona (ARS, opcional). */
   precioReferencia?: number
+  /** Precio final con el cupón (ARS) — solo tipoOferta 'precio_fijo'. */
+  precioFijo?: number
   vigenciaHasta: string
   diasAplica?: string
   estado: string
@@ -230,6 +232,10 @@ export type ApiCoupon = {
   franjaDesde?: string
   franjaHasta?: string
   productoGancho?: string
+  /** Alcance: 'puntual' | 'categoria' (para % / happy_hour). */
+  alcance?: 'puntual' | 'categoria'
+  /** Mostrar el ahorro en pesos al vecino (default true). */
+  mostrarAhorroVecino?: boolean
   // ─── Solo en respuestas del propio comercio (mine/list, create, patch) ───
   costoReferencia?: number
   objetivo?: 'traer_nuevos' | 'llenar_flojos' | 'vaciar_stock' | 'fidelizar'

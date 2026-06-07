@@ -47,10 +47,6 @@ export function distanceLabel(km: number): string {
   return `A ${km.toFixed(1)} km`
 }
 
-export function calcAhorro(porcentaje: number, ticketEstimado = 4000) {
-  return Math.round((ticketEstimado * porcentaje) / 100)
-}
-
 export function pad(n: number): string {
   return String(n).padStart(2, '0')
 }

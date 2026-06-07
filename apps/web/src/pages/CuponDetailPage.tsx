@@ -9,14 +9,17 @@ import {
   ExternalLink,
   ArrowRight,
   Share2,
+  Zap,
 } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
 import { useCoupon } from '@/lib/couponsStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { CATEGORIAS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
 import { activationActions, useActivationByCoupon, useUser } from '@/lib/stores'
-import { formatHorariosSemana, formatVigencia, calcAhorro, formatMoney } from '@/lib/format'
+import { formatHorariosSemana, formatVigencia, formatMoney } from '@/lib/format'
+import { valorCupon, franjaTexto } from '@/lib/cuponValor'
 import { api, ApiError, tokens } from '@/lib/api'
+import { apiCouponToLocal } from '@/lib/apiCoupon'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 import { useToast } from '@/components/Toast'
 
@@ -38,19 +41,7 @@ export function CuponDetailPage() {
       : null
 
   const coupon: Coupon | undefined = apiCoupon
-    ? {
-        id: apiCoupon.id,
-        merchantId: apiMerchantRaw?.slug ?? apiCoupon.merchantId,
-        titulo: apiCoupon.titulo,
-        descripcion: apiCoupon.descripcion,
-        condiciones: apiCoupon.condiciones ?? '',
-        porcentaje: apiCoupon.porcentaje,
-        vigenciaHasta: apiCoupon.vigenciaHasta,
-        imagenSeed: 'custom',
-        imagenUrl: apiCoupon.imagenUrl ?? undefined,
-        estado: apiCoupon.estado as Coupon['estado'],
-        diasAplica: apiCoupon.diasAplica,
-      }
+    ? apiCouponToLocal(apiCoupon, apiMerchantRaw?.slug ?? apiCoupon.merchantId)
     : localCoupon
 
   const merchant: Merchant | undefined = apiMerchantRaw
@@ -95,9 +86,7 @@ export function CuponDetailPage() {
   }
 
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
-  const ahorroEstimado = coupon.precioReferencia
-    ? Math.round((coupon.precioReferencia * coupon.porcentaje) / 100)
-    : calcAhorro(coupon.porcentaje)
+  const v = valorCupon(coupon)
 
   async function handleActivate() {
     if (!coupon) return
@@ -181,8 +170,48 @@ export function CuponDetailPage() {
         </header>
 
         <div className="rounded-2xl border border-fin-up/25 bg-fin-up/10 px-4 py-3.5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-fin-soft">Con este cupón ahorrás</p>
-          <p className="text-2xl font-extrabold text-fin-up">~{formatMoney(ahorroEstimado)}</p>
+          {v.esHappyHour && (
+            <p className="mb-1.5 inline-flex w-fit items-center gap-1 rounded-full bg-fin-lime/15 px-2.5 py-1 text-xs font-bold text-fin-lime ring-1 ring-fin-lime/30">
+              <Zap size={12} /> Oportunidad
+              {franjaTexto(v.franja) ? ` · Solo ${franjaTexto(v.franja)}` : ''}
+            </p>
+          )}
+          {v.modo === 'precio_fijo' ? (
+            <>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-fin-soft">Con este cupón pagás</p>
+              <p className="text-2xl font-extrabold text-fin-ink">{formatMoney(v.precioFijo ?? 0)}</p>
+              {v.ahorro != null && v.precioRef != null && (
+                <p className="text-sm font-semibold text-fin-soft">
+                  Antes {formatMoney(v.precioRef)} ·{' '}
+                  <span className="text-fin-up">ahorrás {formatMoney(v.ahorro)}</span>
+                </p>
+              )}
+            </>
+          ) : v.modo === 'pesos_exacto' ? (
+            <>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-fin-soft">
+                Pagás {formatMoney(v.paga ?? 0)} · ahorrás
+              </p>
+              <p className="text-2xl font-extrabold text-fin-up">{formatMoney(v.ahorro ?? 0)}</p>
+            </>
+          ) : v.modo === 'pesos_aprox' ? (
+            <>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-fin-soft">Con este cupón ahorrás</p>
+              <p className="text-2xl font-extrabold text-fin-up">~{formatMoney(v.ahorro ?? 0)}</p>
+              {v.precioRef != null && (
+                <p className="text-xs font-medium text-fin-soft">
+                  En una de {formatMoney(v.precioRef)}
+                  {v.sobre ? ` · ${v.sobre}` : ''}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-fin-soft">Este cupón es</p>
+              <p className="text-2xl font-extrabold text-fin-lime">{v.porcentaje}% OFF</p>
+              {v.sobre && <p className="text-xs font-medium text-fin-soft">En {v.sobre}</p>}
+            </>
+          )}
         </div>
 
         <Section title="Descripción" body={coupon.descripcion} />

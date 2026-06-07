@@ -4,6 +4,7 @@ import {
   redeemByCodeSchema,
   redeemByPayloadSchema,
   confirmRedemptionSchema,
+  calcAhorroCanje,
 } from '@misanpedro/shared'
 import { Activation, Coupon, CustomerNote, Merchant, Redemption, User } from '@/models'
 import { z } from 'zod'
@@ -144,9 +145,8 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
     return c.json({ ok: false, error: 'el cupón está vencido' }, 409)
   }
 
-  const ahorroEstimado = montoTicket
-    ? Math.round((montoTicket * coupon.porcentaje) / 100)
-    : 0
+  // Ahorro por tipo de oferta (precio_fijo = diferencia; resto = % del ticket).
+  const ahorroEstimado = calcAhorroCanje(coupon, montoTicket)
 
   activation.status = 'canjeado'
   activation.redeemedAt = new Date()
