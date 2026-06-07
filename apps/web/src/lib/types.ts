@@ -187,10 +187,13 @@ export type MerchantSession = {
 export type User = {
   id: string
   nombre: string
-  dni: string
-  email: string
-  whatsapp: string
-  fechaNacimiento: string
-  acceptedTcAt: string
-  createdAt: string
+  /** El teléfono ES la identidad del vecino (onboarding sin fricción). */
+  telefono: string
+  // ─── Legacy / opcionales (ya no se piden en el alta) ───
+  dni?: string
+  email?: string
+  whatsapp?: string
+  fechaNacimiento?: string
+  acceptedTcAt?: string
+  createdAt?: string
 }

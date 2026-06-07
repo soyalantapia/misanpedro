@@ -27,8 +27,11 @@ export type AccessPayload = {
   rol?: string // si type = owner — 'super' por ahora
 }
 
-export function signAccessToken(payload: AccessPayload): string {
-  const opts: SignOptions = { expiresIn: ACCESS_TTL }
+export function signAccessToken(
+  payload: AccessPayload,
+  expiresIn: SignOptions['expiresIn'] = ACCESS_TTL,
+): string {
+  const opts: SignOptions = { expiresIn }
   return jwt.sign(payload, env.JWT_SECRET, opts)
 }
 

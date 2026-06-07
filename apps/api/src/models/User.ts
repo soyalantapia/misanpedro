@@ -5,21 +5,32 @@ const userSchema = new Schema(
     /** Tenant: cada vecino vive dentro de UNA App (ciudad). */
     appId: { type: Types.ObjectId, ref: 'App', required: true, index: true },
 
-    dni: { type: String, required: true },
+    /** Onboarding sin fricción: la identidad del vecino es NOMBRE + TELÉFONO. */
     nombre: { type: String, required: true },
-    email: { type: String, required: true, lowercase: true },
-    whatsapp: { type: String, required: true },
-    fechaNacimiento: { type: String, required: true }, // YYYY-MM-DD
+    /** El TELÉFONO es la identidad (normalizado, solo dígitos). Mismo teléfono
+     *  en otro dispositivo → recupera la cuenta y el ahorro. */
+    telefono: { type: String, required: true },
+
+    // ─── Campos legacy / opcionales (ya NO se piden en el alta sin fricción) ───
+    dni: { type: String },
+    email: { type: String, lowercase: true },
+    whatsapp: { type: String },
+    fechaNacimiento: { type: String }, // YYYY-MM-DD
     acceptedTcAt: { type: Date, default: Date.now },
     lastLoginAt: { type: Date },
   },
   { timestamps: true },
 )
 
-// Unique scoped al tenant — un email puede usarse en distintas ciudades.
-userSchema.index({ appId: 1, dni: 1 }, { unique: true })
-userSchema.index({ appId: 1, email: 1 }, { unique: true })
-userSchema.index({ appId: 1, whatsapp: 1 }, { unique: true })
+// Identidad = (tenant, teléfono), único. PARCIAL: solo indexa docs cuyo telefono
+// es string, así convive con cuentas viejas sin teléfono (null) sin romper el
+// build del índice. Sacamos los unique de dni/email/whatsapp (ahora opcionales).
+// Pre-lanzamiento: correr `scripts/sync-user-indexes.ts` para limpiar los índices
+// viejos en dev. (No hace falta migrar datos.)
+userSchema.index(
+  { appId: 1, telefono: 1 },
+  { unique: true, partialFilterExpression: { telefono: { $type: 'string' } } },
+)
 
 export type UserDoc = InferSchemaType<typeof userSchema> & { _id: string }
 export const User = model('User', userSchema)

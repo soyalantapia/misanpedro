@@ -37,18 +37,17 @@ export function ApiSync() {
               const apiUser: User = {
                 id: me.user.id,
                 nombre: me.user.nombre,
-                dni: me.user.dni,
-                email: me.user.email,
-                whatsapp: me.user.whatsapp,
-                fechaNacimiento: me.user.fechaNacimiento,
-                acceptedTcAt: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
+                telefono: me.user.telefono,
               }
               userActions.replace(apiUser)
             }
           } catch (err: any) {
+            // Token largo: un 401 es raro (token inválido). Lo tratamos como
+            // "volver a pedir el claim": limpiamos la sesión local y el próximo
+            // canje re-clama por teléfono (recupera la cuenta + el ahorro).
             if (err?.status === 401) {
               tokens.clear('user')
+              userActions.signOut()
             }
             return
           }
