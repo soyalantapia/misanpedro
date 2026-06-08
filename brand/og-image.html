@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --o-400: #fb8a3c; --o-500: #f97316; --o-600: #ea580c; --o-700: #c2410c;
+    --green: #059669; --ink: #1c1917; --soft: #57534e; --faint: #a8a29e;
+  }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    display: flex; align-items: stretch;
+    background:
+      radial-gradient(900px 500px at 88% -10%, rgba(251,138,60,.20), transparent 60%),
+      radial-gradient(700px 500px at -5% 110%, rgba(234,88,12,.14), transparent 55%),
+      #fffaf5;
+    position: relative;
+  }
+  /* sutil grid de fondo */
+  body::before {
+    content: ''; position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(28,25,23,.035) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(28,25,23,.035) 1px, transparent 1px);
+    background-size: 40px 40px; mask-image: radial-gradient(800px 600px at 30% 40%, #000, transparent 75%);
+  }
+
+  .left { flex: 1.12; padding: 62px 0 62px 70px; display: flex; flex-direction: column; justify-content: center; gap: 26px; z-index: 2; }
+
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .word { font-weight: 900; font-size: 30px; letter-spacing: -.03em; color: var(--ink); }
+  .brand .word .mi { color: var(--o-600); }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 9px; align-self: flex-start;
+    background: #fff; border: 1px solid rgba(234,88,12,.18); border-radius: 999px;
+    padding: 9px 16px; font-weight: 700; font-size: 17px; color: var(--o-700);
+    box-shadow: 0 6px 20px -8px rgba(234,88,12,.35);
+  }
+  .eyebrow .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--o-500); }
+
+  h1 { font-weight: 900; font-size: 86px; line-height: .96; letter-spacing: -.035em; color: var(--ink); }
+  h1 .hl { color: var(--o-600); }
+  .sub { font-weight: 500; font-size: 25px; line-height: 1.35; color: var(--soft); max-width: 540px; }
+  .sub b { color: var(--green); font-weight: 700; }
+
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #f1e7dd;
+          border-radius: 999px; padding: 9px 15px; font-weight: 600; font-size: 16px; color: var(--soft); }
+  .chip svg { color: var(--o-600); }
+
+  .url { display: inline-flex; align-items: center; gap: 10px; align-self: flex-start; margin-top: 6px;
+         background: linear-gradient(135deg, var(--o-500), var(--o-700)); color: #fff;
+         border-radius: 999px; padding: 14px 24px; font-weight: 800; font-size: 21px; letter-spacing: -.01em;
+         box-shadow: 0 16px 40px -12px rgba(234,88,12,.6); }
+
+  /* ── phone mockup ── */
+  .right { flex: .95; position: relative; z-index: 2; }
+  .phone {
+    position: absolute; top: 50%; left: 47%; transform: translate(-50%, -50%) rotate(2.5deg);
+    width: 352px; height: 720px; background: #0c0a09; border-radius: 52px; padding: 12px;
+    box-shadow: 0 50px 90px -30px rgba(124,45,18,.55), 0 0 0 2px rgba(255,255,255,.06) inset;
+  }
+  .screen { width: 100%; height: 100%; background: #fff7ed; border-radius: 42px; overflow: hidden; position: relative; }
+  .notch { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 116px; height: 26px; background: #0c0a09; border-radius: 999px; z-index: 5; }
+
+  .app-top { padding: 38px 22px 14px; display: flex; align-items: center; gap: 10px; }
+  .app-top .w { font-weight: 900; font-size: 21px; letter-spacing: -.03em; color: var(--ink); }
+  .app-top .w .mi { color: var(--o-600); }
+
+  .wallet { margin: 6px 18px 16px; border-radius: 22px; padding: 18px 20px;
+            background: linear-gradient(135deg, #047857, #059669); color: #fff;
+            box-shadow: 0 16px 30px -14px rgba(5,150,105,.7); }
+  .wallet .lbl { font-weight: 600; font-size: 14px; opacity: .9; }
+  .wallet .amt { font-weight: 900; font-size: 40px; letter-spacing: -.03em; line-height: 1.1; }
+  .wallet .amt small { font-size: 22px; font-weight: 700; }
+
+  .cards { display: flex; flex-direction: column; gap: 12px; padding: 2px 15px; }
+  .card { background: #fff; border: 1px solid #f1e7dd; border-radius: 19px; padding: 12px 13px;
+          display: flex; align-items: center; gap: 11px; box-shadow: 0 10px 24px -16px rgba(28,25,23,.35); }
+  .card .ic { width: 44px; height: 44px; border-radius: 14px; flex: none; display: grid; place-items: center; font-size: 23px; }
+  .card .body { flex: 1; min-width: 0; }
+  .card .name { font-weight: 800; font-size: 16px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .save { font-weight: 800; font-size: 13px; color: var(--green); margin-top: 1px; }
+  .badge { flex: none; background: linear-gradient(135deg, var(--o-500), var(--o-600)); color: #fff;
+           font-weight: 900; font-size: 14px; border-radius: 11px; padding: 7px 10px; letter-spacing: -.02em; white-space: nowrap; }
+</style>
+</head>
+<body>
+  <div class="left">
+    <div class="brand">
+      <svg width="46" height="46" viewBox="0 0 64 64" aria-hidden="true">
+        <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs>
+        <circle cx="32" cy="32" r="31" fill="url(#bg)"/>
+        <circle cx="32" cy="32" r="23" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round" opacity="0.85"/>
+        <text x="32" y="42.5" font-family="Poppins,system-ui,sans-serif" font-weight="800" font-size="27" fill="#fff" text-anchor="middle">%</text>
+      </svg>
+      <span class="word"><span class="mi">Mi</span>SanPedro</span>
+    </div>
+
+    <span class="eyebrow"><span class="dot"></span> El club de ahorro de San Pedro</span>
+
+    <h1>Tu plata<br><span class="hl">rinde más</span></h1>
+
+    <p class="sub">Descuentos reales en los comercios de tu ciudad. <b>Gratis</b> y sin registrarte: entrás, mostrás el cupón y pagás menos por lo mismo.</p>
+
+    <div class="chips">
+      <span class="chip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Gratis</span>
+      <span class="chip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Sin registrarte</span>
+      <span class="chip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Comercios de tu ciudad</span>
+    </div>
+
+    <span class="url">app.misanpedro.com</span>
+  </div>
+
+  <div class="right">
+    <div class="phone">
+      <div class="screen">
+        <div class="notch"></div>
+        <div class="app-top">
+          <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true">
+            <defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs>
+            <circle cx="32" cy="32" r="31" fill="url(#tg)"/>
+            <circle cx="32" cy="32" r="23" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="1.5 4.5" stroke-linecap="round" opacity="0.85"/>
+            <text x="32" y="42.5" font-family="Poppins,system-ui,sans-serif" font-weight="800" font-size="27" fill="#fff" text-anchor="middle">%</text>
+          </svg>
+          <span class="w"><span class="mi">Mi</span>SanPedro</span>
+        </div>
+
+        <div class="wallet">
+          <div class="lbl">Ahorraste este mes</div>
+          <div class="amt"><small>$</small>4.300</div>
+        </div>
+
+        <div class="cards">
+          <div class="card">
+            <div class="ic" style="background:#fff1e6">☕</div>
+            <div class="body"><div class="name">Café Rivas</div><div class="save">Ahorrás ~$900</div></div>
+            <div class="badge">30% OFF</div>
+          </div>
+          <div class="card">
+            <div class="ic" style="background:#fee2e2">🥩</div>
+            <div class="body"><div class="name">Carnicería</div><div class="save">Ahorrás ~$2.500</div></div>
+            <div class="badge">2x1</div>
+          </div>
+          <div class="card">
+            <div class="ic" style="background:#dcfce7">💊</div>
+            <div class="body"><div class="name">Farmacia</div><div class="save">Ahorrás ~$1.200</div></div>
+            <div class="badge">15% OFF</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

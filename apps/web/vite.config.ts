@@ -7,8 +7,10 @@ import path from 'node:path'
 // base configurable por env:
 //  - gh-pages (default):         VITE_BASE no seteado → '/misanpedro/'
 //  - dominio propio (Hostinger): VITE_BASE='/' (la app se sirve en la raíz de app.misanpedro.com)
+const base = process.env.VITE_BASE ?? '/misanpedro/'
+
 export default defineConfig({
-  base: process.env.VITE_BASE ?? '/misanpedro/',
+  base,
   plugins: [
     react(),
     tailwindcss(),
@@ -20,15 +22,15 @@ export default defineConfig({
         name: 'Mi San Pedro — Descuentos vecinales',
         short_name: 'Mi San Pedro',
         description: 'Descuentos en comercios adheridos de San Pedro',
-        theme_color: '#695ede',
-        background_color: '#f9f9f9',
+        theme_color: '#ea580c',
+        background_color: '#fff7ed',
         display: 'standalone',
         orientation: 'any',
-        start_url: '/misanpedro/',
+        start_url: base,
         icons: [
-          { src: '/misanpedro/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/misanpedro/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/misanpedro/icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: `${base}icon-192.png`, sizes: '192x192', type: 'image/png' },
+          { src: `${base}icon-512.png`, sizes: '512x512', type: 'image/png' },
+          { src: `${base}icon-512-maskable.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
