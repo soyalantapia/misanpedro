@@ -28,4 +28,9 @@ function buildEnterUrl(): string {
 
 export const ENTER_URL = buildEnterUrl()
 
+// Landing del COMERCIO (captación). Por default relativa a la raíz del dominio
+// (misanpedro.com/comercios/) — robusta también en www. Override con
+// VITE_COMERCIOS_URL al build si hace falta una URL absoluta.
+export const COMERCIOS_URL = import.meta.env.VITE_COMERCIOS_URL ?? '/comercios/'
+
 export const SUPPORT_EMAIL = 'hola@misanpedro.app'
