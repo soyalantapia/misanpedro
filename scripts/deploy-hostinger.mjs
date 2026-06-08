@@ -118,8 +118,9 @@ const targets = [
     name: 'Landing vecino → /',
     dist: 'apps/landing-vecino/dist',
     remote: `${REMOTE_ROOT}/`,
-    // no borres los subdirectorios de los otros dos frontends
-    extra: '--delete --exclude=app/ --exclude=comercios/ --exclude=.well-known/',
+    // no borres los subdirectorios de los otros dos frontends ni el challenge de SSL.
+    // excludes ANCLADOS (/) = solo al root del transfer (public_html), no a cualquier nivel.
+    extra: '--delete --exclude=/app/ --exclude=/comercios/ --exclude=/.well-known/',
   },
   {
     name: 'PWA → /app/',
