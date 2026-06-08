@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
-import { ENTER_URL } from '@/lib/cn'
+import { ENTER_URL, COMERCIOS_URL } from '@/lib/cn'
 import { Logo } from '@/components/Logo'
 
 const LINKS = [
@@ -47,13 +47,21 @@ export function Nav() {
           ))}
         </nav>
 
-        <a
-          href={ENTER_URL}
-          className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40 sm:px-5 sm:text-sm"
-        >
-          Entrar gratis
-          <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
-        </a>
+        <div className="flex items-center gap-2.5 sm:gap-4">
+          <a
+            href={COMERCIOS_URL}
+            className="hidden whitespace-nowrap text-xs font-semibold text-neutral-500 transition-colors hover:text-accent-700 sm:inline-block sm:text-sm"
+          >
+            Soy un comercio
+          </a>
+          <a
+            href={ENTER_URL}
+            className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40 sm:px-5 sm:text-sm"
+          >
+            Ir a la app
+            <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+          </a>
+        </div>
       </div>
     </header>
   )
