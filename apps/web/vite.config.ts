@@ -4,8 +4,11 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
 
+// base configurable por env:
+//  - gh-pages (default):         VITE_BASE no seteado → '/misanpedro/'
+//  - dominio propio (Hostinger): VITE_BASE='/' (la app se sirve en la raíz de app.misanpedro.com)
 export default defineConfig({
-  base: '/misanpedro/',
+  base: process.env.VITE_BASE ?? '/misanpedro/',
   plugins: [
     react(),
     tailwindcss(),
