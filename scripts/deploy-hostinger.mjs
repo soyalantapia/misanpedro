@@ -111,7 +111,10 @@ if (BUILD_ONLY) {
 //  - landing-vecino → public_html/  (con --delete pero PRESERVANDO app/ y comercios/)
 //  - web            → public_html/app/       (aislado, --delete)
 //  - landing        → public_html/comercios/ (aislado, --delete)
-const rsyncFlags = `-avz --human-readable${DRY_RUN ? ' --dry-run' : ''} -e "ssh -p ${SSH_PORT}"`
+// SSH_KEY (opcional): si se setea, usamos esa llave privada (deploy sin contraseña).
+const SSH_KEY = process.env.SSH_KEY ?? ''
+const sshCmd = `ssh -p ${SSH_PORT}${SSH_KEY ? ` -i ${SSH_KEY} -o IdentitiesOnly=yes` : ''}`
+const rsyncFlags = `-avz --human-readable${DRY_RUN ? ' --dry-run' : ''} -e "${sshCmd}"`
 
 const targets = [
   {
