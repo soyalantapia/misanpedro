@@ -23,6 +23,17 @@ const browser = await chromium.launch()
   console.log('✅ og-image.png (1200x630)')
 }
 
+// ── OG image comercios (landing de negocio) ────────────────────────────────
+{
+  const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 })
+  await page.goto('file://' + join(ROOT, 'brand/og-image-comercios.html'), { waitUntil: 'networkidle' })
+  try { await page.evaluate(() => document.fonts.ready) } catch {}
+  await page.waitForTimeout(700)
+  await page.screenshot({ path: join(ROOT, 'apps/landing/public/og-image.png'), clip: { x: 0, y: 0, width: 1200, height: 630 } })
+  await page.close()
+  console.log('✅ comercios/og-image.png (1200x630)')
+}
+
 // ── iconos ──────────────────────────────────────────────────────────────────
 const selloTransparent = `<svg viewBox="0 0 64 64" width="100%" height="100%">
   <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb8a3c"/><stop offset="1" stop-color="#ea580c"/></linearGradient></defs>
