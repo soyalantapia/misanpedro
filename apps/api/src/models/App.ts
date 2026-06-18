@@ -44,8 +44,9 @@ const appSchema = new Schema(
     brand: {
       logoUrl: { type: String },
       // colores en HEX (#RRGGBB)
-      primaryColor: { type: String, default: '#695ede' },
-      accentColor: { type: String, default: '#4239a3' },
+      // Marca de plataforma: naranja (no el violeta viejo). Cada ciudad puede overridear.
+      primaryColor: { type: String, default: '#ea580c' },
+      accentColor: { type: String, default: '#c2410c' },
       heroEyebrow: { type: String }, // override del eyebrow del Hero ("Para comercios de SP")
       heroHeadline: { type: String }, // override del H1 (opcional)
     },
