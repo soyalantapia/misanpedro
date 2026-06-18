@@ -241,10 +241,10 @@ export function MerchantDetailPage() {
           </Section>
         )}
 
-        <Section title="Descuentos disponibles">
+        <Section title="Cupones disponibles">
           {coupons.length === 0 ? (
             <p className="rounded-2xl bg-fin-surface2 p-5 text-center text-sm text-fin-soft">
-              Este comercio no tiene descuentos activos en este momento.
+              Este comercio no tiene cupones activos en este momento.
             </p>
           ) : (
             <div className="flex flex-col gap-2.5">

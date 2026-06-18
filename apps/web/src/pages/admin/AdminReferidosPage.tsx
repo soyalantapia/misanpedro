@@ -33,7 +33,7 @@ export function AdminReferidosPage() {
   const [copied, setCopied] = useState(false)
 
   const link = data?.link ?? ''
-  const shareText = `¡Sumá tu comercio a ${appName}! 3 meses gratis + 15 días extra si entrás con mi link, sin tarjeta 👉 ${link}`
+  const shareText = `¡Sumá tu comercio a ${appName}! 3 meses gratis sin tarjeta, y si entrás con mi link te llevás 15 días extra 👉 ${link}`
   const waHref = `https://wa.me/?text=${encodeURIComponent(shareText)}`
 
   async function copyLink() {
@@ -94,6 +94,8 @@ export function AdminReferidosPage() {
               <div className="flex items-stretch gap-2">
                 <input
                   type="text"
+                  id="referral-link"
+                  name="referral-link"
                   readOnly
                   value={link}
                   aria-label="Tu link de referido"

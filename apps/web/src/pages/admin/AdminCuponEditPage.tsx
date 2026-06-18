@@ -16,6 +16,8 @@ import {
   Repeat,
   Lock,
   Zap,
+  WifiOff,
+  RotateCw,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useCoupon } from '@/lib/couponsStore'
@@ -268,6 +270,22 @@ function corajeMsg(objetivo: Objetivo | '', m: ReturnType<typeof calcMoney> | nu
   return ''
 }
 
+// ─── Guard anti-contradicción: título vs % real ────────────────────────────
+/**
+ * Si el comercio escribe un % en el título distinto al descuento real, en el
+ * catálogo se ven dos números peleados (badge "40% OFF" + título "20% de
+ * descuento"). Devuelve el primer % del título que NO coincida con el real,
+ * o null si no hay contradicción. Aviso suave, no bloquea.
+ */
+function detectarPorcentajeEnTitulo(titulo: string, porcentajeReal: number): number | null {
+  const matches = titulo.matchAll(/(\d{1,3})\s*%/g)
+  for (const m of matches) {
+    const n = Number(m[1])
+    if (Number.isFinite(n) && n > 0 && n <= 100 && n !== porcentajeReal) return n
+  }
+  return null
+}
+
 // ─── Medidor de fuerza (avisa cuando es FLOJO, no cuando es grande) ─────────
 function calcFuerza(form: FormState): { nivel: 'Fuerte' | 'Media' | 'Floja'; mejora: string } {
   let score = 0
@@ -296,6 +314,7 @@ export function AdminCuponEditPage() {
   const isEdit = !!id
   const localExisting = useCoupon(id)
   const apiCupones = useApiMyCoupons()
+  const apiError = apiCupones.error
   const apiExisting = isEdit && id ? apiCupones.data?.find((c) => c.id === id) : undefined
   const existing: any = apiExisting ?? localExisting
   const sessionState = useMerchantSession()
@@ -356,6 +375,30 @@ export function AdminCuponEditPage() {
       </div>
     )
   }
+  // Si el API falló al cargar tus descuentos no bounceamos a la lista (perdería
+  // el contexto): mostramos "Sin conexión" con Reintentar (estilo comercio).
+  if (isEdit && !existing && apiError) {
+    return (
+      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 px-4 py-20 text-center">
+        <div className="grid h-14 w-14 place-items-center rounded-full bg-surface-2 text-ink-soft ring-1 ring-line">
+          <WifiOff size={24} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-bold text-ink">Sin conexión</h2>
+          <p className="text-sm text-ink-soft">
+            No pudimos cargar este descuento. Revisá tu conexión y reintentá.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => apiCupones.refetch()}
+          className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-sm font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
+        >
+          <RotateCw size={16} /> Reintentar
+        </button>
+      </div>
+    )
+  }
   if (isEdit && !existing && !apiCupones.loading) {
     return <Navigate to="/admin/cupones" replace />
   }
@@ -386,11 +429,11 @@ export function AdminCuponEditPage() {
       const pf = Number(form.precioFijo)
       const pr = Number(form.precioReferencia)
       if (!form.precioFijo.trim() || !(pf > 0)) {
-        toast.error('Falta el precio con el cupón', 'En "precio fijo" poné a cuánto lo dejás.')
+        toast.error('Falta el precio con el descuento', 'En "precio fijo" poné a cuánto lo dejás.')
         return
       }
       if (form.precioReferencia.trim() && pr > 0 && pf >= pr) {
-        toast.error('Revisá los precios', 'El precio con el cupón tiene que ser MENOR al precio normal.')
+        toast.error('Revisá los precios', 'El precio con el descuento tiene que ser MENOR al precio normal.')
         return
       }
     }
@@ -439,10 +482,10 @@ export function AdminCuponEditPage() {
     try {
       if (isEdit && id) {
         await api.merchantCoupons.update(id, apiPayload)
-        toast.success('Cupón actualizado')
+        toast.success('Descuento actualizado')
       } else {
         await api.merchantCoupons.create(apiPayload)
-        toast.success('Cupón creado', 'Ya está visible para los vecinos.')
+        toast.success('Descuento creado', 'Ya está visible para los vecinos.')
       }
       navigate('/admin/cupones', { replace: true })
     } catch (err) {
@@ -580,6 +623,9 @@ function Asesor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paso])
   const fuerza = calcFuerza(form)
+  // Aviso suave: el título dice un % que no coincide con el descuento real
+  // (el badge del catálogo usa form.porcentaje). No bloquea publicar.
+  const porcentajeEnTitulo = detectarPorcentajeEnTitulo(form.titulo, form.porcentaje)
   // La franja necesita que el cierre sea MAYOR al inicio. Como "HH:MM" está
   // zero-padded, la comparación de strings alcanza. Si está al revés, avisamos
   // y bloqueamos el "Siguiente".
@@ -609,7 +655,7 @@ function Asesor({
       <Stepper idx={idx} total={PASOS.length} />
 
       {paso === 'objetivo' && (
-        <Step title="¿Qué querés lograr con este cupón?" hint="Elegí el objetivo y te propongo la jugada.">
+        <Step title="¿Qué querés lograr con este descuento?" hint="Elegí el objetivo y te propongo la jugada.">
           <div className="grid gap-2.5 sm:grid-cols-2">
             {OBJETIVOS.map((o) => {
               const Icon = o.icon
@@ -669,6 +715,8 @@ function Asesor({
         <Step title="¿Cuál es tu producto estrella?" hint="Decímelo primero y te propongo la jugada justa con ese gancho.">
           <input
             type="text"
+            id="cupon-gancho"
+            name="productoGancho"
             value={form.productoGancho}
             maxLength={60}
             onChange={(e) => update('productoGancho', e.target.value)}
@@ -707,8 +755,8 @@ function Asesor({
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
-            <MoneyInput label="Precio normal" value={form.precioReferencia} onChange={(v) => update('precioReferencia', v)} placeholder="6000" />
-            <MoneyInput label="Tu costo (privado)" value={form.costoReferencia} onChange={(v) => update('costoReferencia', v)} placeholder="2500" />
+            <MoneyInput label="Precio normal" name="precioReferencia" value={form.precioReferencia} onChange={(v) => update('precioReferencia', v)} placeholder="6000" />
+            <MoneyInput label="Tu costo (privado)" name="costoReferencia" value={form.costoReferencia} onChange={(v) => update('costoReferencia', v)} placeholder="2500" />
           </div>
           {costoMayorQuePrecio && (
             <p className="text-[11px] font-semibold text-status-error-fg">
@@ -718,7 +766,8 @@ function Asesor({
 
           {esPrecioFijo ? (
             <MoneyInput
-              label="Precio con el cupón"
+              label="Precio con el descuento"
+              name="precioFijo"
               value={form.precioFijo}
               onChange={(v) => update('precioFijo', v)}
               placeholder="4000"
@@ -732,6 +781,8 @@ function Asesor({
                 </div>
                 <input
                   type="range"
+                  id="cupon-porcentaje"
+                  name="porcentaje"
                   min={5}
                   max={maxDescuento}
                   step={5}
@@ -807,7 +858,7 @@ function Asesor({
           ) : (
             <p className="text-[11px] text-ink-faint">
               {esPrecioFijo
-                ? 'Poné el precio con el cupón (y el normal) y te calculo el ahorro y tu margen.'
+                ? 'Poné el precio con el descuento (y el normal) y te calculo el ahorro y tu margen.'
                 : 'Poné el precio normal y te muestro cuánto paga el vecino, cuánto se ahorra y tu margen.'}
             </p>
           )}
@@ -823,6 +874,8 @@ function Asesor({
               </span>
               <input
                 type="checkbox"
+                id="cupon-mostrar-ahorro"
+                name="mostrarAhorroVecino"
                 checked={form.mostrarAhorroVecino}
                 onChange={(e) => update('mostrarAhorroVecino', e.target.checked)}
                 className="h-5 w-5 shrink-0 accent-brand"
@@ -856,9 +909,9 @@ function Asesor({
           <div className="mt-1 flex flex-col gap-1.5">
             <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">Franja</span>
             <div className="flex items-center gap-2">
-              <input type="time" value={form.franjaDesde} onChange={(e) => update('franjaDesde', e.target.value)} className="min-w-0 flex-1 rounded-xl bg-surface px-3 py-2 text-sm ring-1 ring-line" />
+              <input type="time" id="cupon-franja-desde" name="franjaDesde" value={form.franjaDesde} onChange={(e) => update('franjaDesde', e.target.value)} className="min-w-0 flex-1 rounded-xl bg-surface px-3 py-2 text-sm ring-1 ring-line" />
               <span className="shrink-0 text-ink-faint">a</span>
-              <input type="time" value={form.franjaHasta} min={form.franjaDesde || undefined} onChange={(e) => update('franjaHasta', e.target.value)} className="min-w-0 flex-1 rounded-xl bg-surface px-3 py-2 text-sm ring-1 ring-line" />
+              <input type="time" id="cupon-franja-hasta" name="franjaHasta" value={form.franjaHasta} min={form.franjaDesde || undefined} onChange={(e) => update('franjaHasta', e.target.value)} className="min-w-0 flex-1 rounded-xl bg-surface px-3 py-2 text-sm ring-1 ring-line" />
             </div>
           </div>
           {franjaInvalida ? (
@@ -899,28 +952,38 @@ function Asesor({
             </p>
           </div>
 
-          <NavBtns onPrev={prev} onNext={next} nextLabel="Ver mi cupón" nextDisabled={franjaInvalida} />
+          <NavBtns onPrev={prev} onNext={next} nextLabel="Ver mi descuento" nextDisabled={franjaInvalida} />
         </Step>
       )}
 
       {paso === 'publicar' && (
-        <Step title="Tu cupón" hint="Así lo ve el vecino. Revisá, ajustá y publicá.">
+        <Step title="Tu descuento" hint="Así lo ve el vecino. Revisá, ajustá y publicá.">
           <FuerzaMeter fuerza={fuerza} />
           <Preview merchant={merchant} form={form} money={money} />
 
           <Field label="Título del descuento" hint={`${form.titulo.length}/60`}>
             <input
               type="text"
+              id="cupon-titulo"
+              name="titulo"
               value={form.titulo}
               maxLength={60}
               onChange={(e) => update('titulo', e.target.value)}
               placeholder="Ej: 30% OFF en el menú del mediodía"
               className={inputCls}
             />
+            {porcentajeEnTitulo != null && (
+              <p className="mt-1 flex items-start gap-1.5 rounded-xl bg-status-warning-bg px-3 py-2 text-[11px] font-semibold leading-snug text-status-warning-fg">
+                <Zap size={13} className="mt-0.5 shrink-0" />
+                Ojo: el título dice {porcentajeEnTitulo}% pero el descuento es {form.porcentaje}%. Revisá que coincidan, así no le mostrás dos números distintos al vecino.
+              </p>
+            )}
           </Field>
 
           <Field label="Descripción" hint={`${form.descripcion.length}/280`}>
             <textarea
+              id="cupon-descripcion"
+              name="descripcion"
               value={form.descripcion}
               maxLength={280}
               rows={3}
@@ -1062,13 +1125,13 @@ function NavBtns({
   )
 }
 
-function MoneyInput({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+function MoneyInput({ label, name, value, onChange, placeholder }: { label: string; name: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">{label}</span>
       <div className="relative">
         <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-faint">$</span>
-        <input type="number" min={0} inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={`${inputCls} pl-8`} />
+        <input type="number" id={`cupon-${name}`} name={name} min={0} inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={`${inputCls} pl-8`} />
       </div>
     </label>
   )
@@ -1111,7 +1174,7 @@ function VigenciaChips({ value, onChange }: { value: string; onChange: (v: strin
           )
         })}
       </div>
-      <input type="date" value={value} onChange={(e) => onChange(e.target.value)} className={inputCls} min={new Date().toISOString().slice(0, 10)} />
+      <input type="date" id="cupon-vigencia" name="vigenciaHasta" value={value} onChange={(e) => onChange(e.target.value)} className={inputCls} min={new Date().toISOString().slice(0, 10)} />
       {value && <p className="text-[11px] text-ink-soft">Hasta el <span className="font-bold text-ink">{formatDateLong(value)}</span></p>}
     </div>
   )
@@ -1163,6 +1226,8 @@ function ImagenCuponInput({ value, onChange }: { value: string; onChange: (v: st
         <input
           ref={ref}
           type="file"
+          id="cupon-imagen"
+          name="imagenUrl"
           accept="image/*"
           className="hidden"
           onChange={(e) => {
@@ -1222,7 +1287,7 @@ function Preview({
       </div>
       <div className="flex flex-col gap-1 p-4">
         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">{merchant.nombre}</p>
-        <h3 className="text-base font-bold leading-tight text-ink">{form.titulo || 'Título de tu cupón'}</h3>
+        <h3 className="text-base font-bold leading-tight text-ink">{form.titulo || 'Título de tu descuento'}</h3>
         {money && (
           <p className="text-xs font-semibold text-ink-soft">
             Pagás <span className="font-bold text-ink">{fmtMoney(money.vecinoPaga)}</span> · ahorrás{' '}

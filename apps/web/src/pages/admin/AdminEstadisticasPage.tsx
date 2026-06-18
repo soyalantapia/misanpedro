@@ -181,7 +181,7 @@ function StatsBody({ data, periodo }: { data: ApiMerchantStatsAsesor; periodo: M
         {diaFlojo && (
           <Insight
             text={<>Tus <strong>{DIA_LABEL[diaFlojo.dia]?.largo.replace('los ', '')}</strong> están flojos.</>}
-            cta="Armá un cupón de ese día"
+            cta="Armá un descuento de ese día"
             onClick={() => navigate(`/admin/cupones/nuevo?dia=${diaFlojo.dia}`)}
           />
         )}
@@ -190,10 +190,10 @@ function StatsBody({ data, periodo }: { data: ApiMerchantStatsAsesor; periodo: M
       {/* ④ TUS CUPONES */}
       <Card padding="lg" className="flex flex-col gap-3">
         <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
-          <Tag size={11} /> Tus cupones
+          <Tag size={11} /> Tus descuentos
         </p>
         {data.cupones.length === 0 ? (
-          <p className="text-xs text-ink-soft">No hubo canjes de cupones en este período.</p>
+          <p className="text-xs text-ink-soft">No hubo canjes de descuentos en este período.</p>
         ) : (
           <>
             <ul className="flex flex-col gap-2.5">
@@ -215,7 +215,7 @@ function StatsBody({ data, periodo }: { data: ApiMerchantStatsAsesor; periodo: M
               ))}
             </ul>
             {topCupon && (
-              <Insight text={<>Tu mejor cupón es <strong>{topCupon.titulo}</strong>. Hacé más como ese.</>} />
+              <Insight text={<>Tu mejor descuento es <strong>{topCupon.titulo}</strong>. Hacé más como ese.</>} />
             )}
           </>
         )}

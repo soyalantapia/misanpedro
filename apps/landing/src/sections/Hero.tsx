@@ -129,7 +129,7 @@ function HeroMockup() {
             <span className="h-2.5 w-2.5 rounded-full bg-danger/60" />
             <span className="h-2.5 w-2.5 rounded-full bg-yellow-400/60" />
             <span className="h-2.5 w-2.5 rounded-full bg-success/60" />
-            <span className="ml-3 text-[10px] text-neutral-400">admin.misanpedro.app</span>
+            <span className="ml-3 text-[10px] text-neutral-400">app.misanpedro.com</span>
           </div>
 
           {/* KPIs row */}
@@ -216,7 +216,7 @@ function HeroMockup() {
           <div className="mt-5 space-y-3">
             <Stat label="Visitas" value="3" />
             <Stat label="Día más frecuente" value="Jueves" />
-            <Stat label="Cupón favorito" value="Pizza 25%" />
+            <Stat label="Descuento favorito" value="Pizza 25%" />
             <Stat label="Cumple" value="11 abr" hint="Próximo en 14 días" />
           </div>
 

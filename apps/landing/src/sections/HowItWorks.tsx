@@ -3,12 +3,12 @@ import { AnimatedSection } from '@/components/AnimatedSection'
 const STEPS = [
   {
     n: '01',
-    title: 'Te registrás y publicás tu cupón',
+    title: 'Te registrás y publicás tu descuento',
     body: 'Completá los datos del comercio, subí tu logo y publicá el primer descuento. Aparece en la app del vecino al instante.',
   },
   {
     n: '02',
-    title: 'El vecino activa el cupón',
+    title: 'El vecino activa el descuento',
     body: 'Carolina ve tu descuento en la app, lo activa con un toque. Le aparece un código de 6 dígitos que vale hasta que lo use.',
   },
   {

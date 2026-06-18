@@ -12,15 +12,20 @@ import {
   ShieldCheck,
   Power,
   RefreshCw,
+  WifiOff,
+  RotateCw,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
-import { useClientsForMerchant } from '@/lib/merchantQueries'
 import { useToast } from '@/components/Toast'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { formatRedeemedDate } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { api, ApiError } from '@/lib/api'
-import { useApiWhatsappStatus, useApiWhatsappCampaigns } from '@/lib/apiQueries'
+import {
+  useApiWhatsappStatus,
+  useApiWhatsappCampaigns,
+  useApiMerchantClientes,
+} from '@/lib/apiQueries'
 import { useWhatsappStream } from '@/lib/useWhatsappStream'
 
 const MAX_PER_MONTH = 4
@@ -46,7 +51,7 @@ const TEMPLATES = [
   },
   {
     id: 'tpl-recordatorio',
-    name: 'Recordatorio de cupón',
+    name: 'Recordatorio de descuento',
     body: 'Hola {{nombre}}, te queda hasta el {{vigencia}} para usar tu descuento del {{porcentaje}}% en {{comercio}}. ¡No te lo pierdas! {{link}}',
   },
   {
@@ -63,6 +68,19 @@ const AUDIENCIAS = [
 ] as const
 
 type AudienciaId = (typeof AUDIENCIAS)[number]['id']
+
+/**
+ * Audiencia normalizada para la campaña. Se alimenta del backend real
+ * (GET /redemptions/clientes, misma fuente que AdminClientesPage) — NO del
+ * store demo local, que en prod queda vacío o stale.
+ */
+type Audience = {
+  nombre: string
+  /** Teléfono de contacto (el del onboarding) con fallback a whatsapp legacy. */
+  telefono: string
+  count: number
+  firstRedeemedAt: string
+}
 
 export function AdminWhatsappPage() {
   const sessionState = useMerchantSession()
@@ -298,11 +316,27 @@ function ComposerScreen({
   merchantNombre: string
   onDisconnected: () => void
 }) {
-  const clients = useClientsForMerchant(merchantId)
+  // BUG-FIX: la audiencia se alimenta del backend real (GET /redemptions/clientes,
+  // misma fuente que AdminClientesPage), NO del store demo local. En prod el
+  // store local queda en ~0 o con datos stale.
+  const apiClientes = useApiMerchantClientes()
   const apiCampaigns = useApiWhatsappCampaigns()
   const apiStatus = useApiWhatsappStatus()
   const toast = useToast()
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
+
+  // Normalizamos los clientes del API (campos planos) a la audiencia.
+  // El backend expone `whatsapp`; caemos a `telefono` por compatibilidad.
+  const clients: Audience[] = useMemo(
+    () =>
+      (apiClientes.data ?? []).map((c: any) => ({
+        nombre: c.nombre ?? 'vecin@',
+        telefono: c.whatsapp ?? c.telefono ?? '',
+        count: c.canjes ?? 0,
+        firstRedeemedAt: c.primerCanjeAt ?? '',
+      })),
+    [apiClientes.data],
+  )
 
   // Cupo mensual: fuente de verdad = backend (cuenta campañas reales en Mongo).
   const sentThisMonth = apiStatus.data?.quota?.used ?? 0
@@ -324,7 +358,10 @@ function ComposerScreen({
     return {
       todos: clients,
       recurrentes: clients.filter((c) => c.count >= 2),
-      nuevos: clients.filter((c) => new Date(c.firstRedeemedAt).getTime() >= week),
+      nuevos: clients.filter((c) => {
+        const t = new Date(c.firstRedeemedAt).getTime()
+        return !Number.isNaN(t) && t >= week
+      }),
     }
   }, [clients, nowMs])
 
@@ -345,14 +382,23 @@ function ComposerScreen({
   const template = TEMPLATES.find((t) => t.id === templateId) ?? TEMPLATES[0]
   const recipients = audienceBuckets[audiencia]
 
-  const previewName = recipients[0]?.user.nombre.split(' ')[0] ?? 'vecin@'
   const nombreComercio = merchantNombre || merchantId
-  const rendered = template.body
-    .replace('{{nombre}}', previewName)
+  // Link clickeable a la app (dominio de prod), no el viejo "misanpedro.app".
+  const LINK = 'https://app.misanpedro.com'
+
+  // BUG-FIX personalización: la plantilla que se MANDA conserva {{nombre}}
+  // intacto para que el backend personalice por destinatario. Antes se
+  // renderizaba una sola vez con el nombre del PRIMER cliente y ese string
+  // fijo iba a todos ("Hola Juan" para todo el mundo).
+  const messageTemplate = template.body
     .replace('{{comercio}}', nombreComercio)
     .replace('{{porcentaje}}', porcentaje)
     .replace('{{vigencia}}', vigencia)
-    .replace('{{link}}', 'misanpedro.app')
+    .replace('{{link}}', LINK)
+
+  // `previewName` se usa SOLO para la vista previa (no para el envío).
+  const previewName = recipients[0]?.nombre.split(' ')[0] ?? 'vecin@'
+  const rendered = messageTemplate.replace('{{nombre}}', previewName)
 
   async function handleStartSend() {
     if (recipients.length === 0) {
@@ -365,9 +411,9 @@ function ComposerScreen({
     setPhase({ kind: 'sending', progress: 0, total, sentSoFar: 0 })
 
     const recipientNumbers = recipients
-      // El contacto del vecino ahora es `telefono` (onboarding sin fricción);
-      // caemos a `whatsapp` por compatibilidad con clientes viejos.
-      .map((r) => (r.user.whatsapp ?? r.user.telefono ?? '').replace(/\D/g, ''))
+      // El contacto del vecino viene normalizado en `telefono` (whatsapp del
+      // backend con fallback al teléfono de onboarding).
+      .map((r) => r.telefono.replace(/\D/g, ''))
       .filter((n) => n.length >= 8)
 
     // POST /wa/campaign: el backend procesa con rate-limit anti-ban (delay
@@ -376,7 +422,10 @@ function ComposerScreen({
     // 'campaign.progress' y actualiza el progress bar en tiempo real
     // (ver el useEffect inferior que escucha wa.campaign).
     try {
-      const data = await api.whatsapp.campaign(recipientNumbers, rendered)
+      // Mandamos la plantilla con {{nombre}} SIN resolver: el backend la
+      // personaliza por destinatario. (Nunca el `rendered` del preview, que
+      // tiene el nombre fijo del primer cliente.)
+      const data = await api.whatsapp.campaign(recipientNumbers, messageTemplate)
       setPhase({
         kind: 'done',
         sentCount: data.campaign.sentCount,
@@ -446,6 +495,33 @@ function ComposerScreen({
       // Releemos el estado real del backend → vuelve a ConnectionScreen.
       onDisconnected()
     }
+  }
+
+  // Sin conexión: el API de clientes falló y no tenemos audiencia para mostrar.
+  // Sin audiencia no se puede armar una campaña, así que cortamos acá con el
+  // patrón "Sin conexión + Reintentar" (estilo comercio: surface/ink/brand).
+  const apiError = apiClientes.error
+  if (apiError && clients.length === 0) {
+    return (
+      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 px-4 py-20 text-center">
+        <div className="grid h-14 w-14 place-items-center rounded-full bg-surface-2 text-ink-soft ring-1 ring-line">
+          <WifiOff size={24} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-bold text-ink">Sin conexión</h2>
+          <p className="text-sm text-ink-soft">
+            No pudimos cargar tu audiencia. Revisá tu conexión y reintentá.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => apiClientes.refetch()}
+          className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-sm font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
+        >
+          <RotateCw size={16} /> Reintentar
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -574,6 +650,8 @@ function ComposerScreen({
             label="% descuento"
             input={
               <input
+                id="wa-porcentaje"
+                name="porcentaje"
                 type="text"
                 inputMode="numeric"
                 value={porcentaje}
@@ -586,6 +664,8 @@ function ComposerScreen({
             label="Vigencia hasta"
             input={
               <input
+                id="wa-vigencia"
+                name="vigencia"
                 type="date"
                 value={vigenciaDate}
                 onChange={(e) => setVigenciaDate(e.target.value)}

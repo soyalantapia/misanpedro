@@ -5,10 +5,10 @@ export function cn(...classes: Array<string | false | null | undefined>) {
 
 /**
  * CTA del vecino: ENTRAR a la PWA (sin registro — navega y mira los descuentos).
- * La PWA vive en https://soyalantapia.github.io/misanpedro/ (HashRouter).
+ * La PWA vive en https://app.misanpedro.com/ (HashRouter).
  * Override con VITE_APP_URL al build cuando haya dominio propio.
  */
-const APP_URL_RAW = import.meta.env.VITE_APP_URL ?? 'https://soyalantapia.github.io/misanpedro'
+const APP_URL_RAW = import.meta.env.VITE_APP_URL ?? 'https://app.misanpedro.com'
 export const APP_URL = APP_URL_RAW.replace(/\/$/, '')
 
 // Home del vecino = catálogo de descuentos (HashRouter → /#/).
@@ -33,4 +33,4 @@ export const ENTER_URL = buildEnterUrl()
 // VITE_COMERCIOS_URL al build si hace falta una URL absoluta.
 export const COMERCIOS_URL = import.meta.env.VITE_COMERCIOS_URL ?? '/comercios/'
 
-export const SUPPORT_EMAIL = 'hola@misanpedro.app'
+export const SUPPORT_EMAIL = 'hola@misanpedro.com'

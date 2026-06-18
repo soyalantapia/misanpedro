@@ -9,6 +9,8 @@ import {
   Play,
   Trash2,
   MoreVertical,
+  WifiOff,
+  RotateCw,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { couponsActions, useCouponsByMerchant } from '@/lib/couponsStore'
@@ -33,6 +35,13 @@ export function AdminCuponesPage() {
   const cupones = apiCupones.data ?? localCupones
   const redemptions = apiRedemptions.data ?? localRedemptions
   const usingApi = apiCupones.data !== null
+
+  // El API falló y no tenemos datos: NO mostramos "No tenés descuentos
+  // cargados" (sería falso) ni caemos al store local para mutaciones — eso
+  // borraría/pausaría descuentos solo en localStorage mientras el comercio
+  // cree que tocó los reales. Mostramos un estado de error con Reintentar.
+  const apiError = apiCupones.error
+  const showError = !!apiError && apiCupones.data === null
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
@@ -68,11 +77,16 @@ export function AdminCuponesPage() {
         toast.error('No se pudo actualizar', err instanceof ApiError ? err.message : 'Sin conexión')
         return
       }
+    } else if (apiError) {
+      // El API falló: no tocamos el store local (sería un cambio fantasma
+      // que no impacta los descuentos reales del comercio).
+      toast.error('Sin conexión', 'No pudimos guardar el cambio. Reintentá.')
+      return
     } else {
       couponsActions.setEstado(id, isPausado ? 'activo' : 'pausado')
     }
     toast.success(
-      isPausado ? 'Cupón reactivado' : 'Cupón pausado',
+      isPausado ? 'Descuento reactivado' : 'Descuento pausado',
       isPausado ? 'Vuelve a estar visible para los vecinos.' : 'Ya no aparece en el listado.',
     )
     setOpenMenuId(null)
@@ -88,10 +102,16 @@ export function AdminCuponesPage() {
         setConfirmDelete(null)
         return
       }
+    } else if (apiError) {
+      // El API falló: no eliminamos en el store local (sería un borrado
+      // fantasma que no impacta los descuentos reales del comercio).
+      toast.error('Sin conexión', 'No pudimos eliminar el descuento. Reintentá.')
+      setConfirmDelete(null)
+      return
     } else {
       couponsActions.remove(id)
     }
-    toast.success('Cupón eliminado', 'No se podrá reactivar.')
+    toast.success('Descuento eliminado', 'No se podrá reactivar.')
     setConfirmDelete(null)
     setOpenMenuId(null)
   }
@@ -118,9 +138,9 @@ export function AdminCuponesPage() {
           </p>
         </div>
         {/* F8: el botón "Crear nuevo" del header se oculta cuando hay empty state
-            (el EmptyState ya tiene su propio CTA grande "Crear primer cupón"),
+            (el EmptyState ya tiene su propio CTA grande "Crear primer descuento"),
             evitando dos botones que hacen lo mismo. Sólo se muestra cuando hay
-            cupones cargados. */}
+            descuentos cargados. */}
         {cupones.length > 0 && (
           <Link
             to="/admin/cupones/nuevo"
@@ -137,17 +157,36 @@ export function AdminCuponesPage() {
             <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface ring-1 ring-line" />
           ))}
         </div>
+      ) : showError ? (
+        <div className="flex flex-col items-center gap-4 rounded-2xl bg-surface p-8 text-center shadow-card ring-1 ring-line">
+          <div className="grid h-14 w-14 place-items-center rounded-full bg-surface-2 text-ink-soft ring-1 ring-line">
+            <WifiOff size={24} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-ink">Sin conexión</h2>
+            <p className="text-sm text-ink-soft">
+              No pudimos cargar tus descuentos. Revisá tu conexión y reintentá.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => apiCupones.refetch()}
+            className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-sm font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
+          >
+            <RotateCw size={16} /> Reintentar
+          </button>
+        </div>
       ) : cupones.length === 0 ? (
         <EmptyState
           icon={Tag}
-          title="No tenés cupones cargados"
+          title="No tenés descuentos cargados"
           description="Cuando crees tu primer descuento, va a aparecer en la app del vecino."
           action={
             <Link
               to="/admin/cupones/nuevo"
               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-brand to-brand-strong px-5 py-2.5 text-sm font-bold text-on-brand shadow-cta hover:-translate-y-0.5 transition-all"
             >
-              <Plus size={14} /> Crear primer cupón
+              <Plus size={14} /> Crear primer descuento
             </Link>
           }
         />
@@ -254,7 +293,7 @@ export function AdminCuponesPage() {
 
       <ConfirmDialog
         open={!!confirmDelete}
-        title="¿Eliminar este cupón?"
+        title="¿Eliminar este descuento?"
         description="No se podrá recuperar. Los canjes ya registrados se mantienen en el historial."
         confirmLabel="Sí, eliminar"
         cancelLabel="Volver"
@@ -265,7 +304,7 @@ export function AdminCuponesPage() {
 
       <ConfirmDialog
         open={!!confirmPause}
-        title={confirmPause?.isPausado ? '¿Reactivar este cupón?' : '¿Pausar este cupón?'}
+        title={confirmPause?.isPausado ? '¿Reactivar este descuento?' : '¿Pausar este descuento?'}
         description={
           confirmPause?.isPausado
             ? 'Volvés a hacerlo visible para los vecinos en la app.'

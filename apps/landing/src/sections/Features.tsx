@@ -11,7 +11,7 @@ import { AnimatedSection } from '@/components/AnimatedSection'
 const FEATURES = [
   {
     icon: Ticket,
-    title: 'Cupones en 5 minutos',
+    title: 'Descuentos en 5 minutos',
     body: 'Subí descuento, vigencia y condiciones. Listo para canjear.',
   },
   {

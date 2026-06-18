@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, Sparkles, Pencil, Search } from 'lucide-react'
+import { ChevronLeft, Sparkles, Pencil, Search, WifiOff, RotateCw } from 'lucide-react'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 import { useCoupons } from '@/lib/couponsStore'
 import { getMerchant } from '@/data/mockData'
@@ -65,6 +65,14 @@ export function PlanPage() {
 
   const ocasion = getOcasion(ocasionId)
   const loading = apiMerchantsRes.loading || apiCouponsRes.loading
+  const apiError = apiMerchantsRes.error || apiCouponsRes.error
+  // Backend caído sin datos para mostrar: no mentimos con "estamos sumando comercios".
+  const sinConexion = !!apiError && coupons.length === 0
+
+  function reintentar() {
+    apiMerchantsRes.refetch()
+    apiCouponsRes.refetch()
+  }
 
   const matches = useMemo(() => {
     if (!ocasion) return []
@@ -104,6 +112,8 @@ export function PlanPage() {
           <ResultadosStep
             ocasion={ocasion}
             loading={loading && coupons.length === 0}
+            sinConexion={sinConexion}
+            onReintentar={reintentar}
             matches={matches}
             onChangeGanas={() => setStep('ganas')}
           />
@@ -150,15 +160,19 @@ function GanasStep({ onPick }: { onPick: (id: string) => void }) {
 function ResultadosStep({
   ocasion,
   loading,
+  sinConexion,
+  onReintentar,
   matches,
   onChangeGanas,
 }: {
   ocasion: Ocasion
   loading: boolean
+  sinConexion: boolean
+  onReintentar: () => void
   matches: CuponMatch[]
   onChangeGanas: () => void
 }) {
-  const vacio = !loading && matches.length === 0
+  const vacio = !loading && !sinConexion && matches.length === 0
 
   return (
     <div className="flex flex-col gap-4">
@@ -192,17 +206,32 @@ function ResultadosStep({
             />
           ))}
         </div>
+      ) : sinConexion ? (
+        <EmptyState
+          icon={WifiOff}
+          title="Sin conexión"
+          description="No pudimos cargar los cupones. Revisá tu conexión y reintentá."
+          action={
+            <button
+              type="button"
+              onClick={onReintentar}
+              className="inline-flex items-center gap-2 rounded-2xl bg-fin-lime px-5 py-3 text-sm font-bold text-fin-bg transition-all hover:-translate-y-0.5"
+            >
+              <RotateCw size={16} /> Reintentar
+            </button>
+          }
+        />
       ) : vacio ? (
         <EmptyState
           icon={Search}
           title={`Todavía no hay cupones para "${ocasion.label}"`}
-          description="Estamos sumando comercios. Probá con otra cosa o mirá todos los descuentos disponibles."
+          description="Estamos sumando comercios. Probá con otra cosa o mirá todos los cupones disponibles."
           action={
             <Link
               to="/"
               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-brand to-brand-strong px-5 py-2.5 text-sm font-bold text-on-brand shadow-cta transition-all duration-200 hover:-translate-y-0.5"
             >
-              <Sparkles size={14} /> Ver todos los descuentos
+              <Sparkles size={14} /> Ver todos los cupones
             </Link>
           }
         />

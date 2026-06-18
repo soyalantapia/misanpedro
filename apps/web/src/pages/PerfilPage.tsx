@@ -23,6 +23,10 @@ const SUPPORT = getSupportLink('Hola, necesito ayuda con mis datos en Mi San Ped
 
 export function PerfilPage() {
   const user = useUser()
+  // Sesión = MISMA condición que usan SavingsWallet/ClubCard (token presente),
+  // no el store local `user`. Evita ver la billetera/Club logueados ENCIMA del
+  // bloque anónimo cuando el token está pero el store aún no hidrató.
+  const loggedIn = !!(tokens.get('user').access || tokens.get('user').refresh)
   const navigate = useNavigate()
   const toast = useToast()
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -80,14 +84,14 @@ export function PerfilPage() {
       {/* EL CLUB — niveles del mes (no renderiza nada si sos anónimo) */}
       <ClubCard />
 
-      {!user ? (
+      {!loggedIn ? (
         /* ─── Vecino anónimo: sin gate, lo invitamos a CANJEAR (no a registrarse) ─── */
         <section className="bg-fin-mesh relative overflow-hidden rounded-3xl bg-fin-surface p-5 ring-1 ring-fin-line shadow-fin-card">
           <div className="bg-fin-grid absolute inset-0 opacity-60" />
           <div className="relative flex flex-col gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-fin-ink">Tu perfil</h1>
             <p className="text-sm text-fin-soft">
-              Tu perfil se arma solo. Cuando canjeés tu primer descuento te pedimos solo{' '}
+              Tu perfil se arma solo. Cuando canjeés tu primer cupón te pedimos solo{' '}
               <span className="font-bold text-fin-ink">nombre y teléfono</span> — nada de DNI,
               contraseñas ni códigos.
             </p>
@@ -95,10 +99,16 @@ export function PerfilPage() {
               to="/"
               className="mt-1 inline-flex w-fit items-center gap-2 rounded-2xl bg-fin-lime px-5 py-3 text-sm font-bold text-fin-bg shadow-fin-glow transition-all hover:-translate-y-0.5"
             >
-              Canjeá tu primer descuento <ArrowRight size={16} />
+              Canjeá tu primer cupón <ArrowRight size={16} />
             </Link>
           </div>
         </section>
+      ) : !user ? (
+        /* ─── Token presente pero el store aún no hidrató: skeleton (no anónimo) ─── */
+        <>
+          <div className="h-16 w-full animate-pulse rounded-3xl bg-fin-surface ring-1 ring-fin-line" />
+          <div className="h-40 w-full animate-pulse rounded-3xl bg-fin-surface ring-1 ring-fin-line" />
+        </>
       ) : (
         <>
           <header className="flex flex-col gap-1.5">

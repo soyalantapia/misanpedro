@@ -201,7 +201,7 @@ export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'local
         <EmptyState
           icon={WifiOff}
           title="Sin conexión"
-          description="No pudimos cargar los descuentos. Revisá tu conexión y reintentá."
+          description="No pudimos cargar los cupones. Revisá tu conexión y reintentá."
           action={
             <button
               type="button"
@@ -299,7 +299,7 @@ export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'local
           filteredCoupons.length === 0 ? (
             <EmptyState
               icon={Search}
-              title="No encontramos descuentos"
+              title="No encontramos cupones"
               description={
                 categoria || search || minPct > 0
                   ? 'Probá quitar algún filtro o cambiar la búsqueda.'
@@ -442,10 +442,12 @@ function SearchBar({ search, onSearch }: { search: string; onSearch: (v: string)
       />
       <input
         type="search"
+        id="buscar-cupones"
+        name="buscar-cupones"
         value={search}
         onChange={(e) => onSearch(e.target.value)}
-        placeholder="Buscar comercio o descuento"
-        aria-label="Buscar comercios o descuentos"
+        placeholder="Buscar comercio o cupón"
+        aria-label="Buscar comercios o cupones"
         className="w-full rounded-2xl bg-fin-surface py-3.5 pl-10 pr-12 text-sm text-fin-ink ring-1 ring-fin-line placeholder:text-fin-faint focus:outline-none focus:ring-2 focus:ring-fin-lime"
       />
       {search && (

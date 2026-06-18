@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Brand — violet #695EDE (mismo que la PWA) */
+  /* Brand — naranja #ea580c (mismo que la PWA) */
   --color-brand: #ea580c; /* ← KNOB único: cambiá este hex y se re-tematiza toda la landing del vecino */
   --color-accent-50: color-mix(in srgb, var(--color-brand) 8%, white);
   --color-accent-100: color-mix(in srgb, var(--color-brand) 15%, white);

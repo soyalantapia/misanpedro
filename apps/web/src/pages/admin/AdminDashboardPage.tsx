@@ -138,7 +138,7 @@ export function AdminDashboardPage() {
           {merchantSession.apiMerchant?.nombre ?? merchant?.nombre ?? 'Tu comercio'}
         </h1>
         <p className="text-sm text-ink-soft">
-          Validá cupones, gestioná descuentos y mirá tu base de clientes de la app.
+          Validá descuentos, gestioná tu oferta y mirá tu base de clientes de la app.
         </p>
       </header>
 
@@ -168,7 +168,7 @@ export function AdminDashboardPage() {
             </p>
             <ol className="mt-1 list-decimal pl-4 text-xs leading-relaxed text-brand-strong/90">
               <li>Completá tu perfil (foto + horarios) para que los vecinos te elijan.</li>
-              <li>{merchantCoupons.length === 0 ? 'Creá tu primer descuento desde "Mis cupones".' : 'Los vecinos ya pueden ver tus descuentos.'}</li>
+              <li>{merchantCoupons.length === 0 ? 'Creá tu primer descuento desde "Mis descuentos".' : 'Los vecinos ya pueden ver tus descuentos.'}</li>
               <li>Cuando un cliente llegue al local, escaneá su QR o ingresá su código en "Validar".</li>
             </ol>
           </div>
@@ -190,7 +190,7 @@ export function AdminDashboardPage() {
               icon={Receipt}
               label="Ingresos generados"
               value={formatMoney(ingresosTotal)}
-              hint="Suma estimada de los tickets pagados con cupón"
+              hint="Suma estimada de los tickets pagados con descuento"
               accent
             />
             <LifetimeStat
@@ -220,7 +220,7 @@ export function AdminDashboardPage() {
           Acción rápida
         </p>
         {/* F2: cuando pending_payment, la acción rápida es completar el pago.
-            Antes promovíamos "Creá tu primer cupón" o "Validar cupón" sin
+            Antes promovíamos "Creá tu primer descuento" o "Validar descuento" sin
             avisar que el comercio NO era visible aún → Sandra trabajaba en falso. */}
         {pendingPayment ? (
           <PrimaryAction
@@ -232,14 +232,14 @@ export function AdminDashboardPage() {
         ) : merchantCoupons.length === 0 ? (
           <PrimaryAction
             to="/admin/cupones/nuevo"
-            title="Creá tu primer cupón"
-            description="Sin cupones activos los vecinos no ven tu comercio en la app."
+            title="Creá tu primer descuento"
+            description="Sin descuentos activos los vecinos no ven tu comercio en la app."
             icon={Tag}
           />
         ) : (
           <PrimaryAction
             to="/admin/validar"
-            title="Validar cupón"
+            title="Validar descuento"
             description="Escaneá el QR del cliente o ingresá el código manual."
             icon={ScanLine}
           />
@@ -258,7 +258,7 @@ export function AdminDashboardPage() {
         )}
         <SecondaryAction
           to="/admin/cupones"
-          title="Mis cupones"
+          title="Mis descuentos"
           description={`${cuponesActivos.length} ${cuponesActivos.length === 1 ? 'descuento activo' : 'descuentos activos'}`}
           icon={Tag}
         />

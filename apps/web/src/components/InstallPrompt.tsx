@@ -8,6 +8,10 @@ type BeforeInstallEvent = Event & {
 
 const STORAGE_KEY = 'misanpedro.install.dismissed.v1'
 const DISMISS_DAYS = 14
+// No interrumpimos la primera vista: el prompt recién aparece tras un rato en
+// la página o cuando el usuario ya se enganchó (hizo scroll por el catálogo).
+const ENGAGEMENT_DELAY_MS = 12000
+const ENGAGEMENT_SCROLL_PX = 600
 
 /**
  * Detecta si el browser es iOS Safari (donde NO existe beforeinstallprompt
@@ -41,24 +45,57 @@ export function InstallPrompt() {
     if (wasDismissedRecently()) return
     if (isStandalone()) return
 
-    // iOS Safari: mostramos instrucciones manuales después de 3s en la página
-    // (no en el primer milisegundo — esperamos que el user explore).
-    if (isIosSafari()) {
-      const t = window.setTimeout(() => {
-        setMode('ios')
+    // El prompt NUNCA debe tapar el catálogo en el primer render. En ambos modos
+    // esperamos a que el usuario se enganche: que pase un rato en la página o
+    // que haga scroll por la vitrina antes de ofrecer la instalación.
+    let shown = false
+    const cleanups: Array<() => void> = []
+
+    function showWhenEngaged(nextMode: 'native' | 'ios') {
+      function reveal() {
+        if (shown) return
+        shown = true
+        setMode(nextMode)
         setVisible(true)
-      }, 3000)
-      return () => window.clearTimeout(t)
+        // Una vez visible, desarmamos los disparadores de engagement.
+        cleanups.forEach((fn) => fn())
+        cleanups.length = 0
+      }
+
+      const timer = window.setTimeout(reveal, ENGAGEMENT_DELAY_MS)
+      cleanups.push(() => window.clearTimeout(timer))
+
+      function onScroll() {
+        if (window.scrollY >= ENGAGEMENT_SCROLL_PX) reveal()
+      }
+      window.addEventListener('scroll', onScroll, { passive: true })
+      cleanups.push(() => window.removeEventListener('scroll', onScroll))
     }
 
+    // iOS Safari: no existe beforeinstallprompt, así que mostramos las
+    // instrucciones manuales recién cuando el usuario se enganchó.
+    if (isIosSafari()) {
+      showWhenEngaged('ios')
+      return () => {
+        cleanups.forEach((fn) => fn())
+        cleanups.length = 0
+      }
+    }
+
+    // Native: capturamos el evento apenas se dispara (el browser lo emite una
+    // sola vez), pero diferimos mostrar el prompt hasta que haya engagement.
     function handler(e: Event) {
       e.preventDefault()
       setEvent(e as BeforeInstallEvent)
-      setMode('native')
-      setVisible(true)
+      showWhenEngaged('native')
     }
     window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
+    cleanups.push(() => window.removeEventListener('beforeinstallprompt', handler))
+
+    return () => {
+      cleanups.forEach((fn) => fn())
+      cleanups.length = 0
+    }
   }, [])
 
   if (!visible || !mode) return null

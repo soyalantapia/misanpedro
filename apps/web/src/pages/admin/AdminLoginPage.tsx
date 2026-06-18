@@ -132,13 +132,13 @@ export function AdminLoginPage() {
           </h1>
 
           <p className="max-w-xl text-base leading-relaxed text-on-brand/75 sm:text-lg">
-            Validá cupones y construí tu base de clientes propia. Pronto vas a poder
+            Validá descuentos y construí tu base de clientes propia. Pronto vas a poder
             mandar campañas de WhatsApp directo desde la plataforma.
           </p>
 
           <ul className="flex flex-col gap-2.5 pt-2">
             <Bullet icon={ScanLine}>
-              <span className="font-semibold text-on-brand">Validá cupones</span>{' '}
+              <span className="font-semibold text-on-brand">Validá descuentos</span>{' '}
               <span className="text-on-brand/70">desde tu celular en 2 segundos</span>
             </Bullet>
             <Bullet icon={Users}>
@@ -194,6 +194,8 @@ export function AdminLoginPage() {
                         className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint"
                       />
                       <input
+                        id="merchant-login-email"
+                        name="email"
                         type="email"
                         autoComplete="email"
                         autoFocus
@@ -236,6 +238,8 @@ export function AdminLoginPage() {
                         className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint"
                       />
                       <input
+                        id="merchant-login-code"
+                        name="one-time-code"
                         type="text"
                         inputMode="numeric"
                         autoComplete="one-time-code"

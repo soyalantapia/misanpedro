@@ -10,7 +10,7 @@ import {
 } from '@/lib/launch'
 
 const INCLUDED = [
-  'Cupones ilimitados',
+  'Descuentos ilimitados',
   'CRM completo (DNI, cumple, frecuencia)',
   'WhatsApp Business integrado',
   'Panel desde el celular',

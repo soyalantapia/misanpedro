@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
-import { ChevronLeft, Store, X, Copy, Check } from 'lucide-react'
+import { ChevronLeft, Store, X, Copy, Check, WifiOff, RotateCw } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { EmptyState } from '@/components/EmptyState'
 import { useToast } from '@/components/Toast'
 import { activationActions, useActivation } from '@/lib/stores'
 import { getMerchant } from '@/data/mockData'
@@ -81,7 +82,7 @@ export function CuponActivoPage() {
             res.activation.ahorroEstimado ?? 0,
             res.activation.montoTicket,
           )
-          toast.success('¡Cupón canjeado!', 'El comercio confirmó tu descuento.')
+          toast.success('¡Cupón canjeado!', 'El comercio confirmó tu cupón.')
           navigate('/canjeados', { replace: true })
         }
       } catch {
@@ -101,12 +102,46 @@ export function CuponActivoPage() {
 
   if (!activation) return <Navigate to="/" replace />
   const stillLoading = apiCouponsRes.loading || apiMerchantsRes.loading
+  const apiError = apiCouponsRes.error || apiMerchantsRes.error
   if (!coupon || !merchant) {
     if (stillLoading) return null
+    // El cupón vive en el backend (no en el store local) y la API falló:
+    // mostramos "Sin conexión" con Reintentar en vez de mandar al inicio.
+    if (apiError) {
+      return (
+        <div className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 pt-16 pb-8 sm:px-6">
+          <EmptyState
+            icon={WifiOff}
+            title="Sin conexión"
+            description="No pudimos cargar tu cupón. Revisá tu conexión y reintentá."
+            action={
+              <button
+                type="button"
+                onClick={() => {
+                  apiCouponsRes.refetch()
+                  apiMerchantsRes.refetch()
+                }}
+                className="inline-flex items-center gap-2 rounded-2xl bg-fin-lime px-5 py-3 text-sm font-bold text-fin-bg transition-all hover:-translate-y-0.5"
+              >
+                <RotateCw size={16} /> Reintentar
+              </button>
+            }
+          />
+        </div>
+      )
+    }
     return <Navigate to="/" replace />
   }
 
   const isExpired = activation.status !== 'activo'
+
+  // El polling que auto-actualiza la pantalla sólo corre con backend real
+  // (id tipo Mongo + token de usuario). En el flujo demo/local no arranca,
+  // así que sólo prometemos la actualización automática cuando es real.
+  const livePollingActive =
+    !isExpired &&
+    /^[0-9a-f]{24}$/i.test(activation.id) &&
+    !!tokens.get('user').access
 
   async function handleCancel() {
     if (!activation) return
@@ -120,7 +155,7 @@ export function CuponActivoPage() {
       }
     }
     activationActions.cancel(activation.id)
-    toast.info('Cupón cancelado', 'Lo podés volver a activar desde el descuento.')
+    toast.info('Cupón cancelado', 'Lo podés volver a activar desde Cupones.')
     navigate('/', { replace: true })
   }
 
@@ -166,8 +201,9 @@ export function CuponActivoPage() {
                 Mostrale este código al encargado de {merchant.nombre}
               </p>
               <p className="text-[11px] leading-relaxed">
-                Cuando lo valide, esta pantalla se actualiza automáticamente y el cupón
-                queda en tu historial. No tenés que hacer nada más.
+                {livePollingActive
+                  ? 'Cuando lo valide, esta pantalla se actualiza automáticamente y el cupón queda en tu historial. No tenés que hacer nada más.'
+                  : 'Mostrá el código; el comercio lo valida desde su panel. Después vas a ver el cupón en tu historial.'}
               </p>
             </div>
           </div>
@@ -196,7 +232,7 @@ export function CuponActivoPage() {
       <ConfirmDialog
         open={confirmCancel}
         title="¿Cancelar este cupón?"
-        description="Lo vas a poder reactivar después desde el descuento."
+        description="Lo vas a poder reactivar después desde Cupones."
         confirmLabel="Sí, cancelar"
         cancelLabel="Volver"
         variant="danger"
@@ -300,7 +336,7 @@ function ExpiryHint({
   if (!isActive || ms <= 0) {
     return (
       <p className="max-w-xs text-center text-[11px] font-semibold text-fin-danger">
-        El cupón venció. Reactivalo desde Descuentos.
+        El cupón venció. Reactivalo desde Cupones.
       </p>
     )
   }

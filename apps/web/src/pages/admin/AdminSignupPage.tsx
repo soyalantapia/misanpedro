@@ -273,7 +273,10 @@ export function AdminSignupPage() {
               required
               input={
                 <input
+                  id="signup-nombre-comercio"
+                  name="nombreComercio"
                   type="text"
+                  autoComplete="organization"
                   value={form.nombreComercio}
                   onChange={(e) => update('nombreComercio', e.target.value)}
                   placeholder="Ej: Tu Comercio"
@@ -299,6 +302,8 @@ export function AdminSignupPage() {
                 required
                 input={
                   <input
+                    id="signup-categoria-otro"
+                    name="categoriaOtro"
                     type="text"
                     value={form.categoriaOtro}
                     onChange={(e) => update('categoriaOtro', e.target.value)}
@@ -313,7 +318,10 @@ export function AdminSignupPage() {
               required
               input={
                 <input
+                  id="signup-direccion"
+                  name="direccion"
                   type="text"
+                  autoComplete="street-address"
                   value={form.direccion}
                   onChange={(e) => update('direccion', e.target.value)}
                   placeholder="Mitre 1247, San Pedro"
@@ -353,6 +361,8 @@ export function AdminSignupPage() {
               required
               input={
                 <input
+                  id="signup-telefono"
+                  name="telefono"
                   type="tel"
                   inputMode="tel"
                   autoComplete="tel"
@@ -378,7 +388,10 @@ export function AdminSignupPage() {
               required
               input={
                 <input
+                  id="signup-nombre-admin"
+                  name="nombreAdmin"
                   type="text"
+                  autoComplete="name"
                   value={form.nombreAdmin}
                   onChange={(e) => update('nombreAdmin', e.target.value)}
                   placeholder="Como en tu DNI"
@@ -391,7 +404,10 @@ export function AdminSignupPage() {
               required
               input={
                 <input
+                  id="signup-email-admin"
+                  name="emailAdmin"
                   type="email"
+                  autoComplete="email"
                   value={form.emailAdmin}
                   onChange={(e) => update('emailAdmin', e.target.value)}
                   placeholder="vos@tucomercio.com"
@@ -410,13 +426,15 @@ export function AdminSignupPage() {
                 <Sparkles size={14} /> 3 meses gratis · todo incluido
               </p>
               <p className="mt-0.5 text-xs leading-snug">
-                Cupones, validaciones y clientes ilimitados. Sin tarjeta, sin MercadoPago. Cancelás
+                Descuentos, validaciones y clientes ilimitados. Sin tarjeta, sin MercadoPago. Cancelás
                 cuando quieras.
               </p>
             </div>
 
             <label className="flex items-start gap-3 rounded-2xl bg-surface p-4 ring-1 ring-line cursor-pointer">
               <input
+                id="signup-accepted-tc"
+                name="acceptedTc"
                 type="checkbox"
                 checked={form.acceptedTc}
                 onChange={(e) => update('acceptedTc', e.target.checked)}

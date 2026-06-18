@@ -21,7 +21,7 @@ export function AdminValidarPage() {
           <ScanLine size={12} /> Validar
         </div>
         <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-          Validar cupón
+          Validar descuento
         </h1>
         <p className="text-sm text-ink-soft">
           El cliente abre la app, te muestra el QR o el código de 6 dígitos. Lo validás y confirmás
@@ -105,6 +105,8 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
         </p>
         <input
           ref={inputRef}
+          id="codigo-canje"
+          name="codigo-canje"
           type="text"
           inputMode="numeric"
           value={trimmed}
@@ -112,6 +114,7 @@ function CodeMode({ merchantId, onSwitch }: { merchantId: string; onSwitch: () =
           placeholder="000000"
           maxLength={6}
           aria-label="Código de canje de 6 dígitos"
+          autoComplete="off"
           className="mt-3 w-full rounded-2xl bg-bg px-6 py-5 text-center font-mono text-4xl font-bold tracking-[0.4em] tabular-nums text-ink ring-2 ring-brand focus:outline-none focus:ring-brand"
         />
         <div className="mt-3 grid grid-cols-6 gap-1.5">
@@ -317,18 +320,40 @@ function toLegacyResult(
       isFirstVisit: v.isFirstVisit,
     }
   }
-  return {
-    ok: false,
-    reason:
-      v.reason === '404'
-        ? 'not-found'
-        : v.reason === '403'
-          ? 'wrong-merchant'
-          : v.reason === '409'
-            ? 'already-redeemed'
-            : 'not-found',
-    message: v.message,
+  // El 409 viene como "409:<status>" desde useApiValidateByCode. Mapeamos cada
+  // status a un error distinto para NO decirle al vecino "ya lo usaste" cuando
+  // en realidad el cupón está pausado / vencido / cancelado.
+  let reason: string
+  if (v.reason === '404') {
+    reason = 'not-found'
+  } else if (v.reason === '403') {
+    reason = 'wrong-merchant'
+  } else if (v.reason === '409' || v.reason.startsWith('409:')) {
+    const status = v.reason.slice(4) // '' para el 409 pelado (compat)
+    switch (status) {
+      case 'expirado':
+      case 'vencido':
+        reason = 'expired'
+        break
+      case 'cancelado':
+        reason = 'cancelled'
+        break
+      case 'inactivo':
+        reason = 'paused'
+        break
+      case 'canjeado':
+      default:
+        reason = 'already-redeemed'
+        break
+    }
+  } else {
+    reason = 'not-found'
   }
+  // `reason` puede ser 'paused' (sin slot en el union local) — errorCopy() lo
+  // recibe como string, así que el cast es seguro para el ResultPanel.
+  return { ok: false, reason, message: v.message } as NonNullable<
+    ReturnType<typeof useValidateByCode>
+  >
 }
 
 /**
@@ -341,22 +366,27 @@ function errorCopy(reason: string): { title: string; hint: string } {
   switch (reason) {
     case 'already-redeemed':
       return {
-        title: 'Este cupón ya fue canjeado',
-        hint: 'El cliente ya lo usó en una visita anterior. Cada cupón vale una sola vez.',
+        title: 'Este descuento ya fue canjeado',
+        hint: 'El cliente ya lo usó en una visita anterior. Cada descuento vale una sola vez.',
       }
     case 'wrong-merchant':
       return {
-        title: 'Este cupón es de otro comercio',
+        title: 'Este descuento es de otro comercio',
         hint: 'El código es válido pero corresponde a otro local adherido. Pedile al cliente uno de los tuyos.',
       }
     case 'expired':
       return {
-        title: 'Este cupón venció',
+        title: 'Este descuento venció',
         hint: 'Pasó el tiempo de validez. El cliente puede reactivarlo desde su app.',
+      }
+    case 'paused':
+      return {
+        title: 'Este descuento está pausado',
+        hint: 'Lo tenés pausado desde tu panel, así que no se puede canjear. Reactivalo en Descuentos si querés aceptarlo.',
       }
     case 'cancelled':
       return {
-        title: 'Este cupón fue cancelado',
+        title: 'Este descuento fue cancelado',
         hint: 'El cliente lo canceló desde su app. Puede reactivarlo si quiere usarlo.',
       }
     case 'not-found':
@@ -409,7 +439,7 @@ function ResultPanel({
           ✓
         </div>
         <div className="flex-1">
-          <p className="text-sm font-bold">Cupón válido</p>
+          <p className="text-sm font-bold">Descuento válido</p>
           <p className="text-xs">
             {result.porcentaje}% off · {result.couponTitulo}
           </p>

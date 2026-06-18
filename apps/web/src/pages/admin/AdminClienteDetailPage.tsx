@@ -212,8 +212,8 @@ export function AdminClienteDetailPage() {
         <p className="mt-3 rounded-xl bg-surface/70 p-3 text-[11px] leading-snug text-ink ring-1 ring-emerald-100/60">
           <span className="font-bold text-ink">¿Qué significa?</span> El LTV (Lifetime
           Value) es la suma estimada de todo lo que este cliente gastó en tu comercio. Lo
-          calculamos a partir del ahorro generado y el porcentaje de cada cupón canjeado. Cuanto
-          más alto, más valioso es el cliente para tu negocio.
+          calculamos a partir del ahorro generado y el porcentaje de cada descuento canjeado.
+          Cuanto más alto, más valioso es el cliente para tu negocio.
         </p>
       </section>
 
@@ -272,7 +272,7 @@ export function AdminClienteDetailPage() {
           />
           <PatternCard
             icon={Sparkles}
-            label="Cupón favorito"
+            label="Descuento favorito"
             value={topCouponData?.titulo ?? '—'}
             sub={topCoupon ? `${topCoupon[1]}× usado` : undefined}
           />
@@ -510,9 +510,12 @@ function NotesSection({ userId }: { userId: string }) {
       <form onSubmit={handleAdd} className="mt-3 flex items-stretch gap-2">
         <input
           type="text"
+          id="nota-interna"
+          name="nota-interna"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Ej: cliente VIP, preferencia café cortado…"
+          aria-label="Nueva nota interna"
           maxLength={500}
           className="flex-1 rounded-2xl bg-bg px-4 py-2.5 text-sm ring-1 ring-line focus:outline-none focus:ring-2 focus:ring-brand"
         />

@@ -66,7 +66,11 @@ export function RegistroPage() {
           qrPayload: act.activation.qrPayload,
         })
         navigate(`/activacion/${act.activation.id}`, { replace: true })
-      } catch {
+      } catch (err) {
+        toast.error(
+          'No pudimos activar tu cupón',
+          err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
+        )
         navigate(`/cupon/${activarMatch[1]}`, { replace: true })
       }
     } else {
@@ -99,6 +103,8 @@ export function RegistroPage() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="Nombre" error={errors.nombre} icon={UserIcon}>
           <input
+            id="registro-nombre"
+            name="nombre"
             type="text"
             autoComplete="name"
             value={nombre}
@@ -119,6 +125,8 @@ export function RegistroPage() {
           help="Con código de área. Es tu cuenta: con el mismo número recuperás tu ahorro en cualquier celular."
         >
           <input
+            id="registro-telefono"
+            name="telefono"
             type="tel"
             inputMode="tel"
             autoComplete="tel"
@@ -134,6 +142,8 @@ export function RegistroPage() {
 
         <label className="mt-1 flex items-start gap-3 rounded-2xl bg-fin-surface p-4 ring-1 ring-fin-line shadow-fin-card">
           <input
+            id="registro-acepto-tc"
+            name="acceptedTc"
             type="checkbox"
             checked={acceptedTc}
             onChange={(e) => {
@@ -185,7 +195,7 @@ export function RegistroPage() {
           disabled={submitting}
           className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-fin-lime px-6 py-4 text-base font-bold text-fin-bg shadow-fin-glow transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
         >
-          {submitting ? 'Un segundo…' : 'Canjear mi descuento'}
+          {submitting ? 'Un segundo…' : 'Canjear mi cupón'}
         </button>
       </form>
     </div>

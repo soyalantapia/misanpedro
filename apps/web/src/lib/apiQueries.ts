@@ -172,10 +172,20 @@ export function useApiValidateByCode(code: string): {
       .catch((err) => {
         if (cancelled) return
         if (err instanceof ApiError) {
+          // En el 409 el motivo real lo manda el API en `payload.status`
+          // ('canjeado' | 'expirado' | 'cancelado' | 'inactivo' | 'vencido').
+          // Lo propagamos como sufijo del reason ("409:vencido") para que
+          // toLegacyResult mapee a un error distinto y no diga "ya canjeado"
+          // cuando en realidad el cupón está pausado / vencido / cancelado.
+          const status = err.payload?.status
+          const reason =
+            err.status === 409 && typeof status === 'string' && status
+              ? `409:${status}`
+              : String(err.status)
           setResult({
             ok: false,
-            reason: String(err.status),
-            message: err.payload?.error ?? 'Cupón inválido',
+            reason,
+            message: err.payload?.error ?? 'Descuento inválido',
           })
         } else {
           setResult({ ok: false, reason: 'network', message: 'Sin conexión con el servidor' })

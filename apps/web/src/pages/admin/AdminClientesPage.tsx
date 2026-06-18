@@ -1,7 +1,17 @@
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { Lock, Users, Download, ScanLine, Search, AlertTriangle, X } from 'lucide-react'
+import {
+  Lock,
+  Users,
+  Download,
+  ScanLine,
+  Search,
+  AlertTriangle,
+  X,
+  WifiOff,
+  RotateCw,
+} from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useClientsForMerchant } from '@/lib/merchantQueries'
 import { formatRedeemedDate, formatMoney } from '@/lib/format'
@@ -53,6 +63,37 @@ export function AdminClientesPage() {
     )
   }, [clients, search])
 
+  const apiError = apiClients.error
+  // Sin conexión: el API falló y no tenemos clientes para mostrar.
+  if (apiError && clients.length === 0) {
+    return (
+      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 px-4 py-20 text-center">
+        <div className="grid h-14 w-14 place-items-center rounded-full bg-surface-2 text-ink-soft ring-1 ring-line">
+          <WifiOff size={24} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-bold text-ink">Sin conexión</h2>
+          <p className="text-sm text-ink-soft">
+            No pudimos cargar tus clientes. Revisá tu conexión y reintentá.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => apiClients.refetch()}
+          className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-sm font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
+        >
+          <RotateCw size={16} /> Reintentar
+        </button>
+      </div>
+    )
+  }
+
+  // Flash de vacío: mientras carga la primera vez no hay datos todavía;
+  // mostramos un skeleton en lugar de renderizar todo en cero.
+  if (apiClients.loading && clients.length === 0) {
+    return <LoadingState />
+  }
+
   if (!apiClients.loading && clients.length === 0) {
     return <LockedState />
   }
@@ -62,38 +103,48 @@ export function AdminClientesPage() {
   const totalAhorro = clients.reduce((s, c) => s + c.totalAhorro, 0)
 
   function doExport() {
-    const rows = [
-      [
-        'Nombre',
-        'DNI',
-        'Email',
-        'WhatsApp',
-        'Primer canje',
-        'Último canje',
-        'Cantidad de canjes',
-        'Ahorro generado',
-      ],
-      ...clients.map((c) => [
-        c.user.nombre,
-        c.user.dni,
-        c.user.email,
-        c.user.whatsapp,
-        c.firstRedeemedAt,
-        c.lastRedeemedAt,
-        String(c.count),
-        String(c.totalAhorro),
-      ]),
-    ]
-    const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `clientes-${merchantId}-${Date.now()}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-    setShowExportConfirm(false)
-    toast.success('CSV descargado', `${clients.length} ${clients.length === 1 ? 'cliente exportado' : 'clientes exportados'}.`)
+    try {
+      const rows = [
+        [
+          'Nombre',
+          'DNI',
+          'Email',
+          'WhatsApp',
+          'Primer canje',
+          'Último canje',
+          'Cantidad de canjes',
+          'Ahorro generado',
+        ],
+        ...clients.map((c) => [
+          c.user.nombre,
+          c.user.dni,
+          c.user.email,
+          c.user.whatsapp,
+          c.firstRedeemedAt,
+          c.lastRedeemedAt,
+          String(c.count),
+          String(c.totalAhorro),
+        ]),
+      ]
+      const csv = rows
+        .map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+        .join('\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `clientes-${merchantId}-${Date.now()}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+      setShowExportConfirm(false)
+      toast.success(
+        'CSV descargado',
+        `${clients.length} ${clients.length === 1 ? 'cliente exportado' : 'clientes exportados'}.`,
+      )
+    } catch {
+      setShowExportConfirm(false)
+      toast.error('No se pudo exportar', 'Volvé a intentarlo en unos segundos.')
+    }
   }
 
   return (
@@ -152,6 +203,8 @@ export function AdminClientesPage() {
         />
         <input
           type="search"
+          id="clientes-search"
+          name="clientes-search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nombre, email o DNI…"
@@ -277,6 +330,30 @@ export function AdminClientesPage() {
 }
 
 
+function LoadingState() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10"
+    >
+      <span className="sr-only">Cargando tus clientes…</span>
+      <div className="flex flex-col gap-2">
+        <div className="h-6 w-40 animate-pulse rounded-full bg-surface-2" />
+        <div className="h-9 w-3/4 animate-pulse rounded-2xl bg-surface-2" />
+      </div>
+      <div className="h-36 animate-pulse rounded-3xl bg-surface-2" />
+      <div className="h-12 animate-pulse rounded-2xl bg-surface-2" />
+      <div className="flex flex-col gap-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-20 animate-pulse rounded-3xl bg-surface-2" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function LockedState() {
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-md flex-col items-center gap-5 px-4 pt-12 pb-8 text-center sm:px-6 sm:pt-16">
@@ -294,15 +371,15 @@ function LockedState() {
           Acá vas a ver a tus clientes de Mi San Pedro
         </h1>
         <p className="mt-2 text-sm text-ink-soft">
-          Esta sección se desbloquea cuando valides tu primer cupón. Cada cliente que canjee en tu
-          local va a aparecer acá con sus datos de contacto.
+          Esta sección se desbloquea cuando valides tu primer descuento. Cada cliente que canjee en
+          tu local va a aparecer acá con sus datos de contacto.
         </p>
       </div>
       <Link
         to="/admin/validar"
         className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand to-brand-strong px-6 py-3 text-sm font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
       >
-        <ScanLine size={16} /> Ir a validar un cupón
+        <ScanLine size={16} /> Ir a validar un descuento
       </Link>
     </div>
   )

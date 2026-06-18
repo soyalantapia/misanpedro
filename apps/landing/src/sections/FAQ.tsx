@@ -10,7 +10,7 @@ import {
 const FAQS = [
   {
     q: '¿Qué necesito para empezar?',
-    a: 'Sólo un celular con WhatsApp y MercadoPago. No necesitás computadora, scanner ni hardware extra, y no cargás tarjeta para arrancar. Te registrás, completás los datos del comercio, subís tu primer cupón y listo.',
+    a: 'Sólo un celular con WhatsApp y MercadoPago. No necesitás computadora, scanner ni hardware extra, y no cargás tarjeta para arrancar. Te registrás, completás los datos del comercio, subís tu primer descuento y listo.',
   },
   {
     q: '¿El vecino paga algo por usar la app?',

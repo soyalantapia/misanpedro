@@ -53,7 +53,7 @@ const FLOW_STEPS = [
   {
     icon: Smartphone,
     title: 'Publicás',
-    text: 'Desde tu celular subís un cupón.',
+    text: 'Desde tu celular subís un descuento.',
     bg: 'bg-accent-50',
     fg: 'text-accent-700',
   },

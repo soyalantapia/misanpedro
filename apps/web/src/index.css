@@ -71,7 +71,7 @@
   --shadow-floating: 0 2px 8px -2px rgba(15, 15, 15, 0.08),
     0 16px 32px -12px rgba(15, 15, 15, 0.18);
   --shadow-cta: 0 1px 2px rgba(15, 15, 15, 0.06),
-    0 8px 16px -8px rgba(105, 94, 222, 0.55);
+    0 8px 16px -8px color-mix(in srgb, var(--color-brand) 55%, transparent);
   --shadow-cta-neutral: 0 1px 2px rgba(15, 15, 15, 0.06),
     0 8px 16px -8px rgba(58, 56, 58, 0.45);
   --shadow-cta-success: 0 1px 2px rgba(15, 15, 15, 0.06),
@@ -111,8 +111,10 @@
   --color-ink-soft: #5a6474;
   --color-ink-faint: #9aa3b0;
 
-  /* Acentos secundarios (poco uso, contextuales) */
-  --color-accent-violet: #5347c8;
+  /* Acentos secundarios (poco uso, contextuales).
+     Nombre histórico `accent-violet`, pero ya NO es violeta:
+     deriva de la marca naranja para no romper la paleta. */
+  --color-accent-violet: var(--color-brand-strong);
   --color-up: #059669;
   --color-danger: #e11d48;
 
@@ -196,8 +198,11 @@ select {
 
 button:focus-visible,
 a:focus-visible,
-input:focus-visible {
-  outline: none;
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
 }
 
 @keyframes fade-up {
@@ -251,10 +256,10 @@ input:focus-visible {
 @keyframes glow-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(105, 94, 222, 0.4);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand) 40%, transparent);
   }
   50% {
-    box-shadow: 0 0 0 12px rgba(105, 94, 222, 0);
+    box-shadow: 0 0 0 12px color-mix(in srgb, var(--color-brand) 0%, transparent);
   }
 }
 
@@ -379,12 +384,12 @@ input:focus-visible {
   background-image:
     radial-gradient(
       ellipse at top left,
-      rgba(105, 94, 222, 0.16),
+      color-mix(in srgb, var(--color-brand) 16%, transparent),
       transparent 50%
     ),
     radial-gradient(
       ellipse at bottom right,
-      rgba(236, 72, 153, 0.1),
+      color-mix(in srgb, var(--color-brand) 10%, transparent),
       transparent 50%
     );
 }
@@ -398,7 +403,7 @@ input:focus-visible {
     ),
     radial-gradient(
       ellipse at bottom,
-      rgba(105, 94, 222, 0.12),
+      color-mix(in srgb, var(--color-brand) 12%, transparent),
       transparent 60%
     );
 }
@@ -410,7 +415,7 @@ input:focus-visible {
      style={{ background: 'var(--tenant-primary, var(--color-accent-500))' }}
    El fallback al color por default es importante para preview en dev. */
 :root {
-  /* defaults: igualan al accent del @theme (violet brand). Se sobrescriben
+  /* defaults: igualan al accent del @theme (marca naranja). Se sobrescriben
      en runtime cuando loadTenantConfig() responde. */
   --tenant-primary: var(--color-accent-500);
   --tenant-accent: var(--color-accent-700);

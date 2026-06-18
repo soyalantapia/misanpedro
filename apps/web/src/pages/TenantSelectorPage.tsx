@@ -2,6 +2,22 @@ import { useEffect, useState } from 'react'
 import { MapPin, ArrowRight, AlertCircle } from 'lucide-react'
 import { listAvailableTenants, setTenantSlug, type TenantConfig } from '@/lib/tenant'
 
+/** Debe coincidir con STORAGE_KEY de @/lib/tenant. Lo re-leemos para verificar
+ *  que el slug efectivamente persistió antes de recargar (modo privado / storage
+ *  bloqueado no persiste y dispararía un loop de reload infinito). */
+const STORAGE_KEY = 'misanpedro.tenant.slug'
+/** Flag de sesión para no auto-skipear más de una vez (defensa anti-loop). */
+const AUTOSKIP_FLAG = 'misanpedro.tenant.autoskipped'
+
+/** Lee el slug persistido sin romper si el storage está bloqueado. */
+function readPersistedSlug(): string | null {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
 /**
  * Página que se muestra cuando la PWA no pudo determinar el tenant:
  * sin subdomain, sin localStorage, sin query string. Le pide al usuario
@@ -14,6 +30,7 @@ export function TenantSelectorPage() {
   const [tenants, setTenants] = useState<TenantConfig[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
     void (async () => {
@@ -21,10 +38,42 @@ export function TenantSelectorPage() {
         const list = await listAvailableTenants()
         // M2: auto-skip si hay un solo tenant activo (caso lanzamiento de una ciudad
         // sola — San Pedro al inicio). Evita fricción de "elegir" la única opción.
-        if (list.length === 1) {
-          setTenantSlug(list[0].slug)
-          window.location.reload()
-          return
+        //
+        // Anti-loop: en modo privado / storage bloqueado el slug no persiste y
+        // window.location.reload() dispararía un bucle infinito. Sólo recargamos
+        // si (a) no auto-skipeamos ya en esta sesión y (b) el slug quedó realmente
+        // escrito en localStorage. Si no persistió, mostramos el selector con un
+        // aviso en lugar de recargar.
+        let alreadySkipped = false
+        try {
+          alreadySkipped = window.sessionStorage.getItem(AUTOSKIP_FLAG) === '1'
+        } catch {
+          /* sessionStorage bloqueado: tratamos como no-skipeado pero igual
+             validaremos la persistencia abajo antes de recargar. */
+        }
+
+        if (list.length === 1 && !alreadySkipped) {
+          const onlySlug = list[0].slug
+          try {
+            window.sessionStorage.setItem(AUTOSKIP_FLAG, '1')
+          } catch {
+            /* noop */
+          }
+          try {
+            setTenantSlug(onlySlug)
+          } catch {
+            /* setTenantSlug escribe en localStorage; si falla lo manejamos
+               abajo con el chequeo de persistencia. */
+          }
+          // Re-leemos para confirmar que el slug quedó persistido.
+          if (readPersistedSlug() === onlySlug) {
+            window.location.reload()
+            return
+          }
+          // No persistió (storage bloqueado): mostramos el selector con aviso.
+          setNotice(
+            'No pudimos guardar tu ciudad automáticamente. Tocá tu ciudad para continuar.',
+          )
         }
         setTenants(list)
       } catch (err: any) {
@@ -36,9 +85,20 @@ export function TenantSelectorPage() {
   }, [])
 
   function handleSelect(slug: string) {
-    setTenantSlug(slug)
-    // Hacemos un reload para que TODOS los stores re-hidraten con el tenant nuevo.
-    setTimeout(() => window.location.reload(), 50)
+    try {
+      setTenantSlug(slug)
+    } catch {
+      /* storage bloqueado */
+    }
+    // Sólo recargamos si el slug persistió; si no, avisamos en vez de loopear.
+    if (readPersistedSlug() === slug) {
+      // Hacemos un reload para que TODOS los stores re-hidraten con el tenant nuevo.
+      setTimeout(() => window.location.reload(), 50)
+    } else {
+      setNotice(
+        'No pudimos guardar tu ciudad. Revisá que tu navegador permita almacenamiento (puede estar en modo privado) e intentá de nuevo.',
+      )
+    }
   }
 
   return (
@@ -55,7 +115,7 @@ export function TenantSelectorPage() {
             Elegí tu ciudad
           </h1>
           <p className="mt-3 text-pretty text-base text-neutral-600">
-            Sumate a la red de descuentos de los comercios de tu barrio.
+            Sumate a la red de cupones de los comercios de tu barrio.
           </p>
         </header>
 
@@ -63,6 +123,13 @@ export function TenantSelectorPage() {
           <div role="alert" className="mb-4 flex w-full items-start gap-2 rounded-xl bg-status-error-bg px-3 py-2 text-xs font-semibold text-status-error-fg">
             <AlertCircle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
             {error}
+          </div>
+        )}
+
+        {notice && (
+          <div role="alert" className="mb-4 flex w-full items-start gap-2 rounded-xl bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-700 ring-1 ring-accent-100">
+            <AlertCircle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+            {notice}
           </div>
         )}
 
@@ -118,8 +185,8 @@ export function TenantSelectorPage() {
 
         <p className="mt-10 text-center text-[11px] text-neutral-400">
           ¿Tu ciudad no está? Probablemente todavía no llegamos. Escribinos a{' '}
-          <a href="mailto:hola@misanpedro.app" className="font-semibold text-accent-700 underline-offset-2 hover:underline">
-            hola@misanpedro.app
+          <a href="mailto:hola@misanpedro.com" className="font-semibold text-accent-700 underline-offset-2 hover:underline">
+            hola@misanpedro.com
           </a>
           .
         </p>

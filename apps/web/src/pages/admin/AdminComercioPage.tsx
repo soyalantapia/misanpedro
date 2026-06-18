@@ -375,7 +375,7 @@ export function AdminComercioPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
-            <Stat label="Cupones activos" value={cuponesActivos} icon={Tag} />
+            <Stat label="Descuentos activos" value={cuponesActivos} icon={Tag} />
             <Stat label="Categoría" stringValue={cat} />
           </div>
 
@@ -490,6 +490,8 @@ function EditingView({
           label="Nombre del comercio"
           input={
             <input
+              id="comercio-nombre"
+              name="nombre"
               type="text"
               value={draft.nombre}
               onChange={(e) => setDraft({ ...draft, nombre: e.target.value })}
@@ -501,6 +503,8 @@ function EditingView({
           label="Categoría"
           input={
             <select
+              id="comercio-categoria"
+              name="categoria"
               value={draft.categoria}
               onChange={(e) =>
                 setDraft({ ...draft, categoria: e.target.value as Categoria })
@@ -519,6 +523,8 @@ function EditingView({
           label="Dirección"
           input={
             <input
+              id="comercio-direccion"
+              name="direccion"
               type="text"
               value={draft.direccion}
               onChange={(e) => setDraft({ ...draft, direccion: e.target.value })}
@@ -556,6 +562,8 @@ function EditingView({
           label="Teléfono"
           input={
             <input
+              id="comercio-telefono"
+              name="telefono"
               type="tel"
               value={draft.telefono}
               onChange={(e) => setDraft({ ...draft, telefono: e.target.value })}
@@ -637,6 +645,8 @@ function CoverEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
         </div>
         <input
           ref={fileRef}
+          id="comercio-cover-file"
+          name="cover"
           type="file"
           accept="image/*"
           className="hidden"
@@ -721,6 +731,8 @@ function LogoEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
       </div>
       <input
         ref={fileRef}
+        id="comercio-logo-file"
+        name="logo"
         type="file"
         accept="image/*"
         className="hidden"
@@ -806,6 +818,8 @@ function GaleriaEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft)
       </div>
       <input
         ref={fileRef}
+        id="comercio-galeria-file"
+        name="galeria"
         type="file"
         accept="image/*"
         className="hidden"
@@ -826,6 +840,8 @@ function MapsUrlField({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) 
       input={
         <>
           <input
+            id="comercio-maps-url"
+            name="mapsUrl"
             type="url"
             value={draft.mapsUrl}
             onChange={(e) => setDraft({ ...draft, mapsUrl: e.target.value })}
@@ -854,6 +870,8 @@ function PresentacionEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: D
         input={
           <>
             <input
+              id="comercio-tagline"
+              name="tagline"
               type="text"
               value={draft.tagline}
               maxLength={90}
@@ -870,6 +888,8 @@ function PresentacionEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: D
         input={
           <>
             <textarea
+              id="comercio-descripcion"
+              name="descripcion"
               value={draft.descripcion}
               maxLength={600}
               rows={4}
@@ -962,6 +982,8 @@ function ProductosEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draf
           <div key={i} className="rounded-2xl bg-bg p-3 ring-1 ring-line">
             <div className="flex items-center gap-2">
               <input
+                id={`producto-nombre-${i}`}
+                name={`producto-nombre-${i}`}
                 type="text"
                 value={p.nombre}
                 onChange={(e) => update(i, 'nombre', e.target.value)}
@@ -970,6 +992,8 @@ function ProductosEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draf
                 className={cn(inputCls, 'flex-1')}
               />
               <input
+                id={`producto-precio-${i}`}
+                name={`producto-precio-${i}`}
                 type="text"
                 value={p.precio}
                 onChange={(e) => update(i, 'precio', e.target.value)}
@@ -987,6 +1011,8 @@ function ProductosEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draf
               </button>
             </div>
             <input
+              id={`producto-descripcion-${i}`}
+              name={`producto-descripcion-${i}`}
               type="text"
               value={p.descripcion}
               onChange={(e) => update(i, 'descripcion', e.target.value)}
@@ -1021,6 +1047,7 @@ function RedesEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
       </p>
       <RedInput
         icon={Camera}
+        name="redes-instagram"
         label="Instagram"
         value={draft.redes.instagram}
         onChange={(v) => setRed('instagram', v)}
@@ -1028,6 +1055,7 @@ function RedesEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
       />
       <RedInput
         icon={MessageCircle}
+        name="redes-whatsapp"
         label="WhatsApp"
         value={draft.redes.whatsapp}
         onChange={(v) => setRed('whatsapp', v)}
@@ -1035,6 +1063,7 @@ function RedesEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
       />
       <RedInput
         icon={Share2}
+        name="redes-facebook"
         label="Facebook"
         value={draft.redes.facebook}
         onChange={(v) => setRed('facebook', v)}
@@ -1042,6 +1071,7 @@ function RedesEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
       />
       <RedInput
         icon={Globe}
+        name="redes-web"
         label="Sitio web"
         value={draft.redes.web}
         onChange={(v) => setRed('web', v)}
@@ -1053,12 +1083,14 @@ function RedesEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
 
 function RedInput({
   icon: Icon,
+  name,
   label,
   value,
   onChange,
   placeholder,
 }: {
   icon: typeof Camera
+  name: string
   label: string
   value: string
   onChange: (v: string) => void
@@ -1070,6 +1102,8 @@ function RedInput({
         <Icon size={12} /> {label}
       </span>
       <input
+        id={name}
+        name={name}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -1157,6 +1191,8 @@ function HorariosEditor({
               {horario.abierto ? (
                 <div className="flex flex-1 items-center gap-1.5">
                   <input
+                    id={`horario-${d.id}-desde`}
+                    name={`horario-${d.id}-desde`}
                     type="time"
                     value={horario.desde}
                     aria-label={`${d.label} apertura`}
@@ -1167,6 +1203,8 @@ function HorariosEditor({
                   />
                   <span className="text-xs text-ink-faint">a</span>
                   <input
+                    id={`horario-${d.id}-hasta`}
+                    name={`horario-${d.id}-hasta`}
                     type="time"
                     value={horario.hasta}
                     aria-label={`${d.label} cierre`}
@@ -1388,15 +1426,15 @@ function SubscriptionCard({
         </button>
       )}
 
-      {estado === 'activo' || estado === 'pending_payment' ? (
+      {estado === 'activo' ? (
         confirming ? (
           <div className="mt-4 rounded-2xl border border-status-error/20 bg-status-error-bg/50 p-3">
             <div className="flex items-start gap-2 text-xs text-status-error-fg">
               <AlertTriangle size={14} className="mt-0.5 shrink-0" />
               <p>
                 {dentroArrepentimiento
-                  ? '¿Cancelar y pedir reembolso completo? Tus cupones dejan de aparecer al instante.'
-                  : 'Tu plan termina al final del período pagado. Tus cupones dejan de aparecer al cierre.'}
+                  ? '¿Cancelar y pedir reembolso completo? Tus descuentos dejan de aparecer al instante.'
+                  : 'Tu plan termina al final del período pagado. Tus descuentos dejan de aparecer al cierre.'}
               </p>
             </div>
             <div className="mt-3 flex items-stretch gap-2">

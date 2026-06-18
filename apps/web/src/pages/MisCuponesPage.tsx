@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Ticket, Sparkles, RefreshCw, ArrowRight, Clock, AlertCircle } from 'lucide-react'
+import { Ticket, Sparkles, RefreshCw, ArrowRight, Clock, AlertCircle, WifiOff, RotateCw } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
 import { EmptyState } from '@/components/EmptyState'
 import { useToast } from '@/components/Toast'
@@ -86,6 +86,10 @@ export function MisCuponesPage() {
   const [reactivating, setReactivating] = useState<string | null>(null)
 
   const isLoading = apiCouponsRes.loading || apiMerchantsRes.loading
+  // PM-elite T4: en PROD no hay fallback mock. Si el API falló, sin estos datos
+  // las tarjetas quedarían en skeleton infinito → mostramos "sin conexión".
+  const apiError = apiCouponsRes.error || apiMerchantsRes.error
+  const apiFailed = import.meta.env.PROD && !!apiError && localCoupons.length === 0
 
   const visible = useMemo(
     () =>
@@ -105,6 +109,30 @@ export function MisCuponesPage() {
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="h-24 animate-pulse rounded-3xl bg-fin-surface" style={{ animationDelay: `${i * 60}ms` }} />
         ))}
+      </div>
+    )
+  }
+
+  if (apiFailed) {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 pt-16 pb-8 sm:px-6">
+        <EmptyState
+          icon={WifiOff}
+          title="Sin conexión"
+          description="No pudimos cargar tus cupones. Revisá tu conexión y reintentá."
+          action={
+            <button
+              type="button"
+              onClick={() => {
+                apiCouponsRes.refetch()
+                apiMerchantsRes.refetch()
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl bg-fin-lime px-5 py-3 text-sm font-bold text-fin-bg transition-all hover:-translate-y-0.5"
+            >
+              <RotateCw size={16} /> Reintentar
+            </button>
+          }
+        />
       </div>
     )
   }
@@ -159,7 +187,7 @@ export function MisCuponesPage() {
           Mis cupones
         </h1>
         <p className="text-sm text-fin-soft">
-          Acá ves los descuentos que activaste y todavía no canjeaste. Si alguno expiró, lo
+          Acá ves los cupones que activaste y todavía no canjeaste. Si alguno expiró, lo
           podés reactivar.
         </p>
       </header>
@@ -168,13 +196,13 @@ export function MisCuponesPage() {
         <EmptyState
           icon={Ticket}
           title="Todavía no activaste ningún cupón"
-          description="Cuando actives un descuento desde Descuentos, lo vas a ver acá con su QR y código."
+          description="Cuando actives un cupón desde Cupones, lo vas a ver acá con su QR y código."
           action={
             <Link
               to="/"
               className="inline-flex items-center gap-1.5 rounded-full bg-fin-lime px-5 py-2.5 text-sm font-bold text-fin-bg shadow-fin-glow transition-all duration-200 hover:-translate-y-0.5"
             >
-              <Sparkles size={14} /> Ver descuentos
+              <Sparkles size={14} /> Ver cupones
             </Link>
           }
         />

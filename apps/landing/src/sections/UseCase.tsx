@@ -46,7 +46,7 @@ export function UseCase() {
           {/* Narración hipotética + números de referencia */}
           <div className="flex flex-col">
             <p className="text-pretty text-xl leading-relaxed text-neutral-700 sm:text-2xl">
-              Un martes a las 10 subís tu primer cupón —25% en helado hasta el viernes—.
+              Un martes a las 10 subís tu primer descuento —25% en helado hasta el viernes—.
               Los vecinos lo activan desde la app y empiezan a llegar al local. Para el
               finde podés acumular varias decenas de canjes, y parte de esa gente vuelve
               la semana siguiente.{' '}

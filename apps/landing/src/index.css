@@ -1,8 +1,8 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Brand — violeta Deenex (#695EDE), el mismo de la app (vecino+admin) y la
-     landing del vecino. La escala `accent-*` re-tematiza toda la landing sin
+  /* Brand — naranja Mi San Pedro (#ea580c), el mismo de la app (vecino+admin) y
+     la landing del vecino. La escala `accent-*` re-tematiza toda la landing sin
      tocar las secciones (que usan bg-accent-*, text-accent-*, …). */
   --color-brand: #ea580c; /* ← KNOB único: cambiá este hex y se re-tematiza toda la landing */
   --color-accent-50: color-mix(in srgb, var(--color-brand) 8%, white);
@@ -123,7 +123,7 @@
    :root cuando la config del tenant llega del API. Componentes
    pueden consumir via inline style o tw arbitrary value:
      class="bg-[var(--tenant-primary)]"
-   Defaults igualan al accent del @theme (verde de marca). */
+   Defaults igualan al accent del @theme (naranja de marca). */
 :root {
   --tenant-primary: var(--color-accent-500);
   --tenant-accent: var(--color-accent-700);

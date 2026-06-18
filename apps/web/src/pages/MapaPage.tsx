@@ -1,10 +1,11 @@
 import { lazy, Suspense, useMemo, useRef, useState } from 'react'
-import { MapPin } from 'lucide-react'
+import { MapPin, WifiOff, RotateCw } from 'lucide-react'
 import { useApiMerchants, useApiCoupons } from '@/lib/apiQueries'
 import { useGeolocation } from '@/lib/geo'
 import { useTenant } from '@/lib/tenant'
 import { CATEGORIAS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
 import type { ApiMerchant, ApiCoupon } from '@/lib/api'
+import { EmptyState } from '@/components/EmptyState'
 import { cn } from '@/lib/cn'
 
 const MerchantsMap = lazy(() => import('@/components/MerchantsMap'))
@@ -67,6 +68,8 @@ export function MapaPage() {
   }, [merchantsRes.data, couponsRes.data])
 
   const loading = merchantsRes.loading || couponsRes.loading
+  const apiError = merchantsRes.error || couponsRes.error
+  const hasData = merchants.length > 0
 
   // Locales con ubicación y al menos un cupón activo (los que aparecen en el mapa).
   const locales = useMemo(() => {
@@ -90,6 +93,31 @@ export function MapaPage() {
     seqRef.current += 1
     setFocus({ id, seq: seqRef.current })
     mapWrapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  // Si el API cae y no hay datos para mostrar, evitamos el mapa vacío y mudo.
+  if (apiError && !hasData) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 pt-16 pb-8 sm:px-6">
+        <EmptyState
+          icon={WifiOff}
+          title="Sin conexión"
+          description="No pudimos cargar el mapa. Revisá tu conexión y reintentá."
+          action={
+            <button
+              type="button"
+              onClick={() => {
+                merchantsRes.refetch()
+                couponsRes.refetch()
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl bg-fin-lime px-5 py-3 text-sm font-bold text-fin-bg transition-all hover:-translate-y-0.5"
+            >
+              <RotateCw size={16} /> Reintentar
+            </button>
+          }
+        />
+      </div>
+    )
   }
 
   return (

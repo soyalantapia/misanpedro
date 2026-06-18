@@ -7,12 +7,10 @@ export function cn(...classes: Array<string | false | null | undefined>) {
  * Shared constants for CTAs + contact (single source of truth).
  *
  * Production targets:
- * - PWA actual: https://soyalantapia.github.io/misanpedro/
- * - Cuando el DNS apunte: https://app.misanpedro.app/
+ * - App: https://app.misanpedro.com/
  *
- * Para cambiar dominio cuando se setee el DNS, override con env vars al
- * build:
- *   VITE_APP_URL=https://app.misanpedro.app pnpm build
+ * Para override del dominio en build, usá env vars:
+ *   VITE_APP_URL=https://app.misanpedro.com pnpm build
  *
  * Routes verificadas que existen en el PWA (apps/web/src/App.tsx):
  *   /admin/registro      — signup del comercio
@@ -22,7 +20,7 @@ export function cn(...classes: Array<string | false | null | undefined>) {
  *   /legal/privacidad
  */
 
-const APP_URL_RAW = import.meta.env.VITE_APP_URL ?? 'https://soyalantapia.github.io/misanpedro'
+const APP_URL_RAW = import.meta.env.VITE_APP_URL ?? 'https://app.misanpedro.com'
 // Strip trailing slash para que `${APP_URL}/#/...` no quede `//#/`
 export const APP_URL = APP_URL_RAW.replace(/\/$/, '')
 
@@ -30,4 +28,4 @@ export const APP_URL = APP_URL_RAW.replace(/\/$/, '')
 export const SIGNUP_URL = `${APP_URL}/#/admin/registro`
 export const LOGIN_URL = `${APP_URL}/#/admin/login`
 
-export const SUPPORT_EMAIL = 'hola@misanpedro.app'
+export const SUPPORT_EMAIL = 'hola@misanpedro.com'
