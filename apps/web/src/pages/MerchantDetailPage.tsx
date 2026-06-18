@@ -11,9 +11,12 @@ import {
   Share2,
   Globe,
   MessageCircle,
+  WifiOff,
+  RotateCw,
 } from 'lucide-react'
 import { CardImage } from '@/components/CardImage'
 import { CouponCard } from '@/components/CouponCard'
+import { EmptyState } from '@/components/EmptyState'
 import { useCouponsByMerchant } from '@/lib/couponsStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { CATEGORIAS, SERVICIOS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
@@ -82,6 +85,28 @@ export function MerchantDetailPage() {
     ? apiCoupons.map((c: any) => apiCouponToLocal(c, apiMerchant?.slug ?? id ?? ''))
     : localCoupons.filter((c) => c.estado === 'activo')
 
+  // PM-elite T4: en PROD, si el API falló y no hay datos, mostramos "sin conexión"
+  // en vez de rebotar al home (que confunde ante un hipo transitorio del backend).
+  if (import.meta.env.PROD && apiRes.error && !apiMerchant) {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 pt-16 pb-8 sm:px-6">
+        <EmptyState
+          icon={WifiOff}
+          title="Sin conexión"
+          description="No pudimos cargar el comercio. Revisá tu conexión y reintentá."
+          action={
+            <button
+              type="button"
+              onClick={() => apiRes.refetch()}
+              className="inline-flex items-center gap-2 rounded-2xl bg-fin-lime px-5 py-3 text-sm font-bold text-fin-bg transition-all hover:-translate-y-0.5"
+            >
+              <RotateCw size={16} /> Reintentar
+            </button>
+          }
+        />
+      </div>
+    )
+  }
   if (!merchant && !apiRes.loading) return <Navigate to="/" replace />
   if (!merchant) return null
 
