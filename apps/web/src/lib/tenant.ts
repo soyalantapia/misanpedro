@@ -242,11 +242,18 @@ function applyBrandingToDom(t: TenantConfig) {
   const root = document.documentElement
   if (t.brand?.primaryColor) root.style.setProperty('--tenant-primary', t.brand.primaryColor)
   if (t.brand?.accentColor) root.style.setProperty('--tenant-accent', t.brand.accentColor)
+  // COLOR POR CIUDAD: --color-brand es el ÚNICO knob; toda la escala accent/* y los
+  // tokens fin-* (lado vecino) se derivan de él vía color-mix. Seteándolo acá
+  // re-tematizamos TODA la app con el color de la ciudad. Si el tenant no trae
+  // primaryColor, queda el naranja de marca horneado en el build.
+  if (t.brand?.primaryColor) {
+    root.style.setProperty('--color-brand', t.brand.primaryColor)
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', t.brand.primaryColor)
+  }
   // <title> dinámico
   if (t.nombre) document.title = `${t.nombre} · Descuentos del barrio`
-  // theme-color: lo fija el index.html con el naranja de marca. NO lo pisamos
-  // con brand.primaryColor del tenant (quedó stale en violeta y la app es
-  // single-knob: el color real sale de --color-brand en el build).
 }
 
 /**
