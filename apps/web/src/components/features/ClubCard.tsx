@@ -72,7 +72,7 @@ export function ClubCard() {
             Arrancó un mes nuevo. Usá un cupón y entrás al Club y al sorteo de {mesNombre}. 🎁
           </p>
           <Button fullWidth className="mt-3" onClick={() => navigate('/')}>
-            Ver descuentos
+            Ver cupones
           </Button>
         </div>
       ) : (

@@ -109,13 +109,13 @@ export function CanjeadosPage() {
         <EmptyState
           icon={CheckCircle2}
           title="Sin canjes todavía"
-          description="Cuando uses tu primer descuento en un comercio, va a aparecer acá con la fecha y cuánto ahorraste."
+          description="Cuando uses tu primer cupón en un comercio, va a aparecer acá con la fecha y cuánto ahorraste."
           action={
             <Link
               to="/"
               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-brand to-brand-strong px-5 py-2.5 text-sm font-bold text-on-brand shadow-cta transition-all duration-200 hover:-translate-y-0.5"
             >
-              <Sparkles size={14} /> Ver descuentos
+              <Sparkles size={14} /> Ver cupones
             </Link>
           }
         />

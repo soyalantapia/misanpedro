@@ -67,7 +67,7 @@ function SavingsCta() {
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-bold uppercase tracking-widest text-fin-lime">Tu billetera de ahorro</p>
           <p className="mt-0.5 text-lg font-extrabold leading-tight text-fin-ink">
-            Canjeá tu primer descuento
+            Canjeá tu primer cupón
           </p>
           <p className="text-xs text-fin-soft">Activá un cupón y mirá cuánto vas juntando. Sin registro.</p>
         </div>
