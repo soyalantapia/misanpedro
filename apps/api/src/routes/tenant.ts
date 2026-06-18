@@ -35,6 +35,8 @@ tenantRoutes.get('/:slug/config', async (c) => {
       ciudad: app.ciudad,
       provincia: app.provincia,
       pais: app.pais,
+      moneda: app.moneda,
+      locale: app.locale,
       subdomain: app.subdomain,
       customDomain: app.customDomain,
       brand: app.brand,

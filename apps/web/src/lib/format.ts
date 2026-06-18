@@ -23,10 +23,23 @@ export function formatRedeemedDate(iso: string): string {
   return `${d.getDate()} ${monthsShort[d.getMonth()]} · ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+/**
+ * Locale/moneda activos para el formateo de plata. Por defecto es-AR/ARS
+ * (compatibilidad con el deploy histórico de Mi San Pedro). El tenant activo
+ * lo sobrescribe vía setMoneyLocale() al cargar su config (ver lib/tenant.ts),
+ * habilitando ciudades multi-país (ej. Colombia → es-CO/COP).
+ */
+let _money = { locale: 'es-AR', currency: 'ARS' }
+
+/** Setea el locale (BCP-47) y la moneda (ISO-4217) usados por formatMoney(). */
+export function setMoneyLocale(locale: string, currency: string): void {
+  _money = { locale, currency }
+}
+
 export function formatMoney(amount: number): string {
-  return new Intl.NumberFormat('es-AR', {
+  return new Intl.NumberFormat(_money.locale, {
     style: 'currency',
-    currency: 'ARS',
+    currency: _money.currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)

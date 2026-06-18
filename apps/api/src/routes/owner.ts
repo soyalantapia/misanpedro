@@ -351,6 +351,9 @@ ownerRoutes.get('/apps', requireOwnerAuth, async (c) => {
     slug: a.slug,
     nombre: a.nombre,
     ciudad: a.ciudad,
+    pais: a.pais,
+    moneda: a.moneda,
+    locale: a.locale,
     subdomain: a.subdomain,
     customDomain: a.customDomain,
     status: a.status,
@@ -367,6 +370,10 @@ const createAppSchema = z.object({
   nombre: z.string().min(2),
   ciudad: z.string().min(2),
   provincia: z.string().default('Buenos Aires'),
+  pais: z.string().default('Argentina'),
+  // Localización (ciudades multi-país). Defaults = AR.
+  moneda: z.string().default('ARS'), // ISO-4217
+  locale: z.string().default('es-AR'), // BCP-47
   subdomain: z.string().optional(),
   primaryColor: z
     .string()
@@ -396,6 +403,9 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
     nombre: data.nombre,
     ciudad: data.ciudad,
     provincia: data.provincia,
+    pais: data.pais,
+    moneda: data.moneda,
+    locale: data.locale,
     subdomain,
     status: 'active',
     plan: 'founder',
@@ -438,6 +448,10 @@ const updateAppSchema = z.object({
   nombre: z.string().min(2).optional(),
   ciudad: z.string().min(2).optional(),
   provincia: z.string().optional(),
+  pais: z.string().optional(),
+  // Localización (ciudades multi-país). Opcionales en el PATCH.
+  moneda: z.string().optional(), // ISO-4217
+  locale: z.string().optional(), // BCP-47
   customDomain: z.string().optional(),
   status: z.enum(['pending', 'active', 'suspended', 'archived']).optional(),
   plan: z.enum(['founder', 'standard', 'enterprise']).optional(),

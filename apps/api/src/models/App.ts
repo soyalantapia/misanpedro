@@ -34,6 +34,16 @@ const appSchema = new Schema(
     provincia: { type: String, default: 'Buenos Aires' },
     pais: { type: String, default: 'Argentina' },
 
+    /**
+     * Localización del tenant (ciudades multi-país).
+     * moneda = código ISO-4217 (ARS, COP, CLP, MXN, UYU, PEN, USD).
+     * locale = BCP-47 para Intl (es-AR, es-CO, es-CL, es-MX, es-UY, es-PE).
+     * Hoy "idioma" = locale: maneja formato de moneda/números/fechas.
+     * (La traducción de UI a otros idiomas es un proyecto aparte.)
+     */
+    moneda: { type: String, default: 'ARS' },
+    locale: { type: String, default: 'es-AR' },
+
     /** Subdominio dentro de misanpedro.app. Default = slug. */
     subdomain: { type: String, required: true, unique: true, index: true },
 

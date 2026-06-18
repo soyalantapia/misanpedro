@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { setMoneyLocale } from '@/lib/format'
 
 /**
  * Tenant resolution para la PWA del vecino.
@@ -68,7 +69,12 @@ export type TenantConfig = {
   nombre: string
   ciudad: string
   provincia?: string
+  /** Nombre del país (display). Ej: "Argentina", "Colombia". Default "Argentina". */
   pais?: string
+  /** Código de moneda ISO-4217. Ej: "ARS","COP","CLP","MXN". Default "ARS". */
+  moneda?: string
+  /** Locale BCP-47 para Intl (moneda/números/fechas). Ej: "es-AR","es-CO". Default "es-AR". */
+  locale?: string
   subdomain: string
   customDomain?: string
   brand: {
@@ -216,6 +222,9 @@ export async function loadTenantConfig(slug: string): Promise<TenantConfig | nul
       return null
     }
     setState({ loading: false, config: json.tenant, error: null })
+    // Formateo de plata per-tenant: ciudades multi-país (país/moneda/locale).
+    // Default es-AR/ARS si el tenant no trae estos campos.
+    setMoneyLocale(json.tenant.locale ?? 'es-AR', json.tenant.moneda ?? 'ARS')
     applyBrandingToDom(json.tenant)
     return json.tenant
   } catch (err: any) {

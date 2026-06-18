@@ -215,6 +215,9 @@ export const owner = {
     nombre: string
     ciudad: string
     provincia?: string
+    pais?: string
+    moneda?: string
+    locale?: string
     subdomain?: string
     primaryColor?: string
     accentColor?: string

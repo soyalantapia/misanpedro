@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react'
 import { owner } from '@/lib/api'
+import { PAISES, PAIS_DEFAULT, findPaisByNombre } from '@/lib/paises'
 import { fmtDate, fmtNumber } from '@/lib/format'
 import { PageHeader } from '@/components/PageHeader'
 import { StatCard } from '@/components/StatCard'
@@ -22,6 +23,9 @@ type Draft = {
   nombre: string
   ciudad: string
   provincia: string
+  pais: string
+  moneda: string
+  locale: string
   status: 'pending' | 'active' | 'suspended' | 'archived'
   customDomain: string
   primaryColor: string
@@ -36,6 +40,9 @@ function draftFromApp(app: any): Draft {
     nombre: app.nombre ?? '',
     ciudad: app.ciudad ?? '',
     provincia: app.provincia ?? '',
+    pais: app.pais ?? PAIS_DEFAULT.nombre,
+    moneda: app.moneda ?? PAIS_DEFAULT.moneda,
+    locale: app.locale ?? PAIS_DEFAULT.locale,
     status: app.status ?? 'pending',
     customDomain: app.customDomain ?? '',
     primaryColor: app.brand?.primaryColor ?? '#695ede',
@@ -102,6 +109,9 @@ export function AppDetailPage() {
       nombre: draft.nombre,
       ciudad: draft.ciudad,
       provincia: draft.provincia || undefined,
+      pais: draft.pais || undefined,
+      moneda: draft.moneda || undefined,
+      locale: draft.locale || undefined,
       status: draft.status,
       customDomain: draft.customDomain || undefined,
       brand: {
@@ -202,6 +212,15 @@ export function AppDetailPage() {
             <strong>{app.subdomain}.misanpedro.app</strong>
             {app.customDomain && ` · custom: ${app.customDomain}`}
           </p>
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-500">
+            <span>
+              {paisBandera(app.pais)} {app.pais ?? PAIS_DEFAULT.nombre}
+            </span>
+            <span className="text-neutral-300">·</span>
+            <span>Moneda {app.moneda ?? PAIS_DEFAULT.moneda}</span>
+            <span className="text-neutral-300">·</span>
+            <span>Idioma {app.locale ?? PAIS_DEFAULT.locale}</span>
+          </p>
           <p className="mt-0.5 text-xs text-neutral-400">Creada {fmtDate(app.createdAt)}</p>
         </div>
       </section>
@@ -247,6 +266,40 @@ export function AppDetailPage() {
               value={draft.logoUrl}
               onChange={(v) => setDraft({ ...draft, logoUrl: v })}
               placeholder="https://…/logo.png"
+            />
+          </div>
+
+          {/* País / moneda / locale: contrato multi-país. El país auto-completa
+              moneda y locale, pero ambos quedan editables. */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <SelectField
+              label="País"
+              value={draft.pais}
+              onChange={(v) => {
+                const p = findPaisByNombre(v)
+                setDraft({
+                  ...draft,
+                  pais: v,
+                  moneda: p ? p.moneda : draft.moneda,
+                  locale: p ? p.locale : draft.locale,
+                })
+              }}
+              options={PAISES.map((p) => ({
+                value: p.nombre,
+                label: `${p.bandera ? `${p.bandera} ` : ''}${p.nombre}`,
+              }))}
+            />
+            <TextField
+              label="Moneda (ISO-4217)"
+              value={draft.moneda}
+              onChange={(v) => setDraft({ ...draft, moneda: v.toUpperCase() })}
+              placeholder="ARS"
+            />
+            <TextField
+              label="Idioma / locale (BCP-47)"
+              value={draft.locale}
+              onChange={(v) => setDraft({ ...draft, locale: v })}
+              placeholder="es-AR"
             />
           </div>
 
@@ -358,6 +411,10 @@ export function AppDetailPage() {
       </section>
     </div>
   )
+}
+
+function paisBandera(nombre: string | undefined | null): string {
+  return findPaisByNombre(nombre)?.bandera ?? PAIS_DEFAULT.bandera ?? '🌎'
 }
 
 function TextField({

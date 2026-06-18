@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Palette, MapPin, Globe } from 'lucide-react'
 import { owner } from '@/lib/api'
+import { PAISES, PAIS_DEFAULT, findPaisByNombre } from '@/lib/paises'
 import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/cn'
 
@@ -14,6 +15,9 @@ export function NewAppPage() {
     nombre: '',
     ciudad: '',
     provincia: 'Buenos Aires',
+    pais: PAIS_DEFAULT.nombre,
+    moneda: PAIS_DEFAULT.moneda,
+    locale: PAIS_DEFAULT.locale,
     slug: '',
     subdomain: '',
     primaryColor: '#695ede',
@@ -41,6 +45,14 @@ export function NewAppPage() {
       }
       if (key === 'slug' && !f.subdomain) {
         next.subdomain = String(value)
+      }
+      // Al elegir país, auto-completamos moneda y locale (siguen editables).
+      if (key === 'pais') {
+        const p = findPaisByNombre(String(value))
+        if (p) {
+          next.moneda = p.moneda
+          next.locale = p.locale
+        }
       }
       return next
     })
@@ -74,15 +86,21 @@ export function NewAppPage() {
     setError(null)
     setSubmitting(true)
     try {
-      const res = await owner.createApp({
+      // pais/moneda/locale: campos del contrato multi-país. Se arman en un objeto
+      // intermedio para no disparar el excess-property-check del tipo de createApp.
+      const payload = {
         slug: form.slug,
         nombre: form.nombre,
         ciudad: form.ciudad,
         provincia: form.provincia,
+        pais: form.pais,
+        moneda: form.moneda,
+        locale: form.locale,
         subdomain: form.subdomain,
         primaryColor: form.primaryColor,
         accentColor: form.accentColor,
-      })
+      }
+      const res = await owner.createApp(payload)
       if (res.ok && res.app) {
         navigate(`/apps/${res.app._id ?? res.app.id}`)
       } else {
@@ -235,10 +253,37 @@ function StepLocation({
           placeholder="Ramallo"
         />
         <TextField
-          label="Provincia"
+          label="Provincia / Estado"
           value={form.provincia}
           onChange={(v) => update('provincia', v)}
           placeholder="Buenos Aires"
+        />
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-3">
+        <SelectField
+          label="País"
+          hint="Define moneda e idioma sugeridos"
+          value={form.pais}
+          onChange={(v) => update('pais', v)}
+          options={PAISES.map((p) => ({
+            value: p.nombre,
+            label: `${p.bandera ? `${p.bandera} ` : ''}${p.nombre}`,
+          }))}
+        />
+        <TextField
+          label="Moneda (ISO-4217)"
+          hint="Auto desde el país, editable"
+          value={form.moneda}
+          onChange={(v) => update('moneda', v.toUpperCase())}
+          placeholder="ARS"
+        />
+        <TextField
+          label="Idioma / locale (BCP-47)"
+          hint="Formato de moneda y fechas"
+          value={form.locale}
+          onChange={(v) => update('locale', v)}
+          placeholder="es-AR"
         />
       </div>
     </div>
@@ -347,6 +392,38 @@ function TextField({
         placeholder={placeholder}
         className="rounded-xl bg-neutral-50 px-4 py-3 text-sm text-neutral-900 ring-1 ring-neutral-200 placeholder:text-neutral-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent-500"
       />
+      {hint && <span className="text-[11px] text-neutral-500">{hint}</span>}
+    </label>
+  )
+}
+
+function SelectField({
+  label,
+  hint,
+  value,
+  onChange,
+  options,
+}: {
+  label: string
+  hint?: string
+  value: string
+  onChange: (v: string) => void
+  options: Array<{ value: string; label: string }>
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-xl bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-900 ring-1 ring-neutral-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent-500"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
       {hint && <span className="text-[11px] text-neutral-500">{hint}</span>}
     </label>
   )
