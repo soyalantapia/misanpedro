@@ -652,7 +652,7 @@ export const whatsapp = {
       { ...json({ to, text }), subject: 'merchant' },
     )
   },
-  async campaign(recipients: string[], text: string) {
+  async campaign(recipients: { to: string; nombre?: string }[], text: string) {
     return request<{
       ok: boolean
       campaign: { id: string; sentCount: number; failedCount: number }

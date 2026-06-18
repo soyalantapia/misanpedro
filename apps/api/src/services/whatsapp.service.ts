@@ -235,6 +235,21 @@ function toChatId(to: string): string {
   return `${to.replace(/\D/g, '')}@c.us`
 }
 
+/** Destinatario de campaña: teléfono + nombre (para personalizar {{nombre}}). */
+export type CampaignRecipient = { to: string; nombre?: string }
+
+/**
+ * Reemplaza el token {{nombre}} por el PRIMER nombre del destinatario.
+ * El front manda la plantilla con {{nombre}} intacto y acá la personalizamos
+ * por cada vecino (antes se mandaba el nombre del primer cliente a todos).
+ * Fallback "vecin@" (término inclusivo de la marca) si no hay nombre real.
+ */
+function personalizar(text: string, nombre?: string): string {
+  const first = (nombre ?? '').trim().split(/\s+/)[0]
+  const safe = first && first.toLowerCase() !== 'vecin@' ? first : 'vecin@'
+  return text.replace(/\{\{\s*nombre\s*\}\}/gi, safe)
+}
+
 export async function sendMessage(
   merchantId: string,
   to: string,
@@ -262,7 +277,7 @@ export async function sendMessage(
 export async function sendCampaign(
   merchantId: string,
   campaignId: string,
-  recipients: string[],
+  recipients: CampaignRecipient[],
   text: string,
   onEach?: (i: number, ok: boolean, error?: string) => Promise<void>,
 ): Promise<{ sentCount: number; failedCount: number }> {
@@ -300,9 +315,10 @@ export async function sendCampaign(
   let sent = 0
   let failed = 0
   for (let i = 0; i < recipients.length; i++) {
-    const to = recipients[i]
+    const r = recipients[i]
     try {
-      await s.client.sendMessage(toChatId(to), text)
+      // Personalizamos {{nombre}} por cada destinatario (no el nombre del 1º a todos).
+      await s.client.sendMessage(toChatId(r.to), personalizar(text, r.nombre))
       sent += 1
       await onEach?.(i, true)
     } catch (err: any) {

@@ -153,7 +153,11 @@ whatsappRoutes.post('/send', requireMerchantAuth, requireMerchantActive, async (
 })
 
 const campaignSchema = z.object({
-  recipients: z.array(z.string().min(8)).min(1).max(500),
+  // Cada destinatario lleva su nombre para personalizar {{nombre}} en el backend.
+  recipients: z
+    .array(z.object({ to: z.string().min(8), nombre: z.string().max(80).optional() }))
+    .min(1)
+    .max(500),
   text: z.string().min(1).max(2000),
 })
 whatsappRoutes.post('/campaign', requireMerchantAuth, requireMerchantActive, async (c) => {
@@ -190,7 +194,7 @@ whatsappRoutes.post('/campaign', requireMerchantAuth, requireMerchantActive, asy
         await WaSend.create({
           appId,
           merchantId,
-          to: parsed.data.recipients[i],
+          to: parsed.data.recipients[i].to,
           text: parsed.data.text,
           ok,
           error,

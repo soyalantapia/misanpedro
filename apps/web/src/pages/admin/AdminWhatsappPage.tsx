@@ -410,11 +410,12 @@ function ComposerScreen({
     const total = recipients.length
     setPhase({ kind: 'sending', progress: 0, total, sentSoFar: 0 })
 
-    const recipientNumbers = recipients
+    const recipientPayload = recipients
       // El contacto del vecino viene normalizado en `telefono` (whatsapp del
-      // backend con fallback al teléfono de onboarding).
-      .map((r) => r.telefono.replace(/\D/g, ''))
-      .filter((n) => n.length >= 8)
+      // backend con fallback al teléfono de onboarding). Mandamos el nombre
+      // junto al número para que el backend personalice {{nombre}} por destinatario.
+      .map((r) => ({ to: r.telefono.replace(/\D/g, ''), nombre: r.nombre }))
+      .filter((r) => r.to.length >= 8)
 
     // POST /wa/campaign: el backend procesa con rate-limit anti-ban (delay
     // random 2-5s entre cada mensaje) y publica progreso vía SSE.
@@ -425,7 +426,7 @@ function ComposerScreen({
       // Mandamos la plantilla con {{nombre}} SIN resolver: el backend la
       // personaliza por destinatario. (Nunca el `rendered` del preview, que
       // tiene el nombre fijo del primer cliente.)
-      const data = await api.whatsapp.campaign(recipientNumbers, messageTemplate)
+      const data = await api.whatsapp.campaign(recipientPayload, messageTemplate)
       setPhase({
         kind: 'done',
         sentCount: data.campaign.sentCount,
