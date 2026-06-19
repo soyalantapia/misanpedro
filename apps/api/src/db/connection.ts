@@ -54,7 +54,7 @@ export async function connectDB(): Promise<typeof mongoose> {
  */
 async function bootstrapOwner(): Promise<void> {
   const email = env.OWNER_BOOTSTRAP_EMAIL?.toLowerCase().trim()
-  const password = env.OWNER_BOOTSTRAP_PASSWORD
+  const password = env.OWNER_BOOTSTRAP_PASSWORD?.trim()
   if (!email || !password) return
   if (password.length < 8) {
     console.warn('[bootstrap-owner] OWNER_BOOTSTRAP_PASSWORD muy corta (<8 chars) — skip')

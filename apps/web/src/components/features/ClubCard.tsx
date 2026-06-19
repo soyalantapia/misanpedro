@@ -4,6 +4,7 @@ import { useApiMyActivations } from '@/lib/apiQueries'
 import { tokens } from '@/lib/api'
 import { computeClub, PREMIO_DEL_MES } from '@/lib/club'
 import { Button } from '@/components/ui'
+import { formatMoney } from '@/lib/format'
 
 /**
  * EL CLUB — niveles MENSUALES del vecino (Bronce/Plata/Oro) en PerfilPage.
@@ -13,10 +14,6 @@ import { Button } from '@/components/ui'
  * que la app ya baja (lib/club). El nivel es por CANJES del mes — distinto del
  * número de ahorro ($) de la billetera (SavingsWallet). Conviven, no se mezclan.
  */
-
-function ars(n: number) {
-  return n.toLocaleString('es-AR', { maximumFractionDigits: 0 })
-}
 
 export function ClubCard() {
   const navigate = useNavigate()
@@ -117,7 +114,7 @@ export function ClubCard() {
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-fin-soft">
         <span className="inline-flex items-center gap-1.5">
           <PiggyBank size={13} className="text-fin-up" />
-          Ahorro total: <span className="font-bold text-fin-up">${ars(ahorroTotal)}</span>
+          Ahorro total: <span className="font-bold text-fin-up">{formatMoney(ahorroTotal)}</span>
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Flame size={13} className="text-fin-lime" />

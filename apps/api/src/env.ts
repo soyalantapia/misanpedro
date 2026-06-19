@@ -71,9 +71,9 @@ const schema = z.object({
    * Railway: al arrancar, si no existe un Owner con ese email, lo crea (idempotente).
    * DESPUÉS borrá OWNER_BOOTSTRAP_PASSWORD del env por seguridad.
    */
-  OWNER_BOOTSTRAP_EMAIL: z.string().optional(),
+  OWNER_BOOTSTRAP_EMAIL: z.string().email().optional(),
   OWNER_BOOTSTRAP_PASSWORD: z.string().optional(),
-  OWNER_BOOTSTRAP_NOMBRE: z.string().default('Owner'),
+  OWNER_BOOTSTRAP_NOMBRE: z.string().min(1).default('Owner'),
 })
 
 const parsed = schema.safeParse(process.env)

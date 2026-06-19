@@ -62,6 +62,9 @@ export function NewAppPage() {
     if (n === 1) {
       if (!form.nombre.trim()) return 'El nombre es requerido'
       if (!form.ciudad.trim()) return 'La ciudad es requerida'
+      if (!/^[A-Z]{3}$/.test(form.moneda)) return 'Moneda inválida (ISO-4217, ej. ARS, COP)'
+      if (!/^[a-z]{2,3}(-[A-Z]{2,4})?$/.test(form.locale))
+        return 'Idioma/locale inválido (ej. es-AR, es-CO)'
     }
     if (n === 2) {
       if (!/^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/.test(form.slug)) {
@@ -465,6 +468,8 @@ function slugify(s: string): string {
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
     .slice(0, 32)
+    // strip DESPUÉS del slice: si el corte cae en un separador, no dejamos guión
+    // final (rompería la validación /…[a-z0-9]$/ del paso 2).
+    .replace(/^-+|-+$/g, '')
 }

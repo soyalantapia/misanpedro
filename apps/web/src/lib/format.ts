@@ -58,6 +58,33 @@ export function formatMoney(amount: number): string {
   }).format(amount)
 }
 
+/**
+ * Como formatMoney pero devuelve el símbolo y el número por separado, para UIs
+ * que los estilan distinto (ej. el número grande del ahorro con el símbolo chico).
+ * Respeta la moneda/locale del tenant (no asume "$").
+ */
+export function formatMoneyParts(amount: number): { symbol: string; value: string } {
+  try {
+    const parts = new Intl.NumberFormat(_money.locale, {
+      style: 'currency',
+      currency: _money.currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).formatToParts(amount)
+    const symbol = parts
+      .filter((p) => p.type === 'currency')
+      .map((p) => p.value)
+      .join('')
+    const value = parts
+      .filter((p) => p.type === 'integer' || p.type === 'group' || p.type === 'decimal' || p.type === 'fraction')
+      .map((p) => p.value)
+      .join('')
+    return { symbol: symbol || '$', value: value || String(Math.round(amount)) }
+  } catch {
+    return { symbol: '$', value: String(Math.round(amount)) }
+  }
+}
+
 export function formatTimeRemaining(expiresAtIso: string, nowMs = Date.now()): string {
   const remainingMs = new Date(expiresAtIso).getTime() - nowMs
   if (remainingMs <= 0) return 'Expirado'

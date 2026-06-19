@@ -102,6 +102,14 @@ export function AppDetailPage() {
 
   async function handleSave() {
     if (!draft) return
+    if (!/^[A-Z]{3}$/.test(draft.moneda)) {
+      setSaveError('Moneda inválida (ISO-4217, ej. ARS, COP)')
+      return
+    }
+    if (!/^[a-z]{2,3}(-[A-Z]{2,4})?$/.test(draft.locale)) {
+      setSaveError('Idioma/locale inválido (ej. es-AR, es-CO)')
+      return
+    }
     setSaving(true)
     setSaveError(null)
     // logoUrl vacío → no lo mandamos (el backend valida que sea URL válida).

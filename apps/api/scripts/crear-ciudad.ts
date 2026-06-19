@@ -31,6 +31,8 @@ const lat = process.env.LAT ? Number(process.env.LAT) : undefined
 const lng = process.env.LNG ? Number(process.env.LNG) : undefined
 const primaryColor = process.env.PRIMARY_COLOR ?? '#ea580c'
 const accentColor = process.env.ACCENT_COLOR ?? '#c2410c'
+const hasGeo = lat != null && !Number.isNaN(lat) && lng != null && !Number.isNaN(lng)
+const hasColor = !!(process.env.PRIMARY_COLOR || process.env.ACCENT_COLOR)
 
 if (!slug || !nombre || !ciudad) {
   console.error('❌ Requeridos: SLUG, NOMBRE, CIUDAD')
@@ -44,11 +46,23 @@ async function main() {
   const existing = await App.findOne({ slug })
   if (existing) {
     if (process.env.UPDATE === 'true') {
-      // Actualiza localización/marca de una ciudad existente (no toca sus datos).
+      // Actualiza localización de una ciudad existente (no toca sus datos).
       existing.set({ nombre, ciudad, provincia, pais, moneda, locale })
-      existing.brand = { ...existing.brand, primaryColor, accentColor }
+      // Solo pisamos brand/geo si se proveyeron explícitamente; si no, conservamos
+      // los colores y el centro que la ciudad ya tenía.
+      if (hasColor) {
+        existing.brand = {
+          ...existing.brand,
+          ...(process.env.PRIMARY_COLOR ? { primaryColor } : {}),
+          ...(process.env.ACCENT_COLOR ? { accentColor } : {}),
+        }
+      }
+      if (hasGeo) existing.set({ geoCenter: { lat, lng } })
       await existing.save()
-      console.log(`✏️  Actualizada "${slug}" → ${nombre} · ${ciudad}, ${pais} · moneda=${moneda} · locale=${locale}`)
+      console.log(
+        `✏️  Actualizada "${slug}" → ${nombre} · ${ciudad}, ${pais} · moneda=${moneda} · locale=${locale}` +
+          `${hasColor ? ' · brand actualizado' : ''}${hasGeo ? ` · geo=${lat},${lng}` : ''}`,
+      )
       await mongoose.disconnect()
       return
     }
@@ -57,7 +71,6 @@ async function main() {
     return
   }
 
-  const hasGeo = lat != null && !Number.isNaN(lat) && lng != null && !Number.isNaN(lng)
   const app = await App.create({
     slug,
     nombre,

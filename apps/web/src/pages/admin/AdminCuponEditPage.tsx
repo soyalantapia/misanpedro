@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { formatMoney } from '@/lib/format'
 import {
   ChevronLeft,
   ArrowLeft,
@@ -118,8 +119,9 @@ function dateToIso(date: string): string {
 }
 
 // ─── Plata ──────────────────────────────────────────────────────────────
+// Delegamos en formatMoney (tenant-aware): respeta moneda/locale de la ciudad.
 function fmtMoney(n: number): string {
-  return '$' + Math.round(n).toLocaleString('es-AR')
+  return formatMoney(n)
 }
 function calcMoney(precio: number, porcentaje: number, costo?: number) {
   const vecinoPaga = Math.round(precio * (1 - porcentaje / 100))

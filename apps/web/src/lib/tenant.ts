@@ -237,23 +237,28 @@ export async function loadTenantConfig(slug: string): Promise<TenantConfig | nul
  * Aplica branding del tenant al :root como CSS custom props.
  * El CSS de las páginas las consume via var(--tenant-primary) etc.
  */
+/** Solo aceptamos HEX válido (#RGB … #RRGGBBAA). Un valor inesperado del API
+ *  (string vacío, "naranja", o algo con ";") dejaría --color-brand inválida y
+ *  colapsaría toda la escala accent/fin que se deriva por color-mix. */
+const isHexColor = (v?: string): v is string => !!v && /^#[0-9a-fA-F]{3,8}$/.test(v)
+
 function applyBrandingToDom(t: TenantConfig) {
   if (typeof document === 'undefined') return
   const root = document.documentElement
-  if (t.brand?.primaryColor) root.style.setProperty('--tenant-primary', t.brand.primaryColor)
-  if (t.brand?.accentColor) root.style.setProperty('--tenant-accent', t.brand.accentColor)
+  const primary = t.brand?.primaryColor
+  const accent = t.brand?.accentColor
+  if (isHexColor(primary)) root.style.setProperty('--tenant-primary', primary)
+  if (isHexColor(accent)) root.style.setProperty('--tenant-accent', accent)
   // COLOR POR CIUDAD: --color-brand es el ÚNICO knob; toda la escala accent/* y los
   // tokens fin-* (lado vecino) se derivan de él vía color-mix. Seteándolo acá
   // re-tematizamos TODA la app con el color de la ciudad. Si el tenant no trae
-  // primaryColor, queda el naranja de marca horneado en el build.
-  if (t.brand?.primaryColor) {
-    root.style.setProperty('--color-brand', t.brand.primaryColor)
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', t.brand.primaryColor)
+  // primaryColor válido, queda el naranja de marca horneado en el build.
+  if (isHexColor(primary)) {
+    root.style.setProperty('--color-brand', primary)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', primary)
   }
-  // <title> dinámico
-  if (t.nombre) document.title = `${t.nombre} · Descuentos del barrio`
+  // <title> dinámico — única fuente (main.tsx ya no lo setea, evita el doble-set).
+  if (t.nombre) document.title = `${t.nombre} · Descuentos vecinales`
 }
 
 /**

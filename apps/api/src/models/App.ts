@@ -41,8 +41,8 @@ const appSchema = new Schema(
      * Hoy "idioma" = locale: maneja formato de moneda/números/fechas.
      * (La traducción de UI a otros idiomas es un proyecto aparte.)
      */
-    moneda: { type: String, default: 'ARS' },
-    locale: { type: String, default: 'es-AR' },
+    moneda: { type: String, default: 'ARS', match: /^[A-Z]{3}$/ },
+    locale: { type: String, default: 'es-AR', match: /^[a-z]{2,3}(-[A-Z]{2,4})?$/ },
 
     /** Subdominio dentro de misanpedro.app. Default = slug. */
     subdomain: { type: String, required: true, unique: true, index: true },

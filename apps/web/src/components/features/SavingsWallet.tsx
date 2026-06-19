@@ -2,10 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowUpRight, Flame, Sparkles, TicketCheck } from 'lucide-react'
 import { useApiMyActivations } from '@/lib/apiQueries'
 import { tokens } from '@/lib/api'
-
-function ars(n: number) {
-  return n.toLocaleString('es-AR', { maximumFractionDigits: 0 })
-}
+import { formatMoney, formatMoneyParts } from '@/lib/format'
 
 function tier(total: number): { label: string; next: number | null } {
   if (total >= 50000) return { label: 'Leyenda del barrio', next: null }
@@ -101,6 +98,7 @@ export function SavingsWallet() {
   const cumulative = chrono.map((a) => (acc += a.ahorroEstimado ?? 0))
   const t = tier(total)
   const progress = t.next ? Math.min(100, Math.round((total / t.next) * 100)) : 100
+  const heroMoney = formatMoneyParts(total)
 
   return (
     <div className="bg-fin-mesh relative overflow-hidden rounded-3xl bg-fin-surface p-5 ring-1 ring-fin-line shadow-fin-card">
@@ -112,8 +110,8 @@ export function SavingsWallet() {
               Ahorrado en San Pedro
             </p>
             <p className="animate-count-pop mt-1 flex items-baseline gap-1 font-black tabular-nums text-fin-ink">
-              <span className="text-2xl text-fin-soft">$</span>
-              <span className="text-6xl leading-none tracking-tight">{ars(total)}</span>
+              <span className="text-2xl text-fin-soft">{heroMoney.symbol}</span>
+              <span className="text-6xl leading-none tracking-tight">{heroMoney.value}</span>
             </p>
           </div>
           <Sparkline values={cumulative} />
@@ -126,7 +124,7 @@ export function SavingsWallet() {
           </span>
           {monthTotal > 0 && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-fin-surface2 px-3 py-1.5 text-xs font-bold text-fin-up ring-1 ring-fin-line">
-              <Flame size={13} /> +${ars(monthTotal)} este mes
+              <Flame size={13} /> +{formatMoney(monthTotal)} este mes
             </span>
           )}
           <span className="inline-flex items-center gap-1.5 rounded-full bg-fin-lime/15 px-3 py-1.5 text-xs font-bold text-fin-lime ring-1 ring-fin-lime/30">
@@ -143,7 +141,7 @@ export function SavingsWallet() {
               />
             </div>
             <p className="mt-1.5 text-[11px] text-fin-soft">
-              Te faltan <span className="font-bold text-fin-ink">${ars(t.next - total)}</span> para el próximo nivel
+              Te faltan <span className="font-bold text-fin-ink">{formatMoney(t.next - total)}</span> para el próximo nivel
             </p>
           </div>
         )}

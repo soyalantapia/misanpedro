@@ -39,7 +39,7 @@ describe('<ClubCard />', () => {
     const { container } = renderCard()
     expect(container.textContent).toMatch(/Todavía sin nivel/)
     expect(container.textContent).toMatch(/Usá un cupón y entrás al Club/)
-    expect(screen.getByRole('button', { name: /ver descuentos/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /ver cupones/i })).toBeTruthy()
   })
 
   it('4 canjes este mes → Socio Plata + 4 entradas + ahorro total', () => {

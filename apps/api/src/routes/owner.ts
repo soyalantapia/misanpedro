@@ -371,9 +371,16 @@ const createAppSchema = z.object({
   ciudad: z.string().min(2),
   provincia: z.string().default('Buenos Aires'),
   pais: z.string().default('Argentina'),
-  // Localización (ciudades multi-país). Defaults = AR.
-  moneda: z.string().default('ARS'), // ISO-4217
-  locale: z.string().default('es-AR'), // BCP-47
+  // Localización (ciudades multi-país). Defaults = AR. Validamos formato para que
+  // un valor inválido no llegue a Intl.NumberFormat en el front (RangeError).
+  moneda: z
+    .string()
+    .regex(/^[A-Z]{3}$/, 'moneda debe ser ISO-4217 (3 letras mayúsculas)')
+    .default('ARS'),
+  locale: z
+    .string()
+    .regex(/^[a-z]{2,3}(-[A-Z]{2,4})?$/, 'locale debe ser BCP-47 (ej. es-AR)')
+    .default('es-AR'),
   subdomain: z.string().optional(),
   primaryColor: z
     .string()
@@ -449,9 +456,15 @@ const updateAppSchema = z.object({
   ciudad: z.string().min(2).optional(),
   provincia: z.string().optional(),
   pais: z.string().optional(),
-  // Localización (ciudades multi-país). Opcionales en el PATCH.
-  moneda: z.string().optional(), // ISO-4217
-  locale: z.string().optional(), // BCP-47
+  // Localización (ciudades multi-país). Opcionales en el PATCH, mismo formato.
+  moneda: z
+    .string()
+    .regex(/^[A-Z]{3}$/, 'moneda debe ser ISO-4217 (3 letras mayúsculas)')
+    .optional(),
+  locale: z
+    .string()
+    .regex(/^[a-z]{2,3}(-[A-Z]{2,4})?$/, 'locale debe ser BCP-47 (ej. es-AR)')
+    .optional(),
   customDomain: z.string().optional(),
   status: z.enum(['pending', 'active', 'suspended', 'archived']).optional(),
   plan: z.enum(['founder', 'standard', 'enterprise']).optional(),
@@ -479,7 +492,17 @@ ownerRoutes.patch('/apps/:id', requireOwnerAuth, async (c) => {
     return c.json({ ok: false, error: 'invalid input', detail: parsed.error.flatten() }, 400)
   }
   const id = c.req.param('id')
-  const app = await App.findByIdAndUpdate(id, parsed.data, { new: true })
+  let app
+  try {
+    app = await App.findByIdAndUpdate(id, parsed.data, { new: true, runValidators: true })
+  } catch (err) {
+    // Índice unique en customDomain/subdomain: si choca con otra ciudad, Mongo
+    // tira E11000. Lo traducimos a 409 en vez de dejar que suba como 500.
+    if ((err as { code?: number })?.code === 11000) {
+      return c.json({ ok: false, error: 'customDomain o subdomain ya en uso por otra ciudad' }, 409)
+    }
+    throw err
+  }
   if (!app) return c.json({ ok: false, error: 'not found' }, 404)
   return c.json({ ok: true, app })
 })
