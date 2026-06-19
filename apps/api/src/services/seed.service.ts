@@ -227,6 +227,15 @@ const DEMO_PASSWORD = 'demo123'
  * Idempotente — no falla si ya existe.
  */
 async function ensureSanpedroApp() {
+  // Backfill idempotente del brand: el doc de sanpedro fue sembrado con el violeta
+  // legacy (#695ede) antes del rebrand a naranja. Como applyBrandingToDom ahora pisa
+  // --color-brand en runtime con el primaryColor del tenant, ese doc viejo forzaba a
+  // la PWA a mostrar violeta. Lo corregimos a naranja. Self-limiting: solo matchea el
+  // violeta, así que tras correr una vez es no-op. Corre dentro de Railway (Mongo interno).
+  await App.updateOne(
+    { slug: 'sanpedro', 'brand.primaryColor': '#695ede' },
+    { $set: { 'brand.primaryColor': '#ea580c', 'brand.accentColor': '#c2410c' } },
+  )
   const existing = await App.findOne({ slug: 'sanpedro' })
   if (existing) return existing
   return await App.create({
@@ -238,7 +247,7 @@ async function ensureSanpedroApp() {
     subdomain: 'sanpedro',
     status: 'active',
     plan: 'founder',
-    brand: { primaryColor: '#695ede', accentColor: '#4239a3' },
+    brand: { primaryColor: '#ea580c', accentColor: '#c2410c' },
   })
 }
 

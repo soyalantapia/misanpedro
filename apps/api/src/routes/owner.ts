@@ -410,8 +410,8 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
     status: 'active',
     plan: 'founder',
     brand: {
-      primaryColor: data.primaryColor ?? '#695ede',
-      accentColor: data.accentColor ?? '#4239a3',
+      primaryColor: data.primaryColor ?? '#ea580c',
+      accentColor: data.accentColor ?? '#c2410c',
     },
   })
 

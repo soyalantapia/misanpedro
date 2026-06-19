@@ -45,8 +45,8 @@ function draftFromApp(app: any): Draft {
     locale: app.locale ?? PAIS_DEFAULT.locale,
     status: app.status ?? 'pending',
     customDomain: app.customDomain ?? '',
-    primaryColor: app.brand?.primaryColor ?? '#695ede',
-    accentColor: app.brand?.accentColor ?? '#4239a3',
+    primaryColor: app.brand?.primaryColor ?? '#ea580c',
+    accentColor: app.brand?.accentColor ?? '#c2410c',
     heroEyebrow: app.brand?.heroEyebrow ?? '',
     heroHeadline: app.brand?.heroHeadline ?? '',
     logoUrl: app.brand?.logoUrl ?? '',
@@ -198,7 +198,7 @@ export function AppDetailPage() {
         <span
           className="grid h-14 w-14 place-items-center rounded-2xl text-xl font-black text-white"
           style={{
-            background: `linear-gradient(135deg, ${app.brand?.primaryColor ?? '#695ede'}, ${app.brand?.accentColor ?? '#4239a3'})`,
+            background: `linear-gradient(135deg, ${app.brand?.primaryColor ?? '#ea580c'}, ${app.brand?.accentColor ?? '#c2410c'})`,
           }}
         >
           {app.ciudad?.[0]?.toUpperCase() ?? 'M'}

@@ -20,7 +20,7 @@ export type LatLng = { lat: number; lng: number }
 /** Pin tipo "gota" en color de marca (consistente con el resto del panel). */
 const locationIcon = L.divIcon({
   className: 'msp-loc-pin',
-  html: `<svg width="38" height="38" viewBox="0 0 24 24" fill="#695ede" stroke="#ffffff" stroke-width="1.6" style="fill:var(--color-brand);filter:drop-shadow(0 3px 5px color-mix(in srgb, var(--color-brand) 45%, transparent))"><path d="M12 21.5s7-6.4 7-11.5a7 7 0 1 0-14 0c0 5.1 7 11.5 7 11.5z"/><circle cx="12" cy="10" r="2.6" fill="#ffffff" stroke="none"/></svg>`,
+  html: `<svg width="38" height="38" viewBox="0 0 24 24" stroke="#ffffff" stroke-width="1.6" style="fill:var(--color-brand);filter:drop-shadow(0 3px 5px color-mix(in srgb, var(--color-brand) 45%, transparent))"><path d="M12 21.5s7-6.4 7-11.5a7 7 0 1 0-14 0c0 5.1 7 11.5 7 11.5z"/><circle cx="12" cy="10" r="2.6" fill="#ffffff" stroke="none"/></svg>`,
   iconSize: [38, 38],
   iconAnchor: [19, 36],
 })

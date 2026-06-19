@@ -20,8 +20,8 @@ export function NewAppPage() {
     locale: PAIS_DEFAULT.locale,
     slug: '',
     subdomain: '',
-    primaryColor: '#695ede',
-    accentColor: '#4239a3',
+    primaryColor: '#ea580c',
+    accentColor: '#c2410c',
   })
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
