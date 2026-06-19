@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import {
   formatMoney,
+  setMoneyLocale,
   formatTimeRemaining,
   distanceLabel,
   formatBirthdate,
@@ -10,6 +11,10 @@ import {
 } from './format'
 
 describe('formatMoney', () => {
+  // format.ts guarda estado de módulo (_money). Si otra suite llama setMoneyLocale
+  // antes, estos asserts (ARS/es-AR) fallarían según el orden. Reseteamos siempre.
+  beforeEach(() => setMoneyLocale('es-AR', 'ARS'))
+
   it('formatea pesos argentinos sin decimales', () => {
     // Intl puede usar diferentes separadores; matcheamos $ y el número
     const result = formatMoney(1500)
