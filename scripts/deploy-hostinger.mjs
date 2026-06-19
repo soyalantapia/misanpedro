@@ -108,6 +108,25 @@ if (existsSync(webAssetsDir)) {
   }
 }
 
+// Mismo guardrail para el panel Owner: su api.ts tiene fallback a localhost, así que
+// un build sin VITE_API_URL subiría apuntando a localhost sin que nadie lo note.
+const ownerAssetsDir = join(ROOT, 'apps/owner/dist/assets')
+if (existsSync(ownerAssetsDir)) {
+  const js = readdirSync(ownerAssetsDir)
+    .filter((f) => f.endsWith('.js'))
+    .map((f) => readFileSync(join(ownerAssetsDir, f), 'utf8'))
+    .join('\n')
+  if (/localhost:\d+/.test(js)) {
+    console.error('\n❌ El build del panel Owner apunta a localhost. Revisá VITE_API_URL.\n')
+    process.exit(2)
+  }
+  if (!js.includes('api-production-43c52')) {
+    console.warn(
+      '\n⚠️  No encontré la URL de Railway en el bundle del Owner. Verificá VITE_API_URL antes de seguir.\n',
+    )
+  }
+}
+
 if (BUILD_ONLY) {
   console.log('\n✅ Build OK (--build-only). No se subió nada por SSH.')
   process.exit(0)

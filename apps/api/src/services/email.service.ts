@@ -74,12 +74,12 @@ function wrap(title: string, body: string): string {
     <!doctype html><html><body style="background:#f9f9f9;margin:0;padding:0">
       <div style="${BASE_STYLE}">
         <div style="background:#fff;border-radius:16px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-          <h1 style="font-size:22px;color:#695ede;margin:0 0 8px">${title}</h1>
+          <h1 style="font-size:22px;color:#ea580c;margin:0 0 8px">${title}</h1>
           ${body}
           <hr style="border:none;border-top:1px solid #f6f5f6;margin:24px 0">
           <p style="font-size:12px;color:#8b8589;margin:0">
             Mi San Pedro · descuentos en comercios adheridos<br>
-            Soporte: <a href="mailto:${env.SUPPORT_EMAIL}" style="color:#695ede">${env.SUPPORT_EMAIL}</a>
+            Soporte: <a href="mailto:${env.SUPPORT_EMAIL}" style="color:#ea580c">${env.SUPPORT_EMAIL}</a>
           </p>
         </div>
       </div>
@@ -100,7 +100,7 @@ export async function sendUserWelcome(to: string, nombre: string) {
         <p>Activá un cupón en tu comercio favorito y mostrale al cajero el QR o
         código de 6 dígitos. Listo, ahorraste.</p>
         <p style="margin-top:24px">
-          <a href="${env.APP_URL_FRONT}" style="background:#695ede;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600">
+          <a href="${env.APP_URL_FRONT}" style="background:#ea580c;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600">
             Ver descuentos disponibles →
           </a>
         </p>
@@ -118,7 +118,7 @@ export async function sendOtpCode(to: string, code: string) {
     html: wrap(
       'Tu código de acceso',
       `
-        <p style="text-align:center;font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin:24px 0;color:#695ede">${code}</p>
+        <p style="text-align:center;font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin:24px 0;color:#ea580c">${code}</p>
         <p>Usalo para entrar a tu cuenta. Vence en 5 minutos.</p>
         <p style="font-size:13px;color:#8b8589">Si no pediste este código, ignorá este email.</p>
       `,
@@ -135,7 +135,7 @@ export async function sendMerchantOtpCode(to: string, code: string) {
     html: wrap(
       'Acceso al panel del comercio',
       `
-        <p style="text-align:center;font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin:24px 0;color:#695ede">${code}</p>
+        <p style="text-align:center;font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin:24px 0;color:#ea580c">${code}</p>
         <p>Usalo para entrar al panel de tu comercio en <strong>Mi San Pedro</strong>. Vence en 5 minutos.</p>
         <p style="font-size:13px;color:#8b8589">Si no pediste este código, ignorá este email — nadie entró a tu cuenta.</p>
       `,
@@ -192,12 +192,12 @@ export async function sendMerchantWelcome(to: string, nombre: string, comercio: 
           <li>Cuando un vecino canjee, vas a verlo en "Clientes"</li>
         </ol>
         <p style="margin-top:24px">
-          <a href="${env.APP_URL_FRONT}/#/admin" style="background:#695ede;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600">
+          <a href="${env.APP_URL_FRONT}/#/admin" style="background:#ea580c;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600">
             Ir al panel del comercio →
           </a>
         </p>
         <p style="font-size:13px;color:#8b8589;margin-top:24px">
-          Soporte por WhatsApp: <a href="https://wa.me/${env.SUPPORT_WHATSAPP.replace(/\D/g, '')}" style="color:#695ede">${env.SUPPORT_WHATSAPP}</a>
+          Soporte por WhatsApp: <a href="https://wa.me/${env.SUPPORT_WHATSAPP.replace(/\D/g, '')}" style="color:#ea580c">${env.SUPPORT_WHATSAPP}</a>
         </p>
       `,
     ),
@@ -219,7 +219,7 @@ export async function sendPasswordResetLink(input: {
         <p>Hola ${escapeHtml(input.nombre.split(' ')[0])}, recibimos una solicitud
         para resetear la contraseña de tu cuenta de comercio.</p>
         <p style="margin-top:24px">
-          <a href="${input.link}" style="background:#695ede;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600">
+          <a href="${input.link}" style="background:#ea580c;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600">
             Crear nueva contraseña →
           </a>
         </p>
@@ -259,7 +259,7 @@ export async function sendSubscriptionReceipt(input: {
         </div>
         <p style="font-size:13px;color:#8b8589">
           La factura C se envía por separado. Si no la recibís en 48h, escribinos a
-          <a href="mailto:${env.SUPPORT_EMAIL}" style="color:#695ede">${env.SUPPORT_EMAIL}</a>.
+          <a href="mailto:${env.SUPPORT_EMAIL}" style="color:#ea580c">${env.SUPPORT_EMAIL}</a>.
         </p>
       `,
     ),

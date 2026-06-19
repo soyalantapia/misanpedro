@@ -155,7 +155,7 @@ export function DashboardPage() {
                   tickFormatter={fmtCompact}
                 />
                 <Tooltip
-                  cursor={{ fill: '#f0eefd' }}
+                  cursor={{ fill: '#fdebdd' }}
                   contentStyle={{
                     border: 'none',
                     borderRadius: 12,
@@ -163,7 +163,7 @@ export function DashboardPage() {
                     fontSize: 12,
                   }}
                 />
-                <Bar dataKey="canjes" fill="#695ede" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="canjes" fill="#ea580c" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -186,7 +186,7 @@ export function DashboardPage() {
                 >
                   {Object.entries(statusBreakdown).map(([name], i) => {
                     const COLOR_MAP: Record<string, string> = {
-                      active: '#695ede',
+                      active: '#ea580c',
                       pending: '#f59e0b',
                       suspended: '#dc2626',
                       archived: '#b2aeb1',

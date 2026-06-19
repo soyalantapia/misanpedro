@@ -69,8 +69,8 @@ async function main() {
         status: 'active',
         plan: 'founder',
         brand: {
-          primaryColor: '#695ede',
-          accentColor: '#4239a3',
+          primaryColor: '#ea580c',
+          accentColor: '#c2410c',
         },
       })
       console.log(`[migrate] App creada: ${app._id} (slug=${DEFAULT_SLUG})`)

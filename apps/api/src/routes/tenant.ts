@@ -53,7 +53,9 @@ tenantRoutes.get('/:slug/config', async (c) => {
  */
 tenantRoutes.get('/', async (c) => {
   const apps = await App.find({ status: 'active' })
-    .select('slug nombre ciudad provincia subdomain customDomain brand.logoUrl brand.primaryColor')
+    .select(
+      'slug nombre ciudad provincia subdomain customDomain moneda locale brand.logoUrl brand.primaryColor',
+    )
     .sort({ ciudad: 1 })
     .lean()
 
@@ -66,6 +68,8 @@ tenantRoutes.get('/', async (c) => {
       provincia: a.provincia,
       subdomain: a.subdomain,
       customDomain: a.customDomain,
+      moneda: a.moneda ?? 'ARS',
+      locale: a.locale ?? 'es-AR',
       logo: a.brand?.logoUrl,
       primaryColor: a.brand?.primaryColor,
     })),

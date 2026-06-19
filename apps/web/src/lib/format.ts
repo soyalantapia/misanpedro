@@ -31,9 +31,22 @@ export function formatRedeemedDate(iso: string): string {
  */
 let _money = { locale: 'es-AR', currency: 'ARS' }
 
-/** Setea el locale (BCP-47) y la moneda (ISO-4217) usados por formatMoney(). */
+/**
+ * Setea el locale (BCP-47) y la moneda (ISO-4217) usados por formatMoney().
+ * Valida construyendo un formatter de prueba: un locale o una moneda inválidos
+ * hacen que Intl.NumberFormat lance RangeError, lo que rompería el render de TODO
+ * precio en la sesión. Si no son válidos, conservamos el valor anterior (default
+ * es-AR/ARS) y avisamos, en vez de envenenar formatMoney().
+ */
 export function setMoneyLocale(locale: string, currency: string): void {
-  _money = { locale, currency }
+  try {
+    new Intl.NumberFormat(locale, { style: 'currency', currency }).format(0)
+    _money = { locale, currency }
+  } catch {
+    console.warn(
+      `[format] locale/moneda inválidos (${locale}/${currency}) — mantengo ${_money.locale}/${_money.currency}`,
+    )
+  }
 }
 
 export function formatMoney(amount: number): string {
