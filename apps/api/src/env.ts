@@ -64,6 +64,16 @@ const schema = z.object({
     .string()
     .default('false')
     .transform((v) => v === 'true'),
+
+  /**
+   * Bootstrap ONE-TIME del Owner (super-admin) en prod. La DB de prod es INTERNA
+   * de Railway → no se puede crear el owner desde local. Seteá estas dos vars en
+   * Railway: al arrancar, si no existe un Owner con ese email, lo crea (idempotente).
+   * DESPUÉS borrá OWNER_BOOTSTRAP_PASSWORD del env por seguridad.
+   */
+  OWNER_BOOTSTRAP_EMAIL: z.string().optional(),
+  OWNER_BOOTSTRAP_PASSWORD: z.string().optional(),
+  OWNER_BOOTSTRAP_NOMBRE: z.string().default('Owner'),
 })
 
 const parsed = schema.safeParse(process.env)

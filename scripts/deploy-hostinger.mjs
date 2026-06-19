@@ -71,6 +71,12 @@ const builds = [
     dist: 'apps/landing/dist',
     env: { VITE_BASE: '/comercios/', VITE_APP_URL: APP_URL, VITE_API_URL: API_URL },
   },
+  {
+    name: 'Panel Owner (apps/owner → misanpedro.com/owner/)',
+    filter: '@misanpedro/owner',
+    dist: 'apps/owner/dist',
+    env: { VITE_BASE: '/owner/', VITE_API_URL: API_URL },
+  },
 ]
 
 console.log('═══ BUILD ═══')
@@ -123,7 +129,7 @@ const targets = [
     remote: `${REMOTE_ROOT}/`,
     // no borres los subdirectorios de los otros dos frontends ni el challenge de SSL.
     // excludes ANCLADOS (/) = solo al root del transfer (public_html), no a cualquier nivel.
-    extra: '--delete --exclude=/app/ --exclude=/comercios/ --exclude=/.well-known/',
+    extra: '--delete --exclude=/app/ --exclude=/comercios/ --exclude=/owner/ --exclude=/.well-known/',
   },
   {
     name: 'PWA → /app/',
@@ -136,6 +142,12 @@ const targets = [
     dist: 'apps/landing/dist',
     remote: `${REMOTE_ROOT}/comercios/`,
     extra: `--delete --rsync-path="mkdir -p ${REMOTE_ROOT}/comercios && rsync"`,
+  },
+  {
+    name: 'Panel Owner → /owner/',
+    dist: 'apps/owner/dist',
+    remote: `${REMOTE_ROOT}/owner/`,
+    extra: `--delete --rsync-path="mkdir -p ${REMOTE_ROOT}/owner && rsync"`,
   },
 ]
 

@@ -1,0 +1,8 @@
+# SPA fallback para el panel Owner servido bajo /owner/ (BrowserRouter).
+# Cualquier deep-link que no sea un archivo/carpeta real → index.html del owner.
+RewriteEngine On
+RewriteBase /owner/
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . index.html [L]
