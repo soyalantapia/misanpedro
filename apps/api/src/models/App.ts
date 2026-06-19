@@ -83,15 +83,8 @@ const appSchema = new Schema(
       whatsapp: { type: String },
     },
 
-    /** Métricas cacheadas (actualizadas por job background, evita aggregations en cada dashboard load). */
-    cachedStats: {
-      lastUpdatedAt: { type: Date },
-      totalMerchants: { type: Number, default: 0 },
-      activeMerchants: { type: Number, default: 0 },
-      totalUsers: { type: Number, default: 0 },
-      activeCoupons: { type: Number, default: 0 },
-      redemptionsLast30Days: { type: Number, default: 0 },
-    },
+    // (cachedStats removido: las stats por ciudad se calculan EN VIVO en
+    //  GET /owner/apps. El campo cacheado nunca se actualizaba — daba 0 siempre.)
 
     /**
      * Centro geográfico del tenant — coordenadas usadas como placeholder

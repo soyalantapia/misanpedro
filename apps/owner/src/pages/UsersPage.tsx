@@ -117,8 +117,7 @@ export function UsersPage() {
               <tr>
                 <th className="px-4 py-3 text-left">Vecino</th>
                 <th className="px-4 py-3 text-left">App</th>
-                <th className="px-4 py-3 text-left">Email</th>
-                <th className="px-4 py-3 text-left">WhatsApp</th>
+                <th className="px-4 py-3 text-left">Último acceso</th>
                 <th className="px-4 py-3 text-right">Alta</th>
               </tr>
             </thead>
@@ -127,13 +126,14 @@ export function UsersPage() {
                 <tr key={u._id} className="hover:bg-neutral-50">
                   <td className="px-4 py-3">
                     <p className="font-bold text-neutral-900">{u.nombre}</p>
-                    <p className="text-xs text-neutral-500">DNI {u.dni}</p>
+                    <p className="text-xs text-neutral-500">Tel {u.telefono ?? '—'}</p>
                   </td>
                   <td className="px-4 py-3 text-xs text-neutral-600">
                     {u.appId?.nombre ?? '—'}
                   </td>
-                  <td className="px-4 py-3 text-xs text-neutral-600">{u.email}</td>
-                  <td className="px-4 py-3 text-xs text-neutral-600">{u.whatsapp}</td>
+                  <td className="px-4 py-3 text-xs text-neutral-600">
+                    {u.lastLoginAt ? fmtDate(u.lastLoginAt) : '—'}
+                  </td>
                   <td className="px-4 py-3 text-right text-xs text-neutral-500">
                     {fmtDate(u.createdAt)}
                   </td>

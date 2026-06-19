@@ -15,9 +15,10 @@ export function DnsSetupCard({
   status: 'pending' | 'active' | 'suspended' | 'archived'
 }) {
   const fullHostname = `${subdomain}.misanpedro.app`
-  // En prod este target lo da Railway/Vercel. Por ahora documentamos placeholder
-  // — el owner reemplaza con el target real una vez configurado el deploy.
-  const target = 'misanpedro-web-production.up.railway.app'
+  // El target del CNAME lo da el deploy (Railway/Vercel/Hostinger) y se inyecta por
+  // VITE_CNAME_TARGET en build. Si no está seteado mostramos un placeholder EXPLÍCITO
+  // (no un hostname que parezca real) para no mandar al operador a un destino inexistente.
+  const target = import.meta.env.VITE_CNAME_TARGET ?? '‹configurá VITE_CNAME_TARGET con tu target de deploy›'
 
   return (
     <article className="rounded-2xl bg-white p-6 ring-1 ring-neutral-200">

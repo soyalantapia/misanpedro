@@ -1,9 +1,30 @@
+import { useEffect, useState } from 'react'
 import { Settings as SettingsIcon, ShieldCheck, Mail, User } from 'lucide-react'
 import { useAuth } from '@/lib/store'
+import { owner } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
 
 export function SettingsPage() {
   const auth = useAuth()
+  // 2FA real: lo trae GET /owner/me (totpEnabled), no es un literal fijo.
+  const [twoFA, setTwoFA] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    owner
+      .me()
+      .then((r) => {
+        if (alive) setTwoFA(!!r.owner?.totpEnabled)
+      })
+      .catch(() => {
+        if (alive) setTwoFA(null)
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const twoFALabel = twoFA === null ? '—' : twoFA ? 'Activado' : 'No configurado'
 
   return (
     <div className="space-y-6">
@@ -17,7 +38,12 @@ export function SettingsPage() {
           <Field label="Nombre" value={auth.owner?.nombre} />
           <Field label="Email" value={auth.owner?.email} icon={Mail} />
           <Field label="Rol" value={auth.owner?.rol ?? 'super'} />
-          <Field label="2FA" value="Activado" icon={ShieldCheck} accent="success" />
+          <Field
+            label="2FA"
+            value={twoFALabel}
+            icon={ShieldCheck}
+            accent={twoFA ? 'success' : undefined}
+          />
         </dl>
       </div>
 

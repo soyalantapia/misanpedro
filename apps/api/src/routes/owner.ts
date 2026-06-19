@@ -344,23 +344,45 @@ ownerRoutes.get('/metrics', requireOwnerAuth, async (c) => {
 /** Listado de apps con KPIs por ciudad. */
 ownerRoutes.get('/apps', requireOwnerAuth, async (c) => {
   const apps = await App.find({}).sort({ createdAt: -1 }).lean()
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
-  // Para cada app, sumar KPIs cacheados (no hace queries lentas en tiempo real).
-  const items = apps.map((a) => ({
-    id: a._id,
-    slug: a.slug,
-    nombre: a.nombre,
-    ciudad: a.ciudad,
-    pais: a.pais,
-    moneda: a.moneda,
-    locale: a.locale,
-    subdomain: a.subdomain,
-    customDomain: a.customDomain,
-    status: a.status,
-    plan: a.plan,
-    cachedStats: a.cachedStats,
-    createdAt: a.createdAt,
-  }))
+  // Stats por ciudad calculadas EN VIVO (mismas queries que /apps/:id/metrics).
+  // Antes se leía App.cachedStats, pero ningún job lo actualizaba → siempre daba 0.
+  // Con pocas ciudades el conteo es barato; mantenemos el shape para no tocar el front.
+  const items = await Promise.all(
+    apps.map(async (a) => {
+      const [totalMerchants, activeMerchants, totalUsers, activeCoupons, redemptionsLast30Days] =
+        await Promise.all([
+          Merchant.countDocuments({ appId: a._id }),
+          Merchant.countDocuments({ appId: a._id, estado: 'activo' }),
+          User.countDocuments({ appId: a._id }),
+          Coupon.countDocuments({ appId: a._id, estado: 'activo' }),
+          Redemption.countDocuments({ appId: a._id, redeemedAt: { $gte: thirtyDaysAgo } }),
+        ])
+      return {
+        id: a._id,
+        slug: a.slug,
+        nombre: a.nombre,
+        ciudad: a.ciudad,
+        pais: a.pais,
+        moneda: a.moneda,
+        locale: a.locale,
+        subdomain: a.subdomain,
+        customDomain: a.customDomain,
+        status: a.status,
+        plan: a.plan,
+        cachedStats: {
+          totalMerchants,
+          activeMerchants,
+          totalUsers,
+          activeCoupons,
+          redemptionsLast30Days,
+          lastUpdatedAt: new Date(),
+        },
+        createdAt: a.createdAt,
+      }
+    }),
+  )
 
   return c.json({ ok: true, apps: items })
 })
