@@ -35,8 +35,11 @@ tenantRoutes.get('/:slug/config', async (c) => {
       ciudad: app.ciudad,
       provincia: app.provincia,
       pais: app.pais,
-      moneda: app.moneda,
-      locale: app.locale,
+      // Fallback ARS/es-AR: los docs sembrados antes de agregar estos campos no
+      // los tienen y lean() no aplica los defaults del schema → undefined. Igual
+      // que en la lista pública, garantizamos que siempre viajen.
+      moneda: app.moneda ?? 'ARS',
+      locale: app.locale ?? 'es-AR',
       subdomain: app.subdomain,
       customDomain: app.customDomain,
       brand: app.brand,

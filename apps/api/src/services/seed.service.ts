@@ -236,6 +236,12 @@ async function ensureSanpedroApp() {
     { slug: 'sanpedro', 'brand.primaryColor': '#695ede' },
     { $set: { 'brand.primaryColor': '#ea580c', 'brand.accentColor': '#c2410c' } },
   )
+  // Backfill de moneda/locale: el doc fue sembrado antes de existir estos campos, así
+  // que no los tiene y lean() no aplica defaults → endpoints los omitían. Self-limiting.
+  await App.updateOne(
+    { slug: 'sanpedro', moneda: { $exists: false } },
+    { $set: { moneda: 'ARS', locale: 'es-AR' } },
+  )
   const existing = await App.findOne({ slug: 'sanpedro' })
   if (existing) return existing
   return await App.create({
