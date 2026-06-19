@@ -68,7 +68,7 @@ export function NewAppPage() {
     }
     if (n === 2) {
       if (!/^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/.test(form.slug)) {
-        return 'Slug inválido (a-z, 0-9, -)'
+        return 'Slug inválido: mínimo 3 caracteres, solo a-z, 0-9 y guiones (sin guión al inicio/fin)'
       }
       if (!form.subdomain.trim()) return 'Subdomain requerido'
     }
@@ -86,6 +86,13 @@ export function NewAppPage() {
   }
 
   async function submit() {
+    // Re-validamos TODOS los pasos antes del POST: si el usuario volvió atrás y
+    // editó/borró un campo requerido, no llegamos al backend con datos inválidos.
+    const err = validateStep(1) ?? validateStep(2)
+    if (err) {
+      setError(err)
+      return
+    }
     setError(null)
     setSubmitting(true)
     try {

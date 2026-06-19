@@ -29,6 +29,14 @@ export async function connectDB(): Promise<typeof mongoose> {
       } catch (err) {
         console.error('[db] User.syncIndexes (no fatal):', (err as Error)?.message)
       }
+      // Garantizamos el índice unique de Owner.email ANTES del bootstrap, para que
+      // la creación del owner no pueda dejar duplicados si el índice aún no existía
+      // (BD nueva). Idempotente, no fatal — mismo patrón que User.syncIndexes().
+      try {
+        await Owner.syncIndexes()
+      } catch (err) {
+        console.error('[db] Owner.syncIndexes (no fatal):', (err as Error)?.message)
+      }
       // Bootstrap one-time del Owner (super-admin). Corre DENTRO de Railway, donde
       // el Mongo interno sí resuelve (no se puede crear desde local). Idempotente.
       try {

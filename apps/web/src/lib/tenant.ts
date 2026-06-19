@@ -240,7 +240,7 @@ export async function loadTenantConfig(slug: string): Promise<TenantConfig | nul
 /** Solo aceptamos HEX válido (#RGB … #RRGGBBAA). Un valor inesperado del API
  *  (string vacío, "naranja", o algo con ";") dejaría --color-brand inválida y
  *  colapsaría toda la escala accent/fin que se deriva por color-mix. */
-const isHexColor = (v?: string): v is string => !!v && /^#[0-9a-fA-F]{3,8}$/.test(v)
+export const isHexColor = (v?: string): v is string => !!v && /^#[0-9a-fA-F]{3,8}$/.test(v)
 
 function applyBrandingToDom(t: TenantConfig) {
   if (typeof document === 'undefined') return

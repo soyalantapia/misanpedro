@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { MapPin, ArrowRight, AlertCircle } from 'lucide-react'
-import { listAvailableTenants, setTenantSlug, type TenantConfig } from '@/lib/tenant'
+import { isHexColor, listAvailableTenants, setTenantSlug, type TenantConfig } from '@/lib/tenant'
 
 /** Debe coincidir con STORAGE_KEY de @/lib/tenant. Lo re-leemos para verificar
  *  que el slug efectivamente persistió antes de recargar (modo privado / storage
@@ -161,7 +161,7 @@ export function TenantSelectorPage() {
                   <span
                     className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-lg font-black text-white shadow"
                     style={{
-                      background: `linear-gradient(135deg, ${t.brand?.primaryColor ?? 'var(--color-brand)'}, ${t.brand?.accentColor ?? 'var(--color-brand-strong)'})`,
+                      background: `linear-gradient(135deg, ${isHexColor(t.brand?.primaryColor) ? t.brand?.primaryColor : 'var(--color-brand)'}, ${isHexColor(t.brand?.accentColor) ? t.brand?.accentColor : 'var(--color-brand-strong)'})`,
                     }}
                   >
                     {t.ciudad?.[0]?.toUpperCase() ?? 'C'}
