@@ -1,7 +1,7 @@
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { env } from '@/env'
-import { User, Owner } from '@/models'
+import { App, User, Owner } from '@/models'
 
 let connectingPromise: Promise<typeof mongoose> | null = null
 
@@ -44,6 +44,13 @@ export async function connectDB(): Promise<typeof mongoose> {
       } catch (err) {
         console.error('[db] bootstrapOwner (no fatal):', (err as Error)?.message)
       }
+      // Seed one-time de una ciudad vía SEED_CITY_JSON (idempotente). Sirve para
+      // crear una ciudad en prod sin loguearse al panel ni alcanzar la DB interna.
+      try {
+        await seedCityFromEnv()
+      } catch (err) {
+        console.error('[db] seedCityFromEnv (no fatal):', (err as Error)?.message)
+      }
       return m
     })
     .catch((err) => {
@@ -84,6 +91,54 @@ async function bootstrapOwner(): Promise<void> {
   console.log(
     `[bootstrap-owner] ✅ Owner creado: ${owner.email} (rol super). ` +
       `AHORA borrá OWNER_BOOTSTRAP_PASSWORD del env por seguridad.`,
+  )
+}
+
+/**
+ * Seed idempotente de UNA ciudad vía env `SEED_CITY_JSON` (objeto JSON con
+ * slug/nombre/ciudad/provincia/pais/moneda/locale/subdomain/primaryColor/accentColor).
+ * Corre DENTRO de Railway (donde el Mongo interno resuelve), para crear una ciudad en
+ * prod sin poder loguearse al panel ni alcanzar la DB desde local. Si el slug ya
+ * existe, no hace nada. Tras usarlo, borrá SEED_CITY_JSON del env.
+ */
+async function seedCityFromEnv(): Promise<void> {
+  const raw = process.env.SEED_CITY_JSON?.trim()
+  if (!raw) return
+  let data: Record<string, string>
+  try {
+    data = JSON.parse(raw)
+  } catch {
+    console.error('[seed-city] SEED_CITY_JSON no es JSON válido — skip')
+    return
+  }
+  if (!data.slug || !data.nombre || !data.ciudad) {
+    console.error('[seed-city] faltan slug/nombre/ciudad — skip')
+    return
+  }
+  const existing = await App.findOne({ slug: data.slug })
+  if (existing) {
+    console.log(`[seed-city] ya existe "${data.slug}" — skip (podés borrar SEED_CITY_JSON)`)
+    return
+  }
+  const app = await App.create({
+    slug: data.slug,
+    nombre: data.nombre,
+    ciudad: data.ciudad,
+    provincia: data.provincia ?? '',
+    pais: data.pais ?? 'Argentina',
+    moneda: data.moneda ?? 'ARS',
+    locale: data.locale ?? 'es-AR',
+    subdomain: (data.subdomain ?? `mi${data.slug}`).toLowerCase(),
+    status: 'active',
+    plan: 'founder',
+    brand: {
+      primaryColor: data.primaryColor ?? '#ea580c',
+      accentColor: data.accentColor ?? '#c2410c',
+    },
+  })
+  console.log(
+    `[seed-city] ✅ ciudad creada: ${app.nombre} (${app.slug}) · ${app.pais} · ` +
+      `${app.moneda}/${app.locale} · subdomain=${app.subdomain}. Borrá SEED_CITY_JSON del env.`,
   )
 }
 
