@@ -191,7 +191,7 @@ export function AppDetailPage() {
               </button>
             )}
             <a
-              href={`https://${app.subdomain}.misanpedro.app`}
+              href={`https://${app.subdomain}.micuidad.com`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-neutral-800"
@@ -217,7 +217,7 @@ export function AppDetailPage() {
             <span className="text-xs text-neutral-500">Plan {app.plan}</span>
           </div>
           <p className="mt-1 text-sm text-neutral-600">
-            <strong>{app.subdomain}.misanpedro.app</strong>
+            <strong>{app.subdomain}.micuidad.com</strong>
             {app.customDomain && ` · custom: ${app.customDomain}`}
           </p>
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-500">

@@ -122,7 +122,7 @@ function AppCard({ app }: { app: AppItem }) {
         <div className="min-w-0">
           <h3 className="truncate text-base font-bold text-neutral-900">{app.nombre}</h3>
           <p className="text-xs text-neutral-500">
-            {app.ciudad} · {app.subdomain}.misanpedro.app
+            {app.ciudad} · {app.subdomain}.micuidad.com
           </p>
         </div>
         <StatusBadge status={app.status} />

@@ -117,6 +117,21 @@ async function seedCityFromEnv(): Promise<void> {
   }
   const existing = await App.findOne({ slug: data.slug })
   if (existing) {
+    // Update opcional: con SEED_CITY_UPDATE=true pisamos los campos provistos
+    // (sirve para corregir datos de una ciudad ya creada, ej. color/moneda).
+    if (process.env.SEED_CITY_UPDATE === 'true') {
+      existing.set({ nombre: data.nombre, ciudad: data.ciudad })
+      if (data.provincia) existing.set('provincia', data.provincia)
+      if (data.pais) existing.set('pais', data.pais)
+      if (data.moneda) existing.set('moneda', data.moneda)
+      if (data.locale) existing.set('locale', data.locale)
+      if (data.subdomain) existing.set('subdomain', data.subdomain.toLowerCase())
+      if (data.primaryColor) existing.set('brand.primaryColor', data.primaryColor)
+      if (data.accentColor) existing.set('brand.accentColor', data.accentColor)
+      await existing.save()
+      console.log(`[seed-city] ✏️ "${data.slug}" actualizada. Borrá SEED_CITY_JSON + SEED_CITY_UPDATE.`)
+      return
+    }
     console.log(`[seed-city] ya existe "${data.slug}" — skip (podés borrar SEED_CITY_JSON)`)
     return
   }

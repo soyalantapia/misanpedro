@@ -328,11 +328,11 @@ function StepDomain({
             className="flex-1 bg-transparent py-3 pl-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
           />
           <span className="flex items-center pr-4 text-sm text-neutral-500">
-            .misanpedro.app
+            .micuidad.com
           </span>
         </div>
         <p className="mt-1.5 text-[11px] text-neutral-500">
-          La PWA del vecino va a vivir en <strong>{form.subdomain || 'subdomain'}.misanpedro.app</strong>
+          La PWA del vecino va a vivir en <strong>{form.subdomain || 'subdomain'}.micuidad.com</strong>
         </p>
       </div>
     </div>
