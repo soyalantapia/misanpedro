@@ -6,50 +6,38 @@ Meta: cada ciudad en `mi<ciudad>.micuidad.com` y owner en `administracion.micuid
 
 ## Cómo funciona
 - Cloudflare resuelve `*.micuidad.com` (DNS comodín) y termina el SSL wildcard en el borde.
-- Un **Origin Rule** reescribe el `Host`/`SNI` de todo `*.micuidad.com` → `ciudades.micuidad.com`
-  (un vhost real en Hostinger cuyo docroot = `public_html/ciudades`, donde ya está la PWA).
-- El navegador conserva el host real (`minarino.micuidad.com`) → la PWA resuelve la ciudad
-  (match por slug/subdomain, ya implementado). `administracion` se excluye del rule → sirve el Owner.
-- **El código no cambia.** Es todo DNS/SSL/Rule.
+- Un **Cloudflare Worker** (ruta `*.micuidad.com/*`) reescribe el origen de todo `*.micuidad.com`
+  → vhost `ciudades.micuidad.com` (Hostinger, docroot `public_html/ciudades`, donde está la PWA).
+  > Nota: los **Origin Rules** (Host/SNI rewrite) son **Enterprise**. El Worker es la vía FREE
+  > equivalente (free tier 100k req/día). Código en `infra/cloudflare-worker-micuidad.js`.
+- El navegador conserva el host real (`minariño.micuidad.com`) → la PWA resuelve la ciudad
+  (match por slug/subdomain, ya implementado). `administracion` y el apex se sirven tal cual.
+- **El código de la app no cambia.** Es todo DNS/SSL/Worker.
 
 ## Datos
-- IP origen Hostinger (web de subdominios): **88.222.222.42** (la que importe Cloudflare para `administracion`).
-- IP apex micuidad.com: 62.72.50.249.
+- Nameservers de Cloudflare para micuidad.com: **brynne.ns.cloudflare.com** / **norm.ns.cloudflare.com**
+- IP origen Hostinger (web de subdominios): **88.222.222.42**. Apex: 62.72.50.249.
 - Deploy de la PWA: `scripts/deploy-micuidad.mjs` (ya sube a `public_html/ciudades`).
 
-## Pasos
+## Estado
+- ✅ Cloudflare: sitio micuidad.com (FREE), DNS comodín `*`/administracion/ciudades → 88.222.222.42
+  (todos Proxied), apex → 62.72.50.249, SSL = **Full**.
+- ⏳ Worker `*.micuidad.com` (reemplaza el Origin Rule Enterprise).
+- ⏳ Hostinger: crear vhost `ciudades` + cambiar nameservers a brynne/norm.
+- ⏳ Crear "Mi Nariño" en prod (tras bootstrap owner) para que tenga datos.
 
-### 1. Hostinger — crear el vhost `ciudades` (una vez)
-Subdominio `ciudades.micuidad.com` con **document root = `public_html/ciudades`**. Le da SSL propio
-(lo usa el Origin Rule como destino). → prompt de extensión.
+## Pasos restantes
+### A. Hostinger (extensión)
+1. Crear subdominio `ciudades.micuidad.com` → **document root `public_html/ciudades`** (+ SSL).
+2. Cambiar nameservers de micuidad.com a: `brynne.ns.cloudflare.com` y `norm.ns.cloudflare.com`.
 
-### 2. Cloudflare — alta del sitio (vos, ~3 min)
-1. Cuenta free en cloudflare.com → **Add a site** → `micuidad.com` → plan **Free**.
-2. Cloudflare escanea e importa los DNS existentes. Continuar.
-3. Te muestra **2 nameservers** (`algo.ns.cloudflare.com`). **Copialos y pasámelos.**
+### B. Cloudflare (extensión)
+3. Workers & Pages → Create Worker → pegar `infra/cloudflare-worker-micuidad.js` → Deploy.
+4. Workers Routes (zona micuidad.com) → agregar ruta `*.micuidad.com/*` → ese Worker.
 
-### 3. Hostinger — cambiar nameservers a Cloudflare (después del paso 2)
-Domains → micuidad.com → Nameservers → custom → poner los 2 de Cloudflare. → prompt de extensión.
-(Propaga en minutos–pocas horas. micuidad.com es nuevo, no rompe nada de misanpedro.com.)
-
-### 4. Cloudflare — DNS + SSL + Origin Rule (una vez propagado)
-**DNS** (todos con proxy ON = nube naranja):
-- `A  micuidad.com → 62.72.50.249`
-- `A  administracion → 88.222.222.42`  (la que importó CF)
-- `A  ciudades → 88.222.222.42`
-- `A  *  → 88.222.222.42`   ← el comodín
-
-**SSL/TLS → Overview → modo `Full`.**
-
-**Rules → Origin Rules → Create rule:**
-- Expresión: `ends_with(http.host, ".micuidad.com") and http.host ne "administracion.micuidad.com"`
-- Acciones:
-  - **Host Header** → Rewrite to `ciudades.micuidad.com`
-  - **SNI** → Override to `ciudades.micuidad.com`
-
-### 5. Test
-`https://minarino.micuidad.com` (con "Mi Nariño" ya creado en el panel de prod) → muestra Mi Nariño,
-con candado válido. `administracion.micuidad.com` → Owner.
+### C. Test (cuando propaguen los nameservers, minutos–horas)
+`https://administracion.micuidad.com` → Owner. `https://<ciudad>.micuidad.com` → PWA de esa ciudad,
+con candado válido.
 
 ## De acá en más (automático)
 Creás un pueblo en el panel (nace con `subdomain = mi<slug>`) → **al instante** vive en
