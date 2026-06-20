@@ -83,7 +83,7 @@ export function ForgotPasswordPage() {
                 setEmail(e.target.value)
                 setError(null)
               }}
-              placeholder="vos@misanpedro.app"
+              placeholder="tu@email.com"
               className="w-full rounded-xl bg-neutral-50 py-2.5 pl-9 pr-3 text-sm ring-1 ring-neutral-200 focus:outline-none focus:ring-2 focus:ring-accent-500"
               aria-invalid={!!error}
               autoFocus

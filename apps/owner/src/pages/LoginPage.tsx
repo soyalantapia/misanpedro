@@ -124,7 +124,7 @@ export function LoginPage() {
             type="email"
             value={email}
             onChange={setEmail}
-            placeholder="vos@misanpedro.app"
+            placeholder="tu@email.com"
             label="Email"
             autoFocus
           />
