@@ -5,14 +5,16 @@
  *   SLUG=narino NOMBRE="Mi Nariño" CIUDAD="Nariño" \
  *   node --import tsx --env-file=.env scripts/crear-ciudad.ts
  *
- * Opcionales: PROVINCIA, PAIS, MONEDA, LOCALE, LAT, LNG (geoCenter),
+ * Opcionales: PROVINCIA, PAIS, MONEDA, LOCALE, SUBDOMAIN, LAT, LNG (geoCenter),
  *   PRIMARY_COLOR, ACCENT_COLOR.
+ *   SUBDOMAIN = label en micuidad.com (default mi<slug>). Acepta IDN: SUBDOMAIN=minariño.
  *   MONEDA = código ISO-4217 (ARS, COP, CLP, MXN, UYU, PEN, USD) · default ARS.
  *   LOCALE = BCP-47 para Intl (es-AR, es-CO, es-CL, …) · default es-AR.
  * Para crear varias, corré el comando una vez por ciudad (o un wrapper en bash).
  */
 import mongoose from 'mongoose'
 import { App } from '../src/models'
+import { toAsciiLabel } from '../src/middleware/tenant'
 
 const URI = process.env.MONGODB_URI
 if (!URI) {
@@ -33,6 +35,9 @@ const primaryColor = process.env.PRIMARY_COLOR ?? '#ea580c'
 const accentColor = process.env.ACCENT_COLOR ?? '#c2410c'
 const hasGeo = lat != null && !Number.isNaN(lat) && lng != null && !Number.isNaN(lng)
 const hasColor = !!(process.env.PRIMARY_COLOR || process.env.ACCENT_COLOR)
+// Subdominio en micuidad.com. Default = convención mi<slug>. Normalizado a ASCII
+// (punycode) para IDN como 'minariño'. SUBDOMAIN lo overridea (ej. SUBDOMAIN=minariño).
+const subdomain = toAsciiLabel(process.env.SUBDOMAIN?.trim() || `mi${slug ?? ''}`)
 
 if (!slug || !nombre || !ciudad) {
   console.error('❌ Requeridos: SLUG, NOMBRE, CIUDAD')
@@ -58,6 +63,7 @@ async function main() {
         }
       }
       if (hasGeo) existing.set({ geoCenter: { lat, lng } })
+      if (process.env.SUBDOMAIN) existing.set({ subdomain })
       await existing.save()
       console.log(
         `✏️  Actualizada "${slug}" → ${nombre} · ${ciudad}, ${pais} · moneda=${moneda} · locale=${locale}` +
@@ -79,7 +85,7 @@ async function main() {
     pais,
     moneda,
     locale,
-    subdomain: slug,
+    subdomain,
     status: 'active',
     plan: 'founder',
     brand: { primaryColor, accentColor },

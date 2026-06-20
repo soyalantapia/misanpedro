@@ -57,7 +57,17 @@ app.use(
       // Permitir requests sin origin (curl, server-to-server)
       if (!origin) return origin
       // Match exacto contra la allowlist (ambos lados ya están en formato origin)
-      return corsOriginList.includes(origin) ? origin : null
+      if (corsOriginList.includes(origin)) return origin
+      // Comodín de plataforma: cualquier subdominio de micuidad.com (cada ciudad
+      // vive en <slug>.micuidad.com + administracion.micuidad.com). No se pueden
+      // enumerar, así que permitimos por sufijo del hostname.
+      try {
+        const h = new URL(origin).hostname
+        if (h === 'micuidad.com' || h.endsWith('.micuidad.com')) return origin
+      } catch {
+        /* origin malformado → rechazar */
+      }
+      return null
     },
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     // X-Tenant-Slug es necesario porque la PWA multi-tenant envía el slug

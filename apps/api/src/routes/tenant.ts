@@ -12,7 +12,9 @@ export const tenantRoutes = new Hono()
  */
 tenantRoutes.get('/:slug/config', async (c) => {
   const slug = c.req.param('slug').toLowerCase()
-  const app = await App.findOne({ slug }).lean()
+  // La "key" puede ser el slug O el subdomain (label del host en .micuidad.com,
+  // ej. 'minarino'/'xn--minario-9za'), así el comodín *.micuidad.com resuelve solo.
+  const app = await App.findOne({ $or: [{ slug }, { subdomain: slug }] }).lean()
 
   if (!app) {
     // No reflejamos el slug en la respuesta JSON aunque el atacante ya lo

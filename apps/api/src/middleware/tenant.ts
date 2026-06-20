@@ -1,6 +1,27 @@
+import { domainToASCII } from 'node:url'
 import type { Context, MiddlewareHandler } from 'hono'
 import { Types } from 'mongoose'
 import { App, type AppDoc } from '@/models'
+
+/**
+ * Normaliza un label de subdomain a ASCII (punycode). Ej: 'minariño' →
+ * 'xn--minario-9za'. Los hosts IDN llegan ya en punycode en el header Host, así
+ * que guardamos/matcheamos siempre en esta forma. ASCII queda igual (no-op).
+ */
+export function toAsciiLabel(label: string): string {
+  const clean = label.trim().toLowerCase()
+  return domainToASCII(clean) || clean
+}
+
+/**
+ * Resuelve el tenant por una "key" que puede ser el slug O el subdomain (el
+ * primer label del host, ya en ASCII/punycode). Unifica la resolución para
+ * servir cada ciudad en <slug>.micuidad.com vía comodín DNS (sin DNS por ciudad).
+ */
+export async function findTenantByKey(key: string): Promise<AppDoc | null> {
+  const k = key.trim().toLowerCase()
+  return (await App.findOne({ $or: [{ slug: k }, { subdomain: k }] })) as AppDoc | null
+}
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -43,7 +64,7 @@ export const tenantContext: MiddlewareHandler = async (c, next) => {
     tenant = (await App.findOne({ customDomain: host })) as AppDoc | null
   }
   if (!tenant) {
-    tenant = (await App.findOne({ slug })) as AppDoc | null
+    tenant = await findTenantByKey(slug)
   }
 
   if (!tenant) {
@@ -74,7 +95,7 @@ export const tenantContext: MiddlewareHandler = async (c, next) => {
 export const optionalTenantContext: MiddlewareHandler = async (c, next) => {
   const slug = resolveTenantSlug(c)
   if (slug) {
-    const tenant = (await App.findOne({ slug })) as AppDoc | null
+    const tenant = await findTenantByKey(slug)
     if (tenant) {
       c.set('tenant', tenant)
       c.set('appId', String(tenant._id))
@@ -95,14 +116,14 @@ function resolveTenantSlug(c: Context): string | null {
     // Si el host es un dominio de PaaS (Railway, Render, Fly, etc.) o
     // localhost, NO interpretamos el primer label como slug — porque
     // `api-production-43c52.up.railway.app` no es un tenant válido.
-    const TENANT_HOST_SUFFIXES = ['.misanpedro.app']
+    const TENANT_HOST_SUFFIXES = ['.misanpedro.app', '.micuidad.com']
     const isTenantDomain = TENANT_HOST_SUFFIXES.some((s) => host.endsWith(s))
     if (isTenantDomain) {
       const parts = host.split('.')
       if (parts.length >= 3) {
         const sub = parts[0]
         // Filtrar subdominios "técnicos" que NO son tenants:
-        const RESERVED = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios'])
+        const RESERVED = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios', 'administracion'])
         if (!RESERVED.has(sub)) return sub
       }
     }

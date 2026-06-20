@@ -13,6 +13,7 @@ import {
   Subscription,
   PasswordReset,
 } from '@/models'
+import { toAsciiLabel } from '@/middleware/tenant'
 import {
   signAccessToken,
   issueRefreshToken,
@@ -426,7 +427,10 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
   const exists = await App.findOne({ slug: data.slug })
   if (exists) return c.json({ ok: false, error: 'slug already exists' }, 409)
 
-  const subdomain = data.subdomain ?? data.slug
+  // Convención de plataforma: cada ciudad vive en mi<slug>.micuidad.com. Si el
+  // owner no especifica subdomain, lo derivamos. Normalizamos a ASCII (punycode)
+  // para que IDN como 'minariño' matcheen el label del host.
+  const subdomain = toAsciiLabel(data.subdomain?.trim() || `mi${data.slug}`)
   const app = await App.create({
     slug: data.slug,
     nombre: data.nombre,

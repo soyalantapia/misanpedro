@@ -15,7 +15,15 @@ import { setMoneyLocale } from '@/lib/format'
  *   www, api, admin, owner, app, comercios
  */
 
-const RESERVED_SUBDOMAINS = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios'])
+const RESERVED_SUBDOMAINS = new Set([
+  'www',
+  'api',
+  'admin',
+  'owner',
+  'app',
+  'comercios',
+  'administracion',
+])
 
 const STORAGE_KEY = 'misanpedro.tenant.slug'
 
@@ -175,7 +183,10 @@ function detectInitialSlug(): string | null {
   //    hosts el primer label no es un tenant slug válido (sería 'soyalantapia',
   //    'vercel', etc.) y cae a la fallback.
   const host = window.location.hostname
-  const TENANT_HOSTS = ['misanpedro.app']
+  // Dominios de plataforma donde el primer label ES el tenant. micuidad.com sirve
+  // cada ciudad en <slug>.micuidad.com (comodín). location.hostname devuelve el
+  // label ya en punycode para IDN (minariño → xn--minario-9za), que el API matchea.
+  const TENANT_HOSTS = ['misanpedro.app', 'micuidad.com']
   const isTenantHost = TENANT_HOSTS.some(
     (h) => host === h || host.endsWith(`.${h}`),
   )
