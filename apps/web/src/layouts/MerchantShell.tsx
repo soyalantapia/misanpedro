@@ -266,7 +266,7 @@ export function MerchantShell() {
       <ConfirmDialog
         open={confirmLogout}
         title="¿Cerrar sesión?"
-        description="Vas a tener que volver a ingresar email + contraseña para entrar al panel."
+        description="Vas a tener que ingresar tu email y un código de acceso para volver a entrar."
         confirmLabel="Sí, cerrar sesión"
         cancelLabel="Volver"
         variant="warning"

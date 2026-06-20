@@ -24,15 +24,22 @@ async function sendReceiptForSubscription(sub: any) {
     const merchant = await Merchant.findById(sub.merchantId)
     const user = await MerchantUser.findOne({ merchantId: sub.merchantId, rol: 'admin' })
     if (!merchant || !user?.email) return
+    const tenant = await App.findById(sub.appId).lean()
+    const moneda: string = sub.currency ?? tenant?.moneda ?? 'ARS'
+    const locale: string = tenant?.locale ?? 'es-AR'
+    const appNombre: string = tenant?.nombre ?? 'Mi Ciudad'
     const periodFrom = new Date()
     const periodTo = new Date(periodFrom.getTime() + 30 * 24 * 60 * 60 * 1000)
     await sendSubscriptionReceipt({
       to: user.email,
       comercio: merchant.nombre,
       amount: sub.amountARS, // monto final, sin recargo de IVA
-      periodFrom: periodFrom.toLocaleDateString('es-AR'),
-      periodTo: periodTo.toLocaleDateString('es-AR'),
+      periodFrom: periodFrom.toLocaleDateString(locale),
+      periodTo: periodTo.toLocaleDateString(locale),
       externalReference: sub.externalReference,
+      appNombre,
+      moneda,
+      locale,
     })
   } catch (err) {
     console.error('[receipt-email]', err)
@@ -142,8 +149,8 @@ billingRoutes.post('/preapproval', requireMerchantAuth, async (c) => {
 
   // El tenant slug en el externalReference ayuda al webhook a debug.
   const tenant = c.get('tenant')
-  // Precio por ciudad (en la moneda del tenant). Fallback al default global.
-  const amount = tenant.precioMensual ?? PLAN_AMOUNT_ARS
+  // Precio por ciudad (en la moneda del tenant). 0 no es válido → fallback.
+  const amount = (tenant.precioMensual && tenant.precioMensual > 0) ? tenant.precioMensual : PLAN_AMOUNT_ARS
   const externalReference = `cup-${tenant.slug}-${merchant._id.toString()}-${randomBytes(6).toString('hex')}`
   const sub = await Subscription.create({
     appId,
@@ -151,6 +158,7 @@ billingRoutes.post('/preapproval', requireMerchantAuth, async (c) => {
     externalReference,
     plan: parsed.data.plan,
     amountARS: amount,
+    currency: tenant.moneda ?? 'ARS',
     status: 'pending',
   })
 

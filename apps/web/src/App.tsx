@@ -5,7 +5,7 @@ import { MerchantShell } from '@/layouts/MerchantShell'
 import { ToastProvider } from '@/components/Toast'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { ApiSync } from '@/components/ApiSync'
-import { useTenant } from '@/lib/tenant'
+import { useTenant, clearTenantSlug } from '@/lib/tenant'
 
 // Code-split: cada página se baja como chunk independiente para reducir el
 // bundle inicial. Antes el `index-*.js` era ~547KB → ahora baja a ~200KB
@@ -128,8 +128,36 @@ function VecinoBg() {
   )
 }
 
+/** Pantalla de error cuando el slug existe pero la ciudad no fue encontrada. */
+function TenantNotFoundScreen({ slug }: { slug: string }) {
+  return (
+    <div className="grid min-h-screen place-items-center bg-neutral-50 px-6">
+      <div className="max-w-sm text-center">
+        <p className="text-4xl">🏙️</p>
+        <h1 className="mt-4 text-xl font-bold text-neutral-900">
+          No encontramos esa ciudad
+        </h1>
+        <p className="mt-2 text-sm text-neutral-500">
+          La ciudad <span className="font-semibold">"{slug}"</span> no existe o no está disponible.
+          Probá con otra.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            clearTenantSlug()
+            window.location.reload()
+          }}
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-accent-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-accent-700 active:scale-[0.98]"
+        >
+          Ver ciudades disponibles
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
-  const { slug } = useTenant()
+  const { slug, config, loading, error } = useTenant()
 
   // Sin tenant resuelto → mostrar selector de ciudades.
   // El selector setea localStorage y recarga, cuando vuelve ya hay slug.
@@ -139,6 +167,18 @@ export default function App() {
         <Suspense fallback={<PageSuspenseFallback />}>
           <TenantSelectorPage />
         </Suspense>
+      </ToastProvider>
+    )
+  }
+
+  // Hay slug pero la config no cargó (ciudad inválida/404) → pantalla de error.
+  // Solo mostramos el error cuando ya terminó de cargar (loading=false) y
+  // efectivamente no hay config (config=null) y hay error — evitamos el flash
+  // durante la carga inicial.
+  if (!loading && !config && error) {
+    return (
+      <ToastProvider>
+        <TenantNotFoundScreen slug={slug} />
       </ToastProvider>
     )
   }

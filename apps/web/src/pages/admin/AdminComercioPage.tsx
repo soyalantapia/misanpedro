@@ -62,7 +62,7 @@ import { useCouponsByMerchant } from '@/lib/couponsStore'
 import { useApiMyCoupons } from '@/lib/apiQueries'
 import { useToast } from '@/components/Toast'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { defaultHorariosSemana, formatHorariosSemana } from '@/lib/format'
+import { defaultHorariosSemana, formatHorariosSemana, formatMoney } from '@/lib/format'
 import { cn } from '@/lib/cn'
 
 // Leaflet pesa ~150KB — lo bajamos como chunk aparte y sólo cuando el comercio
@@ -1323,6 +1323,7 @@ function SubscriptionCard({
   merchant: any
   onChanged: () => void
 }) {
+  const tenant = useTenant()
   const [confirming, setConfirming] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [paying, setPaying] = useState(false)
@@ -1384,7 +1385,7 @@ function SubscriptionCard({
       </p>
 
       <div className="mt-2 flex flex-col gap-1 text-sm">
-        <Row label="Plan" value="Estándar · $50.000 final / mes" />
+        <Row label="Plan" value={`Estándar · ${formatMoney(tenant.config?.precioMensual ?? 50000)} / mes`} />
         <Row
           label="Estado"
           value={

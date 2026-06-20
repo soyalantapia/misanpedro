@@ -22,6 +22,7 @@ const RESERVED_SUBDOMAINS = new Set([
   'owner',
   'app',
   'comercios',
+  'ciudades',
   'administracion',
 ])
 

@@ -69,7 +69,7 @@ const BASE_STYLE = `
   color: #333132; line-height: 1.55;
 `
 
-function wrap(title: string, body: string): string {
+function wrap(title: string, body: string, appNombre = 'Mi Ciudad'): string {
   return `
     <!doctype html><html><body style="background:#f9f9f9;margin:0;padding:0">
       <div style="${BASE_STYLE}">
@@ -78,7 +78,7 @@ function wrap(title: string, body: string): string {
           ${body}
           <hr style="border:none;border-top:1px solid #f6f5f6;margin:24px 0">
           <p style="font-size:12px;color:#8b8589;margin:0">
-            Mi San Pedro · descuentos en comercios adheridos<br>
+            ${escapeHtml(appNombre)} · descuentos en comercios adheridos<br>
             Soporte: <a href="mailto:${env.SUPPORT_EMAIL}" style="color:#ea580c">${env.SUPPORT_EMAIL}</a>
           </p>
         </div>
@@ -88,15 +88,15 @@ function wrap(title: string, body: string): string {
 }
 
 // Vecino — bienvenida después de registrarse
-export async function sendUserWelcome(to: string, nombre: string) {
+export async function sendUserWelcome(to: string, nombre: string, appNombre = 'Mi Ciudad') {
   return sendEmail({
     to,
-    subject: '¡Bienvenido a Mi San Pedro!',
+    subject: `¡Bienvenido a ${appNombre}!`,
     html: wrap(
       `Hola ${escapeHtml(nombre.split(' ')[0])} 👋`,
       `
-        <p>Te diste de alta en <strong>Mi San Pedro</strong>, la app de descuentos
-        en comercios adheridos de San Pedro.</p>
+        <p>Te diste de alta en <strong>${escapeHtml(appNombre)}</strong>, la app de descuentos
+        en comercios adheridos.</p>
         <p>Activá un cupón en tu comercio favorito y mostrale al cajero el QR o
         código de 6 dígitos. Listo, ahorraste.</p>
         <p style="margin-top:24px">
@@ -105,16 +105,17 @@ export async function sendUserWelcome(to: string, nombre: string) {
           </a>
         </p>
       `,
+      appNombre,
     ),
-    text: `Hola ${nombre}, te diste de alta en Mi San Pedro. Activá un cupón y mostralo al cajero. ${env.APP_URL_FRONT}`,
+    text: `Hola ${nombre}, te diste de alta en ${appNombre}. Activá un cupón y mostralo al cajero. ${env.APP_URL_FRONT}`,
   })
 }
 
 // Vecino — código OTP (reemplaza el debugCode en pantalla cuando hay Resend)
-export async function sendOtpCode(to: string, code: string) {
+export async function sendOtpCode(to: string, code: string, appNombre = 'Mi Ciudad') {
   return sendEmail({
     to,
-    subject: `Tu código Mi San Pedro: ${code}`,
+    subject: `Tu código ${appNombre}: ${code}`,
     html: wrap(
       'Tu código de acceso',
       `
@@ -122,13 +123,14 @@ export async function sendOtpCode(to: string, code: string) {
         <p>Usalo para entrar a tu cuenta. Vence en 5 minutos.</p>
         <p style="font-size:13px;color:#8b8589">Si no pediste este código, ignorá este email.</p>
       `,
+      appNombre,
     ),
-    text: `Tu código Mi San Pedro: ${code}. Vence en 5 minutos.`,
+    text: `Tu código ${appNombre}: ${code}. Vence en 5 minutos.`,
   })
 }
 
 // Comercio — código OTP para entrar al panel (login passwordless)
-export async function sendMerchantOtpCode(to: string, code: string) {
+export async function sendMerchantOtpCode(to: string, code: string, appNombre = 'Mi Ciudad') {
   return sendEmail({
     to,
     subject: `Tu código para el panel: ${code}`,
@@ -136,11 +138,12 @@ export async function sendMerchantOtpCode(to: string, code: string) {
       'Acceso al panel del comercio',
       `
         <p style="text-align:center;font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin:24px 0;color:#ea580c">${code}</p>
-        <p>Usalo para entrar al panel de tu comercio en <strong>Mi San Pedro</strong>. Vence en 5 minutos.</p>
+        <p>Usalo para entrar al panel de tu comercio en <strong>${escapeHtml(appNombre)}</strong>. Vence en 5 minutos.</p>
         <p style="font-size:13px;color:#8b8589">Si no pediste este código, ignorá este email — nadie entró a tu cuenta.</p>
       `,
+      appNombre,
     ),
-    text: `Tu código para el panel Mi San Pedro: ${code}. Vence en 5 minutos.`,
+    text: `Tu código para el panel ${appNombre}: ${code}. Vence en 5 minutos.`,
   })
 }
 
@@ -176,15 +179,15 @@ export async function sendUserRedemption(input: {
 }
 
 // Comercio — bienvenida después de signup
-export async function sendMerchantWelcome(to: string, nombre: string, comercio: string) {
+export async function sendMerchantWelcome(to: string, nombre: string, comercio: string, appNombre = 'Mi Ciudad') {
   return sendEmail({
     to,
-    subject: `¡${comercio} ya está en Mi San Pedro!`,
+    subject: `¡${comercio} ya está en ${appNombre}!`,
     html: wrap(
       `Hola ${escapeHtml(nombre.split(' ')[0])}, bienvenido 🎉`,
       `
         <p>Tu comercio <strong>${escapeHtml(comercio)}</strong> ya está adentro
-        de Mi San Pedro.</p>
+        de <strong>${escapeHtml(appNombre)}</strong>.</p>
         <p><strong>Próximos pasos:</strong></p>
         <ol>
           <li>Cargá tu primer descuento en el panel</li>
@@ -200,6 +203,7 @@ export async function sendMerchantWelcome(to: string, nombre: string, comercio: 
           Soporte por WhatsApp: <a href="https://wa.me/${env.SUPPORT_WHATSAPP.replace(/\D/g, '')}" style="color:#ea580c">${env.SUPPORT_WHATSAPP}</a>
         </p>
       `,
+      appNombre,
     ),
   })
 }
@@ -209,10 +213,12 @@ export async function sendPasswordResetLink(input: {
   to: string
   nombre: string
   link: string
+  appNombre?: string
 }) {
+  const appNombre = input.appNombre ?? 'Mi Ciudad'
   return sendEmail({
     to: input.to,
-    subject: 'Resetear tu contraseña — Mi San Pedro',
+    subject: `Resetear tu contraseña — ${appNombre}`,
     html: wrap(
       'Resetear tu contraseña',
       `
@@ -228,6 +234,7 @@ export async function sendPasswordResetLink(input: {
           contraseña actual sigue intacta.
         </p>
       `,
+      appNombre,
     ),
     text: `Para resetear tu contraseña: ${input.link} (vence en 30 min)`,
   })
@@ -241,7 +248,19 @@ export async function sendSubscriptionReceipt(input: {
   periodFrom: string
   periodTo: string
   externalReference: string
+  appNombre?: string
+  moneda?: string
+  locale?: string
 }) {
+  const appNombre = input.appNombre ?? 'Mi Ciudad'
+  const moneda = input.moneda ?? 'ARS'
+  const locale = input.locale ?? 'es-AR'
+  const amountFormatted = new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: moneda,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(input.amount)
   return sendEmail({
     to: input.to,
     subject: `Recibo de suscripción · ${input.comercio}`,
@@ -251,7 +270,7 @@ export async function sendSubscriptionReceipt(input: {
         <p>Recibimos el pago de la suscripción de <strong>${escapeHtml(input.comercio)}</strong>.</p>
         <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:16px 0">
           <p style="margin:0;font-size:13px;color:#8b8589">MONTO</p>
-          <p style="margin:4px 0 12px;font-weight:700;font-size:22px">$${input.amount.toLocaleString('es-AR')}</p>
+          <p style="margin:4px 0 12px;font-weight:700;font-size:22px">${escapeHtml(amountFormatted)}</p>
           <p style="margin:0;font-size:13px;color:#8b8589">PERÍODO</p>
           <p style="margin:4px 0 12px">${escapeHtml(input.periodFrom)} → ${escapeHtml(input.periodTo)}</p>
           <p style="margin:0;font-size:13px;color:#8b8589">REFERENCIA</p>
@@ -262,6 +281,7 @@ export async function sendSubscriptionReceipt(input: {
           <a href="mailto:${env.SUPPORT_EMAIL}" style="color:#ea580c">${env.SUPPORT_EMAIL}</a>.
         </p>
       `,
+      appNombre,
     ),
   })
 }
@@ -297,7 +317,7 @@ export async function sendOwnerNewAppNotice(input: {
     html: wrap(
       `Nueva app: ${escapeHtml(input.appNombre)}`,
       `
-        <p>Acabás de crear una app nueva en Mi San Pedro:</p>
+        <p>Acabás de crear una app nueva en Mi Ciudad:</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
           <tr>
             <td style="padding:6px 0;color:#8b8589;font-size:13px">Slug</td>
@@ -309,7 +329,7 @@ export async function sendOwnerNewAppNotice(input: {
           </tr>
           <tr>
             <td style="padding:6px 0;color:#8b8589;font-size:13px">Subdomain</td>
-            <td style="padding:6px 0;font-family:monospace;font-size:13px">${escapeHtml(input.subdomain)}.misanpedro.app</td>
+            <td style="padding:6px 0;font-family:monospace;font-size:13px">${escapeHtml(input.subdomain)}.micuidad.com</td>
           </tr>
           <tr>
             <td style="padding:6px 0;color:#8b8589;font-size:13px">Creada por</td>
@@ -318,7 +338,7 @@ export async function sendOwnerNewAppNotice(input: {
         </table>
         <h3 style="margin:24px 0 8px;font-size:15px">Próximos pasos</h3>
         <ol style="font-size:13px;color:#605a5e;padding-left:20px;line-height:1.7">
-          <li>Configurar DNS: A/CNAME para <code>${escapeHtml(input.subdomain)}.misanpedro.app</code> apuntando al deploy.</li>
+          <li>DNS: el comodín <code>*.micuidad.com</code> ya cubre todos los slugs; no hace falta entrada individual para <code>${escapeHtml(input.subdomain)}.micuidad.com</code>.</li>
           <li>(Opcional) Sumar comercios pioneros desde el panel.</li>
           <li>Compartir el subdomain con el operador local.</li>
         </ol>

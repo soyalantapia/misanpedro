@@ -77,7 +77,7 @@ ownerRoutes.post('/auth/login', async (c) => {
   if (env.OWNER_2FA_REQUIRED) {
     if (!owner.totpEnabled || !owner.totpSecret) {
       const secret = generateTotpSecret()
-      const uri = buildTotpUri({ email: owner.email, secret, issuer: 'Mi San Pedro' })
+      const uri = buildTotpUri({ email: owner.email, secret, issuer: 'Mi Ciudad' })
       owner.totpSecret = secret
       await owner.save()
       return c.json({
@@ -321,10 +321,15 @@ ownerRoutes.get('/metrics', requireOwnerAuth, async (c) => {
       Merchant.countDocuments({ estado: 'activo' }),
       User.countDocuments({}),
       Redemption.countDocuments({ redeemedAt: { $gte: thirtyDaysAgo } }),
-      Subscription.find({ status: 'authorized' }).select('amountARS'),
+      Subscription.find({ status: 'authorized' }).select('amountARS currency'),
     ])
 
-  const mrr = subs.reduce((sum, s) => sum + (s.amountARS || 0), 0)
+  const byCurrency: Record<string, number> = {}
+  for (const sub of subs) {
+    const cur = (sub.currency as string | undefined) ?? 'ARS'
+    byCurrency[cur] = (byCurrency[cur] ?? 0) + (sub.amountARS || 0)
+  }
+  const mrrARS = byCurrency['ARS'] ?? 0
 
   return c.json({
     ok: true,
@@ -333,7 +338,7 @@ ownerRoutes.get('/metrics', requireOwnerAuth, async (c) => {
       merchants: { total: merchants, active: activeMerchants },
       users: { total: users },
       redemptions: { last30Days: redemptions30d },
-      revenue: { mrrARS: mrr, currency: 'ARS' },
+      revenue: { mrrARS, currency: 'ARS', byCurrency },
     },
   })
 })
@@ -405,7 +410,7 @@ const createAppSchema = z.object({
     .string()
     .regex(/^[a-z]{2,3}(-[A-Z]{2,4})?$/, 'locale debe ser BCP-47 (ej. es-AR)')
     .default('es-AR'),
-  precioMensual: z.number().min(0).optional(), // monto mensual del comercio, en la moneda del tenant
+  precioMensual: z.number().min(1).optional(), // monto mensual del comercio, en la moneda del tenant
   subdomain: z.string().optional(),
   primaryColor: z
     .string()
@@ -425,6 +430,11 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
   }
   const data = parsed.data
   const auth = c.get('auth')
+
+  const RESERVED_SLUGS = new Set(['www','api','admin','owner','app','comercios','administracion','ciudades'])
+  if (RESERVED_SLUGS.has(data.slug)) {
+    return c.json({ ok: false, error: 'slug reservado' }, 409)
+  }
 
   const exists = await App.findOne({ slug: data.slug })
   if (exists) return c.json({ ok: false, error: 'slug already exists' }, 409)
@@ -494,7 +504,7 @@ const updateAppSchema = z.object({
     .string()
     .regex(/^[a-z]{2,3}(-[A-Z]{2,4})?$/, 'locale debe ser BCP-47 (ej. es-AR)')
     .optional(),
-  precioMensual: z.number().min(0).optional(),
+  precioMensual: z.number().min(1).optional(),
   customDomain: z.string().optional(),
   status: z.enum(['pending', 'active', 'suspended', 'archived']).optional(),
   plan: z.enum(['founder', 'standard', 'enterprise']).optional(),

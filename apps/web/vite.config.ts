@@ -19,9 +19,9 @@ export default defineConfig({
       injectRegister: false,
       devOptions: { enabled: false },
       manifest: {
-        name: 'Mi San Pedro — Descuentos vecinales',
-        short_name: 'Mi San Pedro',
-        description: 'Descuentos en comercios adheridos de San Pedro',
+        name: 'Mi Ciudad — Descuentos vecinales',
+        short_name: 'Mi Ciudad',
+        description: 'Descuentos en comercios adheridos de tu ciudad',
         theme_color: '#ea580c',
         background_color: '#fff7ed',
         display: 'standalone',

@@ -11,7 +11,7 @@ import { generateSecret, generateURI, verifySync } from 'otplib'
  * Defaults: SHA1, 6 dígitos, 30s, ±1 ventana de tolerancia (~30s drift).
  */
 
-const DEFAULT_ISSUER = 'Mi San Pedro'
+const DEFAULT_ISSUER = 'Mi Ciudad'
 
 /**
  * Genera un secret base32 para TOTP. Se guarda en Owner.totpSecret y se

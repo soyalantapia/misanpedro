@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { MapPin, ArrowRight, AlertCircle } from 'lucide-react'
-import { isHexColor, listAvailableTenants, setTenantSlug, type TenantConfig } from '@/lib/tenant'
+import { isHexColor, listAvailableTenants, setTenantSlug, SUPPORT_EMAIL, type TenantConfig } from '@/lib/tenant'
 
 /** Debe coincidir con STORAGE_KEY de @/lib/tenant. Lo re-leemos para verificar
  *  que el slug efectivamente persistió antes de recargar (modo privado / storage
@@ -109,7 +109,7 @@ export function TenantSelectorPage() {
         <header className="mb-10 text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-accent-700 shadow-sm ring-1 ring-accent-100">
             <MapPin size={12} />
-            Mi San Pedro
+            Mi Ciudad
           </div>
           <h1 className="mt-5 text-balance text-3xl font-bold leading-tight tracking-tight text-neutral-900 sm:text-4xl">
             Elegí tu ciudad
@@ -144,8 +144,8 @@ export function TenantSelectorPage() {
             <div className="text-center">
               <h3 className="font-bold text-neutral-900">Todavía no hay ciudades</h3>
               <p className="mt-1 max-w-sm text-sm text-neutral-500">
-                Estamos sumando comercios. Volvé pronto o seguinos para enterarte cuándo
-                Mi San Pedro llega a tu ciudad.
+                Estamos sumando ciudades. Volvé pronto o escribinos para enterarte cuándo
+                llegamos a tu ciudad.
               </p>
             </div>
           </div>
@@ -185,8 +185,8 @@ export function TenantSelectorPage() {
 
         <p className="mt-10 text-center text-[11px] text-neutral-400">
           ¿Tu ciudad no está? Probablemente todavía no llegamos. Escribinos a{' '}
-          <a href="mailto:hola@misanpedro.com" className="font-semibold text-accent-700 underline-offset-2 hover:underline">
-            hola@misanpedro.com
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-accent-700 underline-offset-2 hover:underline">
+            {SUPPORT_EMAIL}
           </a>
           .
         </p>

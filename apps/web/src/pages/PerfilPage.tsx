@@ -42,7 +42,7 @@ export function PerfilPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'mis-datos-misanpedro.json'
+      a.download = `mis-datos-${tenant.config?.slug ?? 'micuidad'}.json`
       a.click()
       URL.revokeObjectURL(url)
       toast.success('Datos descargados', 'Te bajamos un archivo con todos tus datos.')

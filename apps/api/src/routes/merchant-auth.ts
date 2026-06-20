@@ -151,7 +151,8 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
   }
 
   // Email bienvenida (no bloqueante)
-  sendMerchantWelcome(admin.email, admin.nombre, comercio.nombre).catch((err) =>
+  const tenantNombre = tenant?.nombre ?? 'Mi Ciudad'
+  sendMerchantWelcome(admin.email, admin.nombre, comercio.nombre, tenantNombre).catch((err) =>
     console.error('[merchant-welcome-email]', err),
   )
 
@@ -229,7 +230,8 @@ merchantAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
   })
 
   console.log(`[otp/merchant] ${email} (app ${appId}) → ${code}`)
-  sendMerchantOtpCode(email, code).catch((err) => console.error('[merchant-otp-email]', err))
+  const tenantNombreOtp = c.get('tenant')?.nombre ?? 'Mi Ciudad'
+  sendMerchantOtpCode(email, code, tenantNombreOtp).catch((err) => console.error('[merchant-otp-email]', err))
 
   const debugCode = process.env.NODE_ENV === 'development' ? { _debugCode: code } : {}
   return c.json({ ok: true, ...debugCode })

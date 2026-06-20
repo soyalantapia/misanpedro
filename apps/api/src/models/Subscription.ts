@@ -16,6 +16,7 @@ const subscriptionSchema = new Schema(
     },
     plan: { type: String, default: 'standard' },
     amountARS: { type: Number, required: true },
+    currency: { type: String, default: 'ARS' },
     cycle: { type: String, enum: ['monthly'], default: 'monthly' },
     nextBillingAt: { type: Date },
     initPoint: { type: String }, // URL de checkout de MP

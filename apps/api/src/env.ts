@@ -23,7 +23,7 @@ const schema = z.object({
   // Web Push (VAPID). Si faltan las claves, el push queda en no-op.
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
-  VAPID_SUBJECT: z.string().default('mailto:soporte@misanpedro.app'),
+  VAPID_SUBJECT: z.string().default('mailto:soporte@micuidad.com'),
 
   WHATSAPP_SESSIONS_DIR: z.string().default('/tmp/wa-sessions'),
 
@@ -31,7 +31,7 @@ const schema = z.object({
   PLAN_AMOUNT_ARS: z.coerce.number().default(50_000),
 
   /** Email de soporte (visible en TyC y panel ayuda). */
-  SUPPORT_EMAIL: z.string().default('soporte@misanpedro.app'),
+  SUPPORT_EMAIL: z.string().default('soporte@micuidad.com'),
   /** WhatsApp de soporte (link wa.me). */
   SUPPORT_WHATSAPP: z.string().default('+5493329000000'),
 

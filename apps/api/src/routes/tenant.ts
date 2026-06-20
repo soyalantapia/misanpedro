@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { App } from '@/models'
+import { toAsciiLabel } from '@/middleware/tenant'
 
 export const tenantRoutes = new Hono()
 
@@ -11,7 +12,7 @@ export const tenantRoutes = new Hono()
  * NO devuelve datos sensibles. Es público porque el subdomain ya es público.
  */
 tenantRoutes.get('/:slug/config', async (c) => {
-  const slug = c.req.param('slug').toLowerCase()
+  const slug = toAsciiLabel(c.req.param('slug').toLowerCase())
   // La "key" puede ser el slug O el subdomain (label del host en .micuidad.com,
   // ej. 'minarino'/'xn--minario-9za'), así el comodín *.micuidad.com resuelve solo.
   const app = await App.findOne({ $or: [{ slug }, { subdomain: slug }] }).lean()

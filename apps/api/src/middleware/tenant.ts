@@ -123,8 +123,8 @@ function resolveTenantSlug(c: Context): string | null {
       if (parts.length >= 3) {
         const sub = parts[0]
         // Filtrar subdominios "técnicos" que NO son tenants:
-        const RESERVED = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios', 'administracion'])
-        if (!RESERVED.has(sub)) return sub
+        const RESERVED = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios', 'administracion', 'ciudades'])
+        if (!RESERVED.has(sub)) return toAsciiLabel(sub)
       }
     }
   }

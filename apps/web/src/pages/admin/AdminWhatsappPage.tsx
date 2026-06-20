@@ -391,7 +391,7 @@ function ComposerScreen({
 
   const nombreComercio = merchantNombre || merchantId
   // Link clickeable a la app (dominio de prod), no el viejo "misanpedro.app".
-  const LINK = 'https://app.misanpedro.com'
+  const LINK = window.location.origin
 
   // BUG-FIX personalización: la plantilla que se MANDA conserva {{nombre}}
   // intacto para que el backend personalice por destinatario. Antes se
