@@ -88,6 +88,22 @@ const appSchema = new Schema(
       whatsapp: { type: String },
     },
 
+    /**
+     * Datos legales/fiscales del responsable de ESTA ciudad. Los consumen las
+     * páginas públicas de Términos y Privacidad (tenant-aware: el marco legal
+     * —ley de datos, defensa del consumidor, etiqueta del ID fiscal— se deriva
+     * de `pais`). Editable desde el panel del owner. Si un campo está vacío, la
+     * página simplemente lo omite (NO muestra placeholders ni datos de otra ciudad).
+     */
+    legal: {
+      razonSocial: { type: String }, // "Alan Naim Tapia" / "Mi Nariño S.A.S."
+      taxId: { type: String }, // CUIT (AR) / NIT (CO) / RUT, etc.
+      taxIdLabel: { type: String }, // etiqueta del ID fiscal; si vacío se deriva del país
+      condicionFiscal: { type: String }, // "Monotributista (Régimen Simplificado AFIP)"
+      domicilio: { type: String }, // domicilio legal/fiscal real
+      jurisdiccion: { type: String }, // "Tribunales Ordinarios de San Pedro, Buenos Aires"
+    },
+
     // (cachedStats removido: las stats por ciudad se calculan EN VIVO en
     //  GET /owner/apps. El campo cacheado nunca se actualizaba — daba 0 siempre.)
 

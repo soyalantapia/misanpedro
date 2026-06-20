@@ -34,6 +34,13 @@ type Draft = {
   heroEyebrow: string
   heroHeadline: string
   logoUrl: string
+  // Datos legales/fiscales del responsable de la ciudad (Términos/Privacidad).
+  razonSocial: string
+  taxId: string
+  taxIdLabel: string
+  condicionFiscal: string
+  domicilio: string
+  jurisdiccion: string
 }
 
 function draftFromApp(app: any): Draft {
@@ -52,6 +59,12 @@ function draftFromApp(app: any): Draft {
     heroEyebrow: app.brand?.heroEyebrow ?? '',
     heroHeadline: app.brand?.heroHeadline ?? '',
     logoUrl: app.brand?.logoUrl ?? '',
+    razonSocial: app.legal?.razonSocial ?? '',
+    taxId: app.legal?.taxId ?? '',
+    taxIdLabel: app.legal?.taxIdLabel ?? '',
+    condicionFiscal: app.legal?.condicionFiscal ?? '',
+    domicilio: app.legal?.domicilio ?? '',
+    jurisdiccion: app.legal?.jurisdiccion ?? '',
   }
 }
 
@@ -131,6 +144,16 @@ export function AppDetailPage() {
         heroEyebrow: draft.heroEyebrow || undefined,
         heroHeadline: draft.heroHeadline || undefined,
         logoUrl: draft.logoUrl || undefined,
+      },
+      // Datos legales/fiscales: mandamos el objeto completo (el backend reemplaza
+      // el subdoc). Campos vacíos → undefined → la página legal los omite.
+      legal: {
+        razonSocial: draft.razonSocial || undefined,
+        taxId: draft.taxId || undefined,
+        taxIdLabel: draft.taxIdLabel || undefined,
+        condicionFiscal: draft.condicionFiscal || undefined,
+        domicilio: draft.domicilio || undefined,
+        jurisdiccion: draft.jurisdiccion || undefined,
       },
     }
     try {
@@ -338,6 +361,58 @@ export function AppDetailPage() {
               value={draft.heroHeadline}
               onChange={(v) => setDraft({ ...draft, heroHeadline: v })}
               placeholder="Override del título del Hero"
+            />
+          </div>
+
+          {/* Datos legales/fiscales — alimentan las páginas de Términos y
+              Privacidad (tenant-aware, por país). Lo que dejes vacío, la página
+              lo omite (no muestra placeholders). El marco legal (ley de datos,
+              defensa del consumidor) se deriva del País de arriba. */}
+          <div className="space-y-4 border-t border-neutral-100 pt-5">
+            <div>
+              <h3 className="text-sm font-bold text-neutral-900">Datos legales / fiscales</h3>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                Aparecen en Términos y Privacidad de esta ciudad. Las leyes citadas se ajustan
+                automáticamente al país seleccionado arriba.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                label="Razón social / responsable"
+                value={draft.razonSocial}
+                onChange={(v) => setDraft({ ...draft, razonSocial: v })}
+                placeholder="Nombre del responsable o la empresa"
+              />
+              <TextField
+                label="ID fiscal (CUIT / NIT)"
+                value={draft.taxId}
+                onChange={(v) => setDraft({ ...draft, taxId: v })}
+                placeholder="20-12345678-9"
+              />
+              <TextField
+                label="Etiqueta del ID fiscal (opcional)"
+                value={draft.taxIdLabel}
+                onChange={(v) => setDraft({ ...draft, taxIdLabel: v })}
+                placeholder="CUIT / NIT — si vacío se deriva del país"
+              />
+              <TextField
+                label="Condición fiscal (opcional)"
+                value={draft.condicionFiscal}
+                onChange={(v) => setDraft({ ...draft, condicionFiscal: v })}
+                placeholder="Monotributista (Régimen Simplificado AFIP)"
+              />
+            </div>
+            <TextField
+              label="Domicilio legal / fiscal"
+              value={draft.domicilio}
+              onChange={(v) => setDraft({ ...draft, domicilio: v })}
+              placeholder="Calle 123, Ciudad, Provincia"
+            />
+            <TextField
+              label="Jurisdicción (opcional)"
+              value={draft.jurisdiccion}
+              onChange={(v) => setDraft({ ...draft, jurisdiccion: v })}
+              placeholder="Tribunales Ordinarios de San Pedro, Buenos Aires"
             />
           </div>
 

@@ -50,6 +50,9 @@ tenantRoutes.get('/:slug/config', async (c) => {
       settings: app.settings,
       status: app.status,
       geoCenter: app.geoCenter ?? { lat: -33.6797, lng: -59.6669 },
+      // Datos legales/fiscales del responsable de esta ciudad (para Términos y
+      // Privacidad tenant-aware). Público: ya figuran en las páginas legales.
+      legal: app.legal,
     },
   })
 })

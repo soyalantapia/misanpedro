@@ -166,7 +166,8 @@ billingRoutes.post('/preapproval', requireMerchantAuth, async (c) => {
     reason: `${tenant.nombre} · ${merchant.nombre}`,
     externalReference,
     payerEmail: user.email,
-    amountARS: amount,
+    amount,
+    currency: tenant.moneda ?? 'ARS',
     backUrl: `${env.APP_URL_FRONT}/#/admin/billing/return?ref=${externalReference}`,
   })
 

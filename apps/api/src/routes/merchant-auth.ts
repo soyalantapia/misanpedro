@@ -231,10 +231,27 @@ merchantAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
 
   console.log(`[otp/merchant] ${email} (app ${appId}) → ${code}`)
   const tenantNombreOtp = c.get('tenant')?.nombre ?? 'Mi Ciudad'
-  sendMerchantOtpCode(email, code, tenantNombreOtp).catch((err) => console.error('[merchant-otp-email]', err))
 
-  const debugCode = process.env.NODE_ENV === 'development' ? { _debugCode: code } : {}
-  return c.json({ ok: true, ...debugCode })
+  // En PRODUCCIÓN esperamos el envío: como el login es OTP-only, si el email no
+  // sale (ej. RESEND_API_KEY ausente) devolvemos 503 en vez de un "ok" falso que
+  // dejaría al comercio afuera sin enterarse de por qué.
+  if (process.env.NODE_ENV === 'production') {
+    const sent = await sendMerchantOtpCode(email, code, tenantNombreOtp).catch((err) => {
+      console.error('[merchant-otp-email]', err)
+      return { ok: false as const }
+    })
+    if (!sent.ok) {
+      return c.json(
+        { ok: false, error: 'No pudimos enviar el código. Probá de nuevo en unos minutos.' },
+        503,
+      )
+    }
+    return c.json({ ok: true })
+  }
+
+  // dev/test: fire-and-forget + devolvemos el código para poder testear el flujo.
+  sendMerchantOtpCode(email, code, tenantNombreOtp).catch((err) => console.error('[merchant-otp-email]', err))
+  return c.json({ ok: true, _debugCode: code })
 })
 
 merchantAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {

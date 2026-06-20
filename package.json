@@ -15,6 +15,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "deploy:web": "pnpm --filter @misanpedro/web build && pnpm --filter @misanpedro/web deploy:gh-pages",
+    "deploy:micuidad": "node scripts/deploy-micuidad.mjs",
     "deploy:hostinger": "node scripts/deploy-hostinger.mjs"
   },
   "devDependencies": {

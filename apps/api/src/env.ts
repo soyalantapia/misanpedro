@@ -15,8 +15,30 @@ const schema = z.object({
   MP_PUBLIC_KEY: z.string().optional(),
   MP_WEBHOOK_SECRET: z.string().optional(),
 
+  // ── Envío de email ──────────────────────────────────────────────────
+  // Dos transportes soportados; si SMTP_HOST está seteado se usa SMTP (preferido),
+  // si no y hay RESEND_API_KEY se usa Resend. Sin ninguno: stub en dev / 503 en prod.
+  //
+  // SMTP (ej. buzón soporte@micuidad.com en Hostinger):
+  //   SMTP_HOST=smtp.hostinger.com  SMTP_PORT=465  SMTP_SECURE=true
+  //   SMTP_USER=soporte@micuidad.com  SMTP_PASSWORD=<la del buzón>
+  // Para puerto 587 (STARTTLS) usar SMTP_SECURE=false.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().default(465),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_SECURE: z
+    .string()
+    .default('true')
+    .transform((v) => v !== 'false'),
+
   RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().default('Mi San Pedro <onboarding@resend.dev>'),
+  // Remitente por DEFECTO genérico de plataforma. Por ciudad, sendEmail() antepone
+  // el nombre del tenant como display name (ver `fromName` en email.service.ts),
+  // manteniendo la dirección base. Con SMTP, la dirección debe ser la del buzón
+  // autenticado (ej. 'Mi Ciudad <soporte@micuidad.com>'); con Resend, un dominio
+  // verificado en Resend.
+  EMAIL_FROM: z.string().default('Mi Ciudad <noreply@micuidad.com>'),
 
   SENTRY_DSN: z.string().optional(),
 

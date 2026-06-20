@@ -107,6 +107,15 @@ export type TenantConfig = {
   status: 'pending' | 'active' | 'suspended' | 'archived'
   /** Centro geográfico del tenant para coordenadas placeholder de nuevos comercios. */
   geoCenter?: { lat: number; lng: number }
+  /** Datos legales/fiscales del responsable de esta ciudad (Términos/Privacidad). */
+  legal?: {
+    razonSocial?: string
+    taxId?: string
+    taxIdLabel?: string
+    condicionFiscal?: string
+    domicilio?: string
+    jurisdiccion?: string
+  }
 }
 
 type TenantState = {

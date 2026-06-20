@@ -394,6 +394,18 @@ ownerRoutes.get('/apps', requireOwnerAuth, async (c) => {
   return c.json({ ok: true, apps: items })
 })
 
+/** Datos legales/fiscales del responsable de la ciudad (para Términos/Privacidad). */
+const legalSchema = z
+  .object({
+    razonSocial: z.string().max(200).optional(),
+    taxId: z.string().max(40).optional(),
+    taxIdLabel: z.string().max(20).optional(),
+    condicionFiscal: z.string().max(200).optional(),
+    domicilio: z.string().max(300).optional(),
+    jurisdiccion: z.string().max(300).optional(),
+  })
+  .optional()
+
 const createAppSchema = z.object({
   slug: z.string().regex(/^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/),
   nombre: z.string().min(2),
@@ -420,6 +432,7 @@ const createAppSchema = z.object({
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)
     .optional(),
+  legal: legalSchema,
 })
 
 /** Crea una nueva app (ciudad). Genera el subdomain default = slug. */
@@ -459,6 +472,7 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
       primaryColor: data.primaryColor ?? '#ea580c',
       accentColor: data.accentColor ?? '#c2410c',
     },
+    ...(data.legal ? { legal: data.legal } : {}),
   })
 
   // Notificación al owner (no bloqueante). Si Resend no está configurado,
@@ -523,6 +537,7 @@ const updateAppSchema = z.object({
       heroHeadline: z.string().optional(),
     })
     .optional(),
+  legal: legalSchema,
 })
 
 /** Actualiza una app. */

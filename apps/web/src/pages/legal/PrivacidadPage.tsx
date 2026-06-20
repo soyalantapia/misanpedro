@@ -1,10 +1,18 @@
 import { Link } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
-import { SUPPORT_EMAIL } from '@/lib/tenant'
+import { SUPPORT_EMAIL, useTenant } from '@/lib/tenant'
+import { legalFor } from '@/lib/legal'
 
 const FECHA_VIGENCIA = '10 de mayo de 2026'
 
 export function PrivacidadPage() {
+  const { config } = useTenant()
+  const appNombre = config?.nombre ?? 'la plataforma'
+  const pais = config?.pais
+  const fw = legalFor(pais)
+  const legal = config?.legal
+  const taxIdLabel = legal?.taxIdLabel || fw.taxIdLabel
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-6 pb-12 sm:px-6 sm:pt-10">
       <Link
@@ -22,24 +30,30 @@ export function PrivacidadPage() {
       <article className="prose-sm flex flex-col gap-4 text-sm leading-relaxed text-neutral-700">
         <Section title="1. Responsable del tratamiento">
           <p>
-            <strong>Responsable de la base de datos personales</strong> conforme a la{' '}
-            <strong>Ley 25.326</strong> de Protección de Datos Personales (art. 22) y su decreto
-            reglamentario:
+            <strong>Responsable de la base de datos personales</strong> conforme a{' '}
+            <strong>{fw.dataLaw}</strong>:
           </p>
           <ul>
-            <li>
-              <strong>Nombre / Razón social:</strong> Alan Naim Tapia
-            </li>
-            <li>
-              <strong>CUIT:</strong> 20-43316638-9
-            </li>
-            <li>
-              <strong>Condición fiscal:</strong> Monotributista (Régimen Simplificado AFIP)
-            </li>
-            <li>
-              <strong>Domicilio:</strong> [PENDIENTE_DOMICILIO_FISCAL] · San Pedro, Provincia de
-              Buenos Aires, Argentina
-            </li>
+            {legal?.razonSocial && (
+              <li>
+                <strong>Nombre / Razón social:</strong> {legal.razonSocial}
+              </li>
+            )}
+            {legal?.taxId && (
+              <li>
+                <strong>{taxIdLabel}:</strong> {legal.taxId}
+              </li>
+            )}
+            {legal?.condicionFiscal && (
+              <li>
+                <strong>Condición fiscal:</strong> {legal.condicionFiscal}
+              </li>
+            )}
+            {legal?.domicilio && (
+              <li>
+                <strong>Domicilio:</strong> {legal.domicilio}
+              </li>
+            )}
             <li>
               <strong>Email para ejercicio de derechos:</strong>{' '}
               <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-accent-700">
@@ -47,22 +61,23 @@ export function PrivacidadPage() {
               </a>
             </li>
             <li>
-              <strong>Marca comercial:</strong> Mi San Pedro
+              <strong>Marca comercial:</strong> {appNombre}
             </li>
           </ul>
           <p className="text-xs text-neutral-500">
-            La base de datos será registrada ante la Agencia de Acceso a la Información Pública
-            (AAIP) cuando corresponda según los umbrales reglamentarios.
+            La base de datos será registrada ante {fw.dataAuthority} cuando corresponda según la
+            normativa aplicable.
           </p>
         </Section>
 
         <Section title="2. Datos que recolectamos">
           <p>
-            <strong>De vecinos:</strong> nombre, DNI, email, número de WhatsApp, fecha de
-            nacimiento, dispositivos usados, IP, historial de cupones activados y canjeados.
+            <strong>De vecinos:</strong> nombre, documento de identidad, email, número de WhatsApp,
+            fecha de nacimiento, dispositivos usados, IP, historial de cupones activados y
+            canjeados.
           </p>
           <p>
-            <strong>De comercios:</strong> razón social, CUIT, condición fiscal, domicilio fiscal,
+            <strong>De comercios:</strong> razón social, {taxIdLabel}, condición fiscal, domicilio,
             email del responsable, datos del local (dirección, teléfono, horarios).
           </p>
         </Section>
@@ -84,8 +99,9 @@ export function PrivacidadPage() {
         <Section title="4. Quién accede a tus datos (vecinos)">
           <p>
             Cuando canjeás un cupón en un comercio, ese comercio accede a:{' '}
-            <strong>tu nombre, DNI, email, WhatsApp, fecha del canje y monto del ticket</strong>.
-            Es necesario para que pueda emitir el descuento y registrar la transacción.
+            <strong>tu nombre, documento de identidad, email, WhatsApp, fecha del canje y monto del
+            ticket</strong>
+            . Es necesario para que pueda emitir el descuento y registrar la transacción.
           </p>
           <p>
             <strong>El comercio no accede</strong> a tu actividad en otros comercios. Cada comercio
@@ -93,8 +109,10 @@ export function PrivacidadPage() {
           </p>
         </Section>
 
-        <Section title="5. Tus derechos (Ley 25.326)">
-          <p>Tenés derecho a:</p>
+        <Section title="5. Tus derechos">
+          <p>
+            Conforme a <strong>{fw.dataLaw}</strong>, tenés derecho a:
+          </p>
           <ul>
             <li>
               <strong>Acceso:</strong> ver qué datos tuyos tenemos. Podés exportarlos desde tu
@@ -119,8 +137,8 @@ export function PrivacidadPage() {
             . También podés borrar tu cuenta directamente desde el perfil del vecino.
           </p>
           <p className="text-xs text-neutral-500">
-            La AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA, Órgano de Control de la Ley 25.326,
-            tiene la atribución de atender denuncias y reclamos por incumplimiento.
+            {fw.dataAuthority} es la autoridad de control en materia de protección de datos
+            personales y atiende denuncias y reclamos por incumplimiento.
           </p>
         </Section>
 
@@ -128,7 +146,7 @@ export function PrivacidadPage() {
           <p>
             Las contraseñas se almacenan hasheadas con bcrypt (no las podemos leer). Los tokens de
             sesión están firmados criptográficamente. Las comunicaciones van por HTTPS. La base de
-            datos está alojada en MongoDB Atlas con cifrado en reposo.
+            datos está alojada con cifrado en reposo.
           </p>
         </Section>
 
@@ -145,8 +163,8 @@ export function PrivacidadPage() {
             <li>Datos de cuenta activa: mientras la cuenta exista.</li>
             <li>Después de borrar la cuenta: anonimización inmediata.</li>
             <li>
-              Registros transaccionales (canjes, facturas): 10 años, conforme obligaciones
-              fiscales argentinas.
+              Registros transaccionales (canjes, facturas): el plazo que exijan las obligaciones
+              fiscales y contables aplicables.
             </li>
           </ul>
         </Section>
@@ -154,8 +172,8 @@ export function PrivacidadPage() {
         <Section title="9. Menores">
           <p>
             La plataforma está dirigida a personas mayores de 16 años. No recolectamos
-            intencionalmente datos de menores de esa edad. Si detectamos una cuenta de un menor,
-            la eliminamos.
+            intencionalmente datos de menores de esa edad. Si detectamos una cuenta de un menor, la
+            eliminamos.
           </p>
         </Section>
 

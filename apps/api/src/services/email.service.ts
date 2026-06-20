@@ -1,14 +1,19 @@
 /**
- * Email service — usa Resend (https://resend.com) si RESEND_API_KEY está
- * configurado. Si no, modo no-op: los emails se loguean a consola.
+ * Email service — dos transportes:
+ *   1. SMTP (nodemailer) — preferido. Activá seteando SMTP_HOST/PORT/USER/PASSWORD
+ *      (+ SMTP_SECURE). Ej: buzón soporte@micuidad.com en Hostinger
+ *      (smtp.hostinger.com:465). Para deliverability, cargá SPF+DKIM del dominio
+ *      en el DNS (Cloudflare, donde vive micuidad.com).
+ *   2. Resend (HTTP) — fallback si no hay SMTP pero sí RESEND_API_KEY.
  *
- * Para activar:
- *   - Crear cuenta en resend.com y obtener API key
- *   - Verificar el dominio (DNS records)
- *   - Setear RESEND_API_KEY + EMAIL_FROM en env
+ * Sin ningún transporte: en dev se loguea a consola (stub); en PRODUCCIÓN sendEmail
+ * devuelve { ok:false } para que el login OTP surfacee un 503 (nadie queda afuera
+ * en silencio). EMAIL_FROM define el remitente; con SMTP debe ser la dirección del
+ * buzón autenticado.
  */
 
-import { env } from '@/env'
+import nodemailer, { type Transporter } from 'nodemailer'
+import { env, isProd } from '@/env'
 
 type EmailPayload = {
   to: string | string[]
@@ -19,46 +24,110 @@ type EmailPayload = {
   text?: string
   /** Reply-To override. */
   replyTo?: string
+  /** Nombre visible del remitente (display name). Permite firmar el email con el
+   *  nombre de la ciudad (ej. "Mi Nariño") manteniendo la dirección verificada
+   *  del dominio. Si no se pasa, se usa env.EMAIL_FROM tal cual. */
+  fromName?: string
+}
+
+/** Construye el header From: si hay fromName, antepone ese display name a la
+ *  dirección base extraída de env.EMAIL_FROM. */
+function buildFrom(fromName?: string): string {
+  if (!fromName) return env.EMAIL_FROM
+  const m = env.EMAIL_FROM.match(/<([^>]+)>/)
+  const addr = m ? m[1] : env.EMAIL_FROM.trim()
+  return `${fromName} <${addr}>`
+}
+
+// Transporte SMTP (nodemailer). Singleton lazy: se crea la primera vez que se
+// usa, solo si SMTP_HOST está configurado. secure=true → puerto 465 (TLS
+// implícito); secure=false → 587 (STARTTLS).
+let _smtp: Transporter | null = null
+function getSmtpTransport(): Transporter | null {
+  if (!env.SMTP_HOST) return null
+  if (!_smtp) {
+    _smtp = nodemailer.createTransport({
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT,
+      secure: env.SMTP_SECURE,
+      auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASSWORD } : undefined,
+    })
+  }
+  return _smtp
 }
 
 export async function sendEmail(payload: EmailPayload): Promise<{ ok: boolean; id?: string; error?: string }> {
-  if (!env.RESEND_API_KEY) {
-    console.log('[email/stub]', payload.subject, '→', payload.to)
-    // En dev sin Resend, log links accionables (reset password, etc.)
-    // para poder testear los flujos. Match cualquier URL del body text.
-    const links = (payload.text ?? '').match(/https?:\/\/\S+/g) ?? []
-    if (links.length > 0) {
-      links.forEach((l) => console.log('[email/stub]  link:', l))
-    }
-    return { ok: true, id: 'stub' }
-  }
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: env.EMAIL_FROM,
-        to: Array.isArray(payload.to) ? payload.to : [payload.to],
+  const from = buildFrom(payload.fromName)
+  const replyTo = payload.replyTo ?? env.SUPPORT_EMAIL
+
+  // 1) SMTP (preferido si está configurado, ej. soporte@micuidad.com en Hostinger).
+  const smtp = getSmtpTransport()
+  if (smtp) {
+    try {
+      const info = await smtp.sendMail({
+        from,
+        to: payload.to,
         subject: payload.subject,
         html: payload.html,
         text: payload.text,
-        reply_to: payload.replyTo ?? env.SUPPORT_EMAIL,
-      }),
-    })
-    if (!res.ok) {
-      const txt = await res.text()
-      console.error('[email/error]', res.status, txt)
-      return { ok: false, error: txt }
+        replyTo,
+      })
+      return { ok: true, id: info.messageId }
+    } catch (err: any) {
+      console.error('[email/smtp]', err?.message ?? err)
+      return { ok: false, error: err?.message }
     }
-    const data = (await res.json()) as { id: string }
-    return { ok: true, id: data.id }
-  } catch (err: any) {
-    console.error('[email/exception]', err)
-    return { ok: false, error: err?.message }
   }
+
+  // 2) Resend (fallback HTTP si no hay SMTP pero sí API key).
+  if (env.RESEND_API_KEY) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from,
+          to: Array.isArray(payload.to) ? payload.to : [payload.to],
+          subject: payload.subject,
+          html: payload.html,
+          text: payload.text,
+          reply_to: replyTo,
+        }),
+      })
+      if (!res.ok) {
+        const txt = await res.text()
+        console.error('[email/error]', res.status, txt)
+        return { ok: false, error: txt }
+      }
+      const data = (await res.json()) as { id: string }
+      return { ok: true, id: data.id }
+    } catch (err: any) {
+      console.error('[email/exception]', err)
+      return { ok: false, error: err?.message }
+    }
+  }
+
+  // 3) Ningún transporte configurado.
+  // En PRODUCCIÓN NO podemos mandar emails. Como el login del comercio es OTP-only,
+  // devolver "ok" acá dejaría a todos afuera SIN error visible. Fallamos ruidoso
+  // para que la ruta pueda surfacear un 503 real.
+  if (isProd) {
+    console.error(
+      '[email] sin transporte configurado (SMTP_HOST o RESEND_API_KEY) en producción — email NO enviado:',
+      payload.subject,
+    )
+    return { ok: false, error: 'email not configured' }
+  }
+  // En dev sin transporte: stub + log de links accionables (reset, OTP, etc.).
+  console.log('[email/stub]', payload.subject, '→', payload.to)
+  const links = (payload.text ?? '').match(/https?:\/\/\S+/g) ?? []
+  if (links.length > 0) {
+    links.forEach((l) => console.log('[email/stub]  link:', l))
+  }
+  return { ok: true, id: 'stub' }
 }
 
 // ─── Templates ──────────────────────────────────────────────────────────
@@ -91,6 +160,7 @@ function wrap(title: string, body: string, appNombre = 'Mi Ciudad'): string {
 export async function sendUserWelcome(to: string, nombre: string, appNombre = 'Mi Ciudad') {
   return sendEmail({
     to,
+    fromName: appNombre,
     subject: `¡Bienvenido a ${appNombre}!`,
     html: wrap(
       `Hola ${escapeHtml(nombre.split(' ')[0])} 👋`,
@@ -115,6 +185,7 @@ export async function sendUserWelcome(to: string, nombre: string, appNombre = 'M
 export async function sendOtpCode(to: string, code: string, appNombre = 'Mi Ciudad') {
   return sendEmail({
     to,
+    fromName: appNombre,
     subject: `Tu código ${appNombre}: ${code}`,
     html: wrap(
       'Tu código de acceso',
@@ -133,6 +204,7 @@ export async function sendOtpCode(to: string, code: string, appNombre = 'Mi Ciud
 export async function sendMerchantOtpCode(to: string, code: string, appNombre = 'Mi Ciudad') {
   return sendEmail({
     to,
+    fromName: appNombre,
     subject: `Tu código para el panel: ${code}`,
     html: wrap(
       'Acceso al panel del comercio',
@@ -182,6 +254,7 @@ export async function sendUserRedemption(input: {
 export async function sendMerchantWelcome(to: string, nombre: string, comercio: string, appNombre = 'Mi Ciudad') {
   return sendEmail({
     to,
+    fromName: appNombre,
     subject: `¡${comercio} ya está en ${appNombre}!`,
     html: wrap(
       `Hola ${escapeHtml(nombre.split(' ')[0])}, bienvenido 🎉`,
@@ -218,6 +291,7 @@ export async function sendPasswordResetLink(input: {
   const appNombre = input.appNombre ?? 'Mi Ciudad'
   return sendEmail({
     to: input.to,
+    fromName: appNombre,
     subject: `Resetear tu contraseña — ${appNombre}`,
     html: wrap(
       'Resetear tu contraseña',
@@ -263,6 +337,7 @@ export async function sendSubscriptionReceipt(input: {
   }).format(input.amount)
   return sendEmail({
     to: input.to,
+    fromName: appNombre,
     subject: `Recibo de suscripción · ${input.comercio}`,
     html: wrap(
       'Gracias por tu pago',

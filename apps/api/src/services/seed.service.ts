@@ -242,6 +242,25 @@ async function ensureSanpedroApp() {
     { slug: 'sanpedro', moneda: { $exists: false } },
     { $set: { moneda: 'ARS', locale: 'es-AR' } },
   )
+  // Backfill de datos legales: antes vivían hardcodeados en las páginas de Términos
+  // y Privacidad del frontend (se enviaban en el JS a cualquier visitante). Ahora las
+  // páginas son tenant-aware y los leen de App.legal. Movemos acá la identidad pública
+  // del responsable de San Pedro. El domicilio queda vacío a propósito hasta cargarlo
+  // desde el panel (la página lo omite, no muestra placeholder). Self-limiting:
+  // solo corre si el doc aún no tiene legal.razonSocial.
+  await App.updateOne(
+    { slug: 'sanpedro', 'legal.razonSocial': { $exists: false } },
+    {
+      $set: {
+        'legal.razonSocial': 'Alan Naim Tapia',
+        'legal.taxId': '20-43316638-9',
+        'legal.taxIdLabel': 'CUIT',
+        'legal.condicionFiscal': 'Monotributista (Régimen Simplificado AFIP)',
+        'legal.jurisdiccion':
+          'Tribunales Ordinarios de San Pedro, Provincia de Buenos Aires',
+      },
+    },
+  )
   const existing = await App.findOne({ slug: 'sanpedro' })
   if (existing) return existing
   return await App.create({

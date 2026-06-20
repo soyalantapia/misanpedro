@@ -17,7 +17,10 @@ type PreapprovalReq = {
   reason: string
   externalReference: string
   payerEmail: string
-  amountARS: number
+  /** Monto mensual en la `currency` del tenant (no necesariamente ARS). */
+  amount: number
+  /** Código ISO-4217 de la moneda del tenant (ARS, COP, …). */
+  currency: string
   backUrl: string
 }
 
@@ -37,6 +40,11 @@ export async function createPreapproval(input: PreapprovalReq): Promise<Preappro
       status: 'pending',
     }
   }
+  // NOTA multi-país: MercadoPago opera cada país con cuentas/credenciales
+  // separadas. Para cobrar en COP (Colombia) hace falta el access_token de la
+  // cuenta MP-Colombia del operador de esa ciudad (no alcanza con cambiar
+  // currency_id sobre una cuenta argentina). Acá ya enviamos la moneda correcta
+  // del tenant; el token por-país se resuelve al conectar cada ciudad (Fase 2).
   const body = {
     reason: input.reason,
     external_reference: input.externalReference,
@@ -45,8 +53,8 @@ export async function createPreapproval(input: PreapprovalReq): Promise<Preappro
     auto_recurring: {
       frequency: 1,
       frequency_type: 'months',
-      transaction_amount: input.amountARS,
-      currency_id: 'ARS',
+      transaction_amount: input.amount,
+      currency_id: input.currency,
     },
     status: 'pending',
   }
