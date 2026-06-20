@@ -22,6 +22,7 @@ export function NewAppPage() {
     subdomain: '',
     primaryColor: '#ea580c',
     accentColor: '#c2410c',
+    precioMensual: '',
   })
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -106,6 +107,7 @@ export function NewAppPage() {
         pais: form.pais,
         moneda: form.moneda,
         locale: form.locale,
+        precioMensual: form.precioMensual ? Number(form.precioMensual) : undefined,
         subdomain: form.subdomain,
         primaryColor: form.primaryColor,
         accentColor: form.accentColor,
@@ -296,6 +298,14 @@ function StepLocation({
           placeholder="es-AR"
         />
       </div>
+
+      <TextField
+        label={`Precio mensual del comercio (${form.moneda || 'moneda'})`}
+        hint="Lo que paga cada comercio de esta ciudad. Vacío = usa la tarifa default."
+        value={form.precioMensual}
+        onChange={(v) => update('precioMensual', v.replace(/[^0-9]/g, ''))}
+        placeholder="50000"
+      />
     </div>
   )
 }

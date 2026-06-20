@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/EmptyState'
 import type { Categoria, Coupon, Merchant } from '@/lib/types'
 import type { ApiMerchant } from '@/lib/api'
 import { apiCouponToLocal } from '@/lib/apiCoupon'
+import { useTenant } from '@/lib/tenant'
 
 type Step = 'ganas' | 'resultados'
 
@@ -124,6 +125,8 @@ export function PlanPage() {
 }
 
 function GanasStep({ onPick }: { onPick: (id: string) => void }) {
+  const tenant = useTenant()
+  const ciudad = tenant.config?.ciudad ?? 'tu ciudad'
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-col gap-1.5">
@@ -134,7 +137,7 @@ function GanasStep({ onPick }: { onPick: (id: string) => void }) {
           ¿Qué querés hacer hoy?
         </h1>
         <p className="text-sm text-fin-soft">
-          Elegí qué tenés ganas de hacer y te mostramos los cupones que te sirven en San Pedro.
+          Elegí qué tenés ganas de hacer y te mostramos los cupones que te sirven en {ciudad}.
         </p>
       </header>
 

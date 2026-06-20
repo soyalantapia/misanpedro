@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTenant } from '@/lib/tenant'
 import {
   BarChart3,
   TrendingUp,
@@ -48,6 +49,8 @@ const DIA_LABEL: Record<string, { corto: string; largo: string }> = {
 export function AdminEstadisticasPage() {
   const [periodo, setPeriodo] = useState<MerchantStatsPeriodo>('mes')
   const { data, loading, error, refetch } = useApiMerchantStatsAsesor(periodo)
+  const tenant = useTenant()
+  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">
@@ -59,7 +62,7 @@ export function AdminEstadisticasPage() {
           Cuánto te trae la app
         </h1>
         <p className="text-sm text-ink-soft">
-          La plata y la gente que Mi San Pedro le acerca a tu comercio, y qué conviene hacer.
+          La plata y la gente que {appName} le acerca a tu comercio, y qué conviene hacer.
         </p>
       </header>
 

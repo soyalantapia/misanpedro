@@ -42,6 +42,7 @@ tenantRoutes.get('/:slug/config', async (c) => {
       // que en la lista pública, garantizamos que siempre viajen.
       moneda: app.moneda ?? 'ARS',
       locale: app.locale ?? 'es-AR',
+      precioMensual: app.precioMensual,
       subdomain: app.subdomain,
       customDomain: app.customDomain,
       brand: app.brand,

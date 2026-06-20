@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, CheckCircle2 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
+import { useTenant } from '@/lib/tenant'
 import { confirmRedemption } from '@/lib/merchantQueries'
 import { useActivation, useUserById } from '@/lib/stores'
 import { useCoupon } from '@/lib/couponsStore'
@@ -18,6 +19,8 @@ export function AdminConfirmarCanjePage() {
   const localUser = useUserById(localActivation?.userId)
   const apiCached = activationId ? readCachedValidation(activationId) : null
   const { session } = useMerchantSession()
+  const tenant = useTenant()
+  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
   const navigate = useNavigate()
   const toast = useToast()
   const [monto, setMonto] = useState('')
@@ -159,7 +162,7 @@ export function AdminConfirmarCanjePage() {
         <div className="text-center">
           <p className="text-base font-bold text-ink">{customerName}</p>
           <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-faint">
-            Cliente Mi San Pedro
+            Cliente {appName}
           </p>
         </div>
       </div>

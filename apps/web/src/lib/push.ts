@@ -1,4 +1,4 @@
-import { getTenantSnapshot } from './tenant'
+import { getTenantSnapshot, appName } from './tenant'
 
 /**
  * Web Push del vecino. El SW (registrado en prod desde main.tsx) trae los
@@ -52,7 +52,7 @@ export async function subscribePush(categories: string[]): Promise<{ ok: boolean
   if (!reg) {
     return {
       ok: false,
-      error: 'Las notificaciones funcionan en la app instalada. Instalá Mi San Pedro desde el menú del navegador y volvé a intentar.',
+      error: `Las notificaciones funcionan en la app instalada. Instalá ${appName()} desde el menú del navegador y volvé a intentar.`,
     }
   }
   const vapid = await fetch(`${BASE}/push/vapid-public`, { headers: headers() })

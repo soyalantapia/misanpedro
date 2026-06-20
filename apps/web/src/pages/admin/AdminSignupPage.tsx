@@ -119,7 +119,8 @@ export function AdminSignupPage() {
   const mapCenter = tenant.config?.geoCenter ?? SANPEDRO_CENTER
   const cityHint =
     [tenant.config?.ciudad, tenant.config?.provincia].filter(Boolean).join(', ') ||
-    'San Pedro, Buenos Aires'
+    tenant.config?.ciudad ||
+    'tu ciudad'
   const [searchParams] = useSearchParams()
   const refCode = searchParams.get('ref')?.trim() || undefined
 
@@ -324,7 +325,7 @@ export function AdminSignupPage() {
                   autoComplete="street-address"
                   value={form.direccion}
                   onChange={(e) => update('direccion', e.target.value)}
-                  placeholder="Mitre 1247, San Pedro"
+                  placeholder={`Mitre 1247, ${tenant.config?.ciudad ?? 'tu ciudad'}`}
                   className={inputCls}
                 />
               }

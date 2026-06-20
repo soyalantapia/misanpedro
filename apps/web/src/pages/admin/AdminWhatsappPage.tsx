@@ -27,6 +27,7 @@ import {
   useApiMerchantClientes,
 } from '@/lib/apiQueries'
 import { useWhatsappStream } from '@/lib/useWhatsappStream'
+import { useTenant } from '@/lib/tenant'
 
 const MAX_PER_MONTH = 4
 
@@ -43,23 +44,25 @@ function formatVigenciaDate(iso: string): string {
   return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
 }
 
-const TEMPLATES = [
-  {
-    id: 'tpl-promo',
-    name: 'Nueva promoción',
-    body: '¡Hola {{nombre}}! En {{comercio}} lanzamos un nuevo descuento del {{porcentaje}}% válido hasta el {{vigencia}}. Activá tu cupón y vení a vernos. {{link}}',
-  },
-  {
-    id: 'tpl-recordatorio',
-    name: 'Recordatorio de descuento',
-    body: 'Hola {{nombre}}, te queda hasta el {{vigencia}} para usar tu descuento del {{porcentaje}}% en {{comercio}}. ¡No te lo pierdas! {{link}}',
-  },
-  {
-    id: 'tpl-evento',
-    name: 'Invitación a evento',
-    body: '{{nombre}}, este {{vigencia}} hacemos evento especial en {{comercio}} con {{porcentaje}}% off para clientes de Mi San Pedro. Te esperamos. {{link}}',
-  },
-] as const
+function getTemplates(currentAppName: string) {
+  return [
+    {
+      id: 'tpl-promo',
+      name: 'Nueva promoción',
+      body: '¡Hola {{nombre}}! En {{comercio}} lanzamos un nuevo descuento del {{porcentaje}}% válido hasta el {{vigencia}}. Activá tu cupón y vení a vernos. {{link}}',
+    },
+    {
+      id: 'tpl-recordatorio',
+      name: 'Recordatorio de descuento',
+      body: 'Hola {{nombre}}, te queda hasta el {{vigencia}} para usar tu descuento del {{porcentaje}}% en {{comercio}}. ¡No te lo pierdas! {{link}}',
+    },
+    {
+      id: 'tpl-evento',
+      name: 'Invitación a evento',
+      body: `{{nombre}}, este {{vigencia}} hacemos evento especial en {{comercio}} con {{porcentaje}}% off para clientes de ${currentAppName}. Te esperamos. {{link}}`,
+    },
+  ] as const
+}
 
 const AUDIENCIAS = [
   { id: 'todos', label: 'Todos mis clientes', desc: 'Vecinos que canjearon al menos una vez' },
@@ -316,6 +319,10 @@ function ComposerScreen({
   merchantNombre: string
   onDisconnected: () => void
 }) {
+  const tenant = useTenant()
+  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const TEMPLATES = getTemplates(appName)
+
   // BUG-FIX: la audiencia se alimenta del backend real (GET /redemptions/clientes,
   // misma fuente que AdminClientesPage), NO del store demo local. En prod el
   // store local queda en ~0 o con datos stale.

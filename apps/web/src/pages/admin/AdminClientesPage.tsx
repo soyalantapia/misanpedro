@@ -13,6 +13,7 @@ import {
   RotateCw,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
+import { useTenant } from '@/lib/tenant'
 import { useClientsForMerchant } from '@/lib/merchantQueries'
 import { formatRedeemedDate, formatMoney } from '@/lib/format'
 import { useToast } from '@/components/Toast'
@@ -355,6 +356,8 @@ function LoadingState() {
 }
 
 function LockedState() {
+  const tenant = useTenant()
+  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-md flex-col items-center gap-5 px-4 pt-12 pb-8 text-center sm:px-6 sm:pt-16">
       {/* N8: chip ARRIBA del candado para seguir la convención visual del
@@ -368,7 +371,7 @@ function LockedState() {
       </div>
       <div>
         <h1 className="text-2xl font-bold leading-tight tracking-tight text-ink sm:text-3xl">
-          Acá vas a ver a tus clientes de Mi San Pedro
+          Acá vas a ver a tus clientes de {appName}
         </h1>
         <p className="mt-2 text-sm text-ink-soft">
           Esta sección se desbloquea cuando valides tu primer descuento. Cada cliente que canjee en

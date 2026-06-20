@@ -30,10 +30,12 @@ const STORAGE_KEY = 'misanpedro.tenant.slug'
 /**
  * Email de soporte mostrado en footers y CTAs de ayuda.
  * Se puede sobrescribir con VITE_SUPPORT_EMAIL en build time.
- * Default: `soporte@misanpedro.app` (marca productiva del proyecto).
+ * Default genérico de plataforma: `soporte@micuidad.com`. Para detectar DE QUÉ
+ * CIUDAD viene un mensaje, el asunto del mailto lleva `[<nombre del tenant>]`
+ * (ver getSupportLink). Así un solo buzón recibe todo, etiquetado por ciudad.
  */
 export const SUPPORT_EMAIL =
-  (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined) ?? 'soporte@misanpedro.app'
+  (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined) ?? 'soporte@micuidad.com'
 
 /** Número placeholder de soporte — NO es real. Si el env no se setea, el link
  *  de WhatsApp caería en este número muerto, así que lo detectamos para hacer
@@ -53,8 +55,10 @@ const SUPPORT_WHATSAPP_DIGITS = (
  */
 export function getSupportLink(
   whatsappMessage: string,
-  emailSubject = 'Soporte Mi San Pedro',
+  emailSubject = 'Soporte',
 ): { href: string; label: string; isWhatsapp: boolean } {
+  // Etiquetamos el asunto con la ciudad activa para poder detectar el origen.
+  const taggedSubject = `[${appName()}] ${emailSubject}`
   const hasWhatsapp =
     SUPPORT_WHATSAPP_DIGITS.length > 0 &&
     SUPPORT_WHATSAPP_DIGITS !== SUPPORT_WHATSAPP_PLACEHOLDER
@@ -66,7 +70,7 @@ export function getSupportLink(
     }
   }
   return {
-    href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(emailSubject)}`,
+    href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(taggedSubject)}`,
     label: 'Soporte por email',
     isWhatsapp: false,
   }
@@ -83,6 +87,8 @@ export type TenantConfig = {
   moneda?: string
   /** Locale BCP-47 para Intl (moneda/números/fechas). Ej: "es-AR","es-CO". Default "es-AR". */
   locale?: string
+  /** Precio mensual del comercio en esta ciudad (en `moneda`). Per-city. */
+  precioMensual?: number
   subdomain: string
   customDomain?: string
   brand: {
@@ -129,6 +135,17 @@ function setState(next: Partial<TenantState>) {
 
 export function getTenantSnapshot() {
   return state
+}
+
+/** Nombre del tenant activo (ej. "Mi Nariño"). Fallback "Mi San Pedro". Para usar
+ *  en módulos/handlers/defaults; en componentes preferir useTenant() (reactivo). */
+export function appName(): string {
+  return getTenantSnapshot().config?.nombre ?? 'Mi San Pedro'
+}
+
+/** Ciudad del tenant activo (ej. "Pasto"). Fallback "tu ciudad". */
+export function cityName(): string {
+  return getTenantSnapshot().config?.ciudad ?? 'tu ciudad'
 }
 
 export function useTenant() {

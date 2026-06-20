@@ -17,6 +17,7 @@ import type { ApiMerchant } from '@/lib/api'
 import { apiCouponToLocal } from '@/lib/apiCoupon'
 import { SavingsWallet } from '@/components/features/SavingsWallet'
 import { OCASIONES } from '@/lib/ocasiones'
+import { useTenant } from '@/lib/tenant'
 
 /** Timestamp (ms) embebido en un ObjectId de Mongo — para ordenar "más nuevos". */
 function objectIdTime(id: string): number {
@@ -49,6 +50,8 @@ function apiMerchantToLocal(m: ApiMerchant): Merchant {
 export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'locales' }) {
   // La vista la define la ruta: "/" = cupones, "/locales" = locales.
   const view: View = mode === 'locales' ? 'local' : 'descuento'
+  const tenant = useTenant()
+  const ciudad = tenant.config?.ciudad ?? 'tu ciudad'
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
   const [categoria, setCategoria] = useState<Categoria | null>(null)
@@ -227,7 +230,7 @@ export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'local
       {mode === 'locales' && (
         <header className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-fin-ink">Locales</h1>
-          <p className="text-sm text-fin-soft">Comercios adheridos de San Pedro.</p>
+          <p className="text-sm text-fin-soft">Comercios adheridos de {ciudad}.</p>
         </header>
       )}
 

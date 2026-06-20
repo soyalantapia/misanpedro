@@ -5,6 +5,7 @@ import { tokens } from '@/lib/api'
 import { computeClub, PREMIO_DEL_MES } from '@/lib/club'
 import { Button } from '@/components/ui'
 import { formatMoney } from '@/lib/format'
+import { useTenant } from '@/lib/tenant'
 
 /**
  * EL CLUB — niveles MENSUALES del vecino (Bronce/Plata/Oro) en PerfilPage.
@@ -17,6 +18,8 @@ import { formatMoney } from '@/lib/format'
 
 export function ClubCard() {
   const navigate = useNavigate()
+  const tenant = useTenant()
+  const ciudad = tenant.config?.ciudad ?? 'tu ciudad'
   const loggedIn = !!(tokens.get('user').access || tokens.get('user').refresh)
   const { data, loading } = useApiMyActivations('canjeado', loggedIn)
 
@@ -36,7 +39,7 @@ export function ClubCard() {
     <section className="overflow-hidden rounded-3xl bg-fin-surface p-5 ring-1 ring-fin-line shadow-fin-card">
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-bold uppercase tracking-widest text-fin-lime">El Club</p>
-        <span className="text-[11px] font-semibold text-fin-faint">Socios de San Pedro</span>
+        <span className="text-[11px] font-semibold text-fin-faint">Socios de {ciudad}</span>
       </div>
 
       {/* Nivel del mes */}

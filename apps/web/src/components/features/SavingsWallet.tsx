@@ -3,6 +3,7 @@ import { ArrowUpRight, Flame, Sparkles, TicketCheck } from 'lucide-react'
 import { useApiMyActivations } from '@/lib/apiQueries'
 import { tokens } from '@/lib/api'
 import { formatMoney, formatMoneyParts } from '@/lib/format'
+import { useTenant } from '@/lib/tenant'
 
 function tier(total: number): { label: string; next: number | null } {
   if (total >= 50000) return { label: 'Leyenda del barrio', next: null }
@@ -75,6 +76,8 @@ function SavingsCta() {
 }
 
 export function SavingsWallet() {
+  const tenant = useTenant()
+  const ciudad = tenant.config?.ciudad ?? 'tu ciudad'
   const loggedIn = !!(tokens.get('user').access || tokens.get('user').refresh)
   const { data } = useApiMyActivations('canjeado', loggedIn)
 
@@ -107,7 +110,7 @@ export function SavingsWallet() {
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-fin-lime">
-              Ahorrado en San Pedro
+              Ahorrado en {ciudad}
             </p>
             <p className="animate-count-pop mt-1 flex items-baseline gap-1 font-black tabular-nums text-fin-ink">
               <span className="text-2xl text-fin-soft">{heroMoney.symbol}</span>

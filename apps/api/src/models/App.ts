@@ -76,6 +76,11 @@ const appSchema = new Schema(
       default: 'founder',
     },
 
+    /** Precio mensual que paga cada comercio de ESTA ciudad, en su `moneda`.
+     *  Per-city (ej. Nariño más caro que San Pedro). Si no se setea, el billing
+     *  cae al default global (env.PLAN_AMOUNT_ARS). */
+    precioMensual: { type: Number, min: 0 },
+
     /** Datos comerciales del operador local (vos, o un partner regional). */
     operator: {
       nombre: { type: String },

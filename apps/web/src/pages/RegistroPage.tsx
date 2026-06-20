@@ -5,6 +5,7 @@ import { activationActions, userActions } from '@/lib/stores'
 import { useToast } from '@/components/Toast'
 import { api, userApi, ApiError } from '@/lib/api'
 import { purgeDemoDataForApiUser } from '@/lib/demoSeeder'
+import { useTenant } from '@/lib/tenant'
 
 type Errors = { nombre?: string; telefono?: string; acceptedTc?: string }
 
@@ -15,6 +16,8 @@ type Errors = { nombre?: string; telefono?: string; acceptedTc?: string }
  * la cuenta y el ahorro. La sesión es permanente (no hay "Salir").
  */
 export function RegistroPage() {
+  const tenant = useTenant()
+  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [acceptedTc, setAcceptedTc] = useState(false)
@@ -173,7 +176,7 @@ export function RegistroPage() {
             >
               política de privacidad
             </Link>{' '}
-            de Mi San Pedro. Mis datos quedan protegidos por la Ley 25.326.
+            de {appName}. Mis datos quedan protegidos por la Ley 25.326.
           </span>
         </label>
         {errors.acceptedTc && (

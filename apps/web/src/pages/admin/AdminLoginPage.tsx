@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Store,
-  ShieldCheck,
   ArrowRight,
   ArrowLeft,
   ScanLine,
@@ -14,9 +13,13 @@ import {
   KeyRound,
 } from 'lucide-react'
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
+import { useTenant } from '@/lib/tenant'
 
 export function AdminLoginPage() {
   const { session } = useMerchantSession()
+  const tenant = useTenant()
+  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const ciudad = tenant.config?.ciudad ?? 'tu ciudad'
   const [step, setStep] = useState<'email' | 'code'>('email')
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -110,7 +113,7 @@ export function AdminLoginPage() {
               <Store size={18} className="text-on-brand" />
             </div>
             <div>
-              <p className="text-sm font-bold leading-tight text-on-brand">Mi San Pedro</p>
+              <p className="text-sm font-bold leading-tight text-on-brand">{appName}</p>
               <p className="text-[10px] font-medium uppercase tracking-widest text-on-brand/60">
                 Panel del comercio
               </p>
@@ -119,7 +122,7 @@ export function AdminLoginPage() {
         </header>
 
         {/* Hero */}
-        <section className="flex flex-col gap-6 pt-12 sm:pt-16 lg:flex-1 lg:pt-0">
+        <section className="flex flex-col gap-6 pt-20 sm:pt-24 lg:flex-1 lg:pt-0">
           <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-surface/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-on-brand/90 ring-1 ring-white/15 backdrop-blur">
             <Store size={12} /> Para comerciantes adheridos
           </div>
@@ -127,7 +130,7 @@ export function AdminLoginPage() {
           <h1 className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
             Tu comercio,{' '}
             <span className="bg-gradient-to-br from-on-brand via-brand-soft to-on-brand bg-clip-text text-transparent">
-              conectado con todo San Pedro
+              conectado con todo {ciudad}
             </span>
           </h1>
 
@@ -155,22 +158,7 @@ export function AdminLoginPage() {
             </Bullet>
           </ul>
 
-          <div className="hidden pt-4 lg:block">
-            <p className="text-[11px] font-medium uppercase tracking-widest text-on-brand/40">
-              Plan estándar
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-surface/5 px-3 py-1 text-xs font-medium text-on-brand/70 ring-1 ring-on-brand/10">
-                $50.000 final / mes · sin permanencia
-              </span>
-              <span className="rounded-full bg-surface/5 px-3 py-1 text-xs font-medium text-on-brand/70 ring-1 ring-on-brand/10">
-                10 días de arrepentimiento
-              </span>
-              <span className="rounded-full bg-surface/5 px-3 py-1 text-xs font-medium text-on-brand/70 ring-1 ring-on-brand/10">
-                Factura C (monotributo)
-              </span>
-            </div>
-          </div>
+          {/* (bloque de precio removido — la tarifa ahora es por ciudad) */}
         </section>
 
         {/* Form */}
@@ -304,7 +292,7 @@ export function AdminLoginPage() {
                 <p className="text-sm font-bold text-ink">Registrar mi comercio</p>
                 <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-ink-soft">
                   <CreditCard size={10} className="shrink-0" />
-                  Plan estándar · $50.000 final / mes · sin permanencia
+                  Alta en minutos · sin permanencia
                 </p>
               </div>
               <ArrowRight
@@ -314,9 +302,6 @@ export function AdminLoginPage() {
             </Link>
           </div>
 
-          <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-on-brand/60">
-            <ShieldCheck size={12} /> Cumplimiento Ley 25.326 · Tus datos protegidos
-          </p>
         </section>
       </div>
 

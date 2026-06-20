@@ -142,21 +142,23 @@ billingRoutes.post('/preapproval', requireMerchantAuth, async (c) => {
 
   // El tenant slug en el externalReference ayuda al webhook a debug.
   const tenant = c.get('tenant')
+  // Precio por ciudad (en la moneda del tenant). Fallback al default global.
+  const amount = tenant.precioMensual ?? PLAN_AMOUNT_ARS
   const externalReference = `cup-${tenant.slug}-${merchant._id.toString()}-${randomBytes(6).toString('hex')}`
   const sub = await Subscription.create({
     appId,
     merchantId: merchant._id,
     externalReference,
     plan: parsed.data.plan,
-    amountARS: PLAN_AMOUNT_ARS,
+    amountARS: amount,
     status: 'pending',
   })
 
   const preapproval = await createPreapproval({
-    reason: `Mi San Pedro · ${merchant.nombre}`,
+    reason: `${tenant.nombre} · ${merchant.nombre}`,
     externalReference,
     payerEmail: user.email,
-    amountARS: PLAN_AMOUNT_ARS,
+    amountARS: amount,
     backUrl: `${env.APP_URL_FRONT}/#/admin/billing/return?ref=${externalReference}`,
   })
 

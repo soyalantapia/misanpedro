@@ -18,6 +18,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
+import { useTenant } from '@/lib/tenant'
 import { useClientForMerchant } from '@/lib/merchantQueries'
 import { useCoupons } from '@/lib/couponsStore'
 import { formatMoney, formatRedeemedDate, formatBirthdate } from '@/lib/format'
@@ -34,6 +35,8 @@ import type { Activation } from '@/lib/types'
 export function AdminClienteDetailPage() {
   const { userId } = useParams<{ userId: string }>()
   const { session } = useMerchantSession()
+  const tenant = useTenant()
+  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
   const merchantId = session?.merchantId ?? ''
   const localClient = useClientForMerchant(merchantId, userId)
   const localCoupons = useCoupons()
@@ -177,7 +180,7 @@ export function AdminClienteDetailPage() {
             {user.nombre}
           </h1>
           <p className="text-xs text-ink-soft">
-            Cliente Mi San Pedro · desde {formatRedeemedDate(firstRedeemedAt)}
+            Cliente {appName} · desde {formatRedeemedDate(firstRedeemedAt)}
           </p>
         </div>
       </header>

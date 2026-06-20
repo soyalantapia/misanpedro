@@ -368,6 +368,7 @@ ownerRoutes.get('/apps', requireOwnerAuth, async (c) => {
         pais: a.pais,
         moneda: a.moneda,
         locale: a.locale,
+        precioMensual: a.precioMensual,
         subdomain: a.subdomain,
         customDomain: a.customDomain,
         status: a.status,
@@ -404,6 +405,7 @@ const createAppSchema = z.object({
     .string()
     .regex(/^[a-z]{2,3}(-[A-Z]{2,4})?$/, 'locale debe ser BCP-47 (ej. es-AR)')
     .default('es-AR'),
+  precioMensual: z.number().min(0).optional(), // monto mensual del comercio, en la moneda del tenant
   subdomain: z.string().optional(),
   primaryColor: z
     .string()
@@ -439,6 +441,7 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
     pais: data.pais,
     moneda: data.moneda,
     locale: data.locale,
+    precioMensual: data.precioMensual,
     subdomain,
     status: 'active',
     plan: 'founder',
@@ -491,6 +494,7 @@ const updateAppSchema = z.object({
     .string()
     .regex(/^[a-z]{2,3}(-[A-Z]{2,4})?$/, 'locale debe ser BCP-47 (ej. es-AR)')
     .optional(),
+  precioMensual: z.number().min(0).optional(),
   customDomain: z.string().optional(),
   status: z.enum(['pending', 'active', 'suspended', 'archived']).optional(),
   plan: z.enum(['founder', 'standard', 'enterprise']).optional(),

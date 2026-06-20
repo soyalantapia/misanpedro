@@ -17,17 +17,11 @@ import {
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { cn } from '@/lib/cn'
-import { getSupportLink } from '@/lib/tenant'
+import { getSupportLink, appName } from '@/lib/tenant'
 import { NotificationsBell } from '@/components/NotificationsBell'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useState } from 'react'
 
-// C3/V1: soporte con fallback a email si el WhatsApp es placeholder o no está
-// seteado (helper compartido con PerfilPage del vecino).
-const SUPPORT = getSupportLink(
-  'Hola, soy comercio adherido a Mi San Pedro y necesito ayuda.',
-  'Soporte comercio Mi San Pedro',
-)
 
 // F13 glosario: del lado del comercio usamos "Descuentos" (lo que crea).
 // "Cupones" queda reservado para el lado del vecino (lo que activa).
@@ -58,6 +52,14 @@ export function MerchantShell() {
   // arriba (antes de los returns condicionales de abajo) para no violar las
   // Rules of Hooks de React — C1 audit v5.
   const [confirmLogout, setConfirmLogout] = useState(false)
+
+  // C3/V1: soporte con fallback a email si el WhatsApp es placeholder o no está
+  // seteado (helper compartido con PerfilPage del vecino). Construido en runtime
+  // para que use el nombre del tenant activo (multi-ciudad).
+  const SUPPORT = getSupportLink(
+    `Hola, soy comercio adherido a ${appName()} y necesito ayuda.`,
+    `Soporte comercio ${appName()}`,
+  )
 
   // Si en cualquier momento se pierde la sesión (refresh token falló, etc.),
   // el cliente HTTP dispara `msp:session-expired`. Limpiamos sesión local y

@@ -218,6 +218,7 @@ export const owner = {
     pais?: string
     moneda?: string
     locale?: string
+    precioMensual?: number
     subdomain?: string
     primaryColor?: string
     accentColor?: string

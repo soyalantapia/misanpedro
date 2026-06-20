@@ -26,6 +26,7 @@ type Draft = {
   pais: string
   moneda: string
   locale: string
+  precioMensual: string
   status: 'pending' | 'active' | 'suspended' | 'archived'
   customDomain: string
   primaryColor: string
@@ -43,6 +44,7 @@ function draftFromApp(app: any): Draft {
     pais: app.pais ?? PAIS_DEFAULT.nombre,
     moneda: app.moneda ?? PAIS_DEFAULT.moneda,
     locale: app.locale ?? PAIS_DEFAULT.locale,
+    precioMensual: app.precioMensual != null ? String(app.precioMensual) : '',
     status: app.status ?? 'pending',
     customDomain: app.customDomain ?? '',
     primaryColor: app.brand?.primaryColor ?? '#ea580c',
@@ -120,6 +122,7 @@ export function AppDetailPage() {
       pais: draft.pais || undefined,
       moneda: draft.moneda || undefined,
       locale: draft.locale || undefined,
+      precioMensual: draft.precioMensual ? Number(draft.precioMensual) : undefined,
       status: draft.status,
       customDomain: draft.customDomain || undefined,
       brand: {
@@ -310,6 +313,13 @@ export function AppDetailPage() {
               placeholder="es-AR"
             />
           </div>
+
+          <TextField
+            label={`Precio mensual del comercio (${draft.moneda || 'moneda'})`}
+            value={draft.precioMensual}
+            onChange={(v) => setDraft({ ...draft, precioMensual: v.replace(/[^0-9]/g, '') })}
+            placeholder="50000"
+          />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <ColorField label="Color primario" value={draft.primaryColor} onChange={(v) => setDraft({ ...draft, primaryColor: v })} />

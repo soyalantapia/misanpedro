@@ -457,7 +457,8 @@ function EditingView({
   const mapCenter = tenant.config?.geoCenter ?? SANPEDRO_CENTER
   const cityHint =
     [tenant.config?.ciudad, tenant.config?.provincia].filter(Boolean).join(', ') ||
-    'San Pedro, Buenos Aires'
+    tenant.config?.ciudad ||
+    'tu ciudad'
 
   return (
     <>
@@ -1284,6 +1285,8 @@ function condicionFiscalLabel(c?: string | null) {
 }
 
 function FiscalCard({ merchant }: { merchant: any }) {
+  const tenant = useTenant()
+  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
   const tieneFiscal = merchant.cuit || merchant.razonSocial || merchant.condicionFiscal
   if (!tieneFiscal) return null
   return (
@@ -1304,7 +1307,7 @@ function FiscalCard({ merchant }: { merchant: any }) {
       </div>
       <p className="mt-3 text-[11px] text-ink-faint">
         Estos datos se usan para emitir tu factura mensual. Si necesitás corregirlos, escribinos a{' '}
-        <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-brand-strong">
+        <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`[${appName}] Corrección de datos fiscales`)}`} className="font-bold text-brand-strong">
           {SUPPORT_EMAIL}
         </a>
         .

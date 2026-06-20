@@ -15,13 +15,14 @@ import {
 import { habeasData, tokens, ApiError } from '@/lib/api'
 import { useUser, userActions, demoStoreActions } from '@/lib/stores'
 import { useToast } from '@/components/Toast'
-import { SUPPORT_EMAIL, getSupportLink } from '@/lib/tenant'
+import { SUPPORT_EMAIL, getSupportLink, useTenant } from '@/lib/tenant'
 import { SavingsWallet } from '@/components/features/SavingsWallet'
 import { ClubCard } from '@/components/features/ClubCard'
 
-const SUPPORT = getSupportLink('Hola, necesito ayuda con mis datos en Mi San Pedro.')
-
 export function PerfilPage() {
+  const tenant = useTenant()
+  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const SUPPORT = getSupportLink(`Hola, necesito ayuda con mis datos en ${appName}.`)
   const user = useUser()
   // Sesión = MISMA condición que usan SavingsWallet/ClubCard (token presente),
   // no el store local `user`. Evita ver la billetera/Club logueados ENCIMA del

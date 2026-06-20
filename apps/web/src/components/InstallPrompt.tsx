@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Download, X, Sparkles, Share, Plus } from 'lucide-react'
+import { useTenant } from '@/lib/tenant'
 
 type BeforeInstallEvent = Event & {
   prompt: () => Promise<void>
@@ -35,6 +36,8 @@ function isStandalone(): boolean {
 }
 
 export function InstallPrompt() {
+  const tenant = useTenant()
+  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
   const [event, setEvent] = useState<BeforeInstallEvent | null>(null)
   const [visible, setVisible] = useState(false)
   // Mode 'native' = beforeinstallprompt disponible · 'ios' = mostrar A2HS manual
@@ -134,7 +137,7 @@ export function InstallPrompt() {
       </div>
       <div className="flex flex-1 flex-col gap-1">
         <p id="install-prompt-title" className="text-sm font-bold text-ink">
-          Instalá Mi San Pedro
+          Instalá {appName}
         </p>
         {mode === 'native' ? (
           <>
