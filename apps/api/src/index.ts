@@ -1,7 +1,10 @@
 import { serve, type ServerType } from '@hono/node-server'
+import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import mongoose from 'mongoose'
 import { env, isProd } from '@/env'
 import { connectDB } from '@/db/connection'
@@ -79,7 +82,10 @@ app.use(
   }),
 )
 
-app.get('/', (c) => c.json({ name: 'Mi[Ciudad] API', version: '0.1.0' }))
+// Banner del API. En prod la raíz "/" la sirve el frontend estático (ver abajo),
+// así que el banner queda en /api para no taparlo.
+app.get('/api', (c) => c.json({ name: 'Mi[Ciudad] API', version: '0.1.0' }))
+if (!isProd) app.get('/', (c) => c.json({ name: 'Mi[Ciudad] API', version: '0.1.0' }))
 
 app.get('/api/v1/health', (c) => {
   const dbReady = mongoose.connection.readyState === 1
@@ -120,6 +126,39 @@ app.route('/api/v1/admin', adminRoutes)
 app.route('/api/v1/owner', ownerRoutes)
 app.route('/api/v1/tenant', tenantRoutes)
 app.route('/api/v1/referrals', referralsRoutes)
+
+// ──────────────────────────────────────────────────────────────────
+// Frontends estáticos (SOLO en producción). El mismo servicio de Railway
+// sirve la API y los dos fronts, elegidos por Host:
+//   administracion.<dominio>  → apps/owner/dist  (panel super-admin, BrowserRouter)
+//   cualquier otro host       → apps/web/dist    (PWA vecino + comercio, HashRouter)
+// La API vive bajo /api/* y tiene prioridad. El resto sirve el archivo estático;
+// si no existe, cae a index.html (SPA fallback — necesario para el BrowserRouter
+// del owner). En dev no se activa: ahí el front lo sirve Vite.
+// Los builds salen con base "/" (ver nixpacks.toml), por eso se sirven en la raíz.
+// ──────────────────────────────────────────────────────────────────
+if (isProd) {
+  const WEB_ROOT = './apps/web/dist'
+  const OWNER_ROOT = './apps/owner/dist'
+  const rootFor = (host?: string) =>
+    (host ?? '').toLowerCase().startsWith('administracion.') ? OWNER_ROOT : WEB_ROOT
+
+  // 1) Archivos reales (assets/manifest/sw/íconos). Si existe, lo sirve.
+  app.use('*', async (c, next) => {
+    if (c.req.path.startsWith('/api')) return next()
+    return serveStatic({ root: rootFor(c.req.header('host')) })(c, next)
+  })
+  // 2) SPA fallback: ruta no-API que no matcheó archivo → index.html del front.
+  app.get('*', (c) => {
+    if (c.req.path.startsWith('/api')) return c.notFound()
+    try {
+      const html = readFileSync(path.join(rootFor(c.req.header('host')), 'index.html'), 'utf8')
+      return c.html(html)
+    } catch {
+      return c.text('frontend no disponible', 500)
+    }
+  })
+}
 
 app.notFound((c) => c.json({ ok: false, error: 'not found' }, 404))
 

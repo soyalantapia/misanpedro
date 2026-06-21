@@ -13,16 +13,22 @@ nixPkgs = ["nodejs_22", "openssl"]
 
 [phases.install]
 # Corepack viene con Node 22 → activa pnpm según `packageManager` del root.
-# `pnpm install --frozen-lockfile` respeta pnpm-lock.yaml.
+# Install COMPLETO: este servicio ahora sirve también los fronts (web + owner),
+# así que necesita sus dependencias de build (vite, etc.), no solo las del API.
 cmds = [
   "corepack enable",
   "corepack prepare pnpm@10.28.2 --activate",
-  "pnpm install --frozen-lockfile --filter @misanpedro/api... --filter @misanpedro/shared..."
+  "pnpm install --frozen-lockfile"
 ]
 
 [phases.build]
-# Buildea solo el API y sus deps de workspace (no tocamos apps/web ni landing).
-cmds = ["pnpm --filter @misanpedro/api build"]
+# Un solo servicio sirve API + fronts. Buildeamos web (PWA vecino+comercio),
+# owner (panel super-admin) y api, con base "/" (se sirven en la raíz de cada
+# host) y la URL absoluta del API (el front llama cross-origin; CORS permite
+# *.micuidad.com). Turbo resuelve el orden y buildea @misanpedro/shared una vez.
+cmds = [
+  "VITE_BASE=/ VITE_API_URL=https://api-production-43c52.up.railway.app pnpm turbo run build --filter=@misanpedro/web --filter=@misanpedro/owner --filter=@misanpedro/api"
+]
 
 [start]
 # Production start: lee env vars del environment, no de un .env file.
