@@ -200,22 +200,102 @@ export async function sendOtpCode(to: string, code: string, appNombre = 'Mi Ciud
   })
 }
 
+// Stacks de fuentes seguras para email (sin depender de webfonts externas).
+const EMAIL_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+const EMAIL_MONO = "ui-monospace,'SFMono-Regular',Menlo,Consolas,'Liberation Mono',monospace"
+
+/** Solo aceptamos HEX #RRGGBB; si no, caemos al naranja de marca. Evita meter
+ *  un color inválido (o inyectado) en los estilos inline del email. */
+function safeHex(c?: string): string {
+  return c && /^#[0-9a-fA-F]{6}$/.test(c) ? c : '#ea580c'
+}
+
+/**
+ * Email de código OTP del comercio — diseño tenant-aware (nombre + color de la
+ * ciudad). HTML email-client-safe: tablas, estilos inline, fuentes de sistema.
+ */
+function renderMerchantOtpEmail(input: {
+  code: string
+  appNombre: string
+  brandColor?: string
+  loginUrl?: string
+}): string {
+  const accent = safeHex(input.brandColor)
+  const nombre = escapeHtml(input.appNombre)
+  // Monograma: primera letra de la ciudad (sin el "Mi ").
+  const initial = escapeHtml(
+    (input.appNombre.replace(/^mi\s+/i, '').trim().charAt(0) || 'M').toUpperCase(),
+  )
+  const codeSpaced = escapeHtml(input.code)
+  const support = escapeHtml(env.SUPPORT_EMAIL)
+  const cta = input.loginUrl
+    ? `
+            <tr><td align="center" style="padding:24px 40px 4px">
+              <a href="${input.loginUrl}" style="display:inline-block;background:${accent};color:#ffffff;font:500 15px ${EMAIL_FONT};text-decoration:none;border-radius:12px;padding:13px 28px">Abrir el panel del comercio</a>
+            </td></tr>`
+    : ''
+  return `<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light">
+<title>Tu código de acceso · ${nombre}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f5f7;-webkit-font-smoothing:antialiased">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f4f5f7">Tu código de acceso al panel vence en 5 minutos.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f7">
+  <tr><td align="center" style="padding:36px 12px">
+    <table role="presentation" width="468" cellpadding="0" cellspacing="0" style="width:468px;max-width:100%;background:#ffffff;border:1px solid #ebecf0;border-radius:20px">
+      <tr><td style="padding:34px 40px 0">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td style="vertical-align:middle">
+            <div style="width:40px;height:40px;border-radius:11px;background:${accent};color:#ffffff;font:600 18px/40px ${EMAIL_FONT};text-align:center">${initial}</div>
+          </td>
+          <td style="vertical-align:middle;padding-left:12px;font:600 16px ${EMAIL_FONT};color:#15161a">${nombre}</td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:26px 40px 0">
+        <div style="font:500 12px ${EMAIL_FONT};letter-spacing:.09em;text-transform:uppercase;color:${accent}">Acceso al panel</div>
+        <h1 style="margin:6px 0 8px;font:600 25px ${EMAIL_FONT};color:#15161a">Tu código de acceso</h1>
+        <p style="margin:0;font:400 15px/1.6 ${EMAIL_FONT};color:#5b5f67">Ingresá este código para entrar al panel de tu comercio en <b style="color:#15161a;font-weight:600">${nombre}</b>.</p>
+      </td></tr>
+      <tr><td style="padding:22px 40px 0">
+        <div style="background:#f7f8fa;border:1px solid #e9ebef;border-radius:14px;padding:24px 16px;text-align:center">
+          <div style="font:600 38px/1 ${EMAIL_MONO};letter-spacing:12px;color:${accent};padding-left:12px">${codeSpaced}</div>
+        </div>
+      </td></tr>
+      <tr><td align="center" style="padding:16px 40px 0">
+        <span style="display:inline-block;font:500 13px ${EMAIL_FONT};color:#6b7079;background:#f1f2f5;border-radius:999px;padding:6px 14px">Vence en 5 minutos</span>
+      </td></tr>${cta}
+      <tr><td style="padding:24px 40px 0">
+        <p style="margin:0;font:400 13px/1.6 ${EMAIL_FONT};color:#8b8f98">¿No pediste este código? Ignorá este email — tu cuenta sigue segura y nadie entró.</p>
+      </td></tr>
+      <tr><td style="padding:24px 40px 32px">
+        <div style="border-top:1px solid #eef0f2;height:1px;line-height:1px;font-size:1px">&nbsp;</div>
+        <p style="margin:16px 0 0;font:400 12px/1.7 ${EMAIL_FONT};color:#a2a6ad">${nombre} · descuentos en comercios adheridos<br>¿Ayuda? <a href="mailto:${support}" style="color:${accent};text-decoration:none">${support}</a></p>
+      </td></tr>
+    </table>
+    <p style="margin:18px 0 0;font:400 11px ${EMAIL_FONT};color:#b4b8be">Enviado por ${nombre}. No respondas a este correo.</p>
+  </td></tr>
+</table>
+</body></html>`
+}
+
 // Comercio — código OTP para entrar al panel (login passwordless)
-export async function sendMerchantOtpCode(to: string, code: string, appNombre = 'Mi Ciudad') {
+export async function sendMerchantOtpCode(
+  to: string,
+  code: string,
+  appNombre = 'Mi Ciudad',
+  brandColor?: string,
+  loginUrl?: string,
+) {
   return sendEmail({
     to,
     fromName: appNombre,
     subject: `Tu código para el panel: ${code}`,
-    html: wrap(
-      'Acceso al panel del comercio',
-      `
-        <p style="text-align:center;font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin:24px 0;color:#ea580c">${code}</p>
-        <p>Usalo para entrar al panel de tu comercio en <strong>${escapeHtml(appNombre)}</strong>. Vence en 5 minutos.</p>
-        <p style="font-size:13px;color:#8b8589">Si no pediste este código, ignorá este email — nadie entró a tu cuenta.</p>
-      `,
-      appNombre,
-    ),
-    text: `Tu código para el panel ${appNombre}: ${code}. Vence en 5 minutos.`,
+    html: renderMerchantOtpEmail({ code, appNombre, brandColor, loginUrl }),
+    text: `Tu código para el panel de ${appNombre}: ${code}\nVence en 5 minutos. Si no lo pediste, ignorá este email.`,
   })
 }
 
