@@ -7,10 +7,12 @@ import {
   CreditCard,
   Mail,
   KeyRound,
+  ScanLine,
+  Users,
+  TrendingUp,
 } from 'lucide-react'
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
 import { useTenant } from '@/lib/tenant'
-import { VecinoAppMockup } from '@/components/VecinoAppMockup'
 
 export function AdminLoginPage() {
   const { session } = useMerchantSession()
@@ -97,48 +99,46 @@ export function AdminLoginPage() {
   }
 
   return (
-    <div className="relative min-h-[100svh] overflow-hidden bg-gradient-to-br from-brand-strong to-brand text-on-brand">
-      <div className="bg-grid-pattern absolute inset-0 opacity-[0.07]" />
-      <div className="absolute -left-24 top-1/3 h-96 w-96 rounded-full bg-brand/30 blur-3xl" />
-      <div className="absolute -right-32 -bottom-24 h-[28rem] w-[28rem] rounded-full bg-brand/25 blur-3xl" />
-
-      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-8 pb-12 sm:px-8 sm:pt-12 lg:flex-row lg:items-start lg:gap-12 lg:pt-28 lg:pb-16">
-        {/* Header logo (mobile + desktop) */}
-        <header className="absolute left-4 top-6 sm:left-8">
-          <Link to="/" className="flex items-center gap-3 transition-opacity hover:opacity-90">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-surface/10 ring-1 ring-white/15 backdrop-blur">
-              <Store size={18} className="text-on-brand" />
+    <div className="min-h-[100svh] bg-bg text-ink">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-10 pb-12 sm:px-8 lg:flex-row lg:items-center lg:gap-16 lg:py-16">
+        {/* Lado info — limpio, sin mockup */}
+        <section className="flex flex-col gap-6 lg:flex-1">
+          <Link to="/" className="flex w-fit items-center gap-3 transition-opacity hover:opacity-90">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta">
+              <Store size={18} />
             </div>
             <div>
-              <p className="text-sm font-bold leading-tight text-on-brand">{appName}</p>
-              <p className="text-[10px] font-medium uppercase tracking-widest text-on-brand/60">
+              <p className="text-sm font-bold leading-tight text-ink">{appName}</p>
+              <p className="text-[10px] font-medium uppercase tracking-widest text-ink-faint">
                 Panel del comercio
               </p>
             </div>
           </Link>
-        </header>
 
-        {/* Lado marketing: mockup de la app del vecino */}
-        <section className="flex flex-col items-center gap-7 pt-20 sm:pt-24 lg:flex-1 lg:items-start lg:pt-0">
-          <div className="flex flex-col items-center gap-4 text-center lg:items-start lg:text-left">
-            <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-surface/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-on-brand/90 ring-1 ring-white/15 backdrop-blur">
-              <Store size={12} /> Para comercios de {ciudad}
-            </div>
-            <h1 className="max-w-md text-3xl font-bold leading-[1.12] tracking-tight sm:text-4xl">
-              Tu comercio en la app que usa todo{' '}
-              <span className="text-brand-soft">{ciudad}</span>
-            </h1>
-            <p className="max-w-md text-base leading-relaxed text-on-brand/75">
-              Validá descuentos, sumá clientes propios y aparecé donde los vecinos ya
-              están buscando dónde gastar mejor.
-            </p>
+          <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-brand-strong ring-1 ring-line">
+            <Store size={12} /> Para comercios de {ciudad}
           </div>
-          <VecinoAppMockup className="mt-2" />
+
+          <h1 className="max-w-lg text-3xl font-bold leading-[1.12] tracking-tight text-ink sm:text-4xl lg:text-[2.7rem]">
+            Tu comercio, donde {ciudad} ya está buscando{' '}
+            <span className="text-brand-strong">dónde gastar mejor</span>
+          </h1>
+
+          <p className="max-w-md text-base leading-relaxed text-ink-soft">
+            Validá descuentos, sumá clientes propios y aparecé en la app que los vecinos
+            ya usan todos los días.
+          </p>
+
+          <ul className="flex flex-col gap-3 pt-1">
+            <Feat icon={ScanLine} title="Validá descuentos" desc="desde tu celular, en 2 segundos" />
+            <Feat icon={Users} title="Clientes propios" desc="exportables y mensajeables" />
+            <Feat icon={TrendingUp} title="Estadísticas reales" desc="de canjes y patrones de visita" />
+          </ul>
         </section>
 
         {/* Form */}
         <section className="w-full lg:w-[440px] lg:shrink-0">
-          <div className="rounded-3xl bg-surface p-6 text-ink shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] ring-1 ring-on-brand/10 sm:p-7">
+          <div className="rounded-3xl bg-surface p-6 text-ink shadow-floating ring-1 ring-line sm:p-7">
             <h2 className="text-2xl font-bold tracking-tight">Acceso al panel</h2>
             <p className="mt-1 text-sm text-ink-soft">
               {step === 'email'
@@ -281,15 +281,37 @@ export function AdminLoginPage() {
       </div>
 
       {/* Footer */}
-      <div className="relative mx-auto max-w-6xl px-4 pb-8 sm:px-8">
-        <p className="text-center text-xs text-on-brand/50 sm:text-left">
+      <div className="mx-auto max-w-6xl px-4 pb-10 sm:px-8">
+        <p className="text-center text-xs text-ink-faint sm:text-left">
           ¿Sos vecino?{' '}
-          <Link to="/" className="font-bold text-on-brand/90 hover:text-on-brand">
+          <Link to="/" className="font-bold text-brand-strong hover:text-brand">
             Volvé a la app
           </Link>
         </p>
       </div>
     </div>
+  )
+}
+
+function Feat({
+  icon: Icon,
+  title,
+  desc,
+}: {
+  icon: typeof Store
+  title: string
+  desc: string
+}) {
+  return (
+    <li className="flex items-center gap-3">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-strong">
+        <Icon size={17} />
+      </span>
+      <span className="text-sm text-ink">
+        <span className="font-semibold">{title}</span>{' '}
+        <span className="text-ink-soft">{desc}</span>
+      </span>
+    </li>
   )
 }
 
