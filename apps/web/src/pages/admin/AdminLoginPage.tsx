@@ -4,16 +4,13 @@ import {
   Store,
   ArrowRight,
   ArrowLeft,
-  ScanLine,
-  Users,
-  MessageCircle,
-  TrendingUp,
   CreditCard,
   Mail,
   KeyRound,
 } from 'lucide-react'
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
 import { useTenant } from '@/lib/tenant'
+import { VecinoAppMockup } from '@/components/VecinoAppMockup'
 
 export function AdminLoginPage() {
   const { session } = useMerchantSession()
@@ -121,44 +118,22 @@ export function AdminLoginPage() {
           </Link>
         </header>
 
-        {/* Hero */}
-        <section className="flex flex-col gap-6 pt-20 sm:pt-24 lg:flex-1 lg:pt-0">
-          <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-surface/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-on-brand/90 ring-1 ring-white/15 backdrop-blur">
-            <Store size={12} /> Para comerciantes adheridos
+        {/* Lado marketing: mockup de la app del vecino */}
+        <section className="flex flex-col items-center gap-7 pt-20 sm:pt-24 lg:flex-1 lg:items-start lg:pt-0">
+          <div className="flex flex-col items-center gap-4 text-center lg:items-start lg:text-left">
+            <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-surface/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-on-brand/90 ring-1 ring-white/15 backdrop-blur">
+              <Store size={12} /> Para comercios de {ciudad}
+            </div>
+            <h1 className="max-w-md text-3xl font-bold leading-[1.1] tracking-tight sm:text-4xl lg:text-5xl">
+              Tu comercio en la app que usa todo{' '}
+              <span className="text-brand-soft">{ciudad}</span>
+            </h1>
+            <p className="max-w-md text-base leading-relaxed text-on-brand/75">
+              Validá descuentos, sumá clientes propios y aparecé donde los vecinos ya
+              están buscando dónde gastar mejor.
+            </p>
           </div>
-
-          <h1 className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-            Tu comercio,{' '}
-            <span className="bg-gradient-to-br from-on-brand via-brand-soft to-on-brand bg-clip-text text-transparent">
-              conectado con todo {ciudad}
-            </span>
-          </h1>
-
-          <p className="max-w-xl text-base leading-relaxed text-on-brand/75 sm:text-lg">
-            Validá descuentos y construí tu base de clientes propia. Pronto vas a poder
-            mandar campañas de WhatsApp directo desde la plataforma.
-          </p>
-
-          <ul className="flex flex-col gap-2.5 pt-2">
-            <Bullet icon={ScanLine}>
-              <span className="font-semibold text-on-brand">Validá descuentos</span>{' '}
-              <span className="text-on-brand/70">desde tu celular en 2 segundos</span>
-            </Bullet>
-            <Bullet icon={Users}>
-              <span className="font-semibold text-on-brand">Base de clientes propia</span>{' '}
-              <span className="text-on-brand/70">— exportable y mensajeable</span>
-            </Bullet>
-            <Bullet icon={MessageCircle}>
-              <span className="font-semibold text-on-brand">WhatsApp masivo</span>{' '}
-              <span className="text-on-brand/70">— próximamente, vía API oficial</span>
-            </Bullet>
-            <Bullet icon={TrendingUp}>
-              <span className="font-semibold text-on-brand">Estadísticas reales</span>{' '}
-              <span className="text-on-brand/70">de canjes y patrones de visita</span>
-            </Bullet>
-          </ul>
-
-          {/* (bloque de precio removido — la tarifa ahora es por ciudad) */}
+          <VecinoAppMockup className="mt-2" />
         </section>
 
         {/* Form */}
@@ -315,23 +290,6 @@ export function AdminLoginPage() {
         </p>
       </div>
     </div>
-  )
-}
-
-function Bullet({
-  icon: Icon,
-  children,
-}: {
-  icon: typeof Store
-  children: React.ReactNode
-}) {
-  return (
-    <li className="flex items-start gap-3">
-      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-surface/10 ring-1 ring-white/15">
-        <Icon size={14} className="text-on-brand" />
-      </span>
-      <span className="text-sm">{children}</span>
-    </li>
   )
 }
 

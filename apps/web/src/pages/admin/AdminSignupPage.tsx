@@ -9,6 +9,8 @@ import {
   Clock,
   Tag,
   ImagePlus,
+  Users,
+  ScanLine,
 } from 'lucide-react'
 import { CATEGORIAS, type Categoria } from '@/lib/types'
 import { merchantAuth } from '@/lib/merchantStore'
@@ -16,6 +18,19 @@ import { useToast } from '@/components/Toast'
 import { Select } from '@/components/Select'
 import { cn } from '@/lib/cn'
 import { useTenant } from '@/lib/tenant'
+import { VecinoAppMockup } from '@/components/VecinoAppMockup'
+
+/** Placeholder de teléfono según el país del tenant (correlaciona con la ciudad). */
+function phonePlaceholder(pais?: string): string {
+  const p = (pais ?? '').toLowerCase()
+  if (p.includes('colombia')) return '+57 300 123 4567'
+  if (p.includes('argentina')) return '+54 9 11 2345-6789'
+  if (p.includes('mexico') || p.includes('méxico')) return '+52 55 1234 5678'
+  if (p.includes('chile')) return '+56 9 1234 5678'
+  if (p.includes('uruguay')) return '+598 9 123 456'
+  if (p.includes('peru') || p.includes('perú')) return '+51 987 654 321'
+  return 'Tu teléfono con código de país'
+}
 
 // Leaflet es pesado (~150KB) — lo bajamos como chunk aparte y sólo cuando
 // el comercio llega al paso de datos del signup.
@@ -211,8 +226,10 @@ export function AdminSignupPage() {
   }
 
   return (
-    <div className="bg-violet-mesh min-h-[100svh] bg-bg px-4 pt-8 pb-12 sm:px-6">
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+    <div className="min-h-[100svh] bg-bg px-4 py-8 sm:px-6 lg:py-12">
+      <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-[1fr_minmax(380px,420px)] lg:items-start lg:gap-14">
+        {/* Formulario (izquierda) */}
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-6 lg:mx-0">
         <Link
           to="/admin/login"
           className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink"
@@ -369,7 +386,7 @@ export function AdminSignupPage() {
                   autoComplete="tel"
                   value={form.telefono}
                   onChange={(e) => update('telefono', e.target.value)}
-                  placeholder="(03329) 425-678"
+                  placeholder={phonePlaceholder(tenant.config?.pais)}
                   className={inputCls}
                 />
               }
@@ -498,8 +515,39 @@ export function AdminSignupPage() {
         {step === 'listo' && (
           <ListoStep form={form} onGoTo={(to) => navigate(to, { replace: true })} />
         )}
+        </div>
+
+        {/* Banner (derecha) — sticky en desktop, oculto en mobile */}
+        <aside className="relative hidden self-start overflow-hidden rounded-3xl bg-gradient-to-br from-brand-strong to-brand p-8 text-on-brand shadow-floating lg:sticky lg:top-10 lg:flex lg:flex-col lg:gap-7">
+          <div className="bg-grid-pattern pointer-events-none absolute inset-0 opacity-[0.06]" />
+          <div className="relative flex flex-col gap-2">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-on-brand/70">
+              Así te ven los vecinos
+            </p>
+            <h2 className="text-2xl font-bold leading-tight tracking-tight">
+              Sumate al club de ahorro de {tenant.config?.ciudad ?? 'tu ciudad'}
+            </h2>
+          </div>
+          <VecinoAppMockup className="relative" />
+          <ul className="relative flex flex-col gap-3">
+            <BannerPoint icon={Sparkles}>3 meses gratis · sin tarjeta</BannerPoint>
+            <BannerPoint icon={Users}>Clientes propios, exportables</BannerPoint>
+            <BannerPoint icon={ScanLine}>Validás descuentos en 2 segundos</BannerPoint>
+          </ul>
+        </aside>
       </div>
     </div>
+  )
+}
+
+function BannerPoint({ icon: Icon, children }: { icon: typeof Store; children: React.ReactNode }) {
+  return (
+    <li className="flex items-center gap-2.5 text-sm font-medium text-on-brand/90">
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-surface/15 ring-1 ring-white/15">
+        <Icon size={14} />
+      </span>
+      {children}
+    </li>
   )
 }
 

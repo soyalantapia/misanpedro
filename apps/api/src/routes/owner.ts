@@ -432,6 +432,11 @@ const createAppSchema = z.object({
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)
     .optional(),
+  // Centro del mapa de la ciudad — para que el mapa del alta de comercio caiga
+  // en la ciudad correcta (no en San Pedro). Lo setea el owner al crear/editar.
+  geoCenter: z
+    .object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) })
+    .optional(),
   legal: legalSchema,
 })
 
@@ -473,6 +478,7 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
       accentColor: data.accentColor ?? '#c2410c',
     },
     ...(data.legal ? { legal: data.legal } : {}),
+    ...(data.geoCenter ? { geoCenter: data.geoCenter } : {}),
   })
 
   // Notificación al owner (no bloqueante). Si Resend no está configurado,
@@ -536,6 +542,9 @@ const updateAppSchema = z.object({
       heroEyebrow: z.string().optional(),
       heroHeadline: z.string().optional(),
     })
+    .optional(),
+  geoCenter: z
+    .object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) })
     .optional(),
   legal: legalSchema,
 })

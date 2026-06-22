@@ -41,6 +41,9 @@ type Draft = {
   condicionFiscal: string
   domicilio: string
   jurisdiccion: string
+  // Centro del mapa de la ciudad (lat/lng) — el alta de comercio usa esto.
+  geoLat: string
+  geoLng: string
 }
 
 function draftFromApp(app: any): Draft {
@@ -65,6 +68,8 @@ function draftFromApp(app: any): Draft {
     condicionFiscal: app.legal?.condicionFiscal ?? '',
     domicilio: app.legal?.domicilio ?? '',
     jurisdiccion: app.legal?.jurisdiccion ?? '',
+    geoLat: app.geoCenter?.lat != null ? String(app.geoCenter.lat) : '',
+    geoLng: app.geoCenter?.lng != null ? String(app.geoCenter.lng) : '',
   }
 }
 
@@ -155,6 +160,10 @@ export function AppDetailPage() {
         domicilio: draft.domicilio || undefined,
         jurisdiccion: draft.jurisdiccion || undefined,
       },
+      geoCenter:
+        draft.geoLat.trim() && draft.geoLng.trim()
+          ? { lat: Number(draft.geoLat), lng: Number(draft.geoLng) }
+          : undefined,
     }
     try {
       const res = await owner.updateApp(id, patch)
@@ -343,6 +352,34 @@ export function AppDetailPage() {
             onChange={(v) => setDraft({ ...draft, precioMensual: v.replace(/[^0-9]/g, '') })}
             placeholder="50000"
           />
+
+          {/* Centro del mapa de la ciudad — el alta de comercio centra el mapa acá
+              (si no, cae en San Pedro). Buscá la ciudad en Google Maps y copiá lat/lng. */}
+          <div>
+            <div className="mb-1.5">
+              <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                Centro del mapa de la ciudad
+              </span>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                Latitud y longitud del centro (ej. Pasto, Nariño: 1.2136 / -77.2811). El mapa del
+                alta de comercio se centra acá.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                label="Latitud"
+                value={draft.geoLat}
+                onChange={(v) => setDraft({ ...draft, geoLat: v.replace(/[^0-9.\-]/g, '') })}
+                placeholder="1.2136"
+              />
+              <TextField
+                label="Longitud"
+                value={draft.geoLng}
+                onChange={(v) => setDraft({ ...draft, geoLng: v.replace(/[^0-9.\-]/g, '') })}
+                placeholder="-77.2811"
+              />
+            </div>
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <ColorField label="Color primario" value={draft.primaryColor} onChange={(v) => setDraft({ ...draft, primaryColor: v })} />
