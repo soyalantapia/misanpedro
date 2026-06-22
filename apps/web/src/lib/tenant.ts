@@ -147,7 +147,7 @@ export function getTenantSnapshot() {
   return state
 }
 
-/** Nombre del tenant activo (ej. "Mi Nariño"). Fallback "Mi San Pedro". Para usar
+/** Nombre del tenant activo (ej. "Mi Nariño"). Fallback "Mi Ciudad". Para usar
  *  en módulos/handlers/defaults; en componentes preferir useTenant() (reactivo). */
 export function appName(): string {
   return getTenantSnapshot().config?.nombre ?? 'Mi Ciudad'
@@ -205,7 +205,7 @@ function detectInitialSlug(): string | null {
   //    los subdominios. Si estás en <ciudad>.micuidad.com, esa ciudad MANDA por
   //    encima de cualquier selección previa guardada en localStorage. Si no, una
   //    visita vieja a otra ciudad (o al selector) haría que minarino.micuidad.com
-  //    muestre "Mi San Pedro". En GitHub Pages u otros hosts el primer label no es
+  //    muestre "Mi Ciudad". En GitHub Pages u otros hosts el primer label no es
   //    un slug válido (sería 'soyalantapia', etc.) → se cae a localStorage/fallback.
   const host = window.location.hostname
   // location.hostname devuelve el label ya en punycode para IDN
@@ -231,7 +231,7 @@ function detectInitialSlug(): string | null {
   const buildTime = import.meta.env.VITE_TENANT_SLUG as string | undefined
   if (buildTime) return buildTime
 
-  // 5. Default para deploys "single-tenant" (Mi San Pedro):
+  // 5. Default para deploys "single-tenant" (Mi Ciudad):
   //    apuntamos al tenant 'sanpedro' por compatibilidad. Cuando se sirvan
   //    múltiples ciudades vía subdominios reales, este fallback aplica sólo
   //    al deploy de GH Pages de la PWA principal.

@@ -25,7 +25,7 @@ export function formatRedeemedDate(iso: string): string {
 
 /**
  * Locale/moneda activos para el formateo de plata. Por defecto es-AR/ARS
- * (compatibilidad con el deploy histórico de Mi San Pedro). El tenant activo
+ * (compatibilidad con el deploy histórico de Mi Ciudad). El tenant activo
  * lo sobrescribe vía setMoneyLocale() al cargar su config (ver lib/tenant.ts),
  * habilitando ciudades multi-país (ej. Colombia → es-CO/COP).
  */

@@ -27,6 +27,8 @@ cmds = [
 # host) y la URL absoluta del API (el front llama cross-origin; CORS permite
 # *.micuidad.com). Turbo resuelve el orden y buildea @misanpedro/shared una vez.
 cmds = [
+  # Guardrail: falla el deploy si se reintrodujo una ciudad hardcodeada en web/owner.
+  "node scripts/check-no-hardcoded-tenant.mjs",
   "VITE_BASE=/ VITE_API_URL=https://api-production-43c52.up.railway.app pnpm turbo run build --filter=@misanpedro/web --filter=@misanpedro/owner --filter=@misanpedro/api"
 ]
 

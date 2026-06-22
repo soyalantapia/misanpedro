@@ -51,7 +51,7 @@ export function ShellLayout() {
             <span className="text-xs font-black">M</span>
           </span>
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-bold tracking-tight">Mi San Pedro</span>
+            <span className="text-sm font-bold tracking-tight">Mi Ciudad</span>
             <span className="text-[10px] font-semibold uppercase tracking-widest text-accent-700">
               Owner
             </span>

@@ -14,6 +14,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
+    "check:tenant": "node scripts/check-no-hardcoded-tenant.mjs",
     "deploy:web": "pnpm --filter @misanpedro/web build && pnpm --filter @misanpedro/web deploy:gh-pages",
     "deploy:micuidad": "node scripts/deploy-micuidad.mjs",
     "deploy:hostinger": "node scripts/deploy-hostinger.mjs"

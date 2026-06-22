@@ -10,7 +10,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 text-white shadow-lg">
             <span className="text-sm font-black">M</span>
           </span>
-          <span className="text-xl">Mi San Pedro</span>
+          <span className="text-xl">Mi Ciudad</span>
           <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-white">
             Owner
           </span>

@@ -252,7 +252,7 @@ function StepLocation({
       <h2 className="text-lg font-bold text-neutral-900">¿Cómo se llama y dónde vive?</h2>
       <TextField
         label="Nombre comercial"
-        hint="Lo que ven los vecinos: 'Mi San Pedro', 'Mi Ramallo', etc."
+        hint="Lo que ven los vecinos: 'Mi Ciudad', 'Mi Ramallo', etc."
         value={form.nombre}
         onChange={(v) => update('nombre', v)}
         placeholder="Mi Ramallo"

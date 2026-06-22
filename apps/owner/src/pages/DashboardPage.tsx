@@ -69,7 +69,7 @@ export function DashboardPage() {
       <PageHeader
         eyebrow="Vista general"
         title="Dashboard"
-        subtitle="KPIs cross-tenant de Mi San Pedro"
+        subtitle="KPIs cross-tenant de Mi Ciudad"
         actions={
           <button
             type="button"
