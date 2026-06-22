@@ -34,9 +34,17 @@ export function NewAppPage() {
     setForm((f) => {
       const next = { ...f, [key]: value }
       // Auto-rellenar slug y subdomain desde nombre/ciudad si todavía están vacíos
-      if (key === 'nombre' && !f.slug) {
-        next.slug = slugify(String(value))
-        if (!f.subdomain) next.subdomain = next.slug
+      if (key === 'nombre') {
+        if (!f.slug) {
+          next.slug = slugify(String(value))
+          if (!f.subdomain) next.subdomain = next.slug
+        }
+        // La "localidad" (lo que ven los vecinos) por defecto = lo que va después
+        // de "Mi" (Mi Nariño → Nariño). Editable; solo se sugiere si está vacía.
+        if (!f.ciudad) {
+          const loc = afterMi(String(value))
+          if (loc) next.ciudad = loc
+        }
       }
       if (key === 'ciudad' && !f.nombre) {
         // Si todavía no hay nombre, sugerimos "Mi <ciudad>"
@@ -268,10 +276,11 @@ function StepLocation({
       />
       <div className="grid gap-5 sm:grid-cols-2">
         <TextField
-          label="Ciudad"
+          label="Localidad"
+          hint="Lo que ven los vecinos: 'comercios de…', 'Ahorrado en…'. Normalmente lo que va después de 'Mi' (Mi Nariño → Nariño)."
           value={form.ciudad}
           onChange={(v) => update('ciudad', v)}
-          placeholder="Ramallo"
+          placeholder="Nariño"
         />
         <TextField
           label="Provincia / Estado"
@@ -519,6 +528,12 @@ function ColorField({
       </div>
     </label>
   )
+}
+
+/** Devuelve lo que va después de "Mi " en el nombre de la app (Mi Nariño → Nariño).
+ *  Si no empieza con "Mi", devuelve el nombre tal cual. */
+function afterMi(name: string): string {
+  return name.trim().replace(/^mi\s+/i, '').trim()
 }
 
 function slugify(s: string): string {

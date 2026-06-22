@@ -299,7 +299,7 @@ export function AppDetailPage() {
                 { value: 'archived', label: 'Archivada' },
               ]}
             />
-            <TextField label="Ciudad" value={draft.ciudad} onChange={(v) => setDraft({ ...draft, ciudad: v })} />
+            <TextField label="Localidad (la ven los vecinos)" value={draft.ciudad} onChange={(v) => setDraft({ ...draft, ciudad: v })} placeholder="Nariño" />
             <TextField label="Provincia" value={draft.provincia} onChange={(v) => setDraft({ ...draft, provincia: v })} />
             <TextField
               label="Dominio propio (opcional)"
