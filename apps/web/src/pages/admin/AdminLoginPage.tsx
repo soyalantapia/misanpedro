@@ -18,7 +18,7 @@ import { useTenant } from '@/lib/tenant'
 export function AdminLoginPage() {
   const { session } = useMerchantSession()
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const appName = tenant.config?.nombre ?? 'Mi Ciudad'
   const ciudad = tenant.config?.ciudad ?? 'tu ciudad'
   const [step, setStep] = useState<'email' | 'code'>('email')
   const [email, setEmail] = useState('')

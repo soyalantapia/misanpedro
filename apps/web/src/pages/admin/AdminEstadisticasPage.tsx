@@ -50,7 +50,7 @@ export function AdminEstadisticasPage() {
   const [periodo, setPeriodo] = useState<MerchantStatsPeriodo>('mes')
   const { data, loading, error, refetch } = useApiMerchantStatsAsesor(periodo)
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const appName = tenant.config?.nombre ?? 'Mi Ciudad'
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-6 pb-8 sm:px-6 sm:pt-10">

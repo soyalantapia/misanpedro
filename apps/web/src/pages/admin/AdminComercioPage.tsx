@@ -1286,7 +1286,7 @@ function condicionFiscalLabel(c?: string | null) {
 
 function FiscalCard({ merchant }: { merchant: any }) {
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const appName = tenant.config?.nombre ?? 'Mi Ciudad'
   const tieneFiscal = merchant.cuit || merchant.razonSocial || merchant.condicionFiscal
   if (!tieneFiscal) return null
   return (

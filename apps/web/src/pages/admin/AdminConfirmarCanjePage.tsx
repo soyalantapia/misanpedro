@@ -20,7 +20,7 @@ export function AdminConfirmarCanjePage() {
   const apiCached = activationId ? readCachedValidation(activationId) : null
   const { session } = useMerchantSession()
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const appName = tenant.config?.nombre ?? 'Mi Ciudad'
   const navigate = useNavigate()
   const toast = useToast()
   const [monto, setMonto] = useState('')

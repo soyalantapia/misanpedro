@@ -26,7 +26,7 @@ function formatDate(iso: string | null): string {
 
 export function AdminReferidosPage() {
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const appName = tenant.config?.nombre ?? 'Mi Ciudad'
   const { data, loading, error, refetch } = useReferralsMe()
   const referidos = useReferralsMine()
   const toast = useToast()

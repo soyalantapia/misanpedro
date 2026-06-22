@@ -37,7 +37,7 @@ function isStandalone(): boolean {
 
 export function InstallPrompt() {
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const appName = tenant.config?.nombre ?? 'Mi Ciudad'
   const [event, setEvent] = useState<BeforeInstallEvent | null>(null)
   const [visible, setVisible] = useState(false)
   // Mode 'native' = beforeinstallprompt disponible · 'ios' = mostrar A2HS manual

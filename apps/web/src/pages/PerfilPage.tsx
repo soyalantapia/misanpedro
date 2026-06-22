@@ -21,7 +21,7 @@ import { ClubCard } from '@/components/features/ClubCard'
 
 export function PerfilPage() {
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const appName = tenant.config?.nombre ?? 'Mi Ciudad'
   const SUPPORT = getSupportLink(`Hola, necesito ayuda con mis datos en ${appName}.`)
   const user = useUser()
   // Sesión = MISMA condición que usan SavingsWallet/ClubCard (token presente),

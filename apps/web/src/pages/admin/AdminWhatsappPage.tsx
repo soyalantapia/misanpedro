@@ -320,7 +320,7 @@ function ComposerScreen({
   onDisconnected: () => void
 }) {
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const appName = tenant.config?.nombre ?? 'Mi Ciudad'
   const TEMPLATES = getTemplates(appName)
 
   // BUG-FIX: la audiencia se alimenta del backend real (GET /redemptions/clientes,

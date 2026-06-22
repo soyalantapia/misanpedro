@@ -18,7 +18,7 @@ const links = [
 
 export function AppShell() {
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const appName = tenant.config?.nombre ?? 'Mi Ciudad'
   // El sync del catálogo de alertas vivía en la campana; ahora vive acá (la campana se quitó).
   useAlertCouponsSync()
   const { unread } = useAlerts()

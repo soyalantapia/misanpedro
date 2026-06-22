@@ -150,7 +150,7 @@ export function getTenantSnapshot() {
 /** Nombre del tenant activo (ej. "Mi Nariño"). Fallback "Mi San Pedro". Para usar
  *  en módulos/handlers/defaults; en componentes preferir useTenant() (reactivo). */
 export function appName(): string {
-  return getTenantSnapshot().config?.nombre ?? 'Mi San Pedro'
+  return getTenantSnapshot().config?.nombre ?? 'Mi Ciudad'
 }
 
 /** Ciudad del tenant activo (ej. "Pasto"). Fallback "tu ciudad". */
@@ -201,18 +201,15 @@ function detectInitialSlug(): string | null {
     /* noop */
   }
 
-  // 2. localStorage
-  const stored = window.localStorage.getItem(STORAGE_KEY)
-  if (stored) return stored
-
-  // 3. Subdomain — SOLO cuando el host termina en uno de los dominios "del
-  //    producto" donde sí controlamos los subdomains. En GitHub Pages u otros
-  //    hosts el primer label no es un tenant slug válido (sería 'soyalantapia',
-  //    'vercel', etc.) y cae a la fallback.
+  // 2. Subdomain — AUTORITATIVO en los dominios "del producto" donde controlamos
+  //    los subdominios. Si estás en <ciudad>.micuidad.com, esa ciudad MANDA por
+  //    encima de cualquier selección previa guardada en localStorage. Si no, una
+  //    visita vieja a otra ciudad (o al selector) haría que minarino.micuidad.com
+  //    muestre "Mi San Pedro". En GitHub Pages u otros hosts el primer label no es
+  //    un slug válido (sería 'soyalantapia', etc.) → se cae a localStorage/fallback.
   const host = window.location.hostname
-  // Dominios de plataforma donde el primer label ES el tenant. micuidad.com sirve
-  // cada ciudad en <slug>.micuidad.com (comodín). location.hostname devuelve el
-  // label ya en punycode para IDN (minariño → xn--minario-9za), que el API matchea.
+  // location.hostname devuelve el label ya en punycode para IDN
+  // (minariño → xn--minario-9za), que el API matchea por subdomain.
   const TENANT_HOSTS = ['misanpedro.app', 'micuidad.com']
   const isTenantHost = TENANT_HOSTS.some(
     (h) => host === h || host.endsWith(`.${h}`),
@@ -224,6 +221,11 @@ function detectInitialSlug(): string | null {
       if (!RESERVED_SUBDOMAINS.has(sub)) return sub
     }
   }
+
+  // 3. localStorage (selección previa del selector de ciudades). Aplica SOLO
+  //    cuando no hay subdominio de ciudad autoritativo (ej. el dominio pelado).
+  const stored = window.localStorage.getItem(STORAGE_KEY)
+  if (stored) return stored
 
   // 4. Build-time fallback (VITE_TENANT_SLUG)
   const buildTime = import.meta.env.VITE_TENANT_SLUG as string | undefined

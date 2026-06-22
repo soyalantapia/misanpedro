@@ -11,11 +11,11 @@ self.addEventListener('push', (event) => {
   } catch (e) {
     data = {}
   }
-  const title = data.title || 'Mi San Pedro'
+  const title = data.title || 'Mi Ciudad'
   const options = {
     body: data.body || 'Hay un cupón nuevo para vos',
-    icon: '/misanpedro/icon-192.png',
-    badge: '/misanpedro/icon-192.png',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
     tag: data.couponId || 'msp-coupon',
     data: { url: data.url || '/#/' },
   }

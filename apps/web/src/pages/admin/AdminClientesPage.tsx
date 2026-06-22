@@ -357,7 +357,7 @@ function LoadingState() {
 
 function LockedState() {
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const appName = tenant.config?.nombre ?? 'Mi Ciudad'
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-md flex-col items-center gap-5 px-4 pt-12 pb-8 text-center sm:px-6 sm:pt-16">
       {/* N8: chip ARRIBA del candado para seguir la convención visual del

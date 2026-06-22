@@ -17,7 +17,7 @@ type Errors = { nombre?: string; telefono?: string; acceptedTc?: string }
  */
 export function RegistroPage() {
   const tenant = useTenant()
-  const appName = tenant.config?.nombre ?? 'Mi San Pedro'
+  const appName = tenant.config?.nombre ?? 'Mi Ciudad'
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [acceptedTc, setAcceptedTc] = useState(false)
