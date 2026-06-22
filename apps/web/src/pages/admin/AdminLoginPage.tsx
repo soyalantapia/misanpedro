@@ -102,7 +102,7 @@ export function AdminLoginPage() {
       <div className="absolute -left-24 top-1/3 h-96 w-96 rounded-full bg-brand/30 blur-3xl" />
       <div className="absolute -right-32 -bottom-24 h-[28rem] w-[28rem] rounded-full bg-brand/25 blur-3xl" />
 
-      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-8 pb-12 sm:px-8 sm:pt-12 lg:flex-row lg:items-center lg:gap-16 lg:py-16">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-8 pb-12 sm:px-8 sm:pt-12 lg:flex-row lg:items-start lg:gap-12 lg:pt-28 lg:pb-16">
         {/* Header logo (mobile + desktop) */}
         <header className="absolute left-4 top-6 sm:left-8">
           <Link to="/" className="flex items-center gap-3 transition-opacity hover:opacity-90">
@@ -124,7 +124,7 @@ export function AdminLoginPage() {
             <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-surface/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-on-brand/90 ring-1 ring-white/15 backdrop-blur">
               <Store size={12} /> Para comercios de {ciudad}
             </div>
-            <h1 className="max-w-md text-3xl font-bold leading-[1.1] tracking-tight sm:text-4xl lg:text-5xl">
+            <h1 className="max-w-md text-3xl font-bold leading-[1.12] tracking-tight sm:text-4xl">
               Tu comercio en la app que usa todo{' '}
               <span className="text-brand-soft">{ciudad}</span>
             </h1>
