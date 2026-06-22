@@ -88,6 +88,8 @@ export type TenantConfig = {
   moneda?: string
   /** Locale BCP-47 para Intl (moneda/números/fechas). Ej: "es-AR","es-CO". Default "es-AR". */
   locale?: string
+  /** Prefijo telefónico del país (ej. "+57"). Para pre-cargar el teléfono del comercio. */
+  phonePrefix?: string
   /** Precio mensual del comercio en esta ciudad (en `moneda`). Per-city. */
   precioMensual?: number
   subdomain: string

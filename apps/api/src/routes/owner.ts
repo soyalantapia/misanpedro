@@ -422,6 +422,10 @@ const createAppSchema = z.object({
     .string()
     .regex(/^[a-z]{2,3}(-[A-Z]{2,4})?$/, 'locale debe ser BCP-47 (ej. es-AR)')
     .default('es-AR'),
+  phonePrefix: z
+    .string()
+    .regex(/^\+\d{1,4}$/, 'prefijo debe ser tipo +57')
+    .optional(),
   precioMensual: z.number().min(1).optional(), // monto mensual del comercio, en la moneda del tenant
   subdomain: z.string().optional(),
   primaryColor: z
@@ -469,6 +473,7 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
     pais: data.pais,
     moneda: data.moneda,
     locale: data.locale,
+    ...(data.phonePrefix ? { phonePrefix: data.phonePrefix } : {}),
     precioMensual: data.precioMensual,
     subdomain,
     status: 'active',
@@ -523,6 +528,10 @@ const updateAppSchema = z.object({
   locale: z
     .string()
     .regex(/^[a-z]{2,3}(-[A-Z]{2,4})?$/, 'locale debe ser BCP-47 (ej. es-AR)')
+    .optional(),
+  phonePrefix: z
+    .string()
+    .regex(/^\+\d{1,4}$/, 'prefijo debe ser tipo +57')
     .optional(),
   precioMensual: z.number().min(1).optional(),
   customDomain: z.string().optional(),

@@ -26,6 +26,7 @@ type Draft = {
   pais: string
   moneda: string
   locale: string
+  phonePrefix: string
   precioMensual: string
   status: 'pending' | 'active' | 'suspended' | 'archived'
   customDomain: string
@@ -54,6 +55,7 @@ function draftFromApp(app: any): Draft {
     pais: app.pais ?? PAIS_DEFAULT.nombre,
     moneda: app.moneda ?? PAIS_DEFAULT.moneda,
     locale: app.locale ?? PAIS_DEFAULT.locale,
+    phonePrefix: app.phonePrefix ?? findPaisByNombre(app.pais)?.prefijo ?? '',
     precioMensual: app.precioMensual != null ? String(app.precioMensual) : '',
     status: app.status ?? 'pending',
     customDomain: app.customDomain ?? '',
@@ -140,6 +142,7 @@ export function AppDetailPage() {
       pais: draft.pais || undefined,
       moneda: draft.moneda || undefined,
       locale: draft.locale || undefined,
+      phonePrefix: draft.phonePrefix || undefined,
       precioMensual: draft.precioMensual ? Number(draft.precioMensual) : undefined,
       status: draft.status,
       customDomain: draft.customDomain || undefined,
@@ -325,6 +328,7 @@ export function AppDetailPage() {
                   pais: v,
                   moneda: p ? p.moneda : draft.moneda,
                   locale: p ? p.locale : draft.locale,
+                  phonePrefix: p ? p.prefijo : draft.phonePrefix,
                 })
               }}
               options={PAISES.map((p) => ({
@@ -343,6 +347,12 @@ export function AppDetailPage() {
               value={draft.locale}
               onChange={(v) => setDraft({ ...draft, locale: v })}
               placeholder="es-AR"
+            />
+            <TextField
+              label="Prefijo telefónico"
+              value={draft.phonePrefix}
+              onChange={(v) => setDraft({ ...draft, phonePrefix: v })}
+              placeholder="+54"
             />
           </div>
 

@@ -20,8 +20,10 @@ import { cn } from '@/lib/cn'
 import { useTenant } from '@/lib/tenant'
 import { VecinoAppMockup } from '@/components/VecinoAppMockup'
 
-/** Placeholder de teléfono según el país del tenant (correlaciona con la ciudad). */
-function phonePlaceholder(pais?: string): string {
+/** Placeholder de teléfono: usa el prefijo guardado de la ciudad si está; si no,
+ *  lo infiere del país. Así el comercio ya ve el prefijo correcto de su ciudad. */
+function phonePlaceholder(pais?: string, prefijo?: string): string {
+  if (prefijo) return `${prefijo} 300 123 4567`
   const p = (pais ?? '').toLowerCase()
   if (p.includes('colombia')) return '+57 300 123 4567'
   if (p.includes('argentina')) return '+54 9 11 2345-6789'
@@ -386,7 +388,7 @@ export function AdminSignupPage() {
                   autoComplete="tel"
                   value={form.telefono}
                   onChange={(e) => update('telefono', e.target.value)}
-                  placeholder={phonePlaceholder(tenant.config?.pais)}
+                  placeholder={phonePlaceholder(tenant.config?.pais, tenant.config?.phonePrefix)}
                   className={inputCls}
                 />
               }

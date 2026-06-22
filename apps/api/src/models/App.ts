@@ -44,6 +44,10 @@ const appSchema = new Schema(
     moneda: { type: String, default: 'ARS', match: /^[A-Z]{3}$/ },
     locale: { type: String, default: 'es-AR', match: /^[a-z]{2,3}(-[A-Z]{2,4})?$/ },
 
+    /** Prefijo telefónico internacional del país (ej. "+57"). Pre-carga el teléfono
+     *  del comercio en el alta. Se setea desde el owner (auto desde el país elegido). */
+    phonePrefix: { type: String, match: /^\+\d{1,4}$/ },
+
     /** Subdominio dentro de misanpedro.app. Default = slug. */
     subdomain: { type: String, required: true, unique: true, index: true },
 

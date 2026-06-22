@@ -222,6 +222,8 @@ export const owner = {
     subdomain?: string
     primaryColor?: string
     accentColor?: string
+    phonePrefix?: string
+    geoCenter?: { lat: number; lng: number }
   }) {
     return api<{ ok: boolean; app: any }>('/api/v1/owner/apps', {
       method: 'POST',

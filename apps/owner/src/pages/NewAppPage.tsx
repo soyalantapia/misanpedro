@@ -23,6 +23,9 @@ export function NewAppPage() {
     primaryColor: '#ea580c',
     accentColor: '#c2410c',
     precioMensual: '',
+    phonePrefix: PAIS_DEFAULT.prefijo,
+    geoLat: '',
+    geoLng: '',
   })
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -53,6 +56,7 @@ export function NewAppPage() {
         if (p) {
           next.moneda = p.moneda
           next.locale = p.locale
+          next.phonePrefix = p.prefijo
         }
       }
       return next
@@ -111,6 +115,11 @@ export function NewAppPage() {
         subdomain: form.subdomain,
         primaryColor: form.primaryColor,
         accentColor: form.accentColor,
+        phonePrefix: form.phonePrefix || undefined,
+        geoCenter:
+          form.geoLat.trim() && form.geoLng.trim()
+            ? { lat: Number(form.geoLat), lng: Number(form.geoLng) }
+            : undefined,
       }
       const res = await owner.createApp(payload)
       if (res.ok && res.app) {
@@ -299,13 +308,46 @@ function StepLocation({
         />
       </div>
 
-      <TextField
-        label={`Precio mensual del comercio (${form.moneda || 'moneda'})`}
-        hint="Lo que paga cada comercio de esta ciudad. Vacío = usa la tarifa default."
-        value={form.precioMensual}
-        onChange={(v) => update('precioMensual', v.replace(/[^0-9]/g, ''))}
-        placeholder="50000"
-      />
+      <div className="grid gap-5 sm:grid-cols-2">
+        <TextField
+          label={`Precio mensual del comercio (${form.moneda || 'moneda'})`}
+          hint="Vacío = usa la tarifa default."
+          value={form.precioMensual}
+          onChange={(v) => update('precioMensual', v.replace(/[^0-9]/g, ''))}
+          placeholder="50000"
+        />
+        <TextField
+          label="Prefijo telefónico"
+          hint="Auto desde el país. Pre-carga el teléfono del comercio."
+          value={form.phonePrefix}
+          onChange={(v) => update('phonePrefix', v)}
+          placeholder="+54"
+        />
+      </div>
+
+      <div>
+        <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+          Centro del mapa (localidad)
+        </span>
+        <p className="mt-0.5 text-[11px] text-neutral-500">
+          Lat/lng del centro de la ciudad — el mapa del alta de comercio cae acá. Buscá la ciudad
+          en Google Maps y copiá las coordenadas (ej. Pasto: 1.2136 / -77.2811).
+        </p>
+        <div className="mt-1.5 grid gap-5 sm:grid-cols-2">
+          <TextField
+            label="Latitud"
+            value={form.geoLat}
+            onChange={(v) => update('geoLat', v.replace(/[^0-9.\-]/g, ''))}
+            placeholder="1.2136"
+          />
+          <TextField
+            label="Longitud"
+            value={form.geoLng}
+            onChange={(v) => update('geoLng', v.replace(/[^0-9.\-]/g, ''))}
+            placeholder="-77.2811"
+          />
+        </div>
+      </div>
     </div>
   )
 }
