@@ -1,4 +1,4 @@
-import { Search, MapPin, Store, Ticket, User, Flame, BadgePercent } from 'lucide-react'
+import { Search, MapPin, Store, Ticket, User, Flame } from 'lucide-react'
 import { useTenant } from '@/lib/tenant'
 import { formatMoney } from '@/lib/format'
 
@@ -17,18 +17,6 @@ export function VecinoAppMockup({ className = '' }: { className?: string }) {
     <div className={`relative mx-auto w-full max-w-[320px] ${className}`} aria-hidden="true">
       {/* Glow de marca detrás del teléfono */}
       <div className="absolute inset-0 -z-10 scale-110 rounded-[3rem] bg-on-brand/20 blur-3xl" />
-
-      {/* Chips flotantes (flair) */}
-      <div className="absolute -left-6 top-24 z-20 rotate-[-8deg] rounded-2xl bg-surface px-3 py-2 shadow-floating ring-1 ring-line">
-        <p className="flex items-center gap-1 text-[11px] font-black text-brand-strong">
-          <BadgePercent size={13} /> −25% OFF
-        </p>
-      </div>
-      <div className="absolute -right-5 bottom-28 z-20 rotate-[7deg] rounded-2xl bg-surface px-3 py-2 shadow-floating ring-1 ring-line">
-        <p className="text-[10px] font-bold text-ink">
-          Ahorraste <span className="text-status-success-fg">{formatMoney(900)}</span>
-        </p>
-      </div>
 
       {/* Marco del teléfono */}
       <div className="relative rounded-[2.6rem] bg-neutral-900 p-2.5 shadow-[0_40px_90px_-25px_rgba(0,0,0,0.6)] ring-1 ring-white/10">
