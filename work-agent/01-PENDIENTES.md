@@ -1,7 +1,10 @@
 # 01 · Pendientes (qué falta, en orden)
 
-> ## ✅ Tanda pre-producción 2026-06-23 (sin commitear aún)
-> Barrido completo para lanzar a prod. **typecheck 6/6 · check:tenant ✓ · API 88/88 · web 104/104.**
+> ## ✅ Tanda pre-producción 2026-06-23 — SHIPPED a prod
+> Commits en `main`: `db06da9` (hardening/owner/web) · `4f011ad` (ci.yml) · `c37d68d` (tests integración). Deployado (`railway up`), CI verde, QA de prod (browse) 0 bugs.
+> **typecheck 6/6 · check:tenant ✓ · API 93/93 · web 104/104 · build OK.**
+> **Config de infra (Railway, por el asistente):** VAPID seteadas (push operativo) · SMTP verificado (login comercio OK) · geoCenter Nariño = Pasto.
+> **Diferidos con TIMING:** manifest PWA por-host = ANTES de onboardear usuarios de la 2da ciudad (no ahora: arriesgaría el instalable de SP que tiene usuarios) · SSOT a shared = cuando el owner tenga tests · token Google vencido → `/oauth-google` para confirmar entrega de email a inbox.
 > **Resuelto en código:**
 > - **Web Push revivido**: `pushRoutes` se monta en `index.ts` + `initWebPush()` en bootstrap; `PushSubscription` ahora scopea por `{appId,endpoint}` (índice único compuesto + `syncIndexes` dropea el `endpoint_1` viejo). Cierra el agujero cross-tenant de subscribe/unsubscribe.
 > - **URLs por-tenant**: helper `apps/api/src/lib/urls.ts` (`tenantFrontUrl`); `back_url` de MP, init_point mock y CTAs de welcome emails ahora salen de `<subdomain>.micuidad.com`. Email de canje tenant-aware (moneda/locale/nombre) y "factura C" condicionada por país.
