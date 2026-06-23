@@ -139,8 +139,14 @@ export function AdminLoginPage() {
         {/* Form */}
         <section className="w-full lg:w-[440px] lg:shrink-0">
           <div className="rounded-3xl bg-surface p-6 text-ink shadow-floating ring-1 ring-line sm:p-7">
-            <h2 className="text-2xl font-bold tracking-tight">Acceso al panel</h2>
-            <p className="mt-1 text-sm text-ink-soft">
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-strong ring-1 ring-line">
+                <KeyRound size={18} />
+              </span>
+              <h2 className="text-2xl font-bold tracking-tight">Acceso al panel</h2>
+            </div>
+            <div className="mt-4 border-t border-line" />
+            <p className="mt-4 text-sm text-ink-soft">
               {step === 'email'
                 ? 'Ingresá el email de tu comercio y te mandamos un código para entrar.'
                 : 'Escribí el código de 6 dígitos que te llegó por email.'}

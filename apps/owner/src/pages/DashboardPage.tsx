@@ -64,6 +64,24 @@ export function DashboardPage() {
     {},
   )
 
+  // MRR multi-moneda: si hay más de una moneda (o alguna != ARS) mostramos el
+  // desglose por moneda; si solo hay ARS nos comportamos como antes (mrrARS).
+  const byCurrency = metrics?.revenue.byCurrency
+  const currencyEntries = byCurrency
+    ? Object.entries(byCurrency).filter(([, v]) => v != null)
+    : []
+  const isMultiCurrency =
+    currencyEntries.length > 1 ||
+    currencyEntries.some(([cur]) => cur.toUpperCase() !== 'ARS')
+
+  function fmtCurrency(amount: number, currency: string): string {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -91,13 +109,37 @@ export function DashboardPage() {
 
       {/* KPIs hero */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <StatCard
-          icon={CircleDollarSign}
-          label="MRR"
-          value={metrics ? fmtMoney(metrics.revenue.mrrARS) : '—'}
-          hint="Suscripciones activas × precio"
-          accent="success"
-        />
+        {metrics && isMultiCurrency ? (
+          <article className="group rounded-2xl bg-white p-5 ring-1 ring-neutral-200 transition-all hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">MRR</p>
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-success-bg text-success transition-transform group-hover:scale-110">
+                <CircleDollarSign size={16} />
+              </span>
+            </div>
+            <ul className="mt-3 space-y-1.5">
+              {currencyEntries.map(([currency, amount]) => (
+                <li key={currency} className="flex items-baseline justify-between gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                    {currency}
+                  </span>
+                  <span className="text-lg font-bold tabular-nums text-neutral-900">
+                    {fmtCurrency(amount, currency)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 text-xs text-neutral-500">Suscripciones activas × precio</p>
+          </article>
+        ) : (
+          <StatCard
+            icon={CircleDollarSign}
+            label="MRR"
+            value={metrics ? fmtMoney(metrics.revenue.mrrARS) : '—'}
+            hint="Suscripciones activas × precio"
+            accent="success"
+          />
+        )}
         <StatCard
           icon={AppWindow}
           label="Apps activas"

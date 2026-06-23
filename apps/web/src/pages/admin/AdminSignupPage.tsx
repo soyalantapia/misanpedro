@@ -44,7 +44,11 @@ const SANPEDRO_CENTER = { lat: -33.6797, lng: -59.6669 }
 
 // Alta MÍNIMA: solo datos del comercio + cuenta. NADA fiscal (CUIT/razón social/
 // condición/domicilio se piden recién cuando se active el cobro — ver Fase 4).
-type Step = 'datos' | 'listo'
+// El alta se divide en 3 pasos (comercio / contacto / cuenta) + el éxito ('listo').
+type FormStep = 1 | 2 | 3
+type Step = FormStep | 'listo'
+const FORM_STEPS: FormStep[] = [1, 2, 3]
+const LAST_FORM_STEP: FormStep = 3
 
 type Form = {
   nombreComercio: string
@@ -121,7 +125,7 @@ function clearDraft() {
 }
 
 export function AdminSignupPage() {
-  const [step, setStep] = useState<Step>('datos')
+  const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<Form>(() => {
     const draft = loadDraft()
     if (!draft) return empty
@@ -161,27 +165,56 @@ export function AdminSignupPage() {
     clearDraft()
     setForm(empty)
     setDraftRestored(false)
-    setStep('datos')
+    setStep(1)
   }
 
-  function validateDatos(): string | null {
-    if (form.nombreComercio.trim().length < 3) return 'El nombre del comercio es muy corto'
-    if (form.categoria === 'otro' && form.categoriaOtro.trim().length < 2)
-      return 'Indicá qué tipo de comercio es'
-    if (form.direccion.trim().length < 5) return 'Falta una dirección válida'
-    // PM-elite T2: el pin NO es obligatorio. Lo geocodificamos solo desde la
-    // dirección (LocationPicker) y, si no hay, el backend ubica el comercio en
-    // el centro de la ciudad. El alta nunca se traba por el mapa.
-    if (!form.telefono.trim()) return 'Falta el teléfono'
+  // Validación por paso. Cada paso valida SOLO sus campos; al hacer submit se
+  // re-validan los 3 en orden para no dejar pasar nada inconsistente.
+  function validateStep(s: FormStep): string | null {
+    if (s === 1) {
+      // Paso 1 — Comercio: nombre, categoría, dirección (+ mapa opcional).
+      if (form.nombreComercio.trim().length < 3) return 'El nombre del comercio es muy corto'
+      if (form.categoria === 'otro' && form.categoriaOtro.trim().length < 2)
+        return 'Indicá qué tipo de comercio es'
+      if (form.direccion.trim().length < 5) return 'Falta una dirección válida'
+      // PM-elite T2: el pin NO es obligatorio. Lo geocodificamos solo desde la
+      // dirección (LocationPicker) y, si no hay, el backend ubica el comercio en
+      // el centro de la ciudad. El alta nunca se traba por el mapa.
+      return null
+    }
+    if (s === 2) {
+      // Paso 2 — Contacto: teléfono (los horarios son opcionales).
+      if (!form.telefono.trim()) return 'Falta el teléfono'
+      return null
+    }
+    // Paso 3 — Tu cuenta: nombre del responsable + email.
     if (form.nombreAdmin.trim().length < 3) return 'Falta tu nombre completo'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAdmin)) return 'Email inválido'
     return null
   }
 
-  // Alta en UN paso: validar datos + T&C → crear el comercio (sin fiscal, sin pago).
-  async function handleSignup() {
-    const err = validateDatos()
+  function goBack() {
+    setError(null)
+    setStep((s) => (s === 'listo' || s === 1 ? s : ((s - 1) as FormStep)))
+  }
+
+  function goNext() {
+    if (step === 'listo') return
+    const err = validateStep(step)
     if (err) return setError(err)
+    setError(null)
+    setStep((s) => (s === 'listo' ? s : ((Math.min(s + 1, LAST_FORM_STEP)) as FormStep)))
+  }
+
+  // Submit (paso 3): re-validar los 3 pasos + T&C → crear el comercio (sin fiscal, sin pago).
+  async function handleSignup() {
+    for (const s of FORM_STEPS) {
+      const err = validateStep(s)
+      if (err) {
+        setStep(s)
+        return setError(err)
+      }
+    }
     if (!form.acceptedTc) return setError('Tenés que aceptar los términos y condiciones')
 
     setSubmitting(true)
@@ -248,17 +281,17 @@ export function AdminSignupPage() {
               Sumá tu comercio · 3 meses gratis
             </p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">
-              {step === 'datos' && 'Sumá tu comercio'}
+              {step !== 'listo' && 'Sumá tu comercio'}
               {step === 'listo' && '¡Bienvenido!'}
             </h1>
             <p className="mt-1 text-sm text-ink-soft">
-              {step === 'datos' && '2 minutos · Sin tarjeta · Sin trámites'}
+              {step !== 'listo' && '2 minutos · Sin tarjeta · Sin trámites'}
               {step === 'listo' && 'Ya estás dentro — sumale tu perfil'}
             </p>
           </div>
         </div>
 
-        {refCode && step === 'datos' && (
+        {refCode && step !== 'listo' && (
           <div className="flex items-center gap-2.5 rounded-2xl bg-status-success-bg px-4 py-3 text-status-success-fg ring-1 ring-status-success/20">
             <span aria-hidden className="text-lg leading-none">👋</span>
             <p className="text-xs leading-snug">
@@ -270,7 +303,7 @@ export function AdminSignupPage() {
 
         <Stepper step={step} />
 
-        {step === 'datos' && draftRestored && (
+        {step === 1 && draftRestored && (
           <div className="flex items-center justify-between gap-3 rounded-2xl bg-status-info-bg px-4 py-3 text-status-info-fg ring-1 ring-status-info/20">
             <p className="text-xs leading-snug">
               <strong>Recuperamos tus datos</strong> de la última vez que estuviste acá. Revisalos y
@@ -286,200 +319,242 @@ export function AdminSignupPage() {
           </div>
         )}
 
-        {step === 'datos' && (
+        {step !== 'listo' && (
           <div className="flex flex-col gap-4 rounded-3xl bg-surface p-5 shadow-floating ring-1 ring-line">
-            <Field
-              label="Nombre del comercio"
-              required
-              input={
-                <input
-                  id="signup-nombre-comercio"
-                  name="nombreComercio"
-                  type="text"
-                  autoComplete="organization"
-                  value={form.nombreComercio}
-                  onChange={(e) => update('nombreComercio', e.target.value)}
-                  placeholder="Ej: Tu Comercio"
-                  className={inputCls}
-                />
-              }
-            />
-            <Field
-              label="Categoría"
-              required
-              input={
-                <Select<Categoria>
-                  value={form.categoria}
-                  onChange={(v) => update('categoria', v)}
-                  options={CATEGORIAS.map((c) => ({ value: c.id, label: c.label }))}
-                  ariaLabel="Categoría del comercio"
-                />
-              }
-            />
-            {form.categoria === 'otro' && (
-              <Field
-                label="¿Qué tipo de comercio?"
-                required
-                input={
-                  <input
-                    id="signup-categoria-otro"
-                    name="categoriaOtro"
-                    type="text"
-                    value={form.categoriaOtro}
-                    onChange={(e) => update('categoriaOtro', e.target.value)}
-                    placeholder="Ej: rotisería, casa de regalos, peluquería canina…"
-                    className={inputCls}
-                  />
-                }
-              />
-            )}
-            <Field
-              label="Dirección comercial"
-              required
-              input={
-                <input
-                  id="signup-direccion"
-                  name="direccion"
-                  type="text"
-                  autoComplete="street-address"
-                  value={form.direccion}
-                  onChange={(e) => update('direccion', e.target.value)}
-                  placeholder={`Mitre 1247, ${tenant.config?.ciudad ?? 'tu ciudad'}`}
-                  className={inputCls}
-                />
-              }
-            />
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
-                Ubicación en el mapa{' '}
-                <span className="font-semibold normal-case tracking-normal text-ink-faint">
-                  (opcional)
-                </span>
-              </span>
-              <p className="-mt-0.5 text-[11px] text-ink-soft">
-                La ubicamos sola con tu dirección. Ajustá el pin solo si querés
-                afinar la puerta exacta.
+            {/* Título del paso actual — orienta al comercio dentro del flujo. */}
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-lg font-bold text-ink">
+                {step === 1 && 'Tu comercio'}
+                {step === 2 && 'Cómo te contactan'}
+                {step === 3 && 'Tu cuenta'}
+              </h2>
+              <p className="text-xs text-ink-soft">
+                {step === 1 && 'Nombre, rubro y dónde está.'}
+                {step === 2 && 'Teléfono y horarios para que te encuentren.'}
+                {step === 3 && 'Tus datos para administrar el comercio.'}
               </p>
-              <Suspense
-                fallback={
-                  <div className="h-[240px] animate-pulse rounded-2xl bg-surface-2 ring-1 ring-line" />
-                }
-              >
-                <LocationPicker
-                  value={
-                    form.lat != null && form.lng != null ? { lat: form.lat, lng: form.lng } : null
+            </div>
+
+            {/* Paso 1 — Comercio: nombre, categoría, dirección + mapa. */}
+            {step === 1 && (
+              <>
+                <Field
+                  label="Nombre del comercio"
+                  required
+                  input={
+                    <input
+                      id="signup-nombre-comercio"
+                      name="nombreComercio"
+                      type="text"
+                      autoComplete="organization"
+                      value={form.nombreComercio}
+                      onChange={(e) => update('nombreComercio', e.target.value)}
+                      placeholder="Ej: Tu Comercio"
+                      className={inputCls}
+                    />
                   }
-                  onChange={setLocation}
-                  address={form.direccion}
-                  center={mapCenter}
-                  cityHint={cityHint}
                 />
-              </Suspense>
-            </div>
-            <Field
-              label="Teléfono"
-              required
-              input={
-                <input
-                  id="signup-telefono"
-                  name="telefono"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  value={form.telefono}
-                  onChange={(e) => update('telefono', e.target.value)}
-                  placeholder={phonePlaceholder(tenant.config?.pais, tenant.config?.phonePrefix)}
-                  className={inputCls}
+                <Field
+                  label="Categoría"
+                  required
+                  input={
+                    <Select<Categoria>
+                      value={form.categoria}
+                      onChange={(v) => update('categoria', v)}
+                      options={CATEGORIAS.map((c) => ({ value: c.id, label: c.label }))}
+                      ariaLabel="Categoría del comercio"
+                    />
+                  }
                 />
-              }
-            />
-            <p className="text-[11px] text-ink-soft">
-              <Clock size={10} className="mr-1 inline" />
-              Las fotos y los horarios los cargás después, en un toque, desde el panel.
-            </p>
-
-            <div className="my-2 border-t border-line" />
-            <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
-              Cuenta del responsable
-            </p>
-
-            <Field
-              label="Tu nombre"
-              required
-              input={
-                <input
-                  id="signup-nombre-admin"
-                  name="nombreAdmin"
-                  type="text"
-                  autoComplete="name"
-                  value={form.nombreAdmin}
-                  onChange={(e) => update('nombreAdmin', e.target.value)}
-                  placeholder="Como en tu DNI"
-                  className={inputCls}
+                {form.categoria === 'otro' && (
+                  <Field
+                    label="¿Qué tipo de comercio?"
+                    required
+                    input={
+                      <input
+                        id="signup-categoria-otro"
+                        name="categoriaOtro"
+                        type="text"
+                        value={form.categoriaOtro}
+                        onChange={(e) => update('categoriaOtro', e.target.value)}
+                        placeholder="Ej: rotisería, casa de regalos, peluquería canina…"
+                        className={inputCls}
+                      />
+                    }
+                  />
+                )}
+                <Field
+                  label="Dirección comercial"
+                  required
+                  input={
+                    <input
+                      id="signup-direccion"
+                      name="direccion"
+                      type="text"
+                      autoComplete="street-address"
+                      value={form.direccion}
+                      onChange={(e) => update('direccion', e.target.value)}
+                      placeholder={`Mitre 1247, ${tenant.config?.ciudad ?? 'tu ciudad'}`}
+                      className={inputCls}
+                    />
+                  }
                 />
-              }
-            />
-            <Field
-              label="Email"
-              required
-              input={
-                <input
-                  id="signup-email-admin"
-                  name="emailAdmin"
-                  type="email"
-                  autoComplete="email"
-                  value={form.emailAdmin}
-                  onChange={(e) => update('emailAdmin', e.target.value)}
-                  placeholder="vos@tucomercio.com"
-                  className={inputCls}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
+                    Ubicación en el mapa{' '}
+                    <span className="font-semibold normal-case tracking-normal text-ink-faint">
+                      (opcional)
+                    </span>
+                  </span>
+                  <p className="-mt-0.5 text-[11px] text-ink-soft">
+                    La ubicamos sola con tu dirección. Ajustá el pin solo si querés
+                    afinar la puerta exacta.
+                  </p>
+                  <Suspense
+                    fallback={
+                      <div className="h-[240px] animate-pulse rounded-2xl bg-surface-2 ring-1 ring-line" />
+                    }
+                  >
+                    <LocationPicker
+                      value={
+                        form.lat != null && form.lng != null
+                          ? { lat: form.lat, lng: form.lng }
+                          : null
+                      }
+                      onChange={setLocation}
+                      address={form.direccion}
+                      center={mapCenter}
+                      cityHint={cityHint}
+                    />
+                  </Suspense>
+                </div>
+              </>
+            )}
+
+            {/* Paso 2 — Contacto: teléfono + horarios. */}
+            {step === 2 && (
+              <>
+                <Field
+                  label="Teléfono"
+                  required
+                  input={
+                    <input
+                      id="signup-telefono"
+                      name="telefono"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      value={form.telefono}
+                      onChange={(e) => update('telefono', e.target.value)}
+                      placeholder={phonePlaceholder(tenant.config?.pais, tenant.config?.phonePrefix)}
+                      className={inputCls}
+                    />
+                  }
                 />
-              }
-            />
-            <p className="rounded-xl bg-brand-soft px-3 py-2 text-xs font-medium text-brand-strong">
-              No necesitás contraseña: cada vez que entres al panel te mandamos un código de acceso a
-              este email.
-            </p>
+                <Field
+                  label="Horarios"
+                  input={
+                    <input
+                      id="signup-horarios"
+                      name="horarios"
+                      type="text"
+                      value={form.horarios}
+                      onChange={(e) => update('horarios', e.target.value)}
+                      placeholder="Ej: Lun a Sáb 9 a 13 y 17 a 21"
+                      className={inputCls}
+                    />
+                  }
+                  help="Opcional — lo podés cargar o ajustar después desde el panel."
+                />
+                <p className="text-[11px] text-ink-soft">
+                  <Clock size={10} className="mr-1 inline" />
+                  Las fotos las cargás después, en un toque, desde el panel.
+                </p>
+              </>
+            )}
 
-            {/* Tranquilidad del plan, sin paso de "pago" (no se cobra nada ahora). */}
-            <div className="rounded-2xl bg-status-success-bg p-3.5 text-status-success-fg ring-1 ring-status-success/20">
-              <p className="flex items-center gap-1.5 text-sm font-bold">
-                <Sparkles size={14} /> 3 meses gratis · todo incluido
-              </p>
-              <p className="mt-0.5 text-xs leading-snug">
-                Descuentos, validaciones y clientes ilimitados. Sin tarjeta, sin MercadoPago. Cancelás
-                cuando quieras.
-              </p>
-            </div>
+            {/* Paso 3 — Tu cuenta: responsable, email, T&C + crear. */}
+            {step === 3 && (
+              <>
+                <Field
+                  label="Tu nombre"
+                  required
+                  input={
+                    <input
+                      id="signup-nombre-admin"
+                      name="nombreAdmin"
+                      type="text"
+                      autoComplete="name"
+                      value={form.nombreAdmin}
+                      onChange={(e) => update('nombreAdmin', e.target.value)}
+                      placeholder="Como en tu DNI"
+                      className={inputCls}
+                    />
+                  }
+                />
+                <Field
+                  label="Email"
+                  required
+                  input={
+                    <input
+                      id="signup-email-admin"
+                      name="emailAdmin"
+                      type="email"
+                      autoComplete="email"
+                      value={form.emailAdmin}
+                      onChange={(e) => update('emailAdmin', e.target.value)}
+                      placeholder="vos@tucomercio.com"
+                      className={inputCls}
+                    />
+                  }
+                />
+                <p className="rounded-xl bg-brand-soft px-3 py-2 text-xs font-medium text-brand-strong">
+                  No necesitás contraseña: cada vez que entres al panel te mandamos un código de
+                  acceso a este email.
+                </p>
 
-            <label className="flex items-start gap-3 rounded-2xl bg-surface p-4 ring-1 ring-line cursor-pointer">
-              <input
-                id="signup-accepted-tc"
-                name="acceptedTc"
-                type="checkbox"
-                checked={form.acceptedTc}
-                onChange={(e) => update('acceptedTc', e.target.checked)}
-                className="mt-0.5 h-5 w-5 shrink-0 rounded accent-brand"
-              />
-              <span className="text-xs leading-snug text-ink">
-                Acepto los{' '}
-                <Link
-                  to="/legal/terminos"
-                  target="_blank"
-                  className="font-bold text-brand-strong underline-offset-2 hover:underline"
-                >
-                  Términos y Condiciones
-                </Link>{' '}
-                y la{' '}
-                <Link
-                  to="/legal/privacidad"
-                  target="_blank"
-                  className="font-bold text-brand-strong underline-offset-2 hover:underline"
-                >
-                  Política de Privacidad
-                </Link>
-                . Confirmo que tengo facultades para representar al comercio.
-              </span>
-            </label>
+                {/* Tranquilidad del plan, sin paso de "pago" (no se cobra nada ahora). */}
+                <div className="rounded-2xl bg-status-success-bg p-3.5 text-status-success-fg ring-1 ring-status-success/20">
+                  <p className="flex items-center gap-1.5 text-sm font-bold">
+                    <Sparkles size={14} /> 3 meses gratis · todo incluido
+                  </p>
+                  <p className="mt-0.5 text-xs leading-snug">
+                    Descuentos, validaciones y clientes ilimitados. Sin tarjeta, sin MercadoPago.
+                    Cancelás cuando quieras.
+                  </p>
+                </div>
+
+                <label className="flex items-start gap-3 rounded-2xl bg-surface p-4 ring-1 ring-line cursor-pointer">
+                  <input
+                    id="signup-accepted-tc"
+                    name="acceptedTc"
+                    type="checkbox"
+                    checked={form.acceptedTc}
+                    onChange={(e) => update('acceptedTc', e.target.checked)}
+                    className="mt-0.5 h-5 w-5 shrink-0 rounded accent-brand"
+                  />
+                  <span className="text-xs leading-snug text-ink">
+                    Acepto los{' '}
+                    <Link
+                      to="/legal/terminos"
+                      target="_blank"
+                      className="font-bold text-brand-strong underline-offset-2 hover:underline"
+                    >
+                      Términos y Condiciones
+                    </Link>{' '}
+                    y la{' '}
+                    <Link
+                      to="/legal/privacidad"
+                      target="_blank"
+                      className="font-bold text-brand-strong underline-offset-2 hover:underline"
+                    >
+                      Política de Privacidad
+                    </Link>
+                    . Confirmo que tengo facultades para representar al comercio.
+                  </span>
+                </label>
+              </>
+            )}
 
             {error && (
               <p
@@ -490,27 +565,51 @@ export function AdminSignupPage() {
               </p>
             )}
 
-            <button
-              type="button"
-              onClick={handleSignup}
-              disabled={submitting || !form.acceptedTc}
-              className={cn(
-                'mt-1 flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold text-on-brand shadow-cta transition-all',
-                form.acceptedTc && !submitting
-                  ? 'bg-gradient-to-br from-brand to-brand-strong hover:-translate-y-0.5'
-                  : 'cursor-not-allowed bg-surface-2 text-ink-soft shadow-none',
+            {/* Navegación entre pasos: Atrás (pasos 2-3) + Continuar / Crear. */}
+            <div className="mt-1 flex items-center gap-3">
+              {step > 1 && (
+                <button
+                  type="button"
+                  onClick={goBack}
+                  disabled={submitting}
+                  className="flex shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-surface px-5 py-3.5 text-sm font-bold text-ink-soft ring-1 ring-line transition-all hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <ChevronLeft size={16} /> Atrás
+                </button>
               )}
-            >
-              {submitting ? (
-                <>
-                  <Clock size={16} className="animate-pulse" /> Creando tu comercio…
-                </>
+
+              {step < LAST_FORM_STEP ? (
+                <button
+                  type="button"
+                  onClick={goNext}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand to-brand-strong px-6 py-3.5 text-base font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
+                >
+                  Continuar <ChevronRight size={16} />
+                </button>
               ) : (
-                <>
-                  <Sparkles size={16} /> Crear mi comercio gratis
-                </>
+                <button
+                  type="button"
+                  onClick={handleSignup}
+                  disabled={submitting || !form.acceptedTc}
+                  className={cn(
+                    'flex flex-1 items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold text-on-brand shadow-cta transition-all',
+                    form.acceptedTc && !submitting
+                      ? 'bg-gradient-to-br from-brand to-brand-strong hover:-translate-y-0.5'
+                      : 'cursor-not-allowed bg-surface-2 text-ink-soft shadow-none',
+                  )}
+                >
+                  {submitting ? (
+                    <>
+                      <Clock size={16} className="animate-pulse" /> Creando tu comercio…
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={16} /> Crear mi comercio
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+            </div>
           </div>
         )}
 
@@ -554,18 +653,26 @@ function BannerPoint({ icon: Icon, children }: { icon: typeof Store; children: R
 }
 
 function Stepper({ step }: { step: Step }) {
-  const steps: { id: Step; label: string }[] = [
-    { id: 'datos', label: 'Datos' },
-    { id: 'listo', label: 'Listo' },
+  const steps: { id: FormStep; label: string }[] = [
+    { id: 1, label: 'Comercio' },
+    { id: 2, label: 'Contacto' },
+    { id: 3, label: 'Tu cuenta' },
   ]
-  const activeIdx = steps.findIndex((s) => s.id === step)
+  // En 'listo' (éxito) ya están los 3 pasos completos → activeIdx fuera de rango
+  // marca todos como hechos. En los pasos del form, el índice = número - 1.
+  const activeIdx = step === 'listo' ? steps.length : step - 1
+  const valueNow = Math.min(activeIdx + 1, steps.length)
+  const valueText =
+    step === 'listo'
+      ? '¡Listo! Los 3 pasos están completos'
+      : `Paso ${valueNow} de ${steps.length}: ${steps[activeIdx]?.label ?? ''}`
   return (
     <div
       role="progressbar"
       aria-valuemin={1}
       aria-valuemax={steps.length}
-      aria-valuenow={activeIdx + 1}
-      aria-valuetext={`Paso ${activeIdx + 1} de ${steps.length}: ${steps[activeIdx]?.label ?? ''}`}
+      aria-valuenow={valueNow}
+      aria-valuetext={valueText}
       aria-label="Progreso del registro"
       className="flex items-center justify-center gap-2"
     >

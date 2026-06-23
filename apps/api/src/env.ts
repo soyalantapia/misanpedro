@@ -6,7 +6,10 @@ const schema = z.object({
   MONGODB_URI: z.string().url().or(z.string().startsWith('mongodb')),
 
   JWT_SECRET: z.string().min(32),
-  JWT_REFRESH_SECRET: z.string().min(32),
+  // DEPRECATED/sin uso: el refresh es randomBytes(48) hasheado (sha256) en DB,
+  // NO un JWT — ver services/jwt.service.ts. Se mantiene opcional para no romper
+  // envs/deploys existentes que ya la tienen seteada.
+  JWT_REFRESH_SECRET: z.string().optional(),
 
   APP_URL_FRONT: z.string().url().default('http://localhost:5180'),
   APP_URL_API: z.string().url().default('http://localhost:3001'),

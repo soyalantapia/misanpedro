@@ -29,8 +29,10 @@ pushRoutes.post('/subscribe', async (c) => {
     return c.json({ ok: false, error: 'invalid input', issues: parsed.error.format() }, 400)
   }
   const { subscription, categories } = parsed.data
+  // Scopeado por (appId, endpoint): un mismo browser puede suscribirse a varias
+  // ciudades, y un cliente de otro tenant no puede pisar/robar esta suscripción.
   await PushSubscription.findOneAndUpdate(
-    { endpoint: subscription.endpoint },
+    { appId, endpoint: subscription.endpoint },
     {
       appId,
       endpoint: subscription.endpoint,
@@ -46,10 +48,11 @@ pushRoutes.post('/subscribe', async (c) => {
 const unsubscribeSchema = z.object({ endpoint: z.string().url() })
 
 pushRoutes.post('/unsubscribe', async (c) => {
+  const appId = getAppId(c)
   const body = await c.req.json().catch(() => ({}))
   const parsed = unsubscribeSchema.safeParse(body)
   if (parsed.success) {
-    await PushSubscription.deleteOne({ endpoint: parsed.data.endpoint })
+    await PushSubscription.deleteOne({ appId, endpoint: parsed.data.endpoint })
   }
   return c.json({ ok: true })
 })

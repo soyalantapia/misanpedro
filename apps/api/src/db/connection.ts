@@ -1,7 +1,7 @@
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { env } from '@/env'
-import { App, User, Owner } from '@/models'
+import { App, User, Owner, PushSubscription } from '@/models'
 
 let connectingPromise: Promise<typeof mongoose> | null = null
 
@@ -36,6 +36,15 @@ export async function connectDB(): Promise<typeof mongoose> {
         await Owner.syncIndexes()
       } catch (err) {
         console.error('[db] Owner.syncIndexes (no fatal):', (err as Error)?.message)
+      }
+      // PushSubscription cambió de unique global {endpoint} a unique por ciudad
+      // {appId,endpoint}. syncIndexes dropea el `endpoint_1` viejo (que impedía
+      // que un mismo browser se suscriba a 2 ciudades) y crea el compuesto.
+      try {
+        const dropped = await PushSubscription.syncIndexes()
+        if (dropped.length) console.log('[db] PushSubscription indexes reconciliados, dropeados:', dropped)
+      } catch (err) {
+        console.error('[db] PushSubscription.syncIndexes (no fatal):', (err as Error)?.message)
       }
       // Bootstrap one-time del Owner (super-admin). Corre DENTRO de Railway, donde
       // el Mongo interno sí resuelve (no se puede crear desde local). Idempotente.

@@ -35,11 +35,21 @@ function isStandalone(): boolean {
   return window.matchMedia('(display-mode: standalone)').matches
 }
 
+/**
+ * El panel del comercio cuelga de #/admin (HashRouter). El prompt de instalar la
+ * app del VECINO no debe aparecer en pantallas del comercio (mensaje cruzado B2B).
+ */
+function isAdminRoute(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.location.hash.startsWith('#/admin')
+}
+
 export function InstallPrompt() {
   const tenant = useTenant()
   const appName = tenant.config?.nombre ?? 'Mi Ciudad'
   const [event, setEvent] = useState<BeforeInstallEvent | null>(null)
   const [visible, setVisible] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
   // Mode 'native' = beforeinstallprompt disponible · 'ios' = mostrar A2HS manual
   const [mode, setMode] = useState<'native' | 'ios' | null>(null)
 
@@ -47,6 +57,8 @@ export function InstallPrompt() {
     if (typeof window === 'undefined') return
     if (wasDismissedRecently()) return
     if (isStandalone()) return
+    // Solo superficie del vecino: nunca en el panel del comercio (#/admin).
+    if (isAdminRoute()) return
 
     // El prompt NUNCA debe tapar el catálogo en el primer render. En ambos modos
     // esperamos a que el usuario se enganche: que pase un rato en la página o
@@ -126,79 +138,119 @@ export function InstallPrompt() {
   }
 
   return (
-    <div
-      role="dialog"
-      aria-labelledby="install-prompt-title"
-      className="animate-fade-up fixed inset-x-3 bottom-24 z-40 mx-auto flex max-w-sm items-start gap-3 rounded-3xl bg-surface p-4 shadow-floating ring-1 ring-line md:bottom-6 md:left-auto md:right-6 md:mx-0"
-      style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-    >
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta">
-        <Sparkles size={18} />
+    <>
+      {/* Pill discreto: no tapa el catálogo. Invita sin interrumpir; al tocarlo
+          abre un modal que explica para qué sirve instalar la app. */}
+      <div
+        className="animate-fade-up fixed bottom-24 left-3 z-40 md:bottom-6"
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="flex items-center gap-1 rounded-full bg-surface p-1 shadow-floating ring-1 ring-line">
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-brand to-brand-strong px-3 py-1.5 text-xs font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
+          >
+            <Download size={13} /> Instalar app
+          </button>
+          <button
+            type="button"
+            onClick={dismiss}
+            aria-label="Ocultar"
+            className="grid h-7 w-7 place-items-center rounded-full text-ink-faint hover:bg-surface-2 hover:text-ink"
+          >
+            <X size={13} />
+          </button>
+        </div>
       </div>
-      <div className="flex flex-1 flex-col gap-1">
-        <p id="install-prompt-title" className="text-sm font-bold text-ink">
-          Instalá {appName}
-        </p>
-        {mode === 'native' ? (
-          <>
-            <p className="text-xs text-ink-soft">
-              Agregala a tu pantalla de inicio para acceso rápido.
-            </p>
-            <div className="mt-1 flex items-center gap-2">
+
+      {modalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="install-modal-title"
+          className="animate-fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center"
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="animate-fade-up w-full max-w-sm rounded-3xl bg-surface p-5 shadow-floating ring-1 ring-line"
+            onClick={(e) => e.stopPropagation()}
+            style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            <div className="flex items-start gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta">
+                <Sparkles size={20} />
+              </div>
+              <div className="flex-1">
+                <p id="install-modal-title" className="text-base font-extrabold text-ink">
+                  Instalá {appName}
+                </p>
+                <p className="mt-0.5 text-xs text-ink-soft">
+                  Tenela en tu pantalla de inicio: abre al toque (sin buscar el link) y es la app
+                  de descuentos de tu ciudad, siempre a mano.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                aria-label="Cerrar"
+                className="grid h-7 w-7 place-items-center rounded-full text-ink-faint hover:bg-surface-2 hover:text-ink"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <ul className="mt-4 space-y-2 text-xs text-ink-soft">
+              <li className="flex items-center gap-2">
+                <span className="font-bold text-brand-strong">✓</span> Acceso directo desde el celu
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="font-bold text-brand-strong">✓</span> Tus cupones y tu ahorro a mano
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="font-bold text-brand-strong">✓</span> Sin ocupar lugar como una app de la tienda
+              </li>
+            </ul>
+
+            {mode === 'native' ? (
               <button
                 type="button"
                 onClick={handleInstall}
-                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-brand to-brand-strong px-3 py-1.5 text-xs font-bold text-on-brand shadow-cta hover:-translate-y-0.5 transition-all"
+                className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-brand to-brand-strong px-4 py-2.5 text-sm font-bold text-on-brand shadow-cta transition-all hover:-translate-y-0.5"
               >
-                <Download size={12} /> Instalar
+                <Download size={15} /> Instalar ahora
               </button>
-              <button
-                type="button"
-                onClick={dismiss}
-                className="text-xs font-semibold text-ink-soft hover:text-ink"
-              >
-                Más tarde
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="text-xs text-ink-soft">
-              Para sumarla a tu pantalla de inicio:
-            </p>
-            <ol className="mt-1 space-y-1 text-[11px] text-ink-soft">
-              <li className="flex items-center gap-1.5">
-                <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-soft text-[9px] font-bold text-brand-strong">
-                  1
-                </span>
-                Tocá <Share size={11} className="inline text-brand-strong" /> Compartir
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-soft text-[9px] font-bold text-brand-strong">
-                  2
-                </span>
-                Elegí <Plus size={11} className="inline text-brand-strong" /> "Agregar a inicio"
-              </li>
-            </ol>
+            ) : (
+              <div className="mt-4 rounded-2xl bg-surface-2 p-3">
+                <p className="text-xs font-semibold text-ink">Desde Safari en tu iPhone:</p>
+                <ol className="mt-2 space-y-1.5 text-[11px] text-ink-soft">
+                  <li className="flex items-center gap-1.5">
+                    <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-soft text-[9px] font-bold text-brand-strong">
+                      1
+                    </span>
+                    Tocá <Share size={11} className="inline text-brand-strong" /> Compartir
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-soft text-[9px] font-bold text-brand-strong">
+                      2
+                    </span>
+                    Elegí <Plus size={11} className="inline text-brand-strong" /> "Agregar a inicio"
+                  </li>
+                </ol>
+              </div>
+            )}
+
             <button
               type="button"
-              onClick={dismiss}
-              className="mt-1 self-start text-[11px] font-semibold text-ink-soft hover:text-ink"
+              onClick={() => setModalOpen(false)}
+              className="mt-3 w-full text-center text-xs font-semibold text-ink-soft hover:text-ink"
             >
-              Entendido
+              Ahora no
             </button>
-          </>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label="Cerrar"
-        className="grid h-7 w-7 place-items-center rounded-full text-ink-faint hover:bg-surface-2 hover:text-ink"
-      >
-        <X size={14} />
-      </button>
-    </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

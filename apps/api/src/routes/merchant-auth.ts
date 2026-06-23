@@ -19,6 +19,7 @@ import { requireMerchantAuth } from '@/middleware/auth'
 import { rateLimit } from '@/middleware/security'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { sendMerchantWelcome, sendMerchantOtpCode } from '@/services/email.service'
+import { tenantFrontUrl } from '@/lib/urls'
 
 export const merchantAuthRoutes = new Hono()
 
@@ -150,11 +151,15 @@ merchantAuthRoutes.post('/signup', signupLimiter, async (c) => {
     }
   }
 
-  // Email bienvenida (no bloqueante)
+  // Email bienvenida (no bloqueante). CTA al panel de SU ciudad (tenant-aware).
   const tenantNombre = tenant?.nombre ?? 'Mi Ciudad'
-  sendMerchantWelcome(admin.email, admin.nombre, comercio.nombre, tenantNombre).catch((err) =>
-    console.error('[merchant-welcome-email]', err),
-  )
+  sendMerchantWelcome(
+    admin.email,
+    admin.nombre,
+    comercio.nombre,
+    tenantNombre,
+    tenant ? tenantFrontUrl(tenant) : undefined,
+  ).catch((err) => console.error('[merchant-welcome-email]', err))
 
   const accessToken = signAccessToken({
     sub: user._id.toString(),

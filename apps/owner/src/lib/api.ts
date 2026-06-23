@@ -179,7 +179,7 @@ export const owner = {
         merchants: { total: number; active: number }
         users: { total: number }
         redemptions: { last30Days: number }
-        revenue: { mrrARS: number; currency: string }
+        revenue: { mrrARS: number; currency: string; byCurrency?: Record<string, number> }
       }
     }>('/api/v1/owner/metrics')
   },
@@ -224,6 +224,14 @@ export const owner = {
     accentColor?: string
     phonePrefix?: string
     geoCenter?: { lat: number; lng: number }
+    legal?: {
+      razonSocial?: string
+      taxId?: string
+      taxIdLabel?: string
+      condicionFiscal?: string
+      domicilio?: string
+      jurisdiccion?: string
+    }
   }) {
     return api<{ ok: boolean; app: any }>('/api/v1/owner/apps', {
       method: 'POST',
@@ -285,14 +293,40 @@ export const owner = {
     }>(`/api/v1/owner/users?${qs}`)
   },
 
-  async listSubscriptions(params: { appId?: string; status?: string; limit?: number } = {}) {
+  async listSubscriptions(params: { appId?: string; status?: string; limit?: number; offset?: number } = {}) {
     const qs = new URLSearchParams()
     if (params.appId) qs.set('appId', params.appId)
     if (params.status) qs.set('status', params.status)
     if (params.limit) qs.set('limit', String(params.limit))
+    if (params.offset) qs.set('offset', String(params.offset))
     return api<{
       ok: boolean
       subscriptions: Array<any>
+      total: number
+      limit: number
+      offset: number
     }>(`/api/v1/owner/subscriptions?${qs}`)
+  },
+
+  // ─── Acciones de gestión ──────────────────────────────────────
+  async setMerchantEstado(id: string, estado: 'activo' | 'suspendido') {
+    return api<{ ok: boolean; merchant: any }>(`/api/v1/owner/merchants/${id}`, {
+      method: 'PATCH',
+      body: { estado },
+    })
+  },
+
+  async setSubscriptionStatus(id: string, status: 'authorized' | 'paused' | 'cancelled') {
+    return api<{ ok: boolean; subscription: any }>(`/api/v1/owner/subscriptions/${id}`, {
+      method: 'PATCH',
+      body: { status },
+    })
+  },
+
+  async auditLog() {
+    return api<{
+      ok: boolean
+      actions: Array<{ action: string; at: string; ip?: string; detail?: string }>
+    }>('/api/v1/owner/me/audit')
   },
 }

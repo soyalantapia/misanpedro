@@ -19,6 +19,7 @@ export type Categoria =
   | 'mascotas'
   | 'deporte'
   | 'servicios'
+  | 'inmobiliaria'
   | 'otro'
 
 export const CATEGORIAS: { id: Categoria; label: string }[] = [
@@ -39,6 +40,7 @@ export const CATEGORIAS: { id: Categoria; label: string }[] = [
   { id: 'mascotas', label: 'Mascotas' },
   { id: 'deporte', label: 'Deporte' },
   { id: 'servicios', label: 'Servicios' },
+  { id: 'inmobiliaria', label: 'Inmobiliaria' },
   { id: 'otro', label: 'Otro · completar' },
 ]
 

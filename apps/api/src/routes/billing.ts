@@ -8,6 +8,7 @@ import { tenantContext, getAppId } from '@/middleware/tenant'
 import { createPreapproval, getPreapproval } from '@/services/mp.service'
 import { sendSubscriptionReceipt } from '@/services/email.service'
 import { verifyMpSignature, mapMpStatus } from '@/services/mp-signature'
+import { tenantFrontUrl } from '@/lib/urls'
 
 export const billingRoutes = new Hono()
 
@@ -40,6 +41,7 @@ async function sendReceiptForSubscription(sub: any) {
       appNombre,
       moneda,
       locale,
+      pais: tenant?.pais,
     })
   } catch (err) {
     console.error('[receipt-email]', err)
@@ -168,7 +170,9 @@ billingRoutes.post('/preapproval', requireMerchantAuth, async (c) => {
     payerEmail: user.email,
     amount,
     currency: tenant.moneda ?? 'ARS',
-    backUrl: `${env.APP_URL_FRONT}/#/admin/billing/return?ref=${externalReference}`,
+    // back_url por-tenant: el comercio vuelve a SU ciudad post-pago, no a la
+    // PWA global. tenantFrontUrl deriva https://<subdomain>.micuidad.com.
+    backUrl: `${tenantFrontUrl(tenant)}/#/admin/billing/return?ref=${externalReference}`,
   })
 
   if (!preapproval) {

@@ -81,6 +81,10 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
   if (coupon.vigenciaHasta.getTime() < Date.now()) {
     return c.json({ ok: false, error: 'cupón vencido' }, 400)
   }
+  // Stock agotado: no tiene sentido activar un cupón que ya no se podrá canjear.
+  if (coupon.stockMaximo != null && (coupon.stockUsado ?? 0) >= coupon.stockMaximo) {
+    return c.json({ ok: false, error: 'cupón agotado' }, 409)
+  }
 
   // Límite de uso por persona: contamos canjes previos del (usuario × cupón).
   // El dedupe de activación ACTIVA (más abajo) no alcanza: hay que contar canjes.

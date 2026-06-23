@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Palette, MapPin, Globe } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Palette, MapPin, Globe, Scale } from 'lucide-react'
 import { owner } from '@/lib/api'
 import { PAISES, PAIS_DEFAULT, findPaisByNombre } from '@/lib/paises'
 import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/cn'
 
-type Step = 1 | 2 | 3
+type Step = 1 | 2 | 3 | 4
 
 export function NewAppPage() {
   const navigate = useNavigate()
@@ -26,6 +26,13 @@ export function NewAppPage() {
     phonePrefix: PAIS_DEFAULT.prefijo,
     geoLat: '',
     geoLng: '',
+    // Legales del responsable de la ciudad (aparecen en Términos/Privacidad).
+    razonSocial: '',
+    taxId: '',
+    taxIdLabel: '',
+    condicionFiscal: '',
+    domicilio: '',
+    jurisdiccion: '',
   })
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -78,12 +85,25 @@ export function NewAppPage() {
       if (!/^[A-Z]{3}$/.test(form.moneda)) return 'Moneda inválida (ISO-4217, ej. ARS, COP)'
       if (!/^[a-z]{2,3}(-[A-Z]{2,4})?$/.test(form.locale))
         return 'Idioma/locale inválido (ej. es-AR, es-CO)'
+      // geoCenter requerido: sin él, el mapa del alta de comercios de esta ciudad
+      // cae en San Pedro (default del modelo). Lo exigimos al crear.
+      if (!form.geoLat.trim() || !form.geoLng.trim())
+        return 'Cargá el centro del mapa (lat/lng): sin él los comercios caen en otra ciudad'
+      const lat = Number(form.geoLat)
+      const lng = Number(form.geoLng)
+      if (!Number.isFinite(lat) || lat < -90 || lat > 90) return 'Latitud inválida (-90 a 90)'
+      if (!Number.isFinite(lng) || lng < -180 || lng > 180) return 'Longitud inválida (-180 a 180)'
     }
     if (n === 2) {
       if (!/^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/.test(form.slug)) {
         return 'Slug inválido: mínimo 3 caracteres, solo a-z, 0-9 y guiones (sin guión al inicio/fin)'
       }
       if (!form.subdomain.trim()) return 'Subdomain requerido'
+    }
+    if (n === 4) {
+      // Mínimos legales para que Términos/Privacidad no salgan vacíos.
+      if (!form.razonSocial.trim()) return 'La razón social / responsable es requerida (aparece en Términos)'
+      if (!form.domicilio.trim()) return 'El domicilio legal es requerido (aparece en Términos)'
     }
     return null
   }
@@ -101,7 +121,7 @@ export function NewAppPage() {
   async function submit() {
     // Re-validamos TODOS los pasos antes del POST: si el usuario volvió atrás y
     // editó/borró un campo requerido, no llegamos al backend con datos inválidos.
-    const err = validateStep(1) ?? validateStep(2)
+    const err = validateStep(1) ?? validateStep(2) ?? validateStep(4)
     if (err) {
       setError(err)
       return
@@ -128,6 +148,14 @@ export function NewAppPage() {
           form.geoLat.trim() && form.geoLng.trim()
             ? { lat: Number(form.geoLat), lng: Number(form.geoLng) }
             : undefined,
+        legal: {
+          razonSocial: form.razonSocial.trim() || undefined,
+          taxId: form.taxId.trim() || undefined,
+          taxIdLabel: form.taxIdLabel.trim() || undefined,
+          condicionFiscal: form.condicionFiscal.trim() || undefined,
+          domicilio: form.domicilio.trim() || undefined,
+          jurisdiccion: form.jurisdiccion.trim() || undefined,
+        },
       }
       const res = await owner.createApp(payload)
       if (res.ok && res.app) {
@@ -147,7 +175,7 @@ export function NewAppPage() {
       <PageHeader
         eyebrow="Onboarding"
         title="Nueva app"
-        subtitle="Creá una nueva ciudad en 3 pasos"
+        subtitle="Creá una nueva ciudad en 4 pasos"
         actions={
           <Link
             to="/apps"
@@ -166,6 +194,7 @@ export function NewAppPage() {
         )}
         {step === 2 && <StepDomain form={form} update={update} />}
         {step === 3 && <StepBrand form={form} update={update} />}
+        {step === 4 && <StepLegal form={form} update={update} />}
 
         {error && (
           <div className="mt-4 rounded-xl bg-danger-bg px-3 py-2 text-xs font-semibold text-danger">
@@ -183,7 +212,7 @@ export function NewAppPage() {
             <ArrowLeft size={12} />
             Anterior
           </button>
-          {step < 3 ? (
+          {step < 4 ? (
             <button
               type="button"
               onClick={next}
@@ -214,6 +243,7 @@ function Stepper({ step }: { step: Step }) {
     { n: 1, label: 'Ubicación', icon: MapPin },
     { n: 2, label: 'Dominio', icon: Globe },
     { n: 3, label: 'Branding', icon: Palette },
+    { n: 4, label: 'Legales', icon: Scale },
   ] as const
   return (
     <ol className="flex items-center gap-2">
@@ -436,6 +466,70 @@ function StepBrand({
       <div className="rounded-xl bg-accent-50 p-4 text-xs leading-relaxed text-accent-900 ring-1 ring-accent-100">
         Después podés ajustar logo, hero copy y horarios desde el detalle de la app.
       </div>
+    </div>
+  )
+}
+
+function StepLegal({
+  form,
+  update,
+}: {
+  form: any
+  update: (k: any, v: any) => void
+}) {
+  return (
+    <div className="grid gap-5">
+      <h2 className="text-lg font-bold text-neutral-900">Datos legales del responsable</h2>
+      <p className="-mt-3 text-[13px] text-neutral-500">
+        Aparecen en las páginas de <strong>Términos</strong> y <strong>Privacidad</strong> de la
+        ciudad. El marco legal (ley de datos, etiqueta del ID fiscal) se deriva del país. Editable
+        luego desde el detalle de la app.
+      </p>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <TextField
+          label="Razón social / responsable"
+          hint="Quién opera la ciudad (persona o empresa)."
+          value={form.razonSocial}
+          onChange={(v) => update('razonSocial', v)}
+          placeholder="Alan Tapia / Mi Nariño S.A.S."
+        />
+        <TextField
+          label="Domicilio legal"
+          hint="Domicilio fiscal/legal real."
+          value={form.domicilio}
+          onChange={(v) => update('domicilio', v)}
+          placeholder="Calle 123, Ciudad"
+        />
+      </div>
+      <div className="grid gap-5 sm:grid-cols-3">
+        <TextField
+          label="ID fiscal"
+          hint="CUIT (AR) / NIT (CO) / RUT…"
+          value={form.taxId}
+          onChange={(v) => update('taxId', v)}
+          placeholder="20-12345678-9"
+        />
+        <TextField
+          label="Etiqueta del ID (opcional)"
+          hint="Si vacío, se deriva del país."
+          value={form.taxIdLabel}
+          onChange={(v) => update('taxIdLabel', v)}
+          placeholder="CUIT"
+        />
+        <TextField
+          label="Condición fiscal (opcional)"
+          value={form.condicionFiscal}
+          onChange={(v) => update('condicionFiscal', v)}
+          placeholder="Monotributista"
+        />
+      </div>
+      <TextField
+        label="Jurisdicción (opcional)"
+        hint="Tribunales competentes. Si vacío, se deriva del país."
+        value={form.jurisdiccion}
+        onChange={(v) => update('jurisdiccion', v)}
+        placeholder="Tribunales de San Pedro, Buenos Aires"
+      />
     </div>
   )
 }

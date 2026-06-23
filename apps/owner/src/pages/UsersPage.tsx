@@ -6,14 +6,20 @@ import { fmtDate } from '@/lib/format'
 import { PageHeader } from '@/components/PageHeader'
 import { EmptyState } from '@/components/EmptyState'
 
+const PAGE_SIZE = 50
+
 export function UsersPage() {
   const [params, setParams] = useSearchParams()
   const appId = params.get('appId') ?? ''
-  const [q, setQ] = useState(params.get('q') ?? '')
+  const qParam = params.get('q') ?? ''
+  const [q, setQ] = useState(qParam)
 
-  const [data, setData] = useState<{ users: any[]; total: number }>({ users: [], total: 0 })
+  const [users, setUsers] = useState<any[]>([])
+  const [total, setTotal] = useState(0)
   const [apps, setApps] = useState<Array<{ id: string; nombre: string }>>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     void (async () => {
@@ -38,31 +44,64 @@ export function UsersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q])
 
+  // Reset + primera página cuando cambian filtros (appId o query).
   useEffect(() => {
     setLoading(true)
+    setError(null)
     void (async () => {
       try {
         const res = await owner.listUsers({
           appId: appId || undefined,
-          q: params.get('q') || undefined,
-          limit: 100,
+          q: qParam || undefined,
+          limit: PAGE_SIZE,
+          offset: 0,
         })
-        setData({ users: res.users, total: res.total })
-      } catch {
-        setData({ users: [], total: 0 })
+        setUsers(res.users)
+        setTotal(res.total)
+      } catch (err: any) {
+        setError(err?.message ?? 'Error cargando vecinos')
+        setUsers([])
+        setTotal(0)
       } finally {
         setLoading(false)
       }
     })()
-  }, [appId, params])
+  }, [appId, qParam])
+
+  async function loadMore() {
+    setLoadingMore(true)
+    setError(null)
+    try {
+      const res = await owner.listUsers({
+        appId: appId || undefined,
+        q: qParam || undefined,
+        limit: PAGE_SIZE,
+        offset: users.length,
+      })
+      setUsers((prev) => [...prev, ...res.users])
+      setTotal(res.total)
+    } catch (err: any) {
+      setError(err?.message ?? 'Error cargando más vecinos')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  const hasMore = users.length < total
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Cross-app"
         title="Vecinos"
-        subtitle={`${data.total} vecinos en total`}
+        subtitle={`${total} vecinos en total`}
       />
+
+      {error && (
+        <div className="rounded-xl bg-danger-bg px-4 py-3 text-sm font-semibold text-danger">
+          {error}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <label className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs ring-1 ring-neutral-200">
@@ -104,44 +143,59 @@ export function UsersPage() {
             <div key={i} className="h-14 animate-pulse rounded-xl bg-white" />
           ))}
         </div>
-      ) : data.users.length === 0 ? (
+      ) : users.length === 0 ? (
         <EmptyState
           icon={Users}
           title="Sin vecinos"
           description="No hay vecinos que cumplan los filtros."
         />
       ) : (
-        <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-neutral-200">
-          <table className="min-w-full text-sm">
-            <thead className="bg-neutral-50 text-xs font-bold uppercase tracking-widest text-neutral-500">
-              <tr>
-                <th className="px-4 py-3 text-left">Vecino</th>
-                <th className="px-4 py-3 text-left">App</th>
-                <th className="px-4 py-3 text-left">Último acceso</th>
-                <th className="px-4 py-3 text-right">Alta</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {data.users.map((u) => (
-                <tr key={u._id} className="hover:bg-neutral-50">
-                  <td className="px-4 py-3">
-                    <p className="font-bold text-neutral-900">{u.nombre}</p>
-                    <p className="text-xs text-neutral-500">Tel {u.telefono ?? '—'}</p>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-neutral-600">
-                    {u.appId?.nombre ?? '—'}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-neutral-600">
-                    {u.lastLoginAt ? fmtDate(u.lastLoginAt) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-right text-xs text-neutral-500">
-                    {fmtDate(u.createdAt)}
-                  </td>
+        <>
+          <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-neutral-200">
+            <table className="min-w-full text-sm">
+              <thead className="bg-neutral-50 text-xs font-bold uppercase tracking-widest text-neutral-500">
+                <tr>
+                  <th className="px-4 py-3 text-left">Vecino</th>
+                  <th className="px-4 py-3 text-left">App</th>
+                  <th className="px-4 py-3 text-left">Último acceso</th>
+                  <th className="px-4 py-3 text-right">Alta</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {users.map((u) => (
+                  <tr key={u._id} className="hover:bg-neutral-50">
+                    <td className="px-4 py-3">
+                      <p className="font-bold text-neutral-900">{u.nombre}</p>
+                      <p className="text-xs text-neutral-500">Tel {u.telefono ?? '—'}</p>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-neutral-600">
+                      {u.appId?.nombre ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-neutral-600">
+                      {u.lastLoginAt ? fmtDate(u.lastLoginAt) : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right text-xs text-neutral-500">
+                      {fmtDate(u.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {hasMore && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-neutral-700 ring-1 ring-neutral-200 transition-colors hover:bg-neutral-50 disabled:opacity-50"
+              >
+                {loadingMore ? 'Cargando…' : `Cargar más (${users.length} de ${total})`}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

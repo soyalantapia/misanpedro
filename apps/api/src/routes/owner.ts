@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { Types } from 'mongoose'
 import { createHash, randomBytes } from 'node:crypto'
 import {
   App,
@@ -33,6 +34,36 @@ import { env } from '@/env'
 
 export const ownerRoutes = new Hono()
 
+// Anti fuerza-bruta del login del owner. La cuenta es cross-tenant y (por
+// decisión) sin 2FA, así que el password es el único factor: limitamos los
+// intentos por IP para que no quede expuesto a fuerza bruta sin freno.
+const ownerLoginLimiter = rateLimit({ prefix: 'owner-login', max: 10, windowMs: 60_000 })
+
+/**
+ * Audit log mini del owner: registra la acción en `recentActions` (últimas 20,
+ * vía $slice). No bloquea ni rompe la operación si falla. Da trazabilidad
+ * cross-tenant (quién creó/editó/suspendió qué) — antes el campo existía pero
+ * nunca se escribía.
+ */
+async function logOwnerAction(ownerId: string | undefined, action: string, ip?: string, detail?: string) {
+  if (!ownerId) return
+  try {
+    await Owner.updateOne(
+      { _id: ownerId },
+      {
+        $push: {
+          recentActions: {
+            $each: [{ action, at: new Date(), ip: ip || undefined, detail }],
+            $slice: -20,
+          },
+        },
+      },
+    )
+  } catch (err) {
+    console.error('[owner-audit]', (err as Error)?.message)
+  }
+}
+
 // ════════════════════════════════════════════════════════════════════
 //                            AUTH
 // ════════════════════════════════════════════════════════════════════
@@ -52,7 +83,7 @@ const loginSchema = z.object({
  *  2. POST /api/v1/owner/auth/login { email, password, totp } → access + refresh
  *  3. POST /api/v1/owner/auth/2fa/verify { totp } → activa el 2FA (sólo primera vez)
  */
-ownerRoutes.post('/auth/login', async (c) => {
+ownerRoutes.post('/auth/login', ownerLoginLimiter, async (c) => {
   const parsed = loginSchema.safeParse(await c.req.json().catch(() => ({})))
   if (!parsed.success) {
     return c.json({ ok: false, error: 'invalid input' }, 400)
@@ -298,6 +329,15 @@ ownerRoutes.get('/me', requireOwnerAuth, async (c) => {
   })
 })
 
+/** Audit log del owner: últimas acciones (más recientes primero). */
+ownerRoutes.get('/me/audit', requireOwnerAuth, async (c) => {
+  const auth = c.get('auth')
+  const owner = await Owner.findById(auth.sub).select('recentActions')
+  if (!owner) return c.json({ ok: false, error: 'not found' }, 404)
+  const actions = [...(owner.recentActions ?? [])].reverse()
+  return c.json({ ok: true, actions })
+})
+
 // ════════════════════════════════════════════════════════════════════
 //                       DASHBOARD GLOBAL
 // ════════════════════════════════════════════════════════════════════
@@ -486,6 +526,8 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
     ...(data.geoCenter ? { geoCenter: data.geoCenter } : {}),
   })
 
+  await logOwnerAction(auth.sub, 'app.create', c.req.header('x-forwarded-for'), `${app.slug} · ${app.nombre}`)
+
   // Notificación al owner (no bloqueante). Si Resend no está configurado,
   // el service loguea a consola sin fallar.
   void (async () => {
@@ -565,6 +607,7 @@ ownerRoutes.patch('/apps/:id', requireOwnerAuth, async (c) => {
     return c.json({ ok: false, error: 'invalid input', detail: parsed.error.flatten() }, 400)
   }
   const id = c.req.param('id')
+  const auth = c.get('auth')
   let app
   try {
     app = await App.findByIdAndUpdate(id, parsed.data, { new: true, runValidators: true })
@@ -577,6 +620,12 @@ ownerRoutes.patch('/apps/:id', requireOwnerAuth, async (c) => {
     throw err
   }
   if (!app) return c.json({ ok: false, error: 'not found' }, 404)
+  await logOwnerAction(
+    auth.sub,
+    'app.update',
+    c.req.header('x-forwarded-for'),
+    `${app.slug} · ${Object.keys(parsed.data).join(', ')}`,
+  )
   return c.json({ ok: true, app })
 })
 
@@ -643,6 +692,25 @@ ownerRoutes.get('/merchants', requireOwnerAuth, async (c) => {
   return c.json({ ok: true, merchants: items, total, limit, offset })
 })
 
+/** Suspender / reactivar un comercio desde el owner. */
+const merchantActionSchema = z.object({ estado: z.enum(['activo', 'suspendido']) })
+ownerRoutes.patch('/merchants/:id', requireOwnerAuth, async (c) => {
+  const auth = c.get('auth')
+  const id = c.req.param('id')
+  if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
+  const parsed = merchantActionSchema.safeParse(await c.req.json().catch(() => ({})))
+  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
+  const merchant = await Merchant.findByIdAndUpdate(id, { estado: parsed.data.estado }, { new: true })
+  if (!merchant) return c.json({ ok: false, error: 'not found' }, 404)
+  await logOwnerAction(
+    auth.sub,
+    parsed.data.estado === 'suspendido' ? 'merchant.suspend' : 'merchant.reactivate',
+    c.req.header('x-forwarded-for'),
+    `${merchant.nombre} (${String(merchant._id)})`,
+  )
+  return c.json({ ok: true, merchant })
+})
+
 /**
  * Listado de vecinos cross-app con filtros.
  * Query params: ?appId=, ?q=email-o-nombre, ?limit=50, ?offset=0
@@ -684,19 +752,43 @@ ownerRoutes.get('/subscriptions', requireOwnerAuth, async (c) => {
   const appId = url.searchParams.get('appId')
   const status = url.searchParams.get('status')
   const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50'), 200)
+  const offset = parseInt(url.searchParams.get('offset') ?? '0')
 
   const filter: Record<string, unknown> = {}
   if (appId) filter.appId = appId
   if (status) filter.status = status
 
-  const subs = await Subscription.find(filter)
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .populate('appId', 'slug nombre')
-    .populate('merchantId', 'nombre slug')
-    .lean()
+  const [subs, total] = await Promise.all([
+    Subscription.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit)
+      .populate('appId', 'slug nombre')
+      .populate('merchantId', 'nombre slug')
+      .lean(),
+    Subscription.countDocuments(filter),
+  ])
 
-  return c.json({ ok: true, subscriptions: subs })
+  return c.json({ ok: true, subscriptions: subs, total, limit, offset })
+})
+
+/** Pausar / cancelar / reactivar una suscripción desde el owner. */
+const subscriptionActionSchema = z.object({ status: z.enum(['authorized', 'paused', 'cancelled']) })
+ownerRoutes.patch('/subscriptions/:id', requireOwnerAuth, async (c) => {
+  const auth = c.get('auth')
+  const id = c.req.param('id')
+  if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
+  const parsed = subscriptionActionSchema.safeParse(await c.req.json().catch(() => ({})))
+  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
+  const sub = await Subscription.findByIdAndUpdate(id, { status: parsed.data.status }, { new: true })
+  if (!sub) return c.json({ ok: false, error: 'not found' }, 404)
+  await logOwnerAction(
+    auth.sub,
+    `subscription.${parsed.data.status}`,
+    c.req.header('x-forwarded-for'),
+    sub.externalReference ?? String(sub._id),
+  )
+  return c.json({ ok: true, subscription: sub })
 })
 
 /**

@@ -1,9 +1,15 @@
 import { test, expect } from '@playwright/test'
 
+// Parametrizable por tenant: E2E_TITLE_RE permite apuntar a otra ciudad
+// (ej. "Mi Villa María"). Sin la env var, mantiene el assert actual.
+const titleRe = process.env.E2E_TITLE_RE
+  ? new RegExp(process.env.E2E_TITLE_RE)
+  : /Mi San Pedro/
+
 test.describe('Vecino · smoke E2E', () => {
   test('home carga con branding y nav mobile (Mapa/Locales/Cupones/Alertas/Perfil)', async ({ page }) => {
     await page.goto('/')
-    await expect(page).toHaveTitle(/Mi San Pedro/)
+    await expect(page).toHaveTitle(titleRe)
     const nav = page.getByRole('navigation', { name: 'Navegación móvil' })
     await expect(nav).toBeVisible()
     for (const label of ['Mapa', 'Locales', 'Cupones', 'Alertas', 'Perfil']) {

@@ -98,6 +98,9 @@ redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, requir
   if (coupon.vigenciaHasta.getTime() < Date.now()) {
     return c.json({ ok: false, error: 'el cupón está vencido', status: 'vencido' }, 409)
   }
+  if (coupon.stockMaximo != null && (coupon.stockUsado ?? 0) >= coupon.stockMaximo) {
+    return c.json({ ok: false, error: 'el cupón está agotado', status: 'agotado' }, 409)
+  }
 
   const user = await User.findOne({ _id: activation.userId, appId })
   if (!user) return c.json({ ok: false, error: 'usuario no encontrado' }, 404)
@@ -120,6 +123,7 @@ redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, requir
 redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')
+  const tenant = c.get('tenant')
   if (!auth.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
   const body = await c.req.json().catch(() => ({}))
   const parsed = confirmRedemptionSchema.safeParse(body)
@@ -164,6 +168,28 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
     )
   }
 
+  // Stock máximo: claim ATÓMICO antes de confirmar. $inc condicional a que
+  // stockUsado < stockMaximo → dos canjes concurrentes no pueden pasarse del
+  // tope. Si no queda stock, marcamos 'agotado' y bloqueamos. stockMaximo
+  // null/undefined = sin tope (igual contamos el uso más abajo).
+  let claimedStock = false
+  if (coupon.stockMaximo != null) {
+    const claimed = await Coupon.findOneAndUpdate(
+      { _id: coupon._id, appId, $expr: { $lt: [{ $ifNull: ['$stockUsado', 0] }, '$stockMaximo'] } },
+      { $inc: { stockUsado: 1 } },
+      { new: true },
+    )
+    if (!claimed) {
+      await Coupon.updateOne({ _id: coupon._id, appId }, { estado: 'agotado' })
+      return c.json({ ok: false, error: 'el cupón está agotado', status: 'agotado' }, 409)
+    }
+    claimedStock = true
+    // Si este canje consumió la última unidad, dejamos el cupón 'agotado'.
+    if (claimed.stockMaximo != null && (claimed.stockUsado ?? 0) >= claimed.stockMaximo) {
+      await Coupon.updateOne({ _id: coupon._id, appId }, { estado: 'agotado' })
+    }
+  }
+
   // PM-elite T1: el monto es OPCIONAL. Si el cajero no lo tipeó, usamos el
   // `precioReferencia` del cupón para estimar el ahorro (precio normal de lista).
   // Si tampoco hay precioReferencia, el ahorro queda en 0 pero el canje se
@@ -196,13 +222,23 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
     // canje. Si otra confirmación simultánea ya lo registró, devolvemos un
     // "ya canjeado" limpio en vez de un 500 con el error crudo de Mongo.
     if ((err as { code?: number })?.code === 11000) {
+      // Compensamos el stock reclamado: este canje no se concretó (doble-tap).
+      if (claimedStock) {
+        await Coupon.updateOne({ _id: coupon._id, appId }, { $inc: { stockUsado: -1 } }).catch(() => {})
+      }
       return c.json({ ok: false, error: 'ya canjeado' }, 409)
+    }
+    if (claimedStock) {
+      await Coupon.updateOne({ _id: coupon._id, appId }, { $inc: { stockUsado: -1 } }).catch(() => {})
     }
     throw err
   }
 
-  coupon.stockUsado = (coupon.stockUsado ?? 0) + 1
-  await coupon.save()
+  // Sin tope de stock: contamos el uso igual. Con tope, ya se incrementó
+  // atómicamente en el claim de arriba.
+  if (coupon.stockMaximo == null) {
+    await Coupon.updateOne({ _id: coupon._id, appId }, { $inc: { stockUsado: 1 } })
+  }
 
   // Email + event (no bloqueante)
   void (async () => {
@@ -217,7 +253,10 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
           cupon: coupon.titulo,
           porcentaje: coupon.porcentaje,
           ahorro: ahorroEstimado,
-          fecha: activation.redeemedAt!.toLocaleString('es-AR'),
+          fecha: activation.redeemedAt!.toLocaleString(tenant?.locale ?? 'es-AR'),
+          appNombre: tenant?.nombre,
+          moneda: tenant?.moneda,
+          locale: tenant?.locale,
         })
       }
       if (user) {

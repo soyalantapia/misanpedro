@@ -33,10 +33,17 @@ type PreapprovalRes = {
 export async function createPreapproval(input: PreapprovalReq): Promise<PreapprovalRes | null> {
   if (!env.MP_ACCESS_TOKEN) {
     console.warn('[mp] MP_ACCESS_TOKEN no configurado — usando modo mock')
-    // Modo mock para desarrollo sin credenciales
+    // Modo mock para desarrollo sin credenciales. El init_point se deriva del
+    // origin del backUrl (ya tenant-aware) para mantener al comercio en su ciudad.
+    let frontOrigin: string
+    try {
+      frontOrigin = new URL(input.backUrl).origin
+    } catch {
+      frontOrigin = env.APP_URL_FRONT.replace(/\/+$/, '')
+    }
     return {
       id: `mock_${Date.now()}`,
-      init_point: `${env.APP_URL_FRONT}/#/admin/billing/mock-pay?ref=${encodeURIComponent(input.externalReference)}`,
+      init_point: `${frontOrigin}/#/admin/billing/mock-pay?ref=${encodeURIComponent(input.externalReference)}`,
       status: 'pending',
     }
   }

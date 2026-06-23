@@ -156,8 +156,14 @@ function wrap(title: string, body: string, appNombre = 'Mi Ciudad'): string {
   `
 }
 
-// Vecino — bienvenida después de registrarse
-export async function sendUserWelcome(to: string, nombre: string, appNombre = 'Mi Ciudad') {
+// Vecino — bienvenida después de registrarse. `frontUrl` = URL de la ciudad
+// (tenant-aware); si no se pasa, cae al global APP_URL_FRONT.
+export async function sendUserWelcome(
+  to: string,
+  nombre: string,
+  appNombre = 'Mi Ciudad',
+  frontUrl = env.APP_URL_FRONT,
+) {
   return sendEmail({
     to,
     fromName: appNombre,
@@ -170,14 +176,14 @@ export async function sendUserWelcome(to: string, nombre: string, appNombre = 'M
         <p>Activá un cupón en tu comercio favorito y mostrale al cajero el QR o
         código de 6 dígitos. Listo, ahorraste.</p>
         <p style="margin-top:24px">
-          <a href="${env.APP_URL_FRONT}" style="background:#ea580c;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600">
+          <a href="${frontUrl}" style="background:#ea580c;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600">
             Ver descuentos disponibles →
           </a>
         </p>
       `,
       appNombre,
     ),
-    text: `Hola ${nombre}, te diste de alta en ${appNombre}. Activá un cupón y mostralo al cajero. ${env.APP_URL_FRONT}`,
+    text: `Hola ${nombre}, te diste de alta en ${appNombre}. Activá un cupón y mostralo al cajero. ${frontUrl}`,
   })
 }
 
@@ -299,7 +305,7 @@ export async function sendMerchantOtpCode(
   })
 }
 
-// Vecino — confirmación post-canje
+// Vecino — confirmación post-canje (tenant-aware: moneda/locale/nombre de ciudad)
 export async function sendUserRedemption(input: {
   to: string
   nombre: string
@@ -308,9 +314,22 @@ export async function sendUserRedemption(input: {
   porcentaje: number
   ahorro: number
   fecha: string
+  appNombre?: string
+  moneda?: string
+  locale?: string
 }) {
+  const appNombre = input.appNombre ?? 'Mi Ciudad'
+  const moneda = input.moneda ?? 'ARS'
+  const locale = input.locale ?? 'es-AR'
+  const ahorroFormatted = new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: moneda,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(input.ahorro)
   return sendEmail({
     to: input.to,
+    fromName: appNombre,
     subject: `Canjeaste tu cupón en ${input.comercio} ✅`,
     html: wrap(
       `¡Genial, ${escapeHtml(input.nombre.split(' ')[0])}!`,
@@ -322,16 +341,23 @@ export async function sendUserRedemption(input: {
           <p style="margin:0;font-size:13px;color:#8b8589">DESCUENTO</p>
           <p style="margin:4px 0 12px;font-weight:600">${input.porcentaje}% OFF</p>
           <p style="margin:0;font-size:13px;color:#8b8589">AHORRASTE</p>
-          <p style="margin:4px 0 0;font-weight:700;color:#10b981;font-size:20px">$${input.ahorro.toLocaleString('es-AR')}</p>
+          <p style="margin:4px 0 0;font-weight:700;color:#10b981;font-size:20px">${escapeHtml(ahorroFormatted)}</p>
         </div>
         <p style="font-size:13px;color:#8b8589">Canje registrado: ${escapeHtml(input.fecha)}</p>
       `,
+      appNombre,
     ),
   })
 }
 
 // Comercio — bienvenida después de signup
-export async function sendMerchantWelcome(to: string, nombre: string, comercio: string, appNombre = 'Mi Ciudad') {
+export async function sendMerchantWelcome(
+  to: string,
+  nombre: string,
+  comercio: string,
+  appNombre = 'Mi Ciudad',
+  frontUrl = env.APP_URL_FRONT,
+) {
   return sendEmail({
     to,
     fromName: appNombre,
@@ -348,7 +374,7 @@ export async function sendMerchantWelcome(to: string, nombre: string, comercio: 
           <li>Cuando un vecino canjee, vas a verlo en "Clientes"</li>
         </ol>
         <p style="margin-top:24px">
-          <a href="${env.APP_URL_FRONT}/#/admin" style="background:#ea580c;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600">
+          <a href="${frontUrl}/#/admin" style="background:#ea580c;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600">
             Ir al panel del comercio →
           </a>
         </p>
@@ -405,10 +431,16 @@ export async function sendSubscriptionReceipt(input: {
   appNombre?: string
   moneda?: string
   locale?: string
+  pais?: string
 }) {
   const appNombre = input.appNombre ?? 'Mi Ciudad'
   const moneda = input.moneda ?? 'ARS'
   const locale = input.locale ?? 'es-AR'
+  // "Factura C" es un comprobante del monotributo argentino; solo aplica a AR.
+  const esArgentina = /argentina|^ar$/i.test((input.pais ?? '').trim())
+  const comprobanteLinea = esArgentina
+    ? 'La factura C se envía por separado.'
+    : 'El comprobante fiscal se envía por separado.'
   const amountFormatted = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: moneda,
@@ -432,7 +464,7 @@ export async function sendSubscriptionReceipt(input: {
           <p style="margin:4px 0 0;font-family:monospace;font-size:12px">${escapeHtml(input.externalReference)}</p>
         </div>
         <p style="font-size:13px;color:#8b8589">
-          La factura C se envía por separado. Si no la recibís en 48h, escribinos a
+          ${comprobanteLinea} Si no lo recibís en 48h, escribinos a
           <a href="mailto:${env.SUPPORT_EMAIL}" style="color:#ea580c">${env.SUPPORT_EMAIL}</a>.
         </p>
       `,

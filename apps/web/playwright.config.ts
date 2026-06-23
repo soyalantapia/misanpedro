@@ -13,6 +13,10 @@ import { defineConfig, devices } from '@playwright/test'
  * inflan el tiempo de ejecución). Para meterlo en CI, agregar el job
  * `e2e` en ci.yml con `npx playwright install --with-deps chromium`.
  */
+// Parametrizable por tenant: definí E2E_BASE_URL para apuntar a otra ciudad.
+// Sin la env var, mantiene el comportamiento actual (San Pedro / dev server).
+const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:5180/misanpedro/'
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -22,7 +26,7 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : 'list',
 
   use: {
-    baseURL: 'http://localhost:5180/misanpedro/',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -37,7 +41,7 @@ export default defineConfig({
   // Levanta el dev server automáticamente antes de los tests.
   webServer: {
     command: 'pnpm dev',
-    url: 'http://localhost:5180/misanpedro/',
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
     stdout: 'ignore',

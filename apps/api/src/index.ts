@@ -22,8 +22,10 @@ import { adminRoutes } from '@/routes/admin'
 import { ownerRoutes } from '@/routes/owner'
 import { tenantRoutes } from '@/routes/tenant'
 import { referralsRoutes } from '@/routes/referrals'
+import { pushRoutes } from '@/routes/push'
 import { seedIfEmpty } from '@/services/seed.service'
 import { startExpiryLoop, stopExpiryLoop } from '@/services/expiry.service'
+import { initWebPush } from '@/services/push.service'
 import { initSentry, captureException, flushSentry } from '@/services/sentry.service'
 import { httpsRedirect, requestId, securityHeaders } from '@/middleware/security'
 
@@ -126,6 +128,7 @@ app.route('/api/v1/admin', adminRoutes)
 app.route('/api/v1/owner', ownerRoutes)
 app.route('/api/v1/tenant', tenantRoutes)
 app.route('/api/v1/referrals', referralsRoutes)
+app.route('/api/v1/push', pushRoutes)
 
 // ──────────────────────────────────────────────────────────────────
 // Frontends estáticos (SOLO en producción). El mismo servicio de Railway
@@ -183,6 +186,7 @@ async function bootstrap() {
   try {
     await connectDB()
     await seedIfEmpty()
+    initWebPush()
     startExpiryLoop()
   } catch (err) {
     console.error('[bootstrap] failed to connect DB; starting anyway:', err)

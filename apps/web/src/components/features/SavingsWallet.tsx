@@ -5,12 +5,34 @@ import { tokens } from '@/lib/api'
 import { formatMoney, formatMoneyParts } from '@/lib/format'
 import { useTenant } from '@/lib/tenant'
 
-function tier(total: number): { label: string; next: number | null } {
-  if (total >= 50000) return { label: 'Leyenda del barrio', next: null }
-  if (total >= 20000) return { label: 'Ahorrador Oro', next: 50000 }
-  if (total >= 8000) return { label: 'Ahorrador Plata', next: 20000 }
-  if (total >= 2000) return { label: 'Ahorrador Bronce', next: 8000 }
-  return { label: 'Recién empezás', next: 2000 }
+// Umbrales base de los niveles de ahorro, expresados en ARS. Para otras monedas
+// los escalamos por un factor aproximado (orden de magnitud, no cotización exacta)
+// para que los niveles tengan sentido en cada país y no se alcance "Leyenda" con
+// unos pocos dólares. Afinable por tenant más adelante.
+const TIER_THRESHOLDS_ARS = [2000, 8000, 20000, 50000] as const
+const MONEDA_SCALE: Record<string, number> = {
+  ARS: 1,
+  COP: 4, // ~4 COP por ARS
+  CLP: 1, // magnitud similar a ARS
+  MXN: 0.02,
+  UYU: 0.04,
+  PEN: 0.004,
+  USD: 0.001,
+}
+
+function thresholdsFor(moneda: string): [number, number, number, number] {
+  const k = MONEDA_SCALE[moneda] ?? 1
+  const [b, p, o, l] = TIER_THRESHOLDS_ARS
+  return [Math.round(b * k), Math.round(p * k), Math.round(o * k), Math.round(l * k)]
+}
+
+function tier(total: number, moneda: string): { label: string; next: number | null } {
+  const [bronce, plata, oro, leyenda] = thresholdsFor(moneda)
+  if (total >= leyenda) return { label: 'Leyenda del barrio', next: null }
+  if (total >= oro) return { label: 'Ahorrador Oro', next: leyenda }
+  if (total >= plata) return { label: 'Ahorrador Plata', next: oro }
+  if (total >= bronce) return { label: 'Ahorrador Bronce', next: plata }
+  return { label: 'Recién empezás', next: bronce }
 }
 
 /** Sparkline minimalista (ahorro acumulado) en SVG, sin deps. */
@@ -99,7 +121,7 @@ export function SavingsWallet() {
   )
   let acc = 0
   const cumulative = chrono.map((a) => (acc += a.ahorroEstimado ?? 0))
-  const t = tier(total)
+  const t = tier(total, tenant.config?.moneda ?? 'ARS')
   const progress = t.next ? Math.min(100, Math.round((total / t.next) * 100)) : 100
   const heroMoney = formatMoneyParts(total)
 

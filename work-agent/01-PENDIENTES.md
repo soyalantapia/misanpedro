@@ -1,5 +1,21 @@
 # 01 · Pendientes (qué falta, en orden)
 
+> ## ✅ Tanda pre-producción 2026-06-23 (sin commitear aún)
+> Barrido completo para lanzar a prod. **typecheck 6/6 · check:tenant ✓ · API 88/88 · web 104/104.**
+> **Resuelto en código:**
+> - **Web Push revivido**: `pushRoutes` se monta en `index.ts` + `initWebPush()` en bootstrap; `PushSubscription` ahora scopea por `{appId,endpoint}` (índice único compuesto + `syncIndexes` dropea el `endpoint_1` viejo). Cierra el agujero cross-tenant de subscribe/unsubscribe.
+> - **URLs por-tenant**: helper `apps/api/src/lib/urls.ts` (`tenantFrontUrl`); `back_url` de MP, init_point mock y CTAs de welcome emails ahora salen de `<subdomain>.micuidad.com`. Email de canje tenant-aware (moneda/locale/nombre) y "factura C" condicionada por país.
+> - **`stockMaximo`**: validado en activación (409 agotado), claim atómico en canje (`$inc` condicional) + estado `agotado` + compensación en doble-tap; surfaceado en `/validate`.
+> - **Owner backend**: rate-limit en `/auth/login`; audit log real (`recentActions` + `GET /me/audit`); acciones `PATCH /merchants/:id` (suspender/reactivar) y `PATCH /subscriptions/:id` (pausar/cancelar/reactivar); paginación en subscriptions; `byCurrency` en metrics.
+> - **Owner front**: wizard de alta con **4º paso Legales** (+ `geoCenter` ahora REQUERIDO al crear); MRR multi-moneda; paginación "cargar más" + acciones en Merchants/Users/Subscriptions; audit log en Settings.
+> - **Web vecino/comercio**: A.1 login (header con chip + divisor) ✅ · A.2 InstallPrompt rediseñado (pill + modal explicativo, **solo en superficie vecino**, no en `#/admin`) ✅ · A.3 alta del comercio en **3 pasos** (Comercio/Contacto/Cuenta) ✅ · tiers de `SavingsWallet` escalados por moneda ✅.
+> - **Hardening**: `mock-confirm` ya gateado por `MP_ACCESS_TOKEN`; `JWT_REFRESH_SECRET` ahora opcional (no se usa); `.env.example` corregido; seed de SP sin datos fiscales hardcodeados; categoría `inmobiliaria` sincronizada en shared.
+> - **CI**: `.github/workflows/ci.yml` (install+typecheck+check:tenant+tests api/web en push/PR) + task `test` en turbo + E2E parametrizado por tenant.
+>
+> **Diferido a propósito (no bloquea prod):** promover schemas owner/billing a `packages/shared` y hacer que las apps extiendan `tsconfig.base.json` (refactors con churn, validación no rota); manifest PWA por-host (forma segura = server-side, no blob runtime); fechas `es-AR` dispersas + copy legal AR inline en pantallas del comercio (cosmético); tests de integración de stock/push (requieren harness Hono+auth completo).
+>
+> **Sigue siendo paso del usuario:** `SMTP_HOST`+`SMTP_PASSWORD` (o `RESEND_API_KEY`) en Railway — sin esto el login OTP del comercio da 503 en prod; decidir 2FA del owner (quedó **OFF + rate-limit**); cuenta MercadoPago Colombia; rotar password del owner; geoCenter/localidad reales de Nariño; domicilio fiscal de SP.
+
 Tres grupos: **(A) UI a medio hacer**, **(B) pasos manuales del usuario** (no son código),
 **(C) backlog** (mejoras y Fase 2). Empezá por A.
 

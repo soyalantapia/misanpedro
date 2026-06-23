@@ -242,22 +242,22 @@ async function ensureSanpedroApp() {
     { slug: 'sanpedro', moneda: { $exists: false } },
     { $set: { moneda: 'ARS', locale: 'es-AR' } },
   )
-  // Backfill de datos legales: antes vivían hardcodeados en las páginas de Términos
-  // y Privacidad del frontend (se enviaban en el JS a cualquier visitante). Ahora las
-  // páginas son tenant-aware y los leen de App.legal. Movemos acá la identidad pública
-  // del responsable de San Pedro. El domicilio queda vacío a propósito hasta cargarlo
-  // desde el panel (la página lo omite, no muestra placeholder). Self-limiting:
-  // solo corre si el doc aún no tiene legal.razonSocial.
+  // Inicializa la estructura legal VACÍA para el tenant. Los datos fiscales
+  // (razón social, CUIT, condición fiscal, jurisdicción) NO se hardcodean en el
+  // seed: son datos reales y específicos del responsable, y se cargan luego desde
+  // el panel owner, igual que cualquier otra ciudad. Las páginas de Términos y
+  // Privacidad son tenant-aware y leen App.legal; los campos vacíos se omiten en
+  // la UI (no muestran placeholder). Self-limiting: solo corre si el doc aún no
+  // tiene legal.razonSocial.
   await App.updateOne(
     { slug: 'sanpedro', 'legal.razonSocial': { $exists: false } },
     {
       $set: {
-        'legal.razonSocial': 'Alan Naim Tapia',
-        'legal.taxId': '20-43316638-9',
-        'legal.taxIdLabel': 'CUIT',
-        'legal.condicionFiscal': 'Monotributista (Régimen Simplificado AFIP)',
-        'legal.jurisdiccion':
-          'Tribunales Ordinarios de San Pedro, Provincia de Buenos Aires',
+        'legal.razonSocial': '',
+        'legal.taxId': '',
+        'legal.taxIdLabel': '',
+        'legal.condicionFiscal': '',
+        'legal.jurisdiccion': '',
       },
     },
   )

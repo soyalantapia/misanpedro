@@ -7,7 +7,9 @@ import { Schema, model, Types, type InferSchemaType } from 'mongoose'
 const pushSubscriptionSchema = new Schema(
   {
     appId: { type: Types.ObjectId, ref: 'App', required: true, index: true },
-    endpoint: { type: String, required: true, unique: true },
+    // No es único global: el mismo endpoint (browser) puede existir en varias
+    // ciudades. La unicidad real es por (appId, endpoint) — ver índice compuesto.
+    endpoint: { type: String, required: true },
     keys: {
       p256dh: { type: String, required: true },
       auth: { type: String, required: true },
@@ -20,6 +22,10 @@ const pushSubscriptionSchema = new Schema(
   },
   { timestamps: true },
 )
+
+// Unicidad por ciudad: un endpoint (browser) puede estar suscripto en varias
+// ciudades, pero solo una vez por ciudad. Reemplaza al unique global de endpoint.
+pushSubscriptionSchema.index({ appId: 1, endpoint: 1 }, { unique: true })
 
 export type PushSubscriptionDoc = InferSchemaType<typeof pushSubscriptionSchema> & { _id: string }
 export const PushSubscription = model('PushSubscription', pushSubscriptionSchema)

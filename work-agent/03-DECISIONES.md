@@ -43,3 +43,21 @@ No deshagas esto sin entender el motivo. Son decisiones del usuario o aprendizaj
 
 13. **Prod Mongo interno → seeds por env/owner.** No se expone la DB; los cambios de datos de prod van
     por el panel owner o `SEED_CITY_JSON`.
+
+14. **2FA del owner: queda OFF + se agregó rate-limit** (tanda 2026-06-23, decisión del usuario).
+    El panel super-admin sigue con email+password (`OWNER_2FA_REQUIRED=false`), pero ahora
+    `/owner/auth/login` tiene rate-limit (10/min por IP) para frenar fuerza bruta. El flujo 2FA
+    sigue cableado (front+back) para activarlo cuando se quiera (flip de env).
+
+15. **URL por-tenant centralizada en `lib/urls.ts` (`tenantFrontUrl`).** Toda URL externa
+    (back_url MP, CTAs de email) sale del subdomain del tenant, no de `APP_URL_FRONT` global.
+    Regla: no volver a usar `APP_URL_FRONT` para links por-ciudad.
+
+16. **`stockMaximo` con claim atómico.** El canje reclama stock con `$inc` condicional
+    (`stockUsado < stockMaximo`) ANTES de confirmar, marca `agotado` al tope y compensa en
+    doble-tap. No reintroducir el `coupon.stockUsado++` no-atómico.
+
+17. **Refactors diferidos pre-prod (no bloquean):** promoción de schemas owner/billing a
+    `packages/shared`, `tsconfig.base` extendido por las apps, y manifest PWA por-tenant
+    (debe hacerse server-side por host, NO con blob runtime — rompería instalabilidad).
+    Documentados en `01-PENDIENTES.md`.
