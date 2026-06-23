@@ -281,6 +281,10 @@ export const couponCreateSchema = z.object({
     .enum(['devida', 'semana', 'quincena', 'mes', 'ilimitado'])
     .optional()
     .default('devida'),
+  /** Cupo TOTAL de canjes (opcional). Vacío/null = sin límite. Al alcanzarlo, el
+   *  backend marca el cupón 'agotado' (claim atómico en el canje) y deja de
+   *  mostrarse. `.nullable()`: enviar null en un PATCH = quitar el tope. */
+  stockMaximo: z.number().int().min(1, 'Mínimo 1').nullable().optional(),
   estado: z.enum(['activo', 'pausado']).default('activo'),
 })
 

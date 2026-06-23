@@ -234,6 +234,9 @@ couponsRoutes.patch('/:id', requireMerchantAuth, requireMerchantActive, async (c
   if (data.mostrarAhorroVecino !== undefined) coupon.mostrarAhorroVecino = data.mostrarAhorroVecino
   if (data.usoMaxPorPersona !== undefined) coupon.usoMaxPorPersona = data.usoMaxPorPersona
   if (data.usoVentana !== undefined) coupon.usoVentana = data.usoVentana
+  // `null` = quitar el tope. Si se reactiva un tope sobre un cupón ya 'agotado'
+  // por edición, el estado se re-evalúa en el próximo canje (guard atómico).
+  if (data.stockMaximo !== undefined) coupon.stockMaximo = data.stockMaximo ?? undefined
   await coupon.save()
   return c.json({ ok: true, coupon: serializeCoupon(coupon, undefined, { includePrivate: true }) })
 })

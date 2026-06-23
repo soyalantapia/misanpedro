@@ -67,6 +67,15 @@ describe('couponCreateSchema / couponUpdateSchema — asesor', () => {
     expect(couponUpdateSchema.safeParse({ porcentaje: 0 }).success).toBe(false)
     expect(couponUpdateSchema.safeParse({ porcentaje: 101 }).success).toBe(false)
   })
+
+  it('stockMaximo: acepta entero >=1 y null (sin tope); rechaza 0/negativo/decimal', () => {
+    expect(couponCreateSchema.safeParse({ ...base, stockMaximo: 2 }).success).toBe(true)
+    expect(couponUpdateSchema.safeParse({ stockMaximo: 50 }).success).toBe(true)
+    expect(couponUpdateSchema.safeParse({ stockMaximo: null }).success).toBe(true) // quitar tope
+    expect(couponUpdateSchema.safeParse({ stockMaximo: 0 }).success).toBe(false)
+    expect(couponUpdateSchema.safeParse({ stockMaximo: -5 }).success).toBe(false)
+    expect(couponUpdateSchema.safeParse({ stockMaximo: 2.5 }).success).toBe(false)
+  })
 })
 
 describe('imagenUrl — validación de imagen segura (anti-XSS)', () => {

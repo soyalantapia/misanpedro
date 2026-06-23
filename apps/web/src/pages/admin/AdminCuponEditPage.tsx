@@ -61,6 +61,8 @@ type FormState = {
   productoGancho: string
   usoMaxPorPersona: number
   usoVentana: 'devida' | 'semana' | 'quincena' | 'mes' | 'ilimitado'
+  /** Cupo TOTAL de canjes (texto en el form; se manda como number). Vacío = sin límite. */
+  stockMaximo: string
 }
 
 const empty: FormState = {
@@ -85,6 +87,7 @@ const empty: FormState = {
   productoGancho: '',
   usoMaxPorPersona: 1,
   usoVentana: 'devida',
+  stockMaximo: '',
 }
 
 const TIPOS: { id: TipoOferta; label: string }[] = [
@@ -360,6 +363,7 @@ export function AdminCuponEditPage() {
         productoGancho: existing.productoGancho ?? '',
         usoMaxPorPersona: existing.usoMaxPorPersona ?? 1,
         usoVentana: existing.usoVentana ?? 'devida',
+        stockMaximo: existing.stockMaximo != null ? String(existing.stockMaximo) : '',
       })
     } else {
       setForm(empty)
@@ -479,6 +483,7 @@ export function AdminCuponEditPage() {
       productoGancho: clr(form.productoGancho.trim() || undefined),
       usoMaxPorPersona: form.usoMaxPorPersona,
       usoVentana: form.usoVentana,
+      stockMaximo: clr(num(form.stockMaximo)),
       estado: existing?.estado === 'pausado' ? 'pausado' : 'activo',
     }
     try {
@@ -952,6 +957,32 @@ function Asesor({
             <p className="text-[11px] text-ink-faint">
               Evita que la misma persona lo use de más y te coma el margen.
             </p>
+          </div>
+
+          {/* Cupo TOTAL de canjes (opcional). Al agotarse, el cupón se marca
+              'agotado' y deja de mostrarse. Ideal para "liquidar stock". */}
+          <div className="mt-1 flex flex-col gap-2 border-t border-line pt-3">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
+              Cupo total (opcional)
+            </span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                id="cupon-stockMaximo"
+                name="stockMaximo"
+                min={1}
+                inputMode="numeric"
+                value={form.stockMaximo}
+                onChange={(e) => update('stockMaximo', e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="Sin límite"
+                className="w-32 rounded-xl bg-surface px-3 py-2 text-sm ring-1 ring-line focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+              <span className="text-[11px] text-ink-faint">
+                {form.stockMaximo
+                  ? `${form.stockMaximo} canjes en total — al agotarse deja de mostrarse.`
+                  : 'Vacío = sin límite de cantidad.'}
+              </span>
+            </div>
           </div>
 
           <NavBtns onPrev={prev} onNext={next} nextLabel="Ver mi descuento" nextDisabled={franjaInvalida} />
