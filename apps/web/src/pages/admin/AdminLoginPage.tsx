@@ -99,7 +99,7 @@ export function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-bg text-ink">
+    <div className="min-h-[100svh] bg-surface-2 text-ink">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-10 pb-12 sm:px-8 lg:flex-row lg:items-center lg:gap-16 lg:py-16">
         {/* Lado info — limpio, sin mockup */}
         <section className="flex flex-col gap-6 lg:flex-1">

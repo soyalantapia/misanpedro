@@ -14,7 +14,7 @@ export function VecinoAppMockup({ className = '' }: { className?: string }) {
   const inicial = (ciudad.trim().charAt(0) || 'M').toUpperCase()
 
   return (
-    <div className={`relative mx-auto w-full max-w-[320px] ${className}`} aria-hidden="true">
+    <div className={`relative mx-auto w-full max-w-[260px] ${className}`} aria-hidden="true">
       {/* Glow de marca detrás del teléfono */}
       <div className="absolute inset-0 -z-10 scale-110 rounded-[3rem] bg-on-brand/20 blur-3xl" />
 
