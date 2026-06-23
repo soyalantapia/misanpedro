@@ -1,0 +1,90 @@
+# 01 · Pendientes (qué falta, en orden)
+
+Tres grupos: **(A) UI a medio hacer**, **(B) pasos manuales del usuario** (no son código),
+**(C) backlog** (mejoras y Fase 2). Empezá por A.
+
+---
+
+## A. Ajustes de UI pedidos — EN PROGRESO (4 pedidos del usuario)
+
+El usuario pidió 4 cosas sobre las pantallas del comercio. Estado:
+
+### A.1 — Login: "el formulario queda muy blanco, metele bordes y demás" 🟡 PARCIAL
+- Archivo: `apps/web/src/pages/admin/AdminLoginPage.tsx`.
+- **Hecho:** fondo de la página tintado (`bg-surface-2`) para que la tarjeta blanca resalte (commit `fdd6b9b`).
+- **Falta:** darle más estructura/bordes a la **tarjeta del form**: header con ícono (ej. `KeyRound` en un chip `bg-brand-soft`), un divisor (`border-t border-line`) bajo el header, borde más definido. Objetivo: que no sea una caja blanca plana.
+
+### A.2 — Install prompt: rediseñarlo ❌ NO EMPEZADO
+- Componente: `apps/web/src/components/InstallPrompt.tsx` (toast global "Instalá Mi Ciudad").
+- Pedido: **NO** mostrarlo como toast flotante como hoy. Ponerlo como **algo discreto a un costado / en una barra**, y que al tocar "instalar" aparezca un **popup/modal** que **explique para qué sirve y cómo se usa** (instalar la PWA en el celu).
+- Sugerencia: un botón/pill chico fijo (ej. esquina) → al click, modal con: qué es la app instalada, beneficios, y los pasos según navegador (Chrome Android: menú → "Agregar a pantalla de inicio"; iOS Safari: compartir → "Agregar a inicio"). Usar el evento `beforeinstallprompt` si está disponible para el install directo, y el modal explicativo como fallback/ayuda.
+- Ojo: hoy el InstallPrompt aparece también en login/registro del comercio (PWA del vecino). Revisar en qué superficies conviene mostrarlo.
+
+### A.3 — Registro del comercio: "hacelo en 3" (pasos) ❌ NO EMPEZADO
+- Archivo: `apps/web/src/pages/admin/AdminSignupPage.tsx`. Hoy es **1 paso** de datos (`'datos'`) + `'listo'`. El `Stepper` ya existe pero con 2 ítems.
+- Pedido: dividir el alta en **3 pasos**. Propuesta de corte:
+  1. **Comercio** — nombre, categoría, dirección + mapa (`LocationPicker`).
+  2. **Contacto** — teléfono (placeholder por país ya está), horarios.
+  3. **Tu cuenta** — nombre del responsable, email, T&C + botón "Crear mi comercio".
+  (+ paso final `'listo'`.) Mantener la persistencia del draft (localStorage) y validar por paso (`validateDatos` se parte en `validateStep(1|2|3)`). Actualizar el `Stepper` a 3 ítems.
+
+### A.4 — Mockup del vecino: "parece de tablet" → más angosto ✅ HECHO
+- `apps/web/src/components/VecinoAppMockup.tsx`: `max-w-[320px]` → `max-w-[260px]` (commit `fdd6b9b`). El mockup aparece SOLO en el banner del registro.
+
+> **Estado de deploy:** A.1 (fondo) y A.4 (mockup) están commiteados/deployados (`fdd6b9b`).
+> A.1 (bordes del form), A.2 y A.3 quedan por hacer. Verificar siempre con **hard refresh**
+> (la PWA tiene service worker que cachea; ver doc 02 "Gotchas").
+
+---
+
+## B. Pasos manuales del usuario (NO son código — los hace él)
+
+> El asistente **no** puede: tocar la DB de prod (es interna), ingresar contraseñas/secretos,
+> ni operar las cuentas (Railway/Cloudflare/Hostinger) para meter secretos. Esto es del usuario.
+
+1. **`SMTP_PASSWORD` en Railway** (servicio `api` → Variables) = contraseña del buzón
+   `soporte@micuidad.com`. **Sin esto el login por OTP del comercio NO funciona** (en prod
+   `/request-otp` devuelve 503). Las otras 5 SMTP_* ya están seteadas (host/port/secure/user/EMAIL_FROM).
+   > ⚠️ La password del buzón se pegó en el chat en sesiones previas → conviene **rotarla** en
+   > Hostinger y poner la nueva en Railway.
+2. **Nariño: Localidad + posición del mapa.** En `administracion.micuidad.com → Mi Nariño →
+   Editar`: poner **Localidad = `Nariño`** (hoy dice "Pasto") y **Centro del mapa = lat
+   `1.2136` / lng `-77.2811`** (Pasto). Hoy Nariño tiene esos dos datos con valores viejos
+   (localidad "Pasto", geoCenter = coords de San Pedro).
+3. **Rotar la contraseña del owner** (`alannaimtapia@gmail.com`) — es débil y se eligió 2FA
+   OFF (`OWNER_2FA_REQUIRED=false`) por decisión del usuario.
+4. **MercadoPago Colombia** para que los comercios de Nariño puedan pagar (la cuenta MP de AR
+   no cobra en CO). Hoy el billing es 1 cuenta MP global (= la de San Pedro). Ver doc 03 + `ESTRATEGIA-PAGOS.md`.
+5. **Domicilio fiscal real de San Pedro** (para las legales): cargarlo en el owner (campo legal),
+   hoy queda vacío y la página lo omite.
+
+---
+
+## C. Backlog (mejoras / "mayores" de la auditoría / Fase 2)
+
+De `AUDITORIA-LANZAMIENTO-MICUIDAD.md` (mayores no tocados) + estrategia:
+
+- **`back_url` de MercadoPago y CTAs de email son globales** (usan `APP_URL_FRONT`), no
+  por-tenant → un comercio de Nariño post-pago/CTA cae a la PWA "principal". Construir la URL
+  desde `tenant.subdomain` (`https://<sub>.micuidad.com/...`). (Audit M9/M10.)
+- **`stockMaximo` del cupón no se valida** al activar/canjear (no bloquea ni marca "agotado").
+  Ver `activations.ts` / `redemptions.ts`. (Audit M5.)
+- **Tiers de `SavingsWallet`** hardcodeados en magnitudes ARS → en COP un vecino sube de nivel
+  con ~USD 12. Parametrizar por moneda/tenant. (Audit M11.)
+- **`geoCenter` por defecto = San Pedro** en el modelo/route → una ciudad sin geoCenter cae a
+  SP. Idealmente: quitar el default, backfillear SP explícito, fallback neutro. (Audit M1; mitigado porque ahora se setea por ciudad en el owner.)
+- Restos varios: fechas `es-AR` fijas en algunos lugares del panel, copy legal AR inline fuera de
+  `/legal`, etc. (ver el reporte de auditoría).
+- **Fase 2 de pagos** ("Conectar MercadoPago/Stripe" por ciudad, OAuth tipo Stripe Connect):
+  modelo `App.payment{provider, tokens encriptados, status}`, abstracción `PaymentProvider`,
+  webhook ruteado por ciudad. NO se construye hasta que cobre la 2da ciudad. Detalle en
+  `ESTRATEGIA-PAGOS.md`.
+- **`NewAppPage`** todavía no tiene **todos** los campos legales (sí prefijo + geoCenter +
+  localidad); los legales se cargan en `AppDetailPage` (editar) tras crear.
+
+---
+
+## Definición de "listo para cobrar una ciudad nueva"
+Crear la ciudad en el owner (nombre/localidad/país/precio/geoCenter), que resuelva su
+subdominio (ya automático por el wildcard), email andando (SMTP_PASSWORD), y el medio de pago
+del país (MP AR hoy; MP CO / Stripe = Fase 2).

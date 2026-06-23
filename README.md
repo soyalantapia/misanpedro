@@ -1,83 +1,62 @@
-# Mi San Pedro
+# Mi Ciudad (`micuidad.com`)
 
-Programa de descuentos vecinales con app PWA para el vecino y panel para el comercio.
-Live: https://soyalantapia.github.io/misanpedro/
+Plataforma **multi-ciudad / multi-país** de descuentos vecinales, marca blanca
+("Mi <Ciudad>"), sobre un solo codebase. Cada ciudad es un *tenant* que vive en
+`https://<ciudad>.micuidad.com`. Nació como "Mi San Pedro" y se generalizó.
+
+> **📖 Contexto completo / handoff:** ver **[`work-agent/`](work-agent/)** — estado actual,
+> arquitectura, pendientes, runbook de deploy y decisiones. Empezá por
+> [`work-agent/README.md`](work-agent/README.md).
+
+## En vivo
+- Vecino + comercio: `https://<ciudad>.micuidad.com` (ej. `sanpedro`, `minarino`) · comercio en `/#/admin`
+- Owner (super-admin): `https://administracion.micuidad.com`
+- API: `https://api-production-43c52.up.railway.app/api/v1`
+- `misanpedro.com` → redirige 301 a `sanpedro.micuidad.com`
 
 ## Estructura del monorepo
-
 ```
 misanpedro/
 ├── apps/
-│   ├── web/          ← Frontend (Vite + React 19 + Tailwind 4)
-│   └── api/          ← Backend (Hono + MongoDB + Mongoose)
-└── packages/
-    └── shared/       ← Types + Zod schemas compartidos
+│   ├── api/             Hono + Mongoose (MongoDB). En prod sirve también los fronts.
+│   ├── web/             PWA vecino + panel comercio (/#/admin) · Vite + React 19 + Tailwind 4 · HashRouter
+│   ├── owner/           Panel super-admin (administracion.micuidad.com) · BrowserRouter
+│   ├── landing/         Marketing comercio (single-tenant SP, legacy)
+│   └── landing-vecino/  Marketing vecino (single-tenant SP, legacy)
+└── packages/shared/     Types + Zod schemas compartidos
 ```
 
 ## Setup local
-
-Requiere Node ≥22 LTS y pnpm ≥10.
-
+Requiere **Node ≥22** y **pnpm ≥10**.
 ```bash
-# Una sola vez
+export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
 pnpm install
-
-# Configurar variables de entorno del backend
-cp apps/api/.env.example apps/api/.env
-# Editar apps/api/.env con tus credenciales (MONGODB_URI, JWT_SECRET, etc.)
-
-# Arrancar todo (front + back en paralelo)
-pnpm dev
-
-# O por separado
-pnpm dev:web    # → http://127.0.0.1:5180
-pnpm dev:api    # → http://localhost:3001/api/v1/health
+cp apps/api/.env.example apps/api/.env     # editar MONGODB_URI, JWT_SECRET, etc.
+pnpm dev                                   # web + api (turbo)
 ```
+Probar un tenant en local: `?tenant=narino` en la URL.
 
 ## Comandos
-
 ```bash
-pnpm dev              # arranca web + api en paralelo (turbo)
-pnpm build            # build de toda la app
-pnpm typecheck        # tsc en todos los workspaces
-pnpm lint             # eslint
-pnpm deploy:web       # build + deploy a gh-pages
+pnpm dev            # web + api en paralelo
+pnpm build          # build de todo (turbo)
+pnpm typecheck      # tsc en los 6 paquetes
+pnpm test           # vitest (api 83 + web 104)
+pnpm check:tenant   # guardrail: sin nombre de ciudad hardcodeado en web/owner
 ```
 
+## Deploy (Railway)
+```bash
+railway up --detach --environment production --service api
+```
+El servicio `api` corre el backend y sirve los fronts (host-based). DNS en Cloudflare
+(`*.micuidad.com` → Railway). Detalle y trampas en [`work-agent/02-DEPLOY-Y-GOTCHAS.md`](work-agent/02-DEPLOY-Y-GOTCHAS.md).
+
 ## Stack
+- **API:** Hono · Mongoose · Zod · jsonwebtoken · bcryptjs · otplib · nodemailer (SMTP) · Mercado Pago · web-push
+- **web/owner:** Vite 7 · React 19 · Tailwind 4 · React Router 7 · vite-plugin-pwa
+- **Infra:** Railway (API + Mongo + fronts) · Cloudflare (DNS/SSL) · Hostinger (legacy redirect + buzón de correo)
 
-**Frontend** (`apps/web`)
-- Vite 7 · React 19 · TypeScript ~6.0 (strict) · Tailwind 4
-- React Router 7 (HashRouter) · TanStack Query (Fase 2+)
-- lucide-react · html5-qrcode · qrcode · vite-plugin-pwa
-- Light theme · Tipografía Satoshi
-
-**Backend** (`apps/api`)
-- Hono · @hono/node-server · TypeScript
-- Mongoose (MongoDB Atlas) · Zod (validación compartida)
-- jsonwebtoken · bcryptjs (auth comercio)
-- Mercado Pago Preapproval API (Fase 5)
-- whatsapp-web.js + Puppeteer (Fase 6)
-
-**Hosting**
-- Frontend → GitHub Pages (gh-pages branch)
-- Backend → Railway (planeado, Fase 1)
-
-## Roadmap (ver plan completo en docs)
-
-- ✅ **MVP frontend-only** — todo funcionando con `localStorage` + datos demo
-- 🚧 **Fase 0** — Monorepo + backend boilerplate + conexión MongoDB
-- ⏭ Fase 1 — Auth real (vecino con OTP, comercio con email+password)
-- ⏭ Fase 2 — App vecino conectada a la API
-- ⏭ Fase 3 — Validación + canje real con verificación de firma
-- ⏭ Fase 4 — CRUD cupones + edit comercio con persistencia
-- ⏭ Fase 5 — Mercado Pago suscripciones (paywall real)
-- ⏭ Fase 6 — WhatsApp con whatsapp-web.js (sesiones del comercio)
-- ⏭ Fase 7 — Eventos + notifs en vivo via SSE
-- ⏭ Fase 8 — QA, hardening, lanzamiento beta
-
-## Demo flow (mientras no hay backend real)
-
-1. Abrí https://soyalantapia.github.io/misanpedro/ → datos demo cargan automáticamente
-2. Login admin: `cajero@laesquina.com` / `demo123`
-3. En Validar, tipeá `123 456` → confirmar canje → ver impacto en Mis clientes
+## Docs de referencia (raíz)
+`AUDITORIA-LANZAMIENTO-MICUIDAD.md` · `ESTRATEGIA-PAGOS.md` · `ESTRATEGIA-MULTICIUDAD.md` ·
+`SETUP-MICUIDAD.md` · `SETUP-CLOUDFLARE.md` · `SETUP-OWNER.md`
