@@ -4,18 +4,31 @@ export function cn(...classes: Array<string | false | null | undefined>) {
 }
 
 /**
- * CTA del vecino: ENTRAR a la PWA (sin registro — navega y mira los descuentos).
- * La PWA vive en https://app.misanpedro.com/ (HashRouter).
- * Override con VITE_APP_URL al build cuando haya dominio propio.
+ * URLs de la app POR CIUDAD (tenant-aware). La landing del vecino vive en
+ * <sub>.micuidad.com/vecino y la PWA en <sub>.micuidad.com/ — mismo host. El CTA
+ * "Entrar" tiene que ir a la PWA de ESA ciudad, no a una fija.
  */
-const APP_URL_RAW = import.meta.env.VITE_APP_URL ?? 'https://app.misanpedro.com'
-export const APP_URL = APP_URL_RAW.replace(/\/$/, '')
+const PLATFORM_DOMAIN = 'micuidad.com'
+type TenantLike = { subdomain?: string | null } | null
 
-// Home del vecino = catálogo de descuentos (HashRouter → /#/).
-// MEDICIÓN: reenvía las UTM/ref de la landing a la PWA, para atribuir qué comercio/QR/canal
-// trajo al vecino. El query va ANTES del hash para que la app lo lea desde location.search.
-function buildEnterUrl(): string {
-  if (typeof window === 'undefined') return `${APP_URL}/#/`
+export function appBase(t: TenantLike): string {
+  if (t?.subdomain) return `https://${String(t.subdomain).toLowerCase()}.${PLATFORM_DOMAIN}`
+  if (typeof window !== 'undefined') {
+    const h = window.location.host
+    if (h && !/^(localhost|127\.0\.0\.1)/.test(h)) return window.location.origin
+  }
+  const env = (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/$/, '')
+  return env || `https://sanpedro.${PLATFORM_DOMAIN}`
+}
+
+/**
+ * CTA del vecino: ENTRAR a la PWA de SU ciudad (sin registro, navega y mira los
+ * descuentos). Reenvía las UTM/ref de la landing a la PWA para atribución (qué
+ * comercio/QR/canal lo trajo). El query va ANTES del hash (location.search).
+ */
+export function enterUrl(t: TenantLike): string {
+  const base = appBase(t)
+  if (typeof window === 'undefined') return `${base}/#/`
   const incoming = new URLSearchParams(window.location.search)
   const fwd = new URLSearchParams()
   for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'ref']) {
@@ -23,14 +36,10 @@ function buildEnterUrl(): string {
     if (v) fwd.set(k, v)
   }
   const qs = fwd.toString()
-  return qs ? `${APP_URL}/?${qs}#/` : `${APP_URL}/#/`
+  return qs ? `${base}/?${qs}#/` : `${base}/#/`
 }
 
-export const ENTER_URL = buildEnterUrl()
+// Landing del COMERCIO (captación): relativa al host actual (misma ciudad).
+export const COMERCIOS_URL = (import.meta.env.VITE_COMERCIOS_URL as string | undefined) ?? '/comercios/'
 
-// Landing del COMERCIO (captación). Por default relativa a la raíz del dominio
-// (misanpedro.com/comercios/) — robusta también en www. Override con
-// VITE_COMERCIOS_URL al build si hace falta una URL absoluta.
-export const COMERCIOS_URL = import.meta.env.VITE_COMERCIOS_URL ?? '/comercios/'
-
-export const SUPPORT_EMAIL = 'hola@misanpedro.com'
+export const SUPPORT_EMAIL = 'soporte@micuidad.com'

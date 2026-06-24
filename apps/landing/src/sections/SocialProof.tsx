@@ -12,11 +12,14 @@ import {
 // beneficios reales del programa de lanzamiento. No fabricamos clientes — la prueba
 // social verdadera la sumamos cuando haya comercios adheridos con su permiso.
 function buildBeneficios(config: LandingTenant | null) {
+  const isSanPedro = config?.slug === 'sanpedro'
   return [
     {
       icon: Gift,
       title: `${MESES_GRATIS} meses gratis`,
-      text: `Sin tarjeta. Los primeros ${TOTAL_CUPOS} comercios entran sin pagar los primeros ${MESES_GRATIS} meses.`,
+      text: isSanPedro
+        ? `Sin tarjeta. Los primeros ${TOTAL_CUPOS} comercios entran sin pagar los primeros ${MESES_GRATIS} meses.`
+        : `Sin tarjeta. Los comercios del programa de lanzamiento entran sin pagar los primeros ${MESES_GRATIS} meses.`,
     },
     {
       icon: Lock,
@@ -41,10 +44,16 @@ export function SocialProof() {
         <AnimatedSection className="flex flex-col items-center gap-2 text-center">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-accent-700">
             <Sparkles size={11} />
-            Programa de lanzamiento · Primeros {TOTAL_CUPOS} comercios de {cityName(config)}
+            {config?.slug === 'sanpedro'
+              ? `Programa de lanzamiento · Primeros ${TOTAL_CUPOS} comercios de ${cityName(config)}`
+              : `Programa de lanzamiento · Comercios de ${cityName(config)}`}
           </span>
           <h2 className="text-balance text-base font-semibold leading-snug text-neutral-700 sm:text-lg">
-            Los primeros {TOTAL_CUPOS} comercios entran con{' '}
+            {config?.slug === 'sanpedro' ? (
+              <>Los primeros {TOTAL_CUPOS} comercios entran con{' '}</>
+            ) : (
+              <>Los comercios del lanzamiento entran con{' '}</>
+            )}
             <strong className="text-neutral-900">{MESES_GRATIS} meses gratis</strong> y, después,{' '}
             <strong className="text-neutral-900">{priceLabel(config)}/mes congelado de por vida</strong>
           </h2>
@@ -67,7 +76,9 @@ export function SocialProof() {
 
         <div className="mt-8 flex flex-col items-center gap-2 text-center">
           <p className="text-xs text-neutral-500">
-            Ya van {COMERCIOS_ADHERIDOS} de {TOTAL_CUPOS} comercios — quedan {CUPOS_RESTANTES} lugares. Cuando se completen, cierra la oferta de lanzamiento.
+            {config?.slug === 'sanpedro'
+              ? `Ya van ${COMERCIOS_ADHERIDOS} de ${TOTAL_CUPOS} comercios — quedan ${CUPOS_RESTANTES} lugares. Cuando se completen, cierra la oferta de lanzamiento.`
+              : 'Sumate ahora: cuando se completen los cupos, cierra la oferta de lanzamiento.'}
           </p>
           <a
             href="#precios"

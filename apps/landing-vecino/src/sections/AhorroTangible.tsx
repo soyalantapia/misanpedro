@@ -1,5 +1,5 @@
 import { ArrowRight, Check } from 'lucide-react'
-import { ENTER_URL } from '@/lib/cn'
+import { enterUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
 import { useTenant, appName } from '@/lib/tenant'
 
@@ -54,7 +54,7 @@ export function AhorroTangible() {
             ))}
           </ul>
           <a
-            href={ENTER_URL}
+            href={enterUrl(config)}
             className="group mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-accent-500/50"
           >
             Entrá y mirá los descuentos

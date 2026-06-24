@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
-import { ENTER_URL, COMERCIOS_URL } from '@/lib/cn'
+import { enterUrl, COMERCIOS_URL } from '@/lib/cn'
 import { Logo } from '@/components/Logo'
+import { useTenant } from '@/lib/tenant'
 
 const LINKS = [
   { href: '#como-funciona', label: 'Cómo funciona' },
@@ -10,6 +11,7 @@ const LINKS = [
 ] as const
 
 export function Nav() {
+  const { config } = useTenant()
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export function Nav() {
             Soy un comercio
           </a>
           <a
-            href={ENTER_URL}
+            href={enterUrl(config)}
             className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40 sm:px-5 sm:text-sm"
           >
             Ir a la app

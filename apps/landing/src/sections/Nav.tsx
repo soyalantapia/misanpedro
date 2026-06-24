@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, Menu, X } from 'lucide-react'
-import { SIGNUP_URL } from '@/lib/cn'
+import { signupUrl } from '@/lib/cn'
 import { useTenant, appName } from '@/lib/tenant'
 
 const NAV_LINKS = [
@@ -77,7 +77,7 @@ export function Nav() {
 
         <div className="flex items-center gap-3">
           <a
-            href={SIGNUP_URL}
+            href={signupUrl(config)}
             className="group hidden items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-accent-500/20 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-accent-500/30 sm:inline-flex"
           >
             Empezá gratis
@@ -109,7 +109,7 @@ export function Nav() {
               </a>
             ))}
             <a
-              href={SIGNUP_URL}
+              href={signupUrl(config)}
               className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white"
             >
               Empezá gratis

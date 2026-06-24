@@ -28,6 +28,7 @@ import { startExpiryLoop, stopExpiryLoop } from '@/services/expiry.service'
 import { initWebPush } from '@/services/push.service'
 import { initSentry, captureException, flushSentry } from '@/services/sentry.service'
 import { httpsRedirect, requestId, securityHeaders } from '@/middleware/security'
+import { findTenantByKey, toAsciiLabel } from '@/middleware/tenant'
 
 const app = new Hono()
 
@@ -152,19 +153,55 @@ if (isProd) {
   // Cada landing detecta el subdomain del host y resuelve su tenant (nombre,
   // ciudad, precio, COLOR). Se buildean con base /comercios/ y /vecino/
   // (ver nixpacks.toml). Van ANTES del serving del web (raíz del host).
+  // Inyecta el nombre/ciudad del tenant (resuelto por el subdomain del host) en
+  // el <title>/og:* del index.html ESTÁTICO. Sin esto, el preview de redes y el
+  // SEO de cada ciudad mostrarían "Mi San Pedro" (el JS arregla el title en vivo,
+  // pero no el OG ni los crawlers). Fail-open: si algo falla, sirve el html crudo.
+  const RESERVED_SUB = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios', 'administracion', 'ciudades', 'vecino'])
+  const LEGACY = 'https://misanpedro.com'
+  const injectLandingMeta = async (html: string, host?: string, prefix = ''): Promise<string> => {
+    try {
+      const h = (host ?? '').toLowerCase().split(':')[0]
+      const parts = h.split('.')
+      if (parts.length < 3) return html
+      const sub = toAsciiLabel(parts[0])
+      if (RESERVED_SUB.has(sub)) return html
+      const tenant = await findTenantByKey(sub)
+      if (!tenant) return html
+      let out = html
+      if (tenant.nombre) out = out.replaceAll('Mi San Pedro', String(tenant.nombre))
+      if (tenant.ciudad) out = out.replaceAll('San Pedro', String(tenant.ciudad))
+      // URLs absolutas del dominio legacy → host de la ciudad, respetando el path
+      // del landing. El comercio ya trae /comercios/ en su index; el vecino trae
+      // el dominio pelado (og:url, og-image) y hay que prefijarle /vecino/.
+      // Orden: específico→pelado para no doble-prefijar.
+      out = out
+        .replaceAll(`${LEGACY}${prefix}/`, `https://${h}${prefix}/`)
+        .replaceAll(`${LEGACY}/`, `https://${h}${prefix}/`)
+        .replaceAll(LEGACY, `https://${h}`)
+      return out
+    } catch {
+      return html
+    }
+  }
+
   const mountLanding = (prefix: string, root: string) => {
-    // Assets reales: /comercios/assets/x → root/assets/x (strip del prefijo).
-    app.use(`${prefix}/*`, serveStatic({ root, rewriteRequestPath: (p) => p.slice(prefix.length) || '/' }))
-    // Sin barra final → con barra (para que resuelva el index).
-    app.get(prefix, (c) => c.redirect(`${prefix}/`))
-    // Fallback de la landing (single-page) → index.html.
-    app.get(`${prefix}/*`, (c) => {
+    const serveIndex = async (c: import('hono').Context) => {
       try {
-        return c.html(readFileSync(path.join(root, 'index.html'), 'utf8'))
+        const raw = readFileSync(path.join(root, 'index.html'), 'utf8')
+        return c.html(await injectLandingMeta(raw, c.req.header('host'), prefix))
       } catch {
         return c.text('landing no disponible', 500)
       }
-    })
+    }
+    // Sin barra → con barra. El index (con barra) se sirve inyectado, ANTES que
+    // serveStatic, para no servir el index.html crudo (sin meta del tenant).
+    app.get(prefix, (c) => c.redirect(`${prefix}/`))
+    app.get(`${prefix}/`, serveIndex)
+    // Assets/archivos reales: /comercios/assets/x → root/assets/x (strip prefijo).
+    app.use(`${prefix}/*`, serveStatic({ root, rewriteRequestPath: (p) => p.slice(prefix.length) || '/' }))
+    // SPA fallback (rutas que no son archivo) → index inyectado.
+    app.get(`${prefix}/*`, serveIndex)
   }
   mountLanding('/comercios', './apps/landing/dist')
   mountLanding('/vecino', './apps/landing-vecino/dist')

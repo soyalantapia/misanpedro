@@ -4,28 +4,34 @@ export function cn(...classes: Array<string | false | null | undefined>) {
 }
 
 /**
- * Shared constants for CTAs + contact (single source of truth).
+ * URLs de la app POR CIUDAD (tenant-aware). La landing vive en
+ * <sub>.micuidad.com/comercios y la app (PWA) en <sub>.micuidad.com/ — mismo host.
+ * El CTA/login/legales tienen que ir a la app de ESA ciudad, no a una fija.
  *
- * Production targets:
- * - App: https://app.misanpedro.com/
- *
- * Para override del dominio en build, usá env vars:
- *   VITE_APP_URL=https://app.misanpedro.com pnpm build
- *
- * Routes verificadas que existen en el PWA (apps/web/src/App.tsx):
- *   /admin/registro      — signup del comercio
- *   /admin/login         — login del comercio
- *   /                    — home (catálogo de descuentos)
- *   /legal/terminos
- *   /legal/privacidad
+ * Rutas reales del PWA (apps/web/src/App.tsx): /admin/registro · /admin/login ·
+ * / (catálogo) · /legal/terminos · /legal/privacidad.
  */
+const PLATFORM_DOMAIN = 'micuidad.com'
+type TenantLike = { subdomain?: string | null } | null
 
-const APP_URL_RAW = import.meta.env.VITE_APP_URL ?? 'https://app.misanpedro.com'
-// Strip trailing slash para que `${APP_URL}/#/...` no quede `//#/`
-export const APP_URL = APP_URL_RAW.replace(/\/$/, '')
+/**
+ * Origin de la app de la ciudad del tenant. Prioridad:
+ *   1. subdomain del tenant → https://<sub>.micuidad.com
+ *   2. origin actual (en prod la landing ya está en el host de la ciudad)
+ *   3. VITE_APP_URL (build) o fallback sanpedro.
+ */
+export function appBase(t: TenantLike): string {
+  if (t?.subdomain) return `https://${String(t.subdomain).toLowerCase()}.${PLATFORM_DOMAIN}`
+  if (typeof window !== 'undefined') {
+    const h = window.location.host
+    if (h && !/^(localhost|127\.0\.0\.1)/.test(h)) return window.location.origin
+  }
+  const env = (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/$/, '')
+  return env || `https://sanpedro.${PLATFORM_DOMAIN}`
+}
 
-// El path real es /admin/registro, NO /admin/signup
-export const SIGNUP_URL = `${APP_URL}/#/admin/registro`
-export const LOGIN_URL = `${APP_URL}/#/admin/login`
+export const signupUrl = (t: TenantLike) => `${appBase(t)}/#/admin/registro`
+export const loginUrl = (t: TenantLike) => `${appBase(t)}/#/admin/login`
+export const legalUrl = (t: TenantLike, path: 'terminos' | 'privacidad') => `${appBase(t)}/#/legal/${path}`
 
-export const SUPPORT_EMAIL = 'hola@misanpedro.com'
+export const SUPPORT_EMAIL = 'soporte@micuidad.com'

@@ -1,5 +1,5 @@
 import { ArrowRight, Check, Sparkles } from 'lucide-react'
-import { SIGNUP_URL } from '@/lib/cn'
+import { signupUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
 import { useTenant, priceLabel } from '@/lib/tenant'
 import {
@@ -50,7 +50,9 @@ export function Pricing() {
             <div className="text-white">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white ring-1 ring-white/30 backdrop-blur">
                 <Sparkles size={11} />
-                Lanzamiento · quedan {CUPOS_RESTANTES} de {TOTAL_CUPOS} lugares
+                {config?.slug === 'sanpedro'
+                  ? `Lanzamiento · quedan ${CUPOS_RESTANTES} de ${TOTAL_CUPOS} lugares`
+                  : 'Programa de lanzamiento'}
               </span>
 
               <h3 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
@@ -106,7 +108,7 @@ export function Pricing() {
               </div>
 
               <a
-                href={SIGNUP_URL}
+                href={signupUrl(config)}
                 className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
               >
                 Empezá gratis
@@ -124,12 +126,25 @@ export function Pricing() {
         </div>
 
         <p className="mx-auto mt-6 max-w-3xl text-center text-xs leading-relaxed text-neutral-500">
-          <strong className="text-neutral-700">
-            Los {MESES_GRATIS} meses gratis y el precio congelado valen para los primeros{' '}
-            {TOTAL_CUPOS} comercios.
-          </strong>{' '}
-          Ya van {COMERCIOS_ADHERIDOS} — quedan {CUPOS_RESTANTES} lugares. Después, el
-          precio sube para nuevos comercios.
+          {config?.slug === 'sanpedro' ? (
+            <>
+              <strong className="text-neutral-700">
+                Los {MESES_GRATIS} meses gratis y el precio congelado valen para los primeros{' '}
+                {TOTAL_CUPOS} comercios.
+              </strong>{' '}
+              Ya van {COMERCIOS_ADHERIDOS} — quedan {CUPOS_RESTANTES} lugares. Después, el
+              precio sube para nuevos comercios.
+            </>
+          ) : (
+            <>
+              <strong className="text-neutral-700">
+                Los {MESES_GRATIS} meses gratis y el precio congelado son parte del programa de
+                lanzamiento.
+              </strong>{' '}
+              Sumate ahora y tu precio queda congelado de por vida. Después, el precio sube para
+              nuevos comercios.
+            </>
+          )}
         </p>
       </AnimatedSection>
     </section>

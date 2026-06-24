@@ -1,5 +1,5 @@
 import { ArrowRight, Sparkles } from 'lucide-react'
-import { ENTER_URL } from '@/lib/cn'
+import { enterUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
 import { useTenant, cityName } from '@/lib/tenant'
 
@@ -23,7 +23,7 @@ export function FinalCTA() {
           </p>
           <div className="mt-9 flex justify-center">
             <a
-              href={ENTER_URL}
+              href={enterUrl(config)}
               className="group inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-accent-700 shadow-xl transition-all hover:-translate-y-0.5 hover:bg-neutral-50"
             >
               Entrá y mirá los descuentos

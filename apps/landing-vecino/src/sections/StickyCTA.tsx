@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
-import { ENTER_URL } from '@/lib/cn'
+import { enterUrl } from '@/lib/cn'
+import { useTenant } from '@/lib/tenant'
 
 export function StickyCTA() {
+  const { config } = useTenant()
   const [show, setShow] = useState(false)
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function StickyCTA() {
       ].join(' ')}
     >
       <a
-        href={ENTER_URL}
+        href={enterUrl(config)}
         className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-4 text-sm font-bold text-white shadow-2xl shadow-accent-500/40"
       >
         Entrá gratis y ahorrá

@@ -1,5 +1,5 @@
 import { ArrowRight, Check, Sparkles, Search, TicketCheck, Croissant, ShoppingCart, Pill } from 'lucide-react'
-import { ENTER_URL } from '@/lib/cn'
+import { enterUrl } from '@/lib/cn'
 import { Logo } from '@/components/Logo'
 import { useTenant, cityName } from '@/lib/tenant'
 
@@ -53,7 +53,7 @@ export function Hero() {
             style={{ animationDelay: '240ms' }}
           >
             <a
-              href={ENTER_URL}
+              href={enterUrl(config)}
               className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-8 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
             >
               Entrá y mirá los descuentos

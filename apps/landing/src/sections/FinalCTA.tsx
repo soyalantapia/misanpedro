@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react'
-import { SIGNUP_URL } from '@/lib/cn'
+import { signupUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
 import { useTenant, cityName } from '@/lib/tenant'
 import { TOTAL_CUPOS, CUPOS_RESTANTES, MESES_GRATIS } from '@/lib/launch'
@@ -16,7 +16,9 @@ export function FinalCTA() {
 
         <div className="relative">
           <p className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white ring-1 ring-white/30 backdrop-blur">
-            ⏳ Quedan {CUPOS_RESTANTES} de {TOTAL_CUPOS} lugares
+            {config?.slug === 'sanpedro'
+              ? `⏳ Quedan ${CUPOS_RESTANTES} de ${TOTAL_CUPOS} lugares`
+              : '⏳ Programa de lanzamiento'}
           </p>
 
           <h2 className="mt-6 text-balance text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.05] tracking-tight">
@@ -30,7 +32,7 @@ export function FinalCTA() {
 
           <div className="mt-9 flex justify-center">
             <a
-              href={SIGNUP_URL}
+              href={signupUrl(config)}
               className="group inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-accent-700 shadow-lg transition-all hover:-translate-y-0.5 hover:bg-neutral-50"
             >
               Empezá gratis

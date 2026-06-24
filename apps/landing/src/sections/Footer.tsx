@@ -1,4 +1,4 @@
-import { APP_URL, SUPPORT_EMAIL } from '@/lib/cn'
+import { legalUrl, SUPPORT_EMAIL } from '@/lib/cn'
 import { useTenant, appName, cityName } from '@/lib/tenant'
 
 export function Footer() {
@@ -30,7 +30,7 @@ export function Footer() {
             Contacto
           </a>
           <a
-            href={`${APP_URL}/#/legal/terminos`}
+            href={legalUrl(config, 'terminos')}
             target="_blank"
             rel="noopener noreferrer"
             className="transition-colors hover:text-neutral-900"
@@ -38,7 +38,7 @@ export function Footer() {
             Términos
           </a>
           <a
-            href={`${APP_URL}/#/legal/privacidad`}
+            href={legalUrl(config, 'privacidad')}
             target="_blank"
             rel="noopener noreferrer"
             className="transition-colors hover:text-neutral-900"

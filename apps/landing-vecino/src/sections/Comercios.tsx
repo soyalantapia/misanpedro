@@ -1,6 +1,7 @@
 import { ArrowRight, Heart, Store } from 'lucide-react'
-import { ENTER_URL, COMERCIOS_URL } from '@/lib/cn'
+import { enterUrl, COMERCIOS_URL } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant } from '@/lib/tenant'
 
 // TODO: cargar comercios reales (nombre + logo opcional) cuando estén confirmados.
 // NO inventar nombres: dejar vacío hasta tener data real → cae al copy honesto de abajo.
@@ -8,6 +9,7 @@ type Comercio = { nombre: string; logo?: string }
 const COMERCIOS: Comercio[] = []
 
 export function Comercios() {
+  const { config } = useTenant()
   return (
     <section id="comercios" className="px-5 py-20 sm:px-6 sm:py-28">
       <AnimatedSection className="mx-auto max-w-3xl text-center">
@@ -41,7 +43,7 @@ export function Comercios() {
         {/* Dual CTA: el vecino va a la app; el comercio va a su landing de captación. */}
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a
-            href={ENTER_URL}
+            href={enterUrl(config)}
             className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-accent-500/50"
           >
             Ir a la app

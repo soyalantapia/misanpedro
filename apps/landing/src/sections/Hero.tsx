@@ -1,5 +1,5 @@
 import { ArrowRight, MessageCircle, ShoppingBag, Ticket, User } from 'lucide-react'
-import { SIGNUP_URL } from '@/lib/cn'
+import { signupUrl } from '@/lib/cn'
 import { useTenant, cityName, priceLabel } from '@/lib/tenant'
 import {
   COMERCIOS_ADHERIDOS,
@@ -64,7 +64,7 @@ export function Hero() {
             style={{ animationDelay: '180ms' }}
           >
             <a
-              href={SIGNUP_URL}
+              href={signupUrl(config)}
               className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-7 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
             >
               Empezá gratis
@@ -87,7 +87,9 @@ export function Hero() {
             className="animate-fade-up mt-5 inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-xs font-bold text-accent-700 ring-1 ring-accent-100"
             style={{ animationDelay: '210ms' }}
           >
-            🔥 Ya van {COMERCIOS_ADHERIDOS} de {TOTAL_CUPOS} comercios · quedan {CUPOS_RESTANTES} lugares
+            {config?.slug === 'sanpedro'
+              ? `🔥 Ya van ${COMERCIOS_ADHERIDOS} de ${TOTAL_CUPOS} comercios · quedan ${CUPOS_RESTANTES} lugares`
+              : '🔥 Programa de lanzamiento · 3 meses gratis y precio congelado'}
           </p>
           <p
             className="animate-fade-up mt-4 text-xs text-neutral-500"
@@ -102,7 +104,9 @@ export function Hero() {
           className="animate-fade-up relative mx-auto mt-16 max-w-4xl"
           style={{ animationDelay: '300ms' }}
         >
-          <HeroMockup />
+          <HeroMockup
+            domain={config?.subdomain ? `${config.subdomain}.micuidad.com` : 'micuidad.com'}
+          />
         </div>
       </div>
     </section>
@@ -115,7 +119,7 @@ export function Hero() {
  * imagenes externas — convertible a screenshot real cuando el equipo
  * de diseño lo genere.
  */
-function HeroMockup() {
+function HeroMockup({ domain }: { domain: string }) {
   return (
     <div className="relative">
       {/* Soft platform shadow */}
@@ -130,7 +134,7 @@ function HeroMockup() {
             <span className="h-2.5 w-2.5 rounded-full bg-danger/60" />
             <span className="h-2.5 w-2.5 rounded-full bg-yellow-400/60" />
             <span className="h-2.5 w-2.5 rounded-full bg-success/60" />
-            <span className="ml-3 text-[10px] text-neutral-400">app.misanpedro.com</span>
+            <span className="ml-3 text-[10px] text-neutral-400">{domain}</span>
           </div>
 
           {/* KPIs row */}
