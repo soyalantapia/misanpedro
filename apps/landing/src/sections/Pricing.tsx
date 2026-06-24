@@ -1,7 +1,7 @@
 import { ArrowRight, Check, Sparkles } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
-import { useTenant, priceLabel } from '@/lib/tenant'
+import { useTenant, priceLabel, isArgentina, pagoLabel } from '@/lib/tenant'
 import {
   COMERCIOS_ADHERIDOS,
   TOTAL_CUPOS,
@@ -9,19 +9,20 @@ import {
   MESES_GRATIS,
 } from '@/lib/launch'
 
-const INCLUDED = [
-  'Descuentos ilimitados',
-  'CRM completo (DNI, cumple, frecuencia)',
-  'WhatsApp Business (próximamente)',
-  'Panel desde el celular',
-  'Validación con código de 6 dígitos',
-  'MercadoPago integrado',
-  'Reportes en tiempo real',
-  'Soporte dedicado',
-] as const
-
 export function Pricing() {
   const { config } = useTenant()
+  // Lo incluido en el plan. El medio de pago se gatea por país (MercadoPago solo
+  // donde aplica) y el CRM usa "documento" neutro en vez de "DNI" (AR-específico).
+  const included = [
+    'Descuentos ilimitados',
+    'CRM completo (cumpleaños, frecuencia, visitas)',
+    'WhatsApp Business (próximamente)',
+    'Panel desde el celular',
+    'Validación con código de 6 dígitos',
+    isArgentina(config) ? 'MercadoPago integrado' : 'Cobro mensual online',
+    'Reportes en tiempo real',
+    'Soporte dedicado',
+  ]
 
   return (
     <section id="precios" className="scroll-mt-20 bg-neutral-50/60 px-6 py-20 sm:py-28">
@@ -34,13 +35,13 @@ export function Pricing() {
         </h2>
         <p className="mt-5 text-pretty text-lg leading-relaxed text-neutral-600">
           Empezás con {MESES_GRATIS} meses gratis y sin tarjeta. Después, un plan único
-          mensual por MercadoPago. Cancelás cuando quieras desde tu panel.
+          mensual por {pagoLabel(config)}. Cancelás cuando quieras desde tu panel.
         </p>
       </AnimatedSection>
 
       {/* Billboard horizontal */}
       <AnimatedSection delay={100} className="mx-auto mt-12 max-w-6xl">
-        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-500 via-accent-600 to-accent-800 shadow-2xl shadow-accent-500/20">
+        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-600 via-accent-700 to-accent-800 shadow-2xl shadow-accent-500/20">
           {/* Decorative orbs */}
           <div className="pointer-events-none absolute -top-32 -left-20 h-[500px] w-[500px] rounded-full bg-white/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-32 -right-20 h-[500px] w-[500px] rounded-full bg-accent-300/30 blur-3xl" />
@@ -65,7 +66,7 @@ export function Pricing() {
               </p>
 
               <ul className="mt-8 grid gap-x-6 gap-y-3 sm:grid-cols-2">
-                {INCLUDED.map((item) => (
+                {included.map((item) => (
                   <li
                     key={item}
                     className="flex items-start gap-2.5 text-sm text-white/90"
@@ -103,13 +104,14 @@ export function Pricing() {
                   <span className="text-neutral-500">/mes</span>
                 </p>
                 <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-accent-700">
-                  <span aria-hidden>🔒</span> Congelado de por vida · sin IVA (factura C)
+                  <span aria-hidden>🔒</span> Congelado de por vida
+                  {isArgentina(config) ? ' · sin IVA (factura C)' : ''}
                 </p>
               </div>
 
               <a
                 href={signupUrl(config)}
-                className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
+                className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-accent-600 to-accent-800 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
               >
                 Empezá gratis
                 <ArrowRight

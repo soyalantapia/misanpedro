@@ -76,7 +76,7 @@ export function Logo({
         className={`font-black leading-none tracking-tight ${textClass} ${onDark ? 'text-white' : 'text-neutral-900'}`}
         style={{ letterSpacing: '-0.03em' }}
       >
-        <span className="text-accent-500">{first}</span>{restWord}
+        <span className={onDark ? 'text-accent-300' : 'text-accent-700'}>{first}</span>{restWord}
       </span>
     </span>
   )

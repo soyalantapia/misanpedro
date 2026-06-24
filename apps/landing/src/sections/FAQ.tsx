@@ -1,6 +1,6 @@
 import { ChevronDown } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
-import { useTenant, priceLabel, type LandingTenant } from '@/lib/tenant'
+import { useTenant, priceLabel, isSanPedro, pagoLabel, type LandingTenant } from '@/lib/tenant'
 import {
   COMERCIOS_ADHERIDOS,
   TOTAL_CUPOS,
@@ -10,10 +10,12 @@ import {
 
 function buildFaqs(config: LandingTenant | null) {
   const precio = priceLabel(config)
+  const sp = isSanPedro(config)
+  const pago = pagoLabel(config)
   return [
   {
     q: '¿Qué necesito para empezar?',
-    a: 'Sólo un celular con WhatsApp y MercadoPago. No necesitás computadora, scanner ni hardware extra, y no cargás tarjeta para arrancar. Te registrás, completás los datos del comercio, subís tu primer descuento y listo.',
+    a: 'Sólo un celular con WhatsApp. No necesitás computadora, scanner ni hardware extra, y no cargás tarjeta ni medio de pago para arrancar. Te registrás, completás los datos del comercio, subís tu primer descuento y listo.',
   },
   {
     q: '¿El vecino paga algo por usar la app?',
@@ -37,11 +39,15 @@ function buildFaqs(config: LandingTenant | null) {
   },
   {
     q: '¿Cómo son los 3 meses gratis?',
-    a: `Los primeros ${TOTAL_CUPOS} comercios que se suman arrancan con ${MESES_GRATIS} meses sin pagar nada y sin cargar tarjeta. Recién al cuarto mes empezás a pagar ${precio}/mes por MercadoPago, y ese precio te queda congelado de por vida. Hoy van ${COMERCIOS_ADHERIDOS} de ${TOTAL_CUPOS} lugares (quedan ${CUPOS_RESTANTES}).`,
+    a: sp
+      ? `Los primeros ${TOTAL_CUPOS} comercios que se suman arrancan con ${MESES_GRATIS} meses sin pagar nada y sin cargar tarjeta. Recién al cuarto mes empezás a pagar ${precio}/mes por ${pago}, y ese precio te queda congelado de por vida. Hoy van ${COMERCIOS_ADHERIDOS} de ${TOTAL_CUPOS} lugares (quedan ${CUPOS_RESTANTES}).`
+      : `Los comercios del programa de lanzamiento arrancan con ${MESES_GRATIS} meses sin pagar nada y sin cargar tarjeta. Recién al cuarto mes empezás a pagar ${precio}/mes por ${pago}, y ese precio te queda congelado de por vida.`,
   },
   {
     q: `¿El precio de ${precio}/mes es para siempre?`,
-    a: `Sí. Los primeros ${TOTAL_CUPOS} comercios arrancan con ${MESES_GRATIS} meses gratis y, después, pagan ${precio}/mes congelado de por vida. Aunque subamos el precio para nuevos comercios, vos seguís pagando ${precio} mientras tu cuenta esté activa. Si pausás y volvés, conservás el precio.`,
+    a: sp
+      ? `Sí. Los primeros ${TOTAL_CUPOS} comercios arrancan con ${MESES_GRATIS} meses gratis y, después, pagan ${precio}/mes congelado de por vida. Aunque subamos el precio para nuevos comercios, vos seguís pagando ${precio} mientras tu cuenta esté activa. Si pausás y volvés, conservás el precio.`
+      : `Sí. Los comercios del lanzamiento arrancan con ${MESES_GRATIS} meses gratis y, después, pagan ${precio}/mes congelado de por vida. Aunque subamos el precio para nuevos comercios, vos seguís pagando ${precio} mientras tu cuenta esté activa. Si pausás y volvés, conservás el precio.`,
   },
   ] as const
 }

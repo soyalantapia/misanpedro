@@ -93,29 +93,43 @@ export function useTenant() {
   )
 }
 
-export async function loadTenantConfig() {
-  if (!state.slug) return
-  state = { ...state, loading: true }
-  notify()
-  try {
-    const res = await fetch(`${API_URL.replace(/\/$/, '')}/api/v1/tenant/${state.slug}/config`)
-    if (!res.ok) {
+// Dedupe: main.tsx (eager) y App.tsx (useEffect, ×2 en StrictMode) llaman a esto.
+// Sin guard se dispara el fetch del tenant 2-3 veces al cargar. El guard de
+// in-flight + already-loaded lo hace idempotente sin importar el caller. El slug
+// va encodeURIComponent (viene de ?tenant=/subdomain) para no armar una URL rara.
+let inflight: Promise<void> | null = null
+export function loadTenantConfig(): Promise<void> {
+  const slug = state.slug
+  if (!slug || state.config) return Promise.resolve()
+  if (inflight) return inflight
+  inflight = (async () => {
+    state = { ...state, loading: true }
+    notify()
+    try {
+      const res = await fetch(
+        `${API_URL.replace(/\/$/, '')}/api/v1/tenant/${encodeURIComponent(slug)}/config`,
+      )
+      if (!res.ok) {
+        state = { ...state, loading: false }
+        notify()
+        return
+      }
+      const json = (await res.json()) as { ok: boolean; tenant: LandingTenant }
+      if (json.ok && json.tenant) {
+        state = { ...state, config: json.tenant, loading: false }
+        applyBrandingToDom(json.tenant)
+      } else {
+        state = { ...state, loading: false }
+      }
+      notify()
+    } catch {
       state = { ...state, loading: false }
       notify()
-      return
+    } finally {
+      inflight = null
     }
-    const json = (await res.json()) as { ok: boolean; tenant: LandingTenant }
-    if (json.ok && json.tenant) {
-      state = { ...state, config: json.tenant, loading: false }
-      applyBrandingToDom(json.tenant)
-    } else {
-      state = { ...state, loading: false }
-    }
-    notify()
-  } catch {
-    state = { ...state, loading: false }
-    notify()
-  }
+  })()
+  return inflight
 }
 
 /** Solo HEX válido (#RGB…#RRGGBBAA). Un valor inesperado dejaría --color-brand
@@ -148,6 +162,17 @@ export function appName(c: LandingTenant | null): string {
 export function cityName(c: LandingTenant | null): string {
   return c?.ciudad?.trim() || 'tu ciudad'
 }
+
+/** ¿Es San Pedro? Los contadores de escasez (2/20/18) son SOLO de su lanzamiento. */
+export const isSanPedro = (c: LandingTenant | null): boolean => c?.slug === 'sanpedro'
+
+/** ¿El tenant es de Argentina? Gatea copy fiscal/medio-de-pago AR (factura C, IVA,
+ *  MercadoPago). Si no hay tenant (paraguas), se asume NO-AR → copy neutro. */
+export const isArgentina = (c: LandingTenant | null): boolean => c?.pais === 'Argentina'
+
+/** Medio de pago a mostrar: MercadoPago en AR, neutro en el resto. */
+export const pagoLabel = (c: LandingTenant | null): string =>
+  isArgentina(c) ? 'MercadoPago' : 'pago online'
 
 /** Precio mensual formateado en la moneda/locale del tenant (ej. "$50.000" o
  *  "$ 50.000" en COP). Si el tenant no trae precioMensual, usa el default. */

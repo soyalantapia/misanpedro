@@ -9,7 +9,7 @@ export function FinalCTA() {
 
   return (
     <section className="px-6 pb-20 pt-12 sm:pb-28">
-      <AnimatedSection className="relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-500 via-accent-600 to-accent-800 p-10 text-center text-white shadow-2xl shadow-accent-500/20 sm:p-16">
+      <AnimatedSection className="relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-600 via-accent-700 to-accent-800 p-10 text-center text-white shadow-2xl shadow-accent-500/20 sm:p-16">
         {/* Decorative orbs */}
         <div className="pointer-events-none absolute -top-32 left-1/2 h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 right-10 h-48 w-48 rounded-full bg-accent-300/30 blur-2xl" />
@@ -40,7 +40,7 @@ export function FinalCTA() {
             </a>
           </div>
 
-          <p className="mt-8 text-xs text-white/70">
+          <p className="mt-8 text-xs text-white/90">
             3 meses gratis, sin tarjeta · Cancelás cuando quieras · Hecho en {cityName(config)}
           </p>
         </div>

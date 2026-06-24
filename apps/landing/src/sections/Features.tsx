@@ -7,8 +7,11 @@ import {
   CreditCard,
 } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, isArgentina, type LandingTenant } from '@/lib/tenant'
 
-const FEATURES = [
+function buildFeatures(config: LandingTenant | null) {
+  const ar = isArgentina(config)
+  return [
   {
     icon: Ticket,
     title: 'Descuentos en 5 minutos',
@@ -22,7 +25,7 @@ const FEATURES = [
   {
     icon: Users,
     title: 'CRM automático',
-    body: 'Cada canje guarda nombre, DNI, cumpleaños y frecuencia del cliente.',
+    body: 'Cada canje guarda nombre, documento, cumpleaños y frecuencia del cliente.',
   },
   {
     icon: MessageCircle,
@@ -36,12 +39,17 @@ const FEATURES = [
   },
   {
     icon: CreditCard,
-    title: 'MercadoPago integrado',
-    body: 'Empezás sin tarjeta. Recién cobramos por MP cuando terminan los 3 meses gratis.',
+    title: ar ? 'MercadoPago integrado' : 'Cobro mensual online',
+    body: ar
+      ? 'Empezás sin tarjeta. Recién cobramos por MercadoPago cuando terminan los 3 meses gratis.'
+      : 'Empezás sin tarjeta. Recién cobramos cuando terminan los 3 meses gratis.',
   },
-] as const
+  ] as const
+}
 
 export function Features() {
+  const { config } = useTenant()
+  const FEATURES = buildFeatures(config)
   return (
     <section id="funciones" className="scroll-mt-20 bg-neutral-50/60 px-6 py-20 sm:py-28">
       <AnimatedSection className="mx-auto max-w-3xl text-center">
