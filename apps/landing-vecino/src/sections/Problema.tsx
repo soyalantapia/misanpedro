@@ -39,7 +39,7 @@ export function Problema() {
             <div key={b.l} className="flex flex-1 flex-col items-center justify-end gap-2">
               {/* Remate de ahorro, sobre la barra de la marca */}
               {b.save && (
-                <span className="inline-flex items-center gap-0.5 rounded-full bg-accent-500 px-2.5 py-1 text-xs font-black text-white shadow-md shadow-accent-500/30">
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-accent-500 px-2.5 py-1 text-xs font-black text-on-brand shadow-md shadow-accent-500/30">
                   <ArrowDown size={13} strokeWidth={3} />
                   20%
                 </span>

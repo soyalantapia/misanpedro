@@ -5,6 +5,7 @@ import { owner } from '@/lib/api'
 import { PAISES, PAIS_DEFAULT, findPaisByNombre } from '@/lib/paises'
 import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/cn'
+import { brandContrastWarning } from '@/lib/contrast'
 
 type Step = 1 | 2 | 3 | 4
 
@@ -445,7 +446,7 @@ function StepBrand({
     <div className="grid gap-5">
       <h2 className="text-lg font-bold text-neutral-900">¿Qué look tiene?</h2>
       <div className="grid gap-5 sm:grid-cols-2">
-        <ColorField label="Color primario" value={form.primaryColor} onChange={(v) => update('primaryColor', v)} />
+        <ColorField label="Color primario" value={form.primaryColor} onChange={(v) => update('primaryColor', v)} warnContrast />
         <ColorField label="Color accent" value={form.accentColor} onChange={(v) => update('accentColor', v)} />
       </div>
 
@@ -602,11 +603,14 @@ function ColorField({
   label,
   value,
   onChange,
+  warnContrast = false,
 }: {
   label: string
   value: string
   onChange: (v: string) => void
+  warnContrast?: boolean
 }) {
+  const contrast = warnContrast ? brandContrastWarning(value) : null
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{label}</span>
@@ -624,6 +628,14 @@ function ColorField({
           className="flex-1 bg-transparent text-sm uppercase tracking-wider text-neutral-900 focus:outline-none"
         />
       </div>
+      {contrast && contrast.level !== 'ok' && (
+        <p className={`text-[11px] font-medium ${contrast.level === 'fail' ? 'text-danger' : 'text-warning'}`}>
+          ⚠ Contraste {contrast.ratio}:1 con texto blanco —{' '}
+          {contrast.level === 'fail'
+            ? 'los botones (texto blanco) van a quedar ilegibles. Elegí un tono más oscuro.'
+            : 'borderline para los botones. Un tono más oscuro mejora la lectura.'}
+        </p>
+      )}
     </label>
   )
 }

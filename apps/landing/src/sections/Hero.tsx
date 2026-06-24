@@ -65,7 +65,7 @@ export function Hero() {
           >
             <a
               href={signupUrl(config)}
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-600 to-accent-800 px-7 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-600 to-accent-800 px-7 py-4 text-sm font-bold text-on-brand shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
             >
               Empezá gratis
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
@@ -204,7 +204,7 @@ function HeroMockup({ domain }: { domain: string }) {
         </div>
 
         {/* Right: CRM card del cliente */}
-        <div className="rounded-2xl bg-gradient-to-br from-accent-600 to-accent-800 p-5 text-white">
+        <div className="rounded-2xl bg-gradient-to-br from-accent-600 to-accent-800 p-5 text-on-brand">
           <p className="text-[9px] font-bold uppercase tracking-widest text-white/60">
             Cliente recurrente
           </p>

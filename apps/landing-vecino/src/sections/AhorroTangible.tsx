@@ -55,7 +55,7 @@ export function AhorroTangible() {
           </ul>
           <a
             href={enterUrl(config)}
-            className="group mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-accent-500/50"
+            className="group mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-7 py-3.5 text-sm font-bold text-on-brand shadow-xl shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-accent-500/50"
           >
             Entrá y mirá los descuentos
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
@@ -75,11 +75,11 @@ export function AhorroTangible() {
                   className="flex items-center justify-between rounded-2xl bg-neutral-50 px-4 py-3 ring-1 ring-neutral-200/70"
                 >
                   <span className="font-semibold text-neutral-800">{e.c}</span>
-                  <span className="rounded-full bg-accent-600 px-3 py-1 text-xs font-black text-white">{e.d}</span>
+                  <span className="rounded-full bg-accent-600 px-3 py-1 text-xs font-black text-on-brand">{e.d}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex items-center justify-between rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-4 text-white">
+            <div className="mt-4 flex items-center justify-between rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-4 text-on-brand">
               <span className="text-sm font-semibold text-white/85">Tu plata, a fin de mes</span>
               <span className="text-lg font-black">rinde más</span>
             </div>

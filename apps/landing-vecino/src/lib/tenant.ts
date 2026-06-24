@@ -132,6 +132,20 @@ function isHexColor(v?: string): v is string {
   return !!v && /^#[0-9a-fA-F]{3,8}$/.test(v)
 }
 
+/** Texto accesible (#fff o tinta oscura) SOBRE el color de marca, por luminancia
+ *  relativa WCAG. Marcas claras → tinta; oscuras (naranja/teal) → blanco. */
+function onBrandText(hex: string): string {
+  const m = hex.replace('#', '')
+  const full = m.length === 3 ? m.split('').map((c) => c + c).join('') : m
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return '#ffffff'
+  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+  const L =
+    0.2126 * lin(parseInt(full.slice(0, 2), 16) / 255) +
+    0.7152 * lin(parseInt(full.slice(2, 4), 16) / 255) +
+    0.0722 * lin(parseInt(full.slice(4, 6), 16) / 255)
+  return L > 0.4 ? '#241a14' : '#ffffff'
+}
+
 function applyBrandingToDom(t: LandingTenant) {
   if (typeof document === 'undefined') return
   const root = document.documentElement
@@ -140,6 +154,7 @@ function applyBrandingToDom(t: LandingTenant) {
   // deriva por color-mix. Seteándolo re-tematizamos TODA la landing del vecino.
   if (isHexColor(primary)) {
     root.style.setProperty('--color-brand', primary)
+    root.style.setProperty('--color-on-brand', onBrandText(primary))
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', primary)
   }
   if (t.nombre) document.title = `${t.nombre} · Descuentos para vecinos`

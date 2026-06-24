@@ -57,7 +57,7 @@ export function Nav() {
           aria-label={`${appName(config)} · inicio`}
           className="flex shrink-0 items-center gap-2 font-bold tracking-tight"
         >
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 text-white shadow-sm">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 text-on-brand shadow-sm">
             <span className="text-xs font-black">M</span>
           </span>
           <span className="text-base text-neutral-900">{appName(config)}</span>
@@ -78,7 +78,7 @@ export function Nav() {
         <div className="flex items-center gap-3">
           <a
             href={signupUrl(config)}
-            className="group hidden items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-accent-500/20 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-accent-500/30 sm:inline-flex"
+            className="group hidden items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-on-brand shadow-sm shadow-accent-500/20 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-accent-500/30 sm:inline-flex"
           >
             Empezá gratis
             <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
@@ -110,7 +110,7 @@ export function Nav() {
             ))}
             <a
               href={signupUrl(config)}
-              className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white"
+              className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-on-brand"
             >
               Empezá gratis
               <ArrowRight size={12} />

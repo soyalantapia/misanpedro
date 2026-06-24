@@ -46,7 +46,7 @@ export function PorQue() {
             delay={80 + i * 90}
             className="group rounded-3xl bg-white p-6 ring-1 ring-neutral-200 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:ring-accent-200"
           >
-            <span className="inline-grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 text-white shadow-lg shadow-accent-500/25 transition-transform duration-300 group-hover:scale-110">
+            <span className="inline-grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 text-on-brand shadow-lg shadow-accent-500/25 transition-transform duration-300 group-hover:scale-110">
               <r.icon size={20} />
             </span>
             <h3 className="mt-5 font-bold text-neutral-900">{r.title}</h3>

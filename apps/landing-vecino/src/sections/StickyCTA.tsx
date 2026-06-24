@@ -30,7 +30,7 @@ export function StickyCTA() {
     >
       <a
         href={enterUrl(config)}
-        className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-4 text-sm font-bold text-white shadow-2xl shadow-accent-500/40"
+        className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-4 text-sm font-bold text-on-brand shadow-2xl shadow-accent-500/40"
       >
         Entrá gratis y ahorrá
         <ArrowRight size={16} />

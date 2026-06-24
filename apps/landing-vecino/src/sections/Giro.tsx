@@ -23,7 +23,7 @@ export function Giro() {
           </p>
           <a
             href={enterUrl(config)}
-            className="group mt-9 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-accent-500/50"
+            className="group mt-9 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-7 py-3.5 text-sm font-bold text-on-brand shadow-xl shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-accent-500/50"
           >
             Quiero que mi plata rinda más
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />

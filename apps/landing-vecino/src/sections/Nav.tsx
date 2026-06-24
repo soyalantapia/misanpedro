@@ -58,7 +58,7 @@ export function Nav() {
           </a>
           <a
             href={enterUrl(config)}
-            className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40 sm:px-5 sm:text-sm"
+            className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-on-brand shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40 sm:px-5 sm:text-sm"
           >
             Ir a la app
             <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />

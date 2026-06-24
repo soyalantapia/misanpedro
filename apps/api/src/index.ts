@@ -172,6 +172,20 @@ if (isProd) {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;')
+  // Texto accesible (#fff o tinta) sobre la marca, por luminancia WCAG. Lo
+  // inyectamos junto al color para que el primer paint (pre-JS) ya tenga el texto
+  // de los CTA en el color legible si la marca de la ciudad es clara.
+  const onBrandText = (hex: string): string => {
+    const m = hex.replace('#', '')
+    const full = m.length === 3 ? m.split('').map((c) => c + c).join('') : m
+    if (!/^[0-9a-fA-F]{6}$/.test(full)) return '#ffffff'
+    const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+    const L =
+      0.2126 * lin(parseInt(full.slice(0, 2), 16) / 255) +
+      0.7152 * lin(parseInt(full.slice(2, 4), 16) / 255) +
+      0.0722 * lin(parseInt(full.slice(4, 6), 16) / 255)
+    return L > 0.4 ? '#241a14' : '#ffffff'
+  }
   const injectLandingMeta = async (html: string, host?: string, prefix = ''): Promise<string> => {
     try {
       const h = (host ?? '').toLowerCase().split(':')[0]
@@ -220,7 +234,10 @@ if (isProd) {
       const brand = t.brand?.primaryColor
       if (typeof brand === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(brand)) {
         out = out.replaceAll('#ea580c', brand)
-        out = out.replace('</head>', `<style>:root{--color-brand:${brand}}</style></head>`)
+        out = out.replace(
+          '</head>',
+          `<style>:root{--color-brand:${brand};--color-on-brand:${onBrandText(brand)}}</style></head>`,
+        )
       }
       // URLs absolutas del dominio legacy → host de la ciudad, respetando el path
       // del landing. El comercio ya trae /comercios/ en su index; el vecino trae

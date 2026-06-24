@@ -16,6 +16,12 @@
   --color-accent-800: color-mix(in srgb, var(--color-brand), black 48%);
   --color-accent-900: color-mix(in srgb, var(--color-brand), black 62%);
 
+  /* Texto accesible SOBRE la marca (CTA con texto sobre el gradiente accent).
+     Default blanco; lib/tenant.ts lo cambia a tinta oscura si el color de marca
+     del tenant es claro (un amarillo/lima dejaría el texto blanco ilegible). Las
+     marcas oscuras actuales (naranja/teal) lo dejan en blanco = sin cambio. */
+  --color-on-brand: #ffffff;
+
   /* Neutral grays — Deenex */
   --color-neutral-50: #f6f5f6;
   --color-neutral-100: #e7e6e7;

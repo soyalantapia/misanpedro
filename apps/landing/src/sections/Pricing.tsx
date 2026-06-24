@@ -48,7 +48,7 @@ export function Pricing() {
 
           <div className="relative grid gap-10 p-8 sm:p-12 lg:grid-cols-[1.4fr_1fr] lg:gap-16 lg:p-14">
             {/* LEFT */}
-            <div className="text-white">
+            <div className="text-on-brand">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white ring-1 ring-white/30 backdrop-blur">
                 <Sparkles size={11} />
                 {config?.slug === 'sanpedro'
@@ -111,7 +111,7 @@ export function Pricing() {
 
               <a
                 href={signupUrl(config)}
-                className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-accent-600 to-accent-800 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
+                className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-accent-600 to-accent-800 px-6 py-4 text-sm font-bold text-on-brand shadow-lg shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
               >
                 Empezá gratis
                 <ArrowRight

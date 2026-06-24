@@ -47,7 +47,7 @@ export function HowItWorks() {
             delay={100 + i * 120}
             className="group relative rounded-3xl bg-white p-7 text-center shadow-sm ring-1 ring-neutral-200 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:ring-accent-200"
           >
-            <div className="relative mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 text-white shadow-lg shadow-accent-500/30 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3">
+            <div className="relative mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 text-on-brand shadow-lg shadow-accent-500/30 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3">
               <s.icon size={22} />
               <span className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-neutral-900 text-[10px] font-black text-white ring-2 ring-white">
                 {s.n}

@@ -54,7 +54,7 @@ export function Hero() {
           >
             <a
               href={enterUrl(config)}
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-8 py-4 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-8 py-4 text-sm font-bold text-on-brand shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
             >
               Entrá y mirá los descuentos
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
@@ -201,7 +201,7 @@ function PhoneMockup({ city }: { city: string }) {
                   key={chip}
                   className={
                     i === 0
-                      ? 'shrink-0 rounded-full bg-accent-500 px-2.5 py-1 text-[8px] font-bold text-white shadow-sm'
+                      ? 'shrink-0 rounded-full bg-accent-500 px-2.5 py-1 text-[8px] font-bold text-on-brand shadow-sm'
                       : 'shrink-0 rounded-full bg-neutral-100 px-2.5 py-1 text-[8px] font-semibold text-neutral-500 ring-1 ring-neutral-200'
                   }
                 >
