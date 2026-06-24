@@ -53,7 +53,7 @@ export function Nav() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
         <a
-          href="/"
+          href="#top"
           aria-label={`${appName(config)} · inicio`}
           className="flex shrink-0 items-center gap-2 font-bold tracking-tight"
         >

@@ -17,7 +17,7 @@ export function Hero() {
   const headlineOverride = config?.brand?.heroHeadline
 
   return (
-    <section className="relative overflow-hidden px-6 pt-16 pb-20 sm:pt-24 sm:pb-28">
+    <section id="top" className="relative overflow-hidden px-6 pt-16 pb-20 sm:pt-24 sm:pb-28">
       {/* Background — soft accent gradient orbs */}
       <div className="pointer-events-none absolute -top-32 left-1/2 h-[600px] w-[1200px] -translate-x-1/2 rounded-full bg-gradient-to-br from-accent-300/30 to-accent-500/10 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 right-0 h-[400px] w-[700px] rounded-full bg-gradient-to-tl from-accent-200/30 to-transparent blur-3xl" />

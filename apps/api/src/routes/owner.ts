@@ -448,8 +448,10 @@ const legalSchema = z
 
 const createAppSchema = z.object({
   slug: z.string().regex(/^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/),
-  nombre: z.string().min(2),
-  ciudad: z.string().min(2),
+  // Defensa en profundidad: nombre/ciudad se inyectan en el HTML de la landing
+  // (escapados, ver injectLandingMeta). Capeamos largo para evitar payloads.
+  nombre: z.string().min(2).max(80),
+  ciudad: z.string().min(2).max(80),
   provincia: z.string().default('Buenos Aires'),
   pais: z.string().default('Argentina'),
   // Localización (ciudades multi-país). Defaults = AR. Validamos formato para que
@@ -558,8 +560,8 @@ ownerRoutes.get('/apps/:id', requireOwnerAuth, async (c) => {
 })
 
 const updateAppSchema = z.object({
-  nombre: z.string().min(2).optional(),
-  ciudad: z.string().min(2).optional(),
+  nombre: z.string().min(2).max(80).optional(),
+  ciudad: z.string().min(2).max(80).optional(),
   provincia: z.string().optional(),
   pais: z.string().optional(),
   // Localización (ciudades multi-país). Opcionales en el PATCH, mismo formato.

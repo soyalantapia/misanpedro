@@ -159,6 +159,19 @@ if (isProd) {
   // pero no el OG ni los crawlers). Fail-open: si algo falla, sirve el html crudo.
   const RESERVED_SUB = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios', 'administracion', 'ciudades', 'vecino'])
   const LEGACY = 'https://misanpedro.com'
+  // El nombre/ciudad del tenant los controla el owner y se inyectan en el HTML
+  // servido (<title>, atributos de <meta>, y strings dentro del <script
+  // application/ld+json>). Escapamos &<>"' antes de inyectar: hace el valor
+  // seguro en los tres contextos a la vez — en particular `<` → `&lt;` impide
+  // romper con `</script>` el bloque JSON-LD (XSS almacenado). Mismo escape para
+  // el host, que también termina en atributos OG.
+  const escapeHtml = (s: string): string =>
+    s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
   const injectLandingMeta = async (html: string, host?: string, prefix = ''): Promise<string> => {
     try {
       const h = (host ?? '').toLowerCase().split(':')[0]
@@ -168,17 +181,18 @@ if (isProd) {
       if (RESERVED_SUB.has(sub)) return html
       const tenant = await findTenantByKey(sub)
       if (!tenant) return html
+      const safeHost = escapeHtml(h)
       let out = html
-      if (tenant.nombre) out = out.replaceAll('Mi San Pedro', String(tenant.nombre))
-      if (tenant.ciudad) out = out.replaceAll('San Pedro', String(tenant.ciudad))
+      if (tenant.nombre) out = out.replaceAll('Mi San Pedro', escapeHtml(String(tenant.nombre)))
+      if (tenant.ciudad) out = out.replaceAll('San Pedro', escapeHtml(String(tenant.ciudad)))
       // URLs absolutas del dominio legacy → host de la ciudad, respetando el path
       // del landing. El comercio ya trae /comercios/ en su index; el vecino trae
       // el dominio pelado (og:url, og-image) y hay que prefijarle /vecino/.
       // Orden: específico→pelado para no doble-prefijar.
       out = out
-        .replaceAll(`${LEGACY}${prefix}/`, `https://${h}${prefix}/`)
-        .replaceAll(`${LEGACY}/`, `https://${h}${prefix}/`)
-        .replaceAll(LEGACY, `https://${h}`)
+        .replaceAll(`${LEGACY}${prefix}/`, `https://${safeHost}${prefix}/`)
+        .replaceAll(`${LEGACY}/`, `https://${safeHost}${prefix}/`)
+        .replaceAll(LEGACY, `https://${safeHost}`)
       return out
     } catch {
       return html
