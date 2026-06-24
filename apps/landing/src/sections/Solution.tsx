@@ -25,13 +25,20 @@ export function Solution() {
               aplicado, canje registrado, datos de Carolina guardados.
             </p>
             <p>
-              A partir de ese momento sabés que Carolina existe, dónde vive, cuándo
-              cumple años, qué descuento prefiere, cuántas veces te visitó. Le podés
-              mandar un WhatsApp el día de su cumpleaños o cuando tengas una promo que
-              sabés que le va a interesar.{' '}
+              A partir de ese momento sabés que Carolina existe, cuándo cumple años,
+              qué descuento prefiere, cuántas veces te visitó.{' '}
               <strong className="text-neutral-900">
-                Sin spam. Sin algoritmo. Directo.
-              </strong>
+                Esos clientes son tuyos:
+              </strong>{' '}
+              cada canje queda en tu base con nombre, cumple y frecuencia, y la
+              exportás cuando quieras. La base es tuya, no nuestra.
+            </p>
+            <p>
+              Y cobramos una mensualidad fija, nada más.{' '}
+              <strong className="text-neutral-900">
+                No nos quedamos un peso de tu ticket.
+              </strong>{' '}
+              Lo que vendés es tuyo, entero. Sin spam, sin algoritmo, sin comisiones.
             </p>
           </div>
 
@@ -39,7 +46,7 @@ export function Solution() {
             href={SIGNUP_URL}
             className="group mt-9 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
           >
-            Quiero conectar con mis clientes
+            Empezá gratis
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
           </a>
         </AnimatedSection>

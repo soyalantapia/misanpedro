@@ -20,7 +20,7 @@ export function FinalCTA() {
           </p>
 
           <h2 className="mt-6 text-balance text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.05] tracking-tight">
-            Antes de que cierre el cupo.
+            Llená tus días flojos y quedate con tus clientes. Antes de que cierre el cupo.
           </h2>
 
           <p className="mt-5 text-pretty text-lg leading-relaxed text-white/85">

@@ -41,10 +41,10 @@ export function Hero() {
               className="animate-fade-up mt-7 text-balance text-[clamp(2.5rem,7vw,5rem)] font-bold leading-[1.02] tracking-tight text-neutral-900"
               style={{ animationDelay: '60ms' }}
             >
-              Tus clientes vuelven solos.
+              Esos días que no vendés nada…
               <br />
               <span className="bg-gradient-to-br from-accent-500 to-accent-700 bg-clip-text text-transparent">
-                Sin imprimir un volante más.
+                empezá a llenarlos.
               </span>
             </h1>
           )}
@@ -53,9 +53,10 @@ export function Hero() {
             className="animate-fade-up mt-7 max-w-2xl text-pretty text-lg leading-relaxed text-neutral-600 sm:text-xl"
             style={{ animationDelay: '120ms' }}
           >
-            Subí tus descuentos en 5 minutos, validalos con un código de 6 dígitos
-            desde el celular, y enterate de cada cliente que vuelve. Sin contratos.
-            Sin letra chica. {config?.ciudad ? `Hecho para ${cityName(config)}.` : 'Hecho para vos.'}
+            Ponés tu descuento el día flojo, los vecinos cerca se enteran y entran.
+            El descuento lo elegís vos, así que no regalás margen. Cada persona que
+            canjea te queda como cliente tuyo y no nos quedamos un peso de tu ticket.
+            Sin contratos. Sin app que aprender. {config?.ciudad ? `Hecho para ${cityName(config)}.` : 'Hecho para vos.'}
           </p>
 
           <div

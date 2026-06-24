@@ -85,6 +85,10 @@ export function NewAppPage() {
       if (!/^[A-Z]{3}$/.test(form.moneda)) return 'Moneda inválida (ISO-4217, ej. ARS, COP)'
       if (!/^[a-z]{2,3}(-[A-Z]{2,4})?$/.test(form.locale))
         return 'Idioma/locale inválido (ej. es-AR, es-CO)'
+      // precioMensual requerido: es el precio que la landing de la ciudad muestra
+      // (siempre dinámico desde la DB). Sin él, la landing caería a un default.
+      if (!form.precioMensual.trim() || !(Number(form.precioMensual) > 0))
+        return 'El precio mensual del comercio es requerido (lo muestra la landing de la ciudad)'
       // geoCenter requerido: sin él, el mapa del alta de comercios de esta ciudad
       // cae en San Pedro (default del modelo). Lo exigimos al crear.
       if (!form.geoLat.trim() || !form.geoLng.trim())
@@ -349,8 +353,8 @@ function StepLocation({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <TextField
-          label={`Precio mensual del comercio (${form.moneda || 'moneda'})`}
-          hint="Vacío = usa la tarifa default."
+          label={`Precio mensual del comercio (${form.moneda || 'moneda'}) *`}
+          hint="Requerido. Es el precio que muestra la landing de la ciudad (siempre sale de acá)."
           value={form.precioMensual}
           onChange={(v) => update('precioMensual', v.replace(/[^0-9]/g, ''))}
           placeholder="50000"

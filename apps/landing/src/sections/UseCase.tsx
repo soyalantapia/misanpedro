@@ -1,10 +1,9 @@
 import { AnimatedSection } from '@/components/AnimatedSection'
 import { useTenant, cityName } from '@/lib/tenant'
 
-// LA1 (audit v8): esto es un ejemplo ILUSTRATIVO, no un testimonio real.
-// Mientras no haya un comercio piloto que nos deje usar su nombre y números
-// reales, lo presentamos claramente como hipotético (sin nombre propio ni
-// comillas atribuidas a una persona).
+// Esto es una DEMO de producto, no un testimonio: muestra cómo se vería tu
+// primer descuento en {appName}. Sin nombre propio ni números atribuidos a un
+// comercio real (no hay piloto público todavía); un solo disclaimer fino abajo.
 export function UseCase() {
   const { config } = useTenant()
 
@@ -13,10 +12,10 @@ export function UseCase() {
       <div className="mx-auto max-w-5xl">
         <AnimatedSection className="text-center">
           <span className="text-xs font-bold uppercase tracking-widest text-accent-700">
-            Cómo se ve en la práctica
+            Demo del producto
           </span>
           <h2 className="mt-3 text-balance text-4xl font-bold leading-[1.1] tracking-tight text-neutral-900 sm:text-5xl">
-            Un ejemplo para una heladería de barrio
+            Así se vería tu primer descuento
           </h2>
         </AnimatedSection>
 
@@ -24,11 +23,11 @@ export function UseCase() {
           delay={120}
           className="mt-12 grid gap-8 rounded-2xl bg-gradient-to-br from-neutral-50 to-white p-6 ring-1 ring-neutral-200 sm:p-10 md:grid-cols-[320px_1fr]"
         >
-          {/* Ilustración (no es un comercio real) */}
+          {/* Demo de producto (ejemplo de una heladería de la ciudad) */}
           <figure className="space-y-3">
             <div
               className="grid aspect-[4/5] place-items-center rounded-2xl bg-gradient-to-br from-accent-100 via-accent-50 to-white ring-1 ring-neutral-200"
-              aria-label="Ilustración de un comercio de ejemplo"
+              aria-label="Ejemplo de un comercio en la app"
             >
               <span className="grid h-16 w-16 place-items-center rounded-full bg-white text-2xl shadow-sm ring-1 ring-neutral-200">
                 🍦
@@ -38,22 +37,17 @@ export function UseCase() {
               <strong className="block font-bold text-neutral-700">
                 Ejemplo: una heladería de {cityName(config)}
               </strong>
-              Caso ilustrativo
-              <br />
-              <span className="italic text-neutral-400">
-                Números de referencia, no de un cliente real
-              </span>
+              Así se ve un descuento en la app
             </figcaption>
           </figure>
 
           {/* Narración hipotética + números de referencia */}
           <div className="flex flex-col">
             <p className="text-pretty text-xl leading-relaxed text-neutral-700 sm:text-2xl">
-              Un martes a las 10 subís tu primer descuento —25% en helado hasta el viernes—.
-              Los vecinos lo activan desde la app y empiezan a llegar al local. Para el
-              finde podés acumular varias decenas de canjes, y parte de esa gente vuelve
-              la semana siguiente.{' '}
-              <strong className="text-neutral-900">Esa es la idea: que vuelvan solos.</strong>
+              Un martes flojo a las 10 subís tu primer descuento, 25% en helado hasta el
+              viernes. Los vecinos cerca lo activan desde la app y empiezan a llegar al
+              local. Cada uno que canjea te queda en tu base, con nombre y frecuencia.{' '}
+              <strong className="text-neutral-900">Así llenás el día que no entraba nadie.</strong>
             </p>
 
             <div className="mt-8 grid grid-cols-3 gap-4 border-t border-neutral-200 pt-6">
@@ -62,7 +56,7 @@ export function UseCase() {
               <Metric value="0" label="volantes" hint="impresos" />
             </div>
             <p className="mt-4 text-[11px] text-neutral-400">
-              Cifras ilustrativas para mostrar el potencial — no son resultados garantizados.
+              Ejemplo de demo. Los números dependen de tu rubro y tu descuento.
             </p>
           </div>
         </AnimatedSection>

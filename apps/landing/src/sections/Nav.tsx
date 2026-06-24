@@ -80,7 +80,7 @@ export function Nav() {
             href={SIGNUP_URL}
             className="group hidden items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-accent-500/20 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-accent-500/30 sm:inline-flex"
           >
-            Empezar
+            Empezá gratis
             <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
           </a>
           <button
@@ -112,7 +112,7 @@ export function Nav() {
               href={SIGNUP_URL}
               className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white"
             >
-              Empezar
+              Empezá gratis
               <ArrowRight size={12} />
             </a>
           </nav>

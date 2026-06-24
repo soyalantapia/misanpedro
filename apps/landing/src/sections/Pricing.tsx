@@ -12,7 +12,7 @@ import {
 const INCLUDED = [
   'Descuentos ilimitados',
   'CRM completo (DNI, cumple, frecuencia)',
-  'WhatsApp Business integrado',
+  'WhatsApp Business (próximamente)',
   'Panel desde el celular',
   'Validación con código de 6 dígitos',
   'MercadoPago integrado',
