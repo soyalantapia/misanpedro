@@ -213,12 +213,54 @@ if (isProd) {
     app.get(prefix, (c) => c.redirect(`${prefix}/`))
     app.get(`${prefix}/`, serveIndex)
     // Assets/archivos reales: /comercios/assets/x → root/assets/x (strip prefijo).
-    app.use(`${prefix}/*`, serveStatic({ root, rewriteRequestPath: (p) => p.slice(prefix.length) || '/' }))
-    // SPA fallback (rutas que no son archivo) → index inyectado.
-    app.get(`${prefix}/*`, serveIndex)
+    // Los assets de Vite llevan hash en el nombre = inmutables → cache 1 año.
+    app.use(
+      `${prefix}/*`,
+      serveStatic({
+        root,
+        rewriteRequestPath: (p) => p.slice(prefix.length) || '/',
+        onFound: (_p, ctx) => {
+          if (ctx.req.path.includes('/assets/')) {
+            ctx.header('Cache-Control', 'public, max-age=31536000, immutable')
+          }
+        },
+      }),
+    )
+    // SPA fallback → index inyectado. PERO un request de ARCHIVO que no existió
+    // (ej. chunk hasheado viejo tras un redeploy, o cualquier cosa bajo /assets/)
+    // NO debe caer al index (text/html): con nosniff el browser rechaza el .js.
+    // Para esos paths devolvemos 404 limpio; el resto sí es ruta → index.
+    app.get(`${prefix}/*`, (c) => {
+      const rel = c.req.path.slice(prefix.length)
+      if (rel.startsWith('/assets/') || /\.[a-z0-9]+$/i.test(rel)) return c.notFound()
+      return serveIndex(c)
+    })
   }
   mountLanding('/comercios', './apps/landing/dist')
   mountLanding('/vecino', './apps/landing-vecino/dist')
+
+  // robots.txt y sitemap.xml a NIVEL HOST-ROOT: los crawlers los piden en la raíz
+  // del host (https://<ciudad>.micuidad.com/robots.txt), NO bajo /comercios. Antes
+  // caían al SPA fallback y devolvían el index.html (HTML donde va texto plano), y
+  // los sitemaps horneados apuntaban a URLs muertas de GH Pages/misanpedro.com. Acá
+  // se generan por-host con las URLs reales de la ciudad. administracion = no indexar.
+  // El host se sanitiza al charset de hostname (sin inyección en el txt/XML).
+  const safeHostOf = (c: import('hono').Context) =>
+    (c.req.header('host') ?? '').toLowerCase().split(':')[0].replace(/[^a-z0-9.-]/g, '')
+  app.get('/robots.txt', (c) => {
+    const host = safeHostOf(c)
+    if (host.startsWith('administracion.')) return c.text('User-agent: *\nDisallow: /\n')
+    return c.text(`User-agent: *\nAllow: /\nSitemap: https://${host}/sitemap.xml\n`)
+  })
+  app.get('/sitemap.xml', (c) => {
+    const host = safeHostOf(c)
+    if (!host || host.startsWith('administracion.')) return c.notFound()
+    const urls = [`https://${host}/`, `https://${host}/comercios/`, `https://${host}/vecino/`]
+    const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
+      .map((u) => `  <url><loc>${u}</loc></url>`)
+      .join('\n')}\n</urlset>\n`
+    return c.body(body, 200, { 'content-type': 'application/xml; charset=utf-8' })
+  })
 
   // 1) Archivos reales (assets/manifest/sw/íconos). Si existe, lo sirve.
   app.use('*', async (c, next) => {
