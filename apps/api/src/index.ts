@@ -182,9 +182,39 @@ if (isProd) {
       const tenant = await findTenantByKey(sub)
       if (!tenant) return html
       const safeHost = escapeHtml(h)
+      const t = tenant as {
+        nombre?: string; ciudad?: string; provincia?: string; pais?: string
+        moneda?: string; locale?: string; precioMensual?: number
+        brand?: { primaryColor?: string }
+      }
+      const esc = (v: unknown) => escapeHtml(String(v))
       let out = html
-      if (tenant.nombre) out = out.replaceAll('Mi San Pedro', escapeHtml(String(tenant.nombre)))
-      if (tenant.ciudad) out = out.replaceAll('San Pedro', escapeHtml(String(tenant.ciudad)))
+      if (t.nombre) out = out.replaceAll('Mi San Pedro', esc(t.nombre))
+      if (t.ciudad) out = out.replaceAll('San Pedro', esc(t.ciudad))
+      // Geo del JSON-LD (provincia/país) — si no, en Nariño quedaba el sinsentido
+      // "Nariño, Buenos Aires, Argentina". Solo aparecen en el bloque JSON-LD.
+      if (t.provincia) out = out.replaceAll('Buenos Aires', esc(t.provincia))
+      if (t.pais) out = out.replaceAll('Argentina', esc(t.pais))
+      // Idioma/locale: <html lang>, availableLanguage (es-AR) y og:locale (es_AR).
+      if (t.locale) {
+        out = out
+          .replaceAll('es-AR', esc(t.locale))
+          .replaceAll('es_AR', esc(String(t.locale).replace('-', '_')))
+      }
+      // Precio/moneda del JSON-LD Offer — antes anunciaba 50000 ARS a TODA ciudad
+      // (Google lo ingiere para rich results). Solo están en el JSON-LD del comercio.
+      if (t.precioMensual) out = out.replaceAll('"50000"', `"${esc(t.precioMensual)}"`)
+      if (t.moneda) out = out.replaceAll('"ARS"', `"${esc(t.moneda)}"`)
+      // Color de marca: theme-color + un <style> que setea --color-brand en el HTML
+      // servido, para que el PRIMER paint ya use el color de la ciudad (sin el FOUC
+      // naranja-San-Pedro antes de que cargue el JS). Solo si es un HEX válido — el
+      // valor va a un atributo y a un bloque <style>, así que un color hostil podría
+      // romper afuera; el guard lo evita.
+      const brand = t.brand?.primaryColor
+      if (typeof brand === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(brand)) {
+        out = out.replaceAll('#ea580c', brand)
+        out = out.replace('</head>', `<style>:root{--color-brand:${brand}}</style></head>`)
+      }
       // URLs absolutas del dominio legacy → host de la ciudad, respetando el path
       // del landing. El comercio ya trae /comercios/ en su index; el vecino trae
       // el dominio pelado (og:url, og-image) y hay que prefijarle /vecino/.
