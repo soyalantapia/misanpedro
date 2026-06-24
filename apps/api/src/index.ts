@@ -181,12 +181,19 @@ if (isProd) {
       if (RESERVED_SUB.has(sub)) return html
       const tenant = await findTenantByKey(sub)
       if (!tenant) return html
-      const safeHost = escapeHtml(h)
       const t = tenant as {
         nombre?: string; ciudad?: string; provincia?: string; pais?: string
         moneda?: string; locale?: string; precioMensual?: number
-        brand?: { primaryColor?: string }
+        customDomain?: string; brand?: { primaryColor?: string }
       }
+      // Anti canonical/OG poisoning: solo reescribimos URLs por host si el Host es
+      // de la plataforma (*.micuidad.com) o el dominio propio del tenant. Un Host
+      // header hostil (reflejado) no debe terminar en canonical/og:url/og:image.
+      const allowedHost =
+        h.endsWith('.micuidad.com') ||
+        (typeof t.customDomain === 'string' && h === t.customDomain.toLowerCase())
+      if (!allowedHost) return html
+      const safeHost = escapeHtml(h)
       const esc = (v: unknown) => escapeHtml(String(v))
       let out = html
       if (t.nombre) out = out.replaceAll('Mi San Pedro', esc(t.nombre))

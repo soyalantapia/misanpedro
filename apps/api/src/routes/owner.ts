@@ -507,6 +507,11 @@ ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
   // owner no especifica subdomain, lo derivamos. Normalizamos a ASCII (punycode)
   // para que IDN como 'minariño' matcheen el label del host.
   const subdomain = toAsciiLabel(data.subdomain?.trim() || `mi${data.slug}`)
+  // Validación de formato: el subdomain se interpola en hosts y URLs (appBase,
+  // OG). Tras el punycode debe ser un label de host válido (a-z 0-9 y guiones).
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(subdomain)) {
+    return c.json({ ok: false, error: 'subdomain inválido (solo letras, números y guiones)' }, 400)
+  }
   const app = await App.create({
     slug: data.slug,
     nombre: data.nombre,

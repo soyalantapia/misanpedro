@@ -30,8 +30,25 @@ export function appBase(t: TenantLike): string {
   return env || `https://sanpedro.${PLATFORM_DOMAIN}`
 }
 
-export const signupUrl = (t: TenantLike) => `${appBase(t)}/#/admin/registro`
-export const loginUrl = (t: TenantLike) => `${appBase(t)}/#/admin/login`
+/**
+ * Reenvía las UTM/ref de la landing a la PWA para no perder la atribución en la
+ * conversión (qué QR/canal/campaña trajo al comercio). El query va ANTES del hash
+ * (location.search) para que la PWA lo lea. Devuelve "" o "?utm_...".
+ */
+function fwdQuery(): string {
+  if (typeof window === 'undefined') return ''
+  const incoming = new URLSearchParams(window.location.search)
+  const fwd = new URLSearchParams()
+  for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'ref']) {
+    const v = incoming.get(k)
+    if (v) fwd.set(k, v)
+  }
+  const qs = fwd.toString()
+  return qs ? `?${qs}` : ''
+}
+
+export const signupUrl = (t: TenantLike) => `${appBase(t)}/${fwdQuery()}#/admin/registro`
+export const loginUrl = (t: TenantLike) => `${appBase(t)}/${fwdQuery()}#/admin/login`
 export const legalUrl = (t: TenantLike, path: 'terminos' | 'privacidad') => `${appBase(t)}/#/legal/${path}`
 
 export const SUPPORT_EMAIL = 'soporte@micuidad.com'
