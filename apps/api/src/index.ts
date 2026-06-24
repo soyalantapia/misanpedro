@@ -262,14 +262,27 @@ if (isProd) {
     return c.body(body, 200, { 'content-type': 'application/xml; charset=utf-8' })
   })
 
-  // 1) Archivos reales (assets/manifest/sw/íconos). Si existe, lo sirve.
+  // 1) Archivos reales (assets/manifest/sw/íconos). Si existe, lo sirve. Los
+  //    assets hasheados de Vite son inmutables → cache 1 año (igual que landings).
   app.use('*', async (c, next) => {
     if (c.req.path.startsWith('/api')) return next()
-    return serveStatic({ root: rootFor(c.req.header('host')) })(c, next)
+    return serveStatic({
+      root: rootFor(c.req.header('host')),
+      onFound: (_p, ctx) => {
+        if (ctx.req.path.includes('/assets/')) {
+          ctx.header('Cache-Control', 'public, max-age=31536000, immutable')
+        }
+      },
+    })(c, next)
   })
   // 2) SPA fallback: ruta no-API que no matcheó archivo → index.html del front.
+  //    Un request de ARCHIVO inexistente (chunk hasheado viejo tras un redeploy, o
+  //    algo bajo /assets/) → 404 limpio, NO el index: con nosniff el browser
+  //    rechaza un .js servido como text/html. El web usa HashRouter, así que las
+  //    rutas reales no tienen extensión → el guard no las afecta.
   app.get('*', (c) => {
     if (c.req.path.startsWith('/api')) return c.notFound()
+    if (c.req.path.startsWith('/assets/') || /\.[a-z0-9]+$/i.test(c.req.path)) return c.notFound()
     try {
       const html = readFileSync(path.join(rootFor(c.req.header('host')), 'index.html'), 'utf8')
       return c.html(html)
