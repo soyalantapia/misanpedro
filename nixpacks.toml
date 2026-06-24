@@ -29,7 +29,12 @@ cmds = [
 cmds = [
   # Guardrail: falla el deploy si se reintrodujo una ciudad hardcodeada en web/owner.
   "node scripts/check-no-hardcoded-tenant.mjs",
-  "VITE_BASE=/ VITE_API_URL=https://api-production-43c52.up.railway.app pnpm turbo run build --filter=@misanpedro/web --filter=@misanpedro/owner --filter=@misanpedro/api"
+  "VITE_BASE=/ VITE_API_URL=https://api-production-43c52.up.railway.app pnpm turbo run build --filter=@misanpedro/web --filter=@misanpedro/owner --filter=@misanpedro/api",
+  # Landings de marketing (multi-tenant): el mismo servicio las sirve host-based
+  # en <ciudad>.micuidad.com/comercios y /vecino. Se buildean con su base de path
+  # y la URL del API (resuelven el tenant por el subdomain del host).
+  "VITE_BASE=/comercios/ VITE_API_URL=https://api-production-43c52.up.railway.app pnpm turbo run build --filter=@misanpedro/landing",
+  "VITE_BASE=/vecino/ VITE_API_URL=https://api-production-43c52.up.railway.app pnpm turbo run build --filter=@misanpedro/landing-vecino"
 ]
 
 [start]

@@ -146,6 +146,29 @@ if (isProd) {
   const rootFor = (host?: string) =>
     (host ?? '').toLowerCase().startsWith('administracion.') ? OWNER_ROOT : WEB_ROOT
 
+  // ── Landings de marketing (path-based, host-aware) ──────────────────────
+  // <ciudad>.micuidad.com/comercios → landing del comercio (capta comercios)
+  // <ciudad>.micuidad.com/vecino    → landing del vecino
+  // Cada landing detecta el subdomain del host y resuelve su tenant (nombre,
+  // ciudad, precio, COLOR). Se buildean con base /comercios/ y /vecino/
+  // (ver nixpacks.toml). Van ANTES del serving del web (raíz del host).
+  const mountLanding = (prefix: string, root: string) => {
+    // Assets reales: /comercios/assets/x → root/assets/x (strip del prefijo).
+    app.use(`${prefix}/*`, serveStatic({ root, rewriteRequestPath: (p) => p.slice(prefix.length) || '/' }))
+    // Sin barra final → con barra (para que resuelva el index).
+    app.get(prefix, (c) => c.redirect(`${prefix}/`))
+    // Fallback de la landing (single-page) → index.html.
+    app.get(`${prefix}/*`, (c) => {
+      try {
+        return c.html(readFileSync(path.join(root, 'index.html'), 'utf8'))
+      } catch {
+        return c.text('landing no disponible', 500)
+      }
+    })
+  }
+  mountLanding('/comercios', './apps/landing/dist')
+  mountLanding('/vecino', './apps/landing-vecino/dist')
+
   // 1) Archivos reales (assets/manifest/sw/íconos). Si existe, lo sirve.
   app.use('*', async (c, next) => {
     if (c.req.path.startsWith('/api')) return next()
