@@ -1,10 +1,13 @@
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, cityName } from '@/lib/tenant'
 
 // LA1 (audit v8): esto es un ejemplo ILUSTRATIVO, no un testimonio real.
 // Mientras no haya un comercio piloto que nos deje usar su nombre y números
 // reales, lo presentamos claramente como hipotético (sin nombre propio ni
 // comillas atribuidas a una persona).
 export function UseCase() {
+  const { config } = useTenant()
+
   return (
     <section id="casos-de-uso" className="scroll-mt-20 px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-5xl">
@@ -33,7 +36,7 @@ export function UseCase() {
             </div>
             <figcaption className="text-xs leading-relaxed text-neutral-500">
               <strong className="block font-bold text-neutral-700">
-                Ejemplo: una heladería de San Pedro
+                Ejemplo: una heladería de {cityName(config)}
               </strong>
               Caso ilustrativo
               <br />

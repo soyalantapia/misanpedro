@@ -1,12 +1,12 @@
 import { ArrowRight, Check, Sparkles } from 'lucide-react'
 import { SIGNUP_URL } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, priceLabel } from '@/lib/tenant'
 import {
   COMERCIOS_ADHERIDOS,
   TOTAL_CUPOS,
   CUPOS_RESTANTES,
   MESES_GRATIS,
-  PRECIO_MENSUAL_LABEL,
 } from '@/lib/launch'
 
 const INCLUDED = [
@@ -21,6 +21,8 @@ const INCLUDED = [
 ] as const
 
 export function Pricing() {
+  const { config } = useTenant()
+
   return (
     <section id="precios" className="scroll-mt-20 bg-neutral-50/60 px-6 py-20 sm:py-28">
       <AnimatedSection className="mx-auto max-w-3xl text-center">
@@ -94,7 +96,7 @@ export function Pricing() {
                 <p className="flex items-baseline gap-1.5 text-sm text-neutral-600">
                   Después
                   <strong className="text-lg tabular-nums text-neutral-900">
-                    {PRECIO_MENSUAL_LABEL}
+                    {priceLabel(config)}
                   </strong>
                   <span className="text-neutral-500">/mes</span>
                 </p>

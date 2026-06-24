@@ -1,5 +1,6 @@
 import { Sparkles, Gift, Lock, Headphones } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, cityName, priceLabel, type LandingTenant } from '@/lib/tenant'
 import {
   COMERCIOS_ADHERIDOS,
   TOTAL_CUPOS,
@@ -10,37 +11,42 @@ import {
 // LA1 (audit v8): reemplazamos los "logos de pioneros" inventados por los
 // beneficios reales del programa de lanzamiento. No fabricamos clientes — la prueba
 // social verdadera la sumamos cuando haya comercios adheridos con su permiso.
-const BENEFICIOS = [
-  {
-    icon: Gift,
-    title: `${MESES_GRATIS} meses gratis`,
-    text: `Sin tarjeta. Los primeros ${TOTAL_CUPOS} comercios entran sin pagar los primeros ${MESES_GRATIS} meses.`,
-  },
-  {
-    icon: Lock,
-    title: 'Precio congelado',
-    text: 'Después, $50.000/mes de por vida, aunque suba para nuevos comercios.',
-  },
-  {
-    icon: Headphones,
-    title: 'Soporte directo',
-    text: 'Hablás con nosotros, gente de San Pedro. No con un bot.',
-  },
-] as const
+function buildBeneficios(config: LandingTenant | null) {
+  return [
+    {
+      icon: Gift,
+      title: `${MESES_GRATIS} meses gratis`,
+      text: `Sin tarjeta. Los primeros ${TOTAL_CUPOS} comercios entran sin pagar los primeros ${MESES_GRATIS} meses.`,
+    },
+    {
+      icon: Lock,
+      title: 'Precio congelado',
+      text: `Después, ${priceLabel(config)}/mes de por vida, aunque suba para nuevos comercios.`,
+    },
+    {
+      icon: Headphones,
+      title: 'Soporte directo',
+      text: `Hablás con nosotros, gente de ${cityName(config)}. No con un bot.`,
+    },
+  ] as const
+}
 
 export function SocialProof() {
+  const { config } = useTenant()
+  const BENEFICIOS = buildBeneficios(config)
+
   return (
     <section className="border-y border-neutral-200/70 bg-neutral-50/60 px-6 py-14">
       <div className="mx-auto max-w-6xl">
         <AnimatedSection className="flex flex-col items-center gap-2 text-center">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-accent-700">
             <Sparkles size={11} />
-            Programa de lanzamiento · Primeros 20 comercios de San Pedro
+            Programa de lanzamiento · Primeros {TOTAL_CUPOS} comercios de {cityName(config)}
           </span>
           <h2 className="text-balance text-base font-semibold leading-snug text-neutral-700 sm:text-lg">
             Los primeros {TOTAL_CUPOS} comercios entran con{' '}
             <strong className="text-neutral-900">{MESES_GRATIS} meses gratis</strong> y, después,{' '}
-            <strong className="text-neutral-900">$50.000/mes congelado de por vida</strong>
+            <strong className="text-neutral-900">{priceLabel(config)}/mes congelado de por vida</strong>
           </h2>
         </AnimatedSection>
 

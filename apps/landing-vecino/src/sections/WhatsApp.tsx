@@ -1,11 +1,14 @@
 import { MessageCircle } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, cityName } from '@/lib/tenant'
 
-// TODO: pegá acá el link del canal/grupo de WhatsApp de Mi San Pedro.
+// TODO: pegá acá el link del canal/grupo de WhatsApp de la ciudad.
 // Mientras esté vacío, la sección NO se muestra (no dejamos un botón muerto en vivo).
 const WHATSAPP_URL: string = ''
 
 export function WhatsApp() {
+  const { config } = useTenant()
+  const city = cityName(config)
   if (!WHATSAPP_URL) return null
 
   return (
@@ -23,7 +26,7 @@ export function WhatsApp() {
             Enterate primero, por WhatsApp
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-lg leading-relaxed text-neutral-600">
-            Cada semana cargamos descuentos nuevos en los comercios de San Pedro. Sumate y te avisamos los de
+            Cada semana cargamos descuentos nuevos en los comercios de {city}. Sumate y te avisamos los de
             tu barrio — sin spam, solo los descuentos.
           </p>
           <a

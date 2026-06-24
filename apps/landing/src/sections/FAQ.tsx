@@ -1,5 +1,6 @@
 import { ChevronDown } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, priceLabel, type LandingTenant } from '@/lib/tenant'
 import {
   COMERCIOS_ADHERIDOS,
   TOTAL_CUPOS,
@@ -7,7 +8,9 @@ import {
   MESES_GRATIS,
 } from '@/lib/launch'
 
-const FAQS = [
+function buildFaqs(config: LandingTenant | null) {
+  const precio = priceLabel(config)
+  return [
   {
     q: '¿Qué necesito para empezar?',
     a: 'Sólo un celular con WhatsApp y MercadoPago. No necesitás computadora, scanner ni hardware extra, y no cargás tarjeta para arrancar. Te registrás, completás los datos del comercio, subís tu primer descuento y listo.',
@@ -34,15 +37,19 @@ const FAQS = [
   },
   {
     q: '¿Cómo son los 3 meses gratis?',
-    a: `Los primeros ${TOTAL_CUPOS} comercios que se suman arrancan con ${MESES_GRATIS} meses sin pagar nada y sin cargar tarjeta. Recién al cuarto mes empezás a pagar $50.000/mes por MercadoPago, y ese precio te queda congelado de por vida. Hoy van ${COMERCIOS_ADHERIDOS} de ${TOTAL_CUPOS} lugares (quedan ${CUPOS_RESTANTES}).`,
+    a: `Los primeros ${TOTAL_CUPOS} comercios que se suman arrancan con ${MESES_GRATIS} meses sin pagar nada y sin cargar tarjeta. Recién al cuarto mes empezás a pagar ${precio}/mes por MercadoPago, y ese precio te queda congelado de por vida. Hoy van ${COMERCIOS_ADHERIDOS} de ${TOTAL_CUPOS} lugares (quedan ${CUPOS_RESTANTES}).`,
   },
   {
-    q: '¿El precio de $50.000/mes es para siempre?',
-    a: `Sí. Los primeros ${TOTAL_CUPOS} comercios arrancan con ${MESES_GRATIS} meses gratis y, después, pagan $50.000/mes congelado de por vida. Aunque subamos el precio para nuevos comercios, vos seguís pagando $50.000 mientras tu cuenta esté activa. Si pausás y volvés, conservás el precio.`,
+    q: `¿El precio de ${precio}/mes es para siempre?`,
+    a: `Sí. Los primeros ${TOTAL_CUPOS} comercios arrancan con ${MESES_GRATIS} meses gratis y, después, pagan ${precio}/mes congelado de por vida. Aunque subamos el precio para nuevos comercios, vos seguís pagando ${precio} mientras tu cuenta esté activa. Si pausás y volvés, conservás el precio.`,
   },
-] as const
+  ] as const
+}
 
 export function FAQ() {
+  const { config } = useTenant()
+  const FAQS = buildFaqs(config)
+
   return (
     <section id="faq" className="scroll-mt-20 px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-3xl">

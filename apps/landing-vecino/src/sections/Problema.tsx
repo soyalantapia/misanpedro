@@ -1,16 +1,20 @@
 import { ArrowDown } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, appName } from '@/lib/tenant'
 
 // Alturas = ilustración del gasto en el mismo mandado: sube mes a mes (gris) y
-// baja con Mi San Pedro (naranja). La etiqueta "−20%" remata el ahorro.
+// baja con la marca (naranja). La etiqueta "−20%" remata el ahorro.
+// El label de la última barra ("Con {marca}") se completa en render.
 const BARS = [
   { l: 'Antes', h: 'h-20', fill: 'bg-gradient-to-t from-neutral-200 to-neutral-300', save: false },
   { l: 'Hace un mes', h: 'h-36', fill: 'bg-gradient-to-t from-neutral-200 to-neutral-300', save: false },
   { l: 'Hoy', h: 'h-52', fill: 'bg-gradient-to-t from-neutral-300 to-neutral-400', save: false },
-  { l: 'Con Mi San Pedro', h: 'h-32', fill: 'bg-gradient-to-t from-accent-600 to-accent-400', save: true },
+  { l: '', h: 'h-32', fill: 'bg-gradient-to-t from-accent-600 to-accent-400', save: true },
 ] as const
 
 export function Problema() {
+  const { config } = useTenant()
+  const brand = appName(config)
   return (
     <section className="relative overflow-hidden px-5 py-20 sm:px-6 sm:py-28">
       <AnimatedSection className="mx-auto max-w-3xl text-center">
@@ -33,7 +37,7 @@ export function Problema() {
         <div aria-hidden className="flex items-end justify-center gap-3 sm:gap-4">
           {BARS.map((b) => (
             <div key={b.l} className="flex flex-1 flex-col items-center justify-end gap-2">
-              {/* Remate de ahorro, sobre la barra de Mi San Pedro */}
+              {/* Remate de ahorro, sobre la barra de la marca */}
               {b.save && (
                 <span className="inline-flex items-center gap-0.5 rounded-full bg-accent-500 px-2.5 py-1 text-xs font-black text-white shadow-md shadow-accent-500/30">
                   <ArrowDown size={13} strokeWidth={3} />
@@ -50,14 +54,14 @@ export function Problema() {
                   b.save ? 'text-accent-700' : 'text-neutral-400'
                 }`}
               >
-                {b.l}
+                {b.save ? `Con ${brand}` : b.l}
               </span>
             </div>
           ))}
         </div>
 
         <p className="mt-7 text-center text-base font-semibold text-neutral-700">
-          El mismo mandado — pero con Mi San Pedro{' '}
+          El mismo mandado — pero con {brand}{' '}
           <span className="font-extrabold text-accent-700">pagás menos</span>.
         </p>
       </AnimatedSection>

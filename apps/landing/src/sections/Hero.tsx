@@ -1,11 +1,10 @@
 import { ArrowRight, MessageCircle, ShoppingBag, Ticket, User } from 'lucide-react'
 import { SIGNUP_URL } from '@/lib/cn'
-import { useTenant } from '@/lib/tenant'
+import { useTenant, cityName, priceLabel } from '@/lib/tenant'
 import {
   COMERCIOS_ADHERIDOS,
   TOTAL_CUPOS,
   CUPOS_RESTANTES,
-  PRECIO_MENSUAL_LABEL,
 } from '@/lib/launch'
 
 export function Hero() {
@@ -13,7 +12,7 @@ export function Hero() {
   const eyebrow = config?.brand?.heroEyebrow
     ? config.brand.heroEyebrow
     : config?.ciudad
-      ? `Para comercios de ${config.ciudad}`
+      ? `Para comercios de ${cityName(config)}`
       : 'Para comercios PyME del barrio'
   const headlineOverride = config?.brand?.heroHeadline
 
@@ -56,7 +55,7 @@ export function Hero() {
           >
             Subí tus descuentos en 5 minutos, validalos con un código de 6 dígitos
             desde el celular, y enterate de cada cliente que vuelve. Sin contratos.
-            Sin letra chica. {config?.ciudad ? `Hecho para ${config.ciudad}.` : 'Hecho para vos.'}
+            Sin letra chica. {config?.ciudad ? `Hecho para ${cityName(config)}.` : 'Hecho para vos.'}
           </p>
 
           <div
@@ -80,7 +79,8 @@ export function Hero() {
           </div>
 
           {/* Oferta de lanzamiento: los primeros 20 comercios entran con 3 meses
-              gratis y sin tarjeta; después $50.000/mes congelado de por vida.
+              gratis y sin tarjeta; después el precio mensual del tenant queda
+              congelado de por vida (priceLabel sale del tenant, fuente: @/lib/tenant).
               El contador "X de 20" sale de @/lib/launch (fuente única). */}
           <p
             className="animate-fade-up mt-5 inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-xs font-bold text-accent-700 ring-1 ring-accent-100"
@@ -92,7 +92,7 @@ export function Hero() {
             className="animate-fade-up mt-4 text-xs text-neutral-500"
             style={{ animationDelay: '240ms' }}
           >
-            3 meses gratis, sin tarjeta · Después {PRECIO_MENSUAL_LABEL}/mes congelado de por vida · Hecho en San Pedro
+            3 meses gratis, sin tarjeta · Después {priceLabel(config)}/mes congelado de por vida · Hecho en {cityName(config)}
           </p>
         </div>
 

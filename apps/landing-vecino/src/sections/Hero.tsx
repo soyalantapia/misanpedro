@@ -1,8 +1,13 @@
 import { ArrowRight, Check, Sparkles, Search, TicketCheck, Croissant, ShoppingCart, Pill } from 'lucide-react'
 import { ENTER_URL } from '@/lib/cn'
 import { Logo } from '@/components/Logo'
+import { useTenant, cityName } from '@/lib/tenant'
 
 export function Hero() {
+  const { config } = useTenant()
+  const city = cityName(config)
+  // Override por tenant del eyebrow del Hero; fallback al copy con la ciudad.
+  const eyebrow = config?.brand?.heroEyebrow?.trim() || `El club de ahorro de ${city}`
   return (
     <section id="top" className="relative isolate overflow-hidden px-5 pt-12 pb-16 sm:px-6 sm:pt-16 sm:pb-24">
       {/* Fondo animado */}
@@ -16,16 +21,22 @@ export function Hero() {
         {/* Texto */}
         <div className="text-center lg:text-left">
           <span className="animate-reveal inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-widest text-accent-700 shadow-sm ring-1 ring-accent-100 backdrop-blur">
-            <Sparkles size={12} /> El club de ahorro de San Pedro
+            <Sparkles size={12} /> {eyebrow}
           </span>
 
           <h1
             className="animate-reveal mt-6 text-[clamp(2.9rem,8vw,5.4rem)] font-black leading-[0.98] tracking-tight text-neutral-900"
             style={{ animationDelay: '80ms' }}
           >
-            Tu plata
-            <br />
-            <span className="text-gradient animate-gradient">rinde más.</span>
+            {config?.brand?.heroHeadline?.trim() ? (
+              <span className="text-gradient animate-gradient">{config.brand.heroHeadline}</span>
+            ) : (
+              <>
+                Tu plata
+                <br />
+                <span className="text-gradient animate-gradient">rinde más.</span>
+              </>
+            )}
           </h1>
 
           <p
@@ -54,7 +65,7 @@ export function Hero() {
             className="animate-reveal mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-neutral-500 lg:justify-start"
             style={{ animationDelay: '320ms' }}
           >
-            {['Gratis', 'Sin registrarte', 'Comercios de San Pedro'].map((t) => (
+            {['Gratis', 'Sin registrarte', `Comercios de ${city}`].map((t) => (
               <span key={t} className="inline-flex items-center gap-1.5">
                 <Check size={14} className="text-accent-600" />
                 {t}
@@ -69,7 +80,7 @@ export function Hero() {
           className="animate-reveal relative mx-auto w-[15.5rem] sm:w-[16.5rem] lg:w-[17.5rem]"
           style={{ animationDelay: '300ms' }}
         >
-          <PhoneMockup />
+          <PhoneMockup city={city} />
         </div>
       </div>
     </section>
@@ -93,7 +104,7 @@ const MOCK_CHIPS = ['Todas', 'Gastronomía', 'Panadería', 'Almacén', 'Farmacia
  * tintes e íconos que la app). Tema claro, acento naranja, "Ahorrás" en verde.
  * Proporción de teléfono real (aspect 9/19, bezel fino + dynamic island).
  */
-function PhoneMockup() {
+function PhoneMockup({ city }: { city: string }) {
   return (
     <div className="relative">
       <div className="absolute -inset-6 -z-10 rounded-[3rem] bg-gradient-to-br from-accent-400/30 to-accent-600/10 blur-3xl" />
@@ -130,7 +141,7 @@ function PhoneMockup() {
             {/* Top bar */}
             <div className="flex items-center justify-between pb-2.5">
               <Logo markSize={18} textClass="text-[11px]" />
-              <span className="text-[8px] font-bold uppercase tracking-wider text-neutral-400">San Pedro</span>
+              <span className="text-[8px] font-bold uppercase tracking-wider text-neutral-400">{city}</span>
             </div>
 
             {/* Billetera de ahorro */}
@@ -138,7 +149,7 @@ function PhoneMockup() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[7px] font-bold uppercase tracking-[0.12em] text-accent-600">
-                    Ahorrado en San Pedro
+                    Ahorrado en {city}
                   </p>
                   <p className="mt-0.5 flex items-baseline gap-0.5 font-black tracking-tight text-neutral-900">
                     <span className="text-xs text-neutral-400">$</span>

@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { loadTenantConfig } from '@/lib/tenant'
 import { Nav } from './sections/Nav'
 import { Hero } from './sections/Hero'
 import { Problema } from './sections/Problema'
@@ -14,6 +16,11 @@ import { Footer } from './sections/Footer'
 import { StickyCTA } from './sections/StickyCTA'
 
 export function App() {
+  // Carga la config del tenant (nombre/ciudad/color) una vez al montar.
+  useEffect(() => {
+    void loadTenantConfig()
+  }, [])
+
   return (
     <div className="overflow-x-clip bg-white text-neutral-900">
       <Nav />

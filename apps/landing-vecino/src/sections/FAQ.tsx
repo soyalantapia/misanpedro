@@ -1,33 +1,40 @@
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, cityName } from '@/lib/tenant'
 
 const FAQS = [
   {
     q: '¿Es gratis de verdad?',
-    a: 'Sí, 100% gratis para el vecino, siempre. No pagás nada por usar la app. El que ahorra sos vos.',
+    a: () => 'Sí, 100% gratis para el vecino, siempre. No pagás nada por usar la app. El que ahorra sos vos.',
   },
   {
     q: '¿Tengo que poner la tarjeta?',
-    a: 'No. No te pedimos tarjeta ni datos de pago. Mostrás el código en la caja del comercio y listo.',
+    a: () => 'No. No te pedimos tarjeta ni datos de pago. Mostrás el código en la caja del comercio y listo.',
   },
   {
     q: '¿Anda en mi celular?',
-    a: 'Sí. Es una web que abrís desde el celular, sin descargar nada de ninguna tienda. Funciona en cualquier teléfono con internet.',
+    a: () =>
+      'Sí. Es una web que abrís desde el celular, sin descargar nada de ninguna tienda. Funciona en cualquier teléfono con internet.',
   },
   {
     q: '¿En qué comercios la puedo usar?',
-    a: 'En los comercios de San Pedro que están en la app: verdulería, carnicería, almacén, panadería, farmacia y más. Cada semana se suman nuevos.',
+    a: (city: string) =>
+      `En los comercios de ${city} que están en la app: verdulería, carnicería, almacén, panadería, farmacia y más. Cada semana se suman nuevos.`,
   },
   {
     q: '¿Tengo que registrarme para ver los descuentos?',
-    a: 'No. Entrás y mirás todos los descuentos sin crear ninguna cuenta. Cuando canjeás por primera vez, te pedimos un dato para identificarte. Nada más.',
+    a: () =>
+      'No. Entrás y mirás todos los descuentos sin crear ninguna cuenta. Cuando canjeás por primera vez, te pedimos un dato para identificarte. Nada más.',
   },
   {
     q: '¿No es un descuento trucho?',
-    a: 'No. Es un descuento real sobre lo que ya comprás. El comercio lo ofrece para que vuelvas: vos pagás menos, sin letra chica.',
+    a: () =>
+      'No. Es un descuento real sobre lo que ya comprás. El comercio lo ofrece para que vuelvas: vos pagás menos, sin letra chica.',
   },
 ] as const
 
 export function FAQ() {
+  const { config } = useTenant()
+  const city = cityName(config)
   return (
     <section id="faq" className="px-5 py-20 sm:px-6 sm:py-28">
       <AnimatedSection className="mx-auto max-w-2xl text-center">
@@ -50,7 +57,7 @@ export function FAQ() {
                   +
                 </span>
               </summary>
-              <dd className="mt-3 text-pretty leading-relaxed text-neutral-600">{qa.a}</dd>
+              <dd className="mt-3 text-pretty leading-relaxed text-neutral-600">{qa.a(city)}</dd>
             </details>
           ))}
         </dl>

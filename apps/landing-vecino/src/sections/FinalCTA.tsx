@@ -1,8 +1,11 @@
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { ENTER_URL } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, cityName } from '@/lib/tenant'
 
 export function FinalCTA() {
+  const { config } = useTenant()
+  const city = cityName(config)
   return (
     <section className="px-5 pb-24 pt-8 sm:px-6 sm:pb-32">
       <AnimatedSection className="relative mx-auto max-w-5xl overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-accent-500 via-accent-600 to-accent-800 px-6 py-16 text-center text-white shadow-2xl shadow-accent-500/30 sm:px-12 sm:py-24">
@@ -13,7 +16,7 @@ export function FinalCTA() {
             <Sparkles size={11} /> Gratis para vecinos
           </span>
           <h2 className="mt-6 text-balance text-[clamp(2.2rem,5.5vw,3.8rem)] font-black leading-[1.02] tracking-tight">
-            Tu plata rinde más en San Pedro.
+            Tu plata rinde más en {city}.
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-lg leading-relaxed text-white/85">
             Entrá gratis y empezá a ahorrar hoy en los comercios de siempre.
@@ -27,7 +30,7 @@ export function FinalCTA() {
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </a>
           </div>
-          <p className="mt-8 text-xs text-white/70">Sin registrarte · Sin tarjeta · Hecho en San Pedro</p>
+          <p className="mt-8 text-xs text-white/70">Sin registrarte · Sin tarjeta · Hecho en {city}</p>
         </div>
       </AnimatedSection>
     </section>

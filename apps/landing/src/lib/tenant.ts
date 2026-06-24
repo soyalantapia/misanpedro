@@ -1,30 +1,33 @@
 import { useSyncExternalStore } from 'react'
+import { PRECIO_MENSUAL } from './launch'
 
 /**
- * Tenant resolution para la LANDING comercial.
+ * Tenant resolution para la LANDING DEL COMERCIO. Multi-ciudad/dinámica.
  *
- * La landing puede operar en 2 modos:
- *   a) Marca paraguas (misanpedro.com):
- *        muestra branding genérico + "Para todas las ciudades"
- *        link de signup va a app principal
- *   b) Tenant-specific (sanpedro.misanpedro.com/comercios):
- *        muestra branding del tenant + hero copy override
- *        signup link → URL con tenant slug
+ * Modos:
+ *   a) Marca paraguas (sin tenant): branding genérico "Mi Ciudad" / "tu ciudad".
+ *   b) Tenant-specific (sanpedro.micuidad.com/comercios, o ?tenant=sanpedro):
+ *      nombre, ciudad, precio, moneda y COLOR salen del tenant — todo se
+ *      re-tematiza solo (el color via el knob `--color-brand`).
  *
- * Detección:
- *   1. Query string ?tenant=sanpedro
- *   2. Subdomain del host (excepto reserved)
- *   3. VITE_TENANT_SLUG build-time
- *   4. null → modo paraguas
+ * Detección del slug:
+ *   1. ?tenant=sanpedro   2. subdomain del host (excepto reserved)
+ *   3. VITE_TENANT_SLUG (build-time)   4. null → modo paraguas
  */
 
-const RESERVED = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios'])
+const RESERVED = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios', 'administracion', 'ciudades'])
 
 export type LandingTenant = {
   slug: string
   nombre: string
   ciudad: string
   provincia?: string
+  pais?: string
+  /** ISO-4217 (ARS, COP, …) y BCP-47 (es-AR, es-CO). Para formatear el precio. */
+  moneda?: string
+  locale?: string
+  /** Precio mensual del comercio en `moneda`. Si no está, cae al default de launch. */
+  precioMensual?: number
   subdomain: string
   brand: {
     logoUrl?: string
@@ -95,9 +98,7 @@ export async function loadTenantConfig() {
   state = { ...state, loading: true }
   notify()
   try {
-    const res = await fetch(
-      `${API_URL.replace(/\/$/, '')}/api/v1/tenant/${state.slug}/config`,
-    )
+    const res = await fetch(`${API_URL.replace(/\/$/, '')}/api/v1/tenant/${state.slug}/config`)
     if (!res.ok) {
       state = { ...state, loading: false }
       notify()
@@ -117,14 +118,50 @@ export async function loadTenantConfig() {
   }
 }
 
+/** Solo HEX válido (#RGB…#RRGGBBAA). Un valor inesperado dejaría --color-brand
+ *  inválido y colapsaría toda la escala accent que se deriva por color-mix. */
+function isHexColor(v?: string): v is string {
+  return !!v && /^#[0-9a-fA-F]{3,8}$/.test(v)
+}
+
 function applyBrandingToDom(t: LandingTenant) {
   if (typeof document === 'undefined') return
   const root = document.documentElement
-  if (t.brand?.primaryColor) root.style.setProperty('--tenant-primary', t.brand.primaryColor)
-  if (t.brand?.accentColor) root.style.setProperty('--tenant-accent', t.brand.accentColor)
+  const primary = t.brand?.primaryColor
+  // COLOR POR CIUDAD: --color-brand es el ÚNICO knob; toda la escala accent-* se
+  // deriva de él por color-mix. Seteándolo acá re-tematizamos TODA la landing.
+  if (isHexColor(primary)) {
+    root.style.setProperty('--color-brand', primary)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', primary)
+  }
   if (t.nombre) document.title = `${t.nombre} · Sumá tu comercio`
-  if (t.brand?.primaryColor) {
-    const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', t.brand.primaryColor)
+}
+
+// ─── Helpers de copy/precio (fallback a paraguas genérico) ──────────────────
+
+/** Nombre de marca de la ciudad ("Mi San Pedro"). Fallback: "Mi Ciudad". */
+export function appName(c: LandingTenant | null): string {
+  return c?.nombre?.trim() || 'Mi Ciudad'
+}
+
+/** Localidad que ven los vecinos/comercios ("San Pedro"). Fallback: "tu ciudad". */
+export function cityName(c: LandingTenant | null): string {
+  return c?.ciudad?.trim() || 'tu ciudad'
+}
+
+/** Precio mensual formateado en la moneda/locale del tenant (ej. "$50.000" o
+ *  "$ 50.000" en COP). Si el tenant no trae precioMensual, usa el default. */
+export function priceLabel(c: LandingTenant | null): string {
+  const amount = c?.precioMensual && c.precioMensual > 0 ? c.precioMensual : PRECIO_MENSUAL
+  const moneda = c?.moneda || 'ARS'
+  const locale = c?.locale || 'es-AR'
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: moneda,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  } catch {
+    return `$${amount.toLocaleString('es-AR')}`
   }
 }

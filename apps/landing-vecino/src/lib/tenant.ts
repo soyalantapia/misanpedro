@@ -1,30 +1,29 @@
 import { useSyncExternalStore } from 'react'
 
 /**
- * Tenant resolution para la LANDING comercial.
+ * Tenant resolution para la LANDING DEL VECINO. Multi-ciudad/dinámica.
  *
- * La landing puede operar en 2 modos:
- *   a) Marca paraguas (misanpedro.com):
- *        muestra branding genérico + "Para todas las ciudades"
- *        link de signup va a app principal
- *   b) Tenant-specific (sanpedro.misanpedro.com/comercios):
- *        muestra branding del tenant + hero copy override
- *        signup link → URL con tenant slug
+ * Modos:
+ *   a) Marca paraguas (sin tenant): branding genérico "Mi Ciudad" / "tu ciudad".
+ *   b) Tenant-specific (sanpedro.micuidad.com/vecino, o ?tenant=sanpedro):
+ *      nombre, ciudad y COLOR salen del tenant — todo se re-tematiza solo
+ *      (el color via el knob `--color-brand`). El vecino no paga: sin precio.
  *
- * Detección:
- *   1. Query string ?tenant=sanpedro
- *   2. Subdomain del host (excepto reserved)
- *   3. VITE_TENANT_SLUG build-time
- *   4. null → modo paraguas
+ * Detección del slug:
+ *   1. ?tenant=sanpedro   2. subdomain del host (excepto reserved)
+ *   3. VITE_TENANT_SLUG (build-time)   4. null → modo paraguas
  */
 
-const RESERVED = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios'])
+const RESERVED = new Set(['www', 'api', 'admin', 'owner', 'app', 'comercios', 'administracion', 'ciudades', 'vecino'])
 
 export type LandingTenant = {
   slug: string
   nombre: string
   ciudad: string
   provincia?: string
+  pais?: string
+  moneda?: string
+  locale?: string
   subdomain: string
   brand: {
     logoUrl?: string
@@ -95,9 +94,7 @@ export async function loadTenantConfig() {
   state = { ...state, loading: true }
   notify()
   try {
-    const res = await fetch(
-      `${API_URL.replace(/\/$/, '')}/api/v1/tenant/${state.slug}/config`,
-    )
+    const res = await fetch(`${API_URL.replace(/\/$/, '')}/api/v1/tenant/${state.slug}/config`)
     if (!res.ok) {
       state = { ...state, loading: false }
       notify()
@@ -117,14 +114,31 @@ export async function loadTenantConfig() {
   }
 }
 
+function isHexColor(v?: string): v is string {
+  return !!v && /^#[0-9a-fA-F]{3,8}$/.test(v)
+}
+
 function applyBrandingToDom(t: LandingTenant) {
   if (typeof document === 'undefined') return
   const root = document.documentElement
-  if (t.brand?.primaryColor) root.style.setProperty('--tenant-primary', t.brand.primaryColor)
-  if (t.brand?.accentColor) root.style.setProperty('--tenant-accent', t.brand.accentColor)
-  if (t.nombre) document.title = `${t.nombre} · Sumá tu comercio`
-  if (t.brand?.primaryColor) {
-    const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', t.brand.primaryColor)
+  const primary = t.brand?.primaryColor
+  // COLOR POR CIUDAD: --color-brand es el ÚNICO knob; la escala accent-* se
+  // deriva por color-mix. Seteándolo re-tematizamos TODA la landing del vecino.
+  if (isHexColor(primary)) {
+    root.style.setProperty('--color-brand', primary)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', primary)
   }
+  if (t.nombre) document.title = `${t.nombre} · Descuentos para vecinos`
+}
+
+// ─── Helpers de copy (fallback a paraguas genérico) ─────────────────────────
+
+/** Nombre de marca de la ciudad ("Mi San Pedro"). Fallback: "Mi Ciudad". */
+export function appName(c: LandingTenant | null): string {
+  return c?.nombre?.trim() || 'Mi Ciudad'
+}
+
+/** Localidad que ven los vecinos ("San Pedro"). Fallback: "tu ciudad". */
+export function cityName(c: LandingTenant | null): string {
+  return c?.ciudad?.trim() || 'tu ciudad'
 }

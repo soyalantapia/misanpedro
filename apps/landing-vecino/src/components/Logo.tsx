@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { useTenant, appName } from '@/lib/tenant'
 
 type LogoProps = {
   /** 'lockup' = isotipo + "MiSanPedro" · 'mark' = solo el isotipo de cupón */
@@ -25,6 +26,12 @@ export function Logo({
   onDark = false,
 }: LogoProps) {
   const gradId = 'msp-logo-' + useId().replace(/:/g, '')
+
+  const { config } = useTenant()
+  // Nombre de marca dinámico por ciudad ("Mi San Pedro" → "Mi" coloreado + resto).
+  const name = appName(config)
+  const [first, ...rest] = name.split(/\s+/)
+  const restWord = rest.join('')
 
   const mark = (
     <svg width={markSize} height={markSize} viewBox="0 0 64 64" aria-hidden="true" className="shrink-0">
@@ -69,7 +76,7 @@ export function Logo({
         className={`font-black leading-none tracking-tight ${textClass} ${onDark ? 'text-white' : 'text-neutral-900'}`}
         style={{ letterSpacing: '-0.03em' }}
       >
-        <span className="text-accent-500">Mi</span>SanPedro
+        <span className="text-accent-500">{first}</span>{restWord}
       </span>
     </span>
   )

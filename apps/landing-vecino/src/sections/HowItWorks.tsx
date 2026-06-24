@@ -1,28 +1,33 @@
 import { Ticket, Hash, Check } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, cityName } from '@/lib/tenant'
 
 const STEPS = [
   {
     icon: Ticket,
     n: '1',
     title: 'Elegís el descuento',
-    body: 'Mirá los descuentos de los comercios de San Pedro y elegí el que quieras. Sin registrarte.',
+    body: (city: string) =>
+      `Mirá los descuentos de los comercios de ${city} y elegí el que quieras. Sin registrarte.`,
   },
   {
     icon: Hash,
     n: '2',
     title: 'Mostrás tu código',
-    body: 'Te aparece un código para mostrar en la caja del local. La primera vez te pedimos un dato para identificarte; después, directo.',
+    body: () =>
+      'Te aparece un código para mostrar en la caja del local. La primera vez te pedimos un dato para identificarte; después, directo.',
   },
   {
     icon: Check,
     n: '3',
     title: 'Pagás menos',
-    body: 'El comercio aplica el descuento y pagás menos por lo mismo. Listo.',
+    body: () => 'El comercio aplica el descuento y pagás menos por lo mismo. Listo.',
   },
 ] as const
 
 export function HowItWorks() {
+  const { config } = useTenant()
+  const city = cityName(config)
   return (
     <section id="como-funciona" className="bg-neutral-50/70 px-5 py-20 sm:px-6 sm:py-28">
       <AnimatedSection className="mx-auto max-w-2xl text-center">
@@ -49,7 +54,7 @@ export function HowItWorks() {
               </span>
             </div>
             <h3 className="mt-6 text-lg font-bold text-neutral-900">{s.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-neutral-600">{s.body}</p>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-600">{s.body(city)}</p>
           </AnimatedSection>
         ))}
       </div>

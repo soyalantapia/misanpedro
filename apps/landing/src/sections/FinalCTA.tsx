@@ -1,9 +1,12 @@
 import { ArrowRight } from 'lucide-react'
 import { SIGNUP_URL } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, cityName } from '@/lib/tenant'
 import { TOTAL_CUPOS, CUPOS_RESTANTES, MESES_GRATIS } from '@/lib/launch'
 
 export function FinalCTA() {
+  const { config } = useTenant()
+
   return (
     <section className="px-6 pb-20 pt-12 sm:pb-28">
       <AnimatedSection className="relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-500 via-accent-600 to-accent-800 p-10 text-center text-white shadow-2xl shadow-accent-500/20 sm:p-16">
@@ -36,7 +39,7 @@ export function FinalCTA() {
           </div>
 
           <p className="mt-8 text-xs text-white/70">
-            3 meses gratis, sin tarjeta · Cancelás cuando quieras · Hecho en San Pedro
+            3 meses gratis, sin tarjeta · Cancelás cuando quieras · Hecho en {cityName(config)}
           </p>
         </div>
       </AnimatedSection>

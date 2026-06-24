@@ -1,8 +1,11 @@
 import { ArrowRight, Smartphone, Hash, Heart } from 'lucide-react'
 import { SIGNUP_URL } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, appName, cityName } from '@/lib/tenant'
 
 export function Solution() {
+  const { config } = useTenant()
+
   return (
     <section className="px-6 py-20 sm:py-28">
       <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1.05fr_1fr] lg:items-center">
@@ -11,12 +14,12 @@ export function Solution() {
             La solución
           </span>
           <h2 className="mt-3 text-balance text-4xl font-bold leading-[1.1] tracking-tight text-neutral-900 sm:text-5xl">
-Mi San Pedro es el contacto directo con tu cliente
+            {appName(config)} es el contacto directo con tu cliente
           </h2>
 
           <div className="mt-7 space-y-5 text-pretty text-lg leading-relaxed text-neutral-700">
             <p>
-              Publicás un descuento desde tu celular. Carolina, una vecina de San Pedro,
+              Publicás un descuento desde tu celular. Carolina, una vecina de {cityName(config)},
               lo activa desde la app del barrio y le aparece un código de 6 dígitos.
               Cuando llega a tu local, tu cajero ingresa el código y listo: descuento
               aplicado, canje registrado, datos de Carolina guardados.

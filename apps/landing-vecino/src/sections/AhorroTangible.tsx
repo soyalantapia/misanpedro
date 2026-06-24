@@ -1,6 +1,7 @@
 import { ArrowRight, Check } from 'lucide-react'
 import { ENTER_URL } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { useTenant, appName } from '@/lib/tenant'
 
 const EJEMPLOS = [
   { c: 'Verdulería', d: '20% off' },
@@ -17,6 +18,8 @@ const PUNTOS = [
 ] as const
 
 export function AhorroTangible() {
+  const { config } = useTenant()
+  const brand = appName(config)
   return (
     <section id="ahorro" className="px-5 py-20 sm:px-6 sm:py-28">
       <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
@@ -63,7 +66,7 @@ export function AhorroTangible() {
           <div className="pointer-events-none absolute -inset-4 -z-10 rounded-[2.5rem] bg-gradient-to-br from-accent-200/40 to-accent-400/10 blur-2xl" />
           <div className="rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-neutral-900/5">
             <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-              Tu mandado, con Mi San Pedro
+              Tu mandado, con {brand}
             </p>
             <div className="mt-4 space-y-2.5">
               {EJEMPLOS.map((e) => (

@@ -35,8 +35,8 @@ export function Comercios() {
           </div>
         )}
 
-        {/* TODO: cuando esté confirmado, activar el respaldo institucional:
-            <p className="mt-6 text-sm font-medium text-neutral-500">Con el apoyo de la Cámara de Comercio de San Pedro</p> */}
+        {/* TODO: cuando esté confirmado, activar el respaldo institucional (usar cityName(config)):
+            <p className="mt-6 text-sm font-medium text-neutral-500">Con el apoyo de la Cámara de Comercio de {city}</p> */}
 
         {/* Dual CTA: el vecino va a la app; el comercio va a su landing de captación. */}
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
