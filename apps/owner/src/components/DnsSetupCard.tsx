@@ -1,11 +1,15 @@
-import { useState } from 'react'
-import { Check, Copy, Globe, ExternalLink, Store, Users } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { Check, Copy, Globe, ExternalLink, Store, Users, Megaphone } from 'lucide-react'
 
 /**
  * Card con las URLs EN VIVO de la ciudad. Con el comodín de plataforma
  * (*.micuidad.com vía Cloudflare) cada ciudad queda online sola — no hay que
- * configurar DNS por ciudad. Mostramos las dos superficies: app del vecino
- * (raíz) y panel del comercio (/#/admin), ambas multi-tenant sobre esta ciudad.
+ * configurar DNS por ciudad. Mostramos las cuatro superficies públicas, todas
+ * multi-tenant sobre esta ciudad:
+ *   · Difusión: landing del vecino (/vecino) y del comercio (/comercios)
+ *   · En vivo:  app del vecino (raíz) y panel del comercio (/#/admin)
+ * Cada link tiene copiar-al-portapapeles + abrir, para mandárselo a vecinos y
+ * comercios de la ciudad.
  */
 export function DnsSetupCard({
   subdomain,
@@ -16,9 +20,15 @@ export function DnsSetupCard({
   customDomain?: string
   status: 'pending' | 'active' | 'suspended' | 'archived'
 }) {
+  // Las landings y la app se sirven desde el host de la ciudad (comodín). Las
+  // URLs canónicas para compartir usan el subdominio de plataforma; el custom
+  // domain queda como nota (apunta al mismo lugar cuando está configurado).
   const host = `${subdomain}.micuidad.com`
-  const vecinoUrl = `https://${host}`
-  const comercioUrl = `https://${host}/#/admin/login`
+  const base = `https://${host}`
+  const landingVecinoUrl = `${base}/vecino/`
+  const landingComercioUrl = `${base}/comercios/`
+  const vecinoUrl = base
+  const comercioUrl = `${base}/#/admin/login`
 
   return (
     <article className="rounded-2xl bg-white p-6 ring-1 ring-neutral-200">
@@ -27,10 +37,10 @@ export function DnsSetupCard({
           <Globe size={16} />
         </span>
         <div className="flex-1">
-          <h2 className="text-base font-bold text-neutral-900">La ciudad está online</h2>
+          <h2 className="text-base font-bold text-neutral-900">Links de la ciudad</h2>
           <p className="mt-0.5 text-xs text-neutral-500">
-            Servida sola por el comodín de la plataforma (<code className="font-mono">*.micuidad.com</code>).
-            No hay que configurar DNS por ciudad.
+            Online sola por el comodín de la plataforma (<code className="font-mono">*.micuidad.com</code>).
+            Copiá y compartí estos links con vecinos y comercios.
           </p>
         </div>
       </header>
@@ -42,9 +52,40 @@ export function DnsSetupCard({
         </div>
       )}
 
-      <div className="mt-5 space-y-3">
-        <LinkRow icon={Users} label="Vecino (app)" url={vecinoUrl} display={host} />
-        <LinkRow icon={Store} label="Comercio (panel)" url={comercioUrl} display={`${host}/#/admin`} />
+      <div className="mt-5 space-y-4">
+        <Group label="Difusión (para compartir)">
+          <LinkRow
+            icon={Megaphone}
+            label="Landing del vecino"
+            hint="Marketing para que los vecinos se sumen"
+            url={landingVecinoUrl}
+            display={`${host}/vecino`}
+          />
+          <LinkRow
+            icon={Megaphone}
+            label="Landing del comercio"
+            hint="Captación de comercios de la ciudad"
+            url={landingComercioUrl}
+            display={`${host}/comercios`}
+          />
+        </Group>
+
+        <Group label="En vivo">
+          <LinkRow
+            icon={Users}
+            label="App del vecino"
+            hint="Donde el vecino mira y usa los descuentos"
+            url={vecinoUrl}
+            display={host}
+          />
+          <LinkRow
+            icon={Store}
+            label="Panel del comercio"
+            hint="Login del comercio adherido"
+            url={comercioUrl}
+            display={`${host}/#/admin`}
+          />
+        </Group>
       </div>
 
       {customDomain && (
@@ -57,14 +98,25 @@ export function DnsSetupCard({
   )
 }
 
+function Group({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{label}</p>
+      {children}
+    </div>
+  )
+}
+
 function LinkRow({
   icon: Icon,
   label,
+  hint,
   url,
   display,
 }: {
   icon: typeof Globe
   label: string
+  hint?: string
   url: string
   display: string
 }) {
@@ -82,6 +134,7 @@ function LinkRow({
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">{label}</p>
         <code className="block truncate font-mono text-xs text-neutral-900">{display}</code>
+        {hint && <p className="truncate text-[10px] text-neutral-400">{hint}</p>}
       </div>
       <button
         type="button"
