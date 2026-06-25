@@ -9,6 +9,7 @@ import { AppDetailPage } from './pages/AppDetailPage'
 import { MerchantsPage } from './pages/MerchantsPage'
 import { UsersPage } from './pages/UsersPage'
 import { SubscriptionsPage } from './pages/SubscriptionsPage'
+import { TeamPage } from './pages/TeamPage'
 import { SettingsPage } from './pages/SettingsPage'
 
 export function App() {
@@ -31,6 +32,7 @@ export function App() {
           <Route path="comercios" element={<MerchantsPage />} />
           <Route path="vecinos" element={<UsersPage />} />
           <Route path="pagos" element={<SubscriptionsPage />} />
+          <Route path="equipo" element={<TeamPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

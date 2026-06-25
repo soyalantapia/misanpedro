@@ -7,6 +7,7 @@ import {
   Users,
   CreditCard,
   Settings,
+  ShieldCheck,
   LogOut,
   Menu,
   X,
@@ -14,18 +15,23 @@ import {
 import { authActions, useAuth } from '@/lib/store'
 import { owner } from '@/lib/api'
 import { cn } from '@/lib/cn'
+import { can } from '@/lib/rbac'
 
+// `gate` (opcional): recurso del RBAC. Si está, el item se muestra sólo si el rol
+// del owner puede verlo (el back igual lo enforcea). Sin gate = visible para todos.
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/apps', label: 'Apps', icon: AppWindow },
   { to: '/comercios', label: 'Comercios', icon: Store },
   { to: '/vecinos', label: 'Vecinos', icon: Users },
-  { to: '/pagos', label: 'Pagos', icon: CreditCard },
+  { to: '/pagos', label: 'Pagos', icon: CreditCard, gate: 'pagos' as const },
+  { to: '/equipo', label: 'Equipo', icon: ShieldCheck, gate: 'equipo' as const },
   { to: '/settings', label: 'Settings', icon: Settings },
 ] as const
 
 export function ShellLayout() {
   const auth = useAuth()
+  const nav = NAV.filter((i) => !('gate' in i) || can(auth.owner?.rol, i.gate))
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -59,7 +65,7 @@ export function ShellLayout() {
         </div>
 
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <SidebarLink key={item.to} {...item} />
           ))}
         </nav>
@@ -92,7 +98,7 @@ export function ShellLayout() {
       {mobileOpen && (
         <div className="sticky top-14 z-20 border-b border-neutral-200 bg-white px-4 py-3 lg:hidden">
           <nav className="space-y-1">
-            {NAV.map((item) => (
+            {nav.map((item) => (
               <SidebarLink key={item.to} {...item} onClick={() => setMobileOpen(false)} />
             ))}
             <button

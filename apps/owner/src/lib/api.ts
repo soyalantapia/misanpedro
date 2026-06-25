@@ -302,4 +302,39 @@ export const owner = {
       actions: Array<{ action: string; at: string; ip?: string; detail?: string }>
     }>('/api/v1/owner/me/audit')
   },
+
+  // ─── Equipo (multi-admin, solo super) ─────────────────────────
+  async listAdmins() {
+    return api<{
+      ok: boolean
+      admins: Array<{
+        id: string
+        email: string
+        nombre: string
+        rol: string
+        enabled: boolean
+        lastLoginAt?: string | null
+        invitedAt?: string | null
+        createdAt?: string
+      }>
+    }>('/api/v1/owner/admins')
+  },
+
+  async inviteAdmin(input: { email: string; nombre: string; rol: string }) {
+    return api<{ ok: boolean; admin?: unknown; error?: string }>('/api/v1/owner/admins', {
+      method: 'POST',
+      body: input,
+    })
+  },
+
+  async updateAdmin(id: string, patch: { rol?: string; enabled?: boolean }) {
+    return api<{ ok: boolean; admin?: unknown; error?: string }>(`/api/v1/owner/admins/${id}`, {
+      method: 'PATCH',
+      body: patch,
+    })
+  },
+
+  async removeAdmin(id: string) {
+    return api<{ ok: boolean; error?: string }>(`/api/v1/owner/admins/${id}`, { method: 'DELETE' })
+  },
 }
