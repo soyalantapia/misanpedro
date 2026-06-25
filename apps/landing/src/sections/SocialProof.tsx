@@ -1,12 +1,7 @@
 import { Sparkles, Gift, Lock, Headphones } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
-import { useTenant, cityName, priceLabel, type LandingTenant } from '@/lib/tenant'
-import {
-  COMERCIOS_ADHERIDOS,
-  TOTAL_CUPOS,
-  CUPOS_RESTANTES,
-  MESES_GRATIS,
-} from '@/lib/launch'
+import { useTenant, cityName, priceLabel, cupos, type LandingTenant } from '@/lib/tenant'
+import { TOTAL_CUPOS, MESES_GRATIS } from '@/lib/launch'
 
 // LA1 (audit v8): reemplazamos los "logos de pioneros" inventados por los
 // beneficios reales del programa de lanzamiento. No fabricamos clientes — la prueba
@@ -77,7 +72,7 @@ export function SocialProof() {
         <div className="mt-8 flex flex-col items-center gap-2 text-center">
           <p className="text-xs text-neutral-500">
             {config?.slug === 'sanpedro'
-              ? `Ya van ${COMERCIOS_ADHERIDOS} de ${TOTAL_CUPOS} comercios — quedan ${CUPOS_RESTANTES} lugares. Cuando se completen, cierra la oferta de lanzamiento.`
+              ? `Ya van ${cupos(config).adheridos} de ${TOTAL_CUPOS} comercios — quedan ${cupos(config).restantes} lugares. Cuando se completen, cierra la oferta de lanzamiento.`
               : 'Sumate ahora: cuando se completen los cupos, cierra la oferta de lanzamiento.'}
           </p>
           <a

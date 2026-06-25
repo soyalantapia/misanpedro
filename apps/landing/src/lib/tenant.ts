@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { PRECIO_MENSUAL } from './launch'
+import { PRECIO_MENSUAL, TOTAL_CUPOS } from './launch'
 
 /**
  * Tenant resolution para la LANDING DEL COMERCIO. Multi-ciudad/dinámica.
@@ -28,6 +28,10 @@ export type LandingTenant = {
   locale?: string
   /** Precio mensual del comercio en `moneda`. Si no está, cae al default de launch. */
   precioMensual?: number
+  /** Conteo REAL de comercios adheridos (estado activo) en esta ciudad — del
+   *  backend (GET /tenant/:slug/config). Alimenta el contador de escasez de la
+   *  landing en vez de una constante hardcodeada. */
+  merchantsActivos?: number
   subdomain: string
   brand: {
     logoUrl?: string
@@ -182,8 +186,17 @@ export function cityName(c: LandingTenant | null): string {
   return c?.ciudad?.trim() || 'tu ciudad'
 }
 
-/** ¿Es San Pedro? Los contadores de escasez (2/20/18) son SOLO de su lanzamiento. */
+/** ¿Es San Pedro? El contador de escasez del lanzamiento es SOLO de esa ciudad. */
 export const isSanPedro = (c: LandingTenant | null): boolean => c?.slug === 'sanpedro'
+
+/** Contador de escasez del lanzamiento con el conteo REAL de comercios adheridos
+ *  (del backend, `merchantsActivos`). `total` = cupos del programa; `restantes`
+ *  nunca baja de 0. Sin conteo del backend → 0 adheridos (no inventa un número). */
+export function cupos(c: LandingTenant | null): { adheridos: number; total: number; restantes: number } {
+  const total = TOTAL_CUPOS
+  const adheridos = Math.max(0, Math.min(total, c?.merchantsActivos ?? 0))
+  return { adheridos, total, restantes: Math.max(0, total - adheridos) }
+}
 
 /** ¿El tenant es de Argentina? Gatea copy fiscal/medio-de-pago AR (factura C, IVA,
  *  MercadoPago). Si no hay tenant (paraguas), se asume NO-AR → copy neutro. */

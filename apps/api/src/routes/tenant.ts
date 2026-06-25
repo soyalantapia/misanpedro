@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { App } from '@/models'
+import { App, Merchant } from '@/models'
 import { toAsciiLabel } from '@/middleware/tenant'
 
 export const tenantRoutes = new Hono()
@@ -30,12 +30,18 @@ tenantRoutes.get('/:slug/config', async (c) => {
     return c.json({ ok: false, error: 'tenant suspended' }, 403)
   }
 
+  // Conteo REAL de comercios adheridos (estado activo) — la landing lo usa para el
+  // contador de lanzamiento ("Ya van N de 20"), que antes era una constante fija.
+  const merchantsActivos = await Merchant.countDocuments({ appId: app._id, estado: 'activo' })
+
   return c.json({
     ok: true,
     tenant: {
       slug: app.slug,
       nombre: app.nombre,
       ciudad: app.ciudad,
+      // Conteo real de comercios adheridos (para el contador de escasez de la landing).
+      merchantsActivos,
       provincia: app.provincia,
       pais: app.pais,
       // Fallback ARS/es-AR: los docs sembrados antes de agregar estos campos no

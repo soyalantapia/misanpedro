@@ -1,16 +1,12 @@
 import { ArrowRight, Check, Sparkles } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
-import { useTenant, priceLabel, isArgentina, pagoLabel } from '@/lib/tenant'
-import {
-  COMERCIOS_ADHERIDOS,
-  TOTAL_CUPOS,
-  CUPOS_RESTANTES,
-  MESES_GRATIS,
-} from '@/lib/launch'
+import { useTenant, priceLabel, isArgentina, pagoLabel, cupos } from '@/lib/tenant'
+import { TOTAL_CUPOS, MESES_GRATIS } from '@/lib/launch'
 
 export function Pricing() {
   const { config } = useTenant()
+  const { adheridos, restantes } = cupos(config)
   // Lo incluido en el plan. El medio de pago se gatea por país (MercadoPago solo
   // donde aplica) y el CRM usa "documento" neutro en vez de "DNI" (AR-específico).
   const included = [
@@ -52,7 +48,7 @@ export function Pricing() {
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white ring-1 ring-white/30 backdrop-blur">
                 <Sparkles size={11} />
                 {config?.slug === 'sanpedro'
-                  ? `Lanzamiento · quedan ${CUPOS_RESTANTES} de ${TOTAL_CUPOS} lugares`
+                  ? `Lanzamiento · quedan ${restantes} de ${TOTAL_CUPOS} lugares`
                   : 'Programa de lanzamiento'}
               </span>
 
@@ -134,7 +130,7 @@ export function Pricing() {
                 Los {MESES_GRATIS} meses gratis y el precio congelado valen para los primeros{' '}
                 {TOTAL_CUPOS} comercios.
               </strong>{' '}
-              Ya van {COMERCIOS_ADHERIDOS} — quedan {CUPOS_RESTANTES} lugares. Después, el
+              Ya van {adheridos} — quedan {restantes} lugares. Después, el
               precio sube para nuevos comercios.
             </>
           ) : (

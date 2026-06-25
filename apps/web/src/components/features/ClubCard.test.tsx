@@ -38,16 +38,17 @@ describe('<ClubCard />', () => {
     h.data = []
     const { container } = renderCard()
     expect(container.textContent).toMatch(/Todavía sin nivel/)
-    expect(container.textContent).toMatch(/Usá un cupón y entrás al Club/)
+    expect(container.textContent).toMatch(/Usá un cupón y arrancás tu nivel del Club/)
     expect(screen.getByRole('button', { name: /ver cupones/i })).toBeTruthy()
   })
 
-  it('4 canjes este mes → Socio Plata + 4 entradas + ahorro total', () => {
+  it('4 canjes este mes → Socio Plata + ahorro total (sin sorteo/premio fake)', () => {
     h.data = Array.from({ length: 4 }, () => ({ redeemedAt: esteMes(5), ahorroEstimado: 500 }))
     const { container } = renderCard()
     expect(container.textContent).toMatch(/Socio Plata/)
-    expect(container.textContent).toMatch(/4 entradas al sorteo/)
     expect(container.textContent).toMatch(/Ahorro total/)
+    // NO debe prometer sorteo ni premio (no existe backend de sorteo).
+    expect(container.textContent).not.toMatch(/sorteo|premio|20\.000/i)
   })
 
   it('8 canjes este mes → Socio Oro + nivel máximo', () => {

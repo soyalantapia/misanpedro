@@ -1,11 +1,12 @@
 import { ArrowRight } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
-import { useTenant, cityName } from '@/lib/tenant'
-import { TOTAL_CUPOS, CUPOS_RESTANTES, MESES_GRATIS } from '@/lib/launch'
+import { useTenant, cityName, cupos } from '@/lib/tenant'
+import { MESES_GRATIS } from '@/lib/launch'
 
 export function FinalCTA() {
   const { config } = useTenant()
+  const { total, restantes } = cupos(config)
 
   return (
     <section className="px-6 pb-20 pt-12 sm:pb-28">
@@ -17,7 +18,7 @@ export function FinalCTA() {
         <div className="relative">
           <p className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white ring-1 ring-white/30 backdrop-blur">
             {config?.slug === 'sanpedro'
-              ? `⏳ Quedan ${CUPOS_RESTANTES} de ${TOTAL_CUPOS} lugares`
+              ? `⏳ Quedan ${restantes} de ${total} lugares`
               : '⏳ Programa de lanzamiento'}
           </p>
 

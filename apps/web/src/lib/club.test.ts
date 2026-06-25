@@ -29,7 +29,6 @@ describe('computeClub — nivel + entradas del mes actual', () => {
   it('0 canjes este mes → estado motivador (entradas 0, faltan 1)', () => {
     const r = computeClub([canje(at(5, 3))], NOW) // canje en mayo, no en junio
     expect(r.canjesEsteMes).toBe(0)
-    expect(r.entradas).toBe(0)
     expect(r.nivel.label).toBeNull()
     expect(r.faltan).toBe(1)
   })
@@ -37,7 +36,6 @@ describe('computeClub — nivel + entradas del mes actual', () => {
   it('1 canje este mes → Bronce, 1 entrada, faltan 3 para Plata', () => {
     const r = computeClub([canje(at(6, 2))], NOW)
     expect(r.canjesEsteMes).toBe(1)
-    expect(r.entradas).toBe(1)
     expect(r.nivel.label).toBe('Bronce')
     expect(r.faltan).toBe(3)
     expect(r.nivel.next?.label).toBe('Plata')
@@ -46,7 +44,6 @@ describe('computeClub — nivel + entradas del mes actual', () => {
   it('4 canjes este mes → Plata, faltan 4 para Oro', () => {
     const r = computeClub([at(6, 1), at(6, 5), at(6, 9), at(6, 12)].map((f) => canje(f)), NOW)
     expect(r.nivel.label).toBe('Plata')
-    expect(r.entradas).toBe(4)
     expect(r.faltan).toBe(4)
   })
 

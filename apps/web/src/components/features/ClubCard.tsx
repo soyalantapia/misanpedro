@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { Gift, Flame, PiggyBank } from 'lucide-react'
+import { Flame, PiggyBank } from 'lucide-react'
 import { useApiMyActivations } from '@/lib/apiQueries'
 import { tokens } from '@/lib/api'
-import { computeClub, PREMIO_DEL_MES } from '@/lib/club'
+import { computeClub } from '@/lib/club'
 import { Button } from '@/components/ui'
 import { formatMoney } from '@/lib/format'
 import { useTenant } from '@/lib/tenant'
@@ -10,10 +10,11 @@ import { useTenant } from '@/lib/tenant'
 /**
  * EL CLUB — niveles MENSUALES del vecino (Bronce/Plata/Oro) en PerfilPage.
  *
- * Solo MOSTRAR: el sorteo lo corre el operador a mano; acá se ven las entradas
- * (= cupones usados este mes) y el premio. Todo client-side desde los canjes
- * que la app ya baja (lib/club). El nivel es por CANJES del mes — distinto del
- * número de ahorro ($) de la billetera (SavingsWallet). Conviven, no se mezclan.
+ * Todo se deriva de DATOS REALES: los canjes que la app baja del API (status
+ * 'canjeado', con redeemedAt + ahorroEstimado). El nivel/ahorro/racha son
+ * gamificación honesta. NO se promete ningún sorteo ni premio: eso requeriría
+ * un backend de sorteo por-ciudad (entidad + ganador) que hoy no existe — y
+ * mostrarlo hardcodeado (premio fijo en $, sin gating por tenant) era engañoso.
  */
 
 export function ClubCard() {
@@ -30,10 +31,7 @@ export function ClubCard() {
 
   const now = new Date()
   const mesNombre = now.toLocaleDateString('es-AR', { month: 'long' })
-  const { canjesEsteMes, entradas, nivel, faltan, progress, ahorroTotal, racha } = computeClub(
-    data ?? [],
-    now,
-  )
+  const { canjesEsteMes, nivel, faltan, progress, ahorroTotal, racha } = computeClub(data ?? [], now)
 
   return (
     <section className="overflow-hidden rounded-3xl bg-fin-surface p-5 ring-1 ring-fin-line shadow-fin-card">
@@ -69,7 +67,7 @@ export function ClubCard() {
         // Reset en positivo (mes nuevo / sin canjes todavía).
         <div className="mt-4 rounded-2xl bg-fin-lime/10 p-4 ring-1 ring-fin-lime/20">
           <p className="text-sm font-semibold text-fin-ink">
-            Arrancó un mes nuevo. Usá un cupón y entrás al Club y al sorteo de {mesNombre}. 🎁
+            Arrancó un mes nuevo. Usá un cupón y arrancás tu nivel del Club de {ciudad}. 🎁
           </p>
           <Button fullWidth className="mt-3" onClick={() => navigate('/')}>
             Ver cupones
@@ -96,19 +94,6 @@ export function ClubCard() {
                 <span className="font-bold text-fin-lime">¡Llegaste al nivel máximo del mes! 🎉</span>
               )}
             </p>
-          </div>
-
-          {/* Entradas al sorteo */}
-          <div className="mt-4 flex items-start gap-3 rounded-2xl bg-fin-surface2 p-3.5 ring-1 ring-fin-line">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fin-lime text-fin-bg shadow-fin-glow">
-              <Gift size={18} />
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-fin-ink">
-                Llevás {entradas} {entradas === 1 ? 'entrada' : 'entradas'} al sorteo de {mesNombre}
-              </p>
-              <p className="mt-0.5 text-[11px] text-fin-soft">{PREMIO_DEL_MES}</p>
-            </div>
           </div>
         </>
       )}

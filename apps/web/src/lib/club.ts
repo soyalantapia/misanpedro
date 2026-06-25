@@ -14,8 +14,6 @@ import type { ApiActivation } from './api'
 export const BRONCE = 1
 export const PLATA = 4
 export const ORO = 8
-// Premio del sorteo del mes (editable a mano — el operador corre el sorteo).
-export const PREMIO_DEL_MES = 'Una orden de compra de $20.000 para gastar en los comercios del Club'
 
 export type Nivel = {
   /** null = todavía sin nivel este mes */
@@ -39,8 +37,6 @@ function monthIndex(d: Date): number {
 
 export type ClubStats = {
   canjesEsteMes: number
-  /** Entradas al sorteo del mes = canjes del mes (1 cupón usado = 1 entrada). */
-  entradas: number
   nivel: Nivel
   /** Canjes que faltan para el próximo nivel (0 si ya es Oro). */
   faltan: number
@@ -81,5 +77,5 @@ export function computeClub(canjeados: CanjeLike[], now: Date): ClubStats {
     ? Math.min(100, Math.round((canjesEsteMes / nivel.next.min) * 100))
     : 100
 
-  return { canjesEsteMes, entradas: canjesEsteMes, nivel, faltan, progress, ahorroTotal, racha }
+  return { canjesEsteMes, nivel, faltan, progress, ahorroTotal, racha }
 }

@@ -1,17 +1,13 @@
 import { ChevronDown } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
-import { useTenant, priceLabel, isSanPedro, pagoLabel, type LandingTenant } from '@/lib/tenant'
-import {
-  COMERCIOS_ADHERIDOS,
-  TOTAL_CUPOS,
-  CUPOS_RESTANTES,
-  MESES_GRATIS,
-} from '@/lib/launch'
+import { useTenant, priceLabel, isSanPedro, pagoLabel, cupos, type LandingTenant } from '@/lib/tenant'
+import { TOTAL_CUPOS, MESES_GRATIS } from '@/lib/launch'
 
 function buildFaqs(config: LandingTenant | null) {
   const precio = priceLabel(config)
   const sp = isSanPedro(config)
   const pago = pagoLabel(config)
+  const { adheridos, restantes } = cupos(config)
   return [
   {
     q: '¿Qué necesito para empezar?',
@@ -40,7 +36,7 @@ function buildFaqs(config: LandingTenant | null) {
   {
     q: '¿Cómo son los 3 meses gratis?',
     a: sp
-      ? `Los primeros ${TOTAL_CUPOS} comercios que se suman arrancan con ${MESES_GRATIS} meses sin pagar nada y sin cargar tarjeta. Recién al cuarto mes empezás a pagar ${precio}/mes por ${pago}, y ese precio te queda congelado de por vida. Hoy van ${COMERCIOS_ADHERIDOS} de ${TOTAL_CUPOS} lugares (quedan ${CUPOS_RESTANTES}).`
+      ? `Los primeros ${TOTAL_CUPOS} comercios que se suman arrancan con ${MESES_GRATIS} meses sin pagar nada y sin cargar tarjeta. Recién al cuarto mes empezás a pagar ${precio}/mes por ${pago}, y ese precio te queda congelado de por vida. Hoy van ${adheridos} de ${TOTAL_CUPOS} lugares (quedan ${restantes}).`
       : `Los comercios del programa de lanzamiento arrancan con ${MESES_GRATIS} meses sin pagar nada y sin cargar tarjeta. Recién al cuarto mes empezás a pagar ${precio}/mes por ${pago}, y ese precio te queda congelado de por vida.`,
   },
   {

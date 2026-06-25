@@ -1,14 +1,10 @@
 import { ArrowRight, MessageCircle, ShoppingBag, Ticket, User } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
-import { useTenant, cityName, priceLabel } from '@/lib/tenant'
-import {
-  COMERCIOS_ADHERIDOS,
-  TOTAL_CUPOS,
-  CUPOS_RESTANTES,
-} from '@/lib/launch'
+import { useTenant, cityName, priceLabel, cupos } from '@/lib/tenant'
 
 export function Hero() {
   const { config } = useTenant()
+  const { adheridos, total, restantes } = cupos(config)
   const eyebrow = config?.brand?.heroEyebrow
     ? config.brand.heroEyebrow
     : config?.ciudad
@@ -88,7 +84,7 @@ export function Hero() {
             style={{ animationDelay: '210ms' }}
           >
             {config?.slug === 'sanpedro'
-              ? `🔥 Ya van ${COMERCIOS_ADHERIDOS} de ${TOTAL_CUPOS} comercios · quedan ${CUPOS_RESTANTES} lugares`
+              ? `🔥 Ya van ${adheridos} de ${total} comercios · quedan ${restantes} lugares`
               : '🔥 Programa de lanzamiento · 3 meses gratis y precio congelado'}
           </p>
           <p
