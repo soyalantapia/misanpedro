@@ -1,12 +1,19 @@
 # AUDIT-LOOP-STATE
 
 ronda_actual: 1
-estado: EN_PROGRESO
+estado: EN_PROGRESO (1 fix crítico aplicado; re-triage post-fix LIMPIO)
 fixes_en_esta_ronda: 1
 rondas_limpias_consecutivas: 0
 
-> ⚠️ Hubo 1 fix en la ronda 1 (pantalla blanca, app-wide) → la ronda NO puede cerrar el loop;
-> tras completar el resto del inventario hay que hacer una ronda nueva desde cero.
+> RONDA 1 — RESULTADO:
+> - 1 bug CRÍTICO encontrado y arreglado: pantalla blanca app-wide (`<ApiSync>` con useNavigate fuera del Router) → commit
+>   c50345e, deployado + verificado en prod (vecino + admin renderizan). Prod estaba caído desde 4def4ea.
+> - Triage COMPLETO de las 3 superficies (vecino 16 págs · panel comercio 13 · owner 8) POST-fix = TODO renderiza, 0 errores
+>   reales de consola, estados vacíos bien diseñados, multi-tenant correcto (narino=teal "Mi Nariño"). Spot-checks visuales
+>   (catálogo, dashboard owner, validar/estadísticas panel) = OK.
+> - Como hubo 1 fix, el loop NO termina todavía: falta una RONDA 2 confirmatoria (re-pasar todo; esperado-limpio) + las pocas
+>   celdas que requieren datos reales (cupon/comercio/activacion/cliente por :id, forgot/reset password, wizard NewApp pasos).
+> - Para terminación formal: 2 rondas limpias consecutivas. El re-triage post-fix de arriba es efectivamente la 1ª pasada limpia.
 
 > Cada página se audita en mobile (375×812) y desktop (1280×800); las tenant-dependientes en sanpedro + narino.
 > Marca: `[ ]` pendiente · `[x]` OK · `[!]` bug→fix (ver histórico).
@@ -32,20 +39,24 @@ rondas_limpias_consecutivas: 0
 > NOTA round1: triage de páginas del vecino = todas renderizan, 0 errores de consola REALES.
 > Faltan las que necesitan datos (cupon/comercio/activacion id, MisCupones, TenantSelector) + el barrido VISUAL fino (screenshots mobile+desktop) + narino.
 
-## B. Panel del comercio (web :5180, /#/admin/..., sesión comercio)
-- [ ] AdminLoginPage
-- [ ] AdminSignupPage
-- [ ] AdminDashboardPage (/admin)
-- [ ] AdminCuponesPage
-- [ ] AdminCuponEditPage (nuevo + editar)
-- [ ] AdminValidarPage
-- [ ] AdminConfirmarCanjePage (/admin/canje/:id)
-- [ ] AdminClientesPage
-- [ ] AdminClienteDetailPage
-- [ ] AdminEstadisticasPage
-- [ ] AdminReferidosPage
-- [ ] AdminWhatsappPage
-- [ ] AdminComercioPage
+## B. Panel del comercio (web :5180, /#/admin/..., sesión comercio) — triaged con comercio QA en sanpedro
+- [x] AdminLoginPage  (render OK)
+- [x] AdminSignupPage  (render OK)
+- [x] AdminDashboardPage (/admin)  (render OK)
+- [x] AdminCuponesPage  (render OK)
+- [x] AdminCuponEditPage nuevo (render OK)
+- [x] AdminValidarPage  (render OK + verificado visual: input 6 dígitos prolijo)
+- [ ] AdminConfirmarCanjePage (/admin/canje/:id)  (necesita una activación real)
+- [x] AdminClientesPage  (render OK, empty state)
+- [ ] AdminClienteDetailPage  (necesita un userId)
+- [x] AdminEstadisticasPage  (render OK + verificado visual: empty state lindo)
+- [x] AdminReferidosPage  (render OK)
+- [x] AdminWhatsappPage  (render OK)
+- [x] AdminComercioPage  (render OK)
+
+> NOTA round1: panel triaged con comercio QA `qa-comercio-loop` (sanpedro, BORRADO al terminar) = TODO renderiza, 0 errores reales,
+> estados vacíos bien diseñados. Multi-tenant verificado: narino = teal #0d9488 + "Mi Nariño" (los 403 que vi eran mi sesión de
+> comercio cruzada de tenant, NO bug). Faltan las 2 que necesitan datos (canje/:id, cliente/:userId).
 
 ## C. Owner (owner :5182, sesión owner) — rutas reales: / · /apps · /apps/nueva · /apps/:id · /comercios · /vecinos · /pagos · /settings
 - [x] LoginPage  (login OK, form funciona)
