@@ -283,8 +283,10 @@ export async function sendCampaign(
 ): Promise<{ sentCount: number; failedCount: number }> {
   const s = sessions.get(merchantId)
   if (!s || s.status !== 'ready' || !s.client) {
-    // En modo stub seguimos para loguear los envíos (útil para QA sin WA real)
-    if (!WAClient) {
+    // Stub SOLO en dev/QA (sin whatsapp-web.js): simula los envíos para probar el
+    // flujo. En PRODUCCIÓN NUNCA fingimos éxito: si la sesión no está conectada,
+    // tiramos error — reportar "enviado" sin enviar engañaría al comercio.
+    if (!WAClient && process.env.NODE_ENV !== 'production') {
       let sent = 0
       let failed = 0
       for (let i = 0; i < recipients.length; i++) {
