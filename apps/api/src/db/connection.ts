@@ -1,5 +1,4 @@
 import mongoose from 'mongoose'
-import bcrypt from 'bcryptjs'
 import { env } from '@/env'
 import { App, User, Owner, PushSubscription } from '@/models'
 
@@ -77,29 +76,24 @@ export async function connectDB(): Promise<typeof mongoose> {
  * El primer login del Owner pide configurar el 2FA (si OWNER_2FA_REQUIRED=true).
  */
 async function bootstrapOwner(): Promise<void> {
+  // Auth OTP-only: el owner se crea SIN contraseña. Solo necesita
+  // OWNER_BOOTSTRAP_EMAIL. Entra pidiendo un código a su email. Idempotente.
   const email = env.OWNER_BOOTSTRAP_EMAIL?.toLowerCase().trim()
-  const password = env.OWNER_BOOTSTRAP_PASSWORD?.trim()
-  if (!email || !password) return
-  if (password.length < 8) {
-    console.warn('[bootstrap-owner] OWNER_BOOTSTRAP_PASSWORD muy corta (<8 chars) — skip')
-    return
-  }
+  if (!email) return
   const existing = await Owner.findOne({ email })
   if (existing) {
-    console.log(`[bootstrap-owner] ya existe ${email} — skip (podés borrar OWNER_BOOTSTRAP_PASSWORD del env)`)
+    console.log(`[bootstrap-owner] ya existe ${email} — skip`)
     return
   }
-  const passwordHash = await bcrypt.hash(password, 10)
   const owner = await Owner.create({
     email,
-    passwordHash,
-    nombre: env.OWNER_BOOTSTRAP_NOMBRE,
+    nombre: env.OWNER_BOOTSTRAP_NOMBRE || email.split('@')[0],
     rol: 'super',
     enabled: true,
   })
   console.log(
-    `[bootstrap-owner] ✅ Owner creado: ${owner.email} (rol super). ` +
-      `AHORA borrá OWNER_BOOTSTRAP_PASSWORD del env por seguridad.`,
+    `[bootstrap-owner] ✅ Owner creado: ${owner.email} (rol super, OTP-only). ` +
+      `Entrá pidiendo un código a tu email.`,
   )
 }
 

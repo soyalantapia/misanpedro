@@ -1,10 +1,13 @@
-import { Schema, model, type InferSchemaType } from 'mongoose'
+import { Schema, model, Types, type InferSchemaType } from 'mongoose'
 
 /**
- * Owner = dueño del SaaS (vos + tu equipo futuro).
- * Tiene acceso al Owner Panel cross-app y al endpoint /api/v1/owner/*.
+ * Owner = administrador del SaaS (vos + tu equipo). Acceso al Owner Panel
+ * cross-app y al endpoint /api/v1/owner/*.
  *
- * Auth: email + password (bcrypt) + 2FA TOTP obligatorio.
+ * Auth: OTP por email (passwordless), igual que el comercio. Sin contraseña.
+ *
+ * Multi-admin con ROLES predefinidos (RBAC). El back es la fuente de verdad de
+ * los permisos (ver la matriz en routes/owner.ts).
  *
  * No confundir con:
  *   - `User`         = vecino que canjea cupones (por App)
@@ -12,6 +15,9 @@ import { Schema, model, type InferSchemaType } from 'mongoose'
  *
  * Owner es global — no se scopea a una App.
  */
+export const OWNER_ROLES = ['super', 'admin', 'finanzas', 'soporte', 'viewer'] as const
+export type OwnerRol = (typeof OWNER_ROLES)[number]
+
 const ownerSchema = new Schema(
   {
     email: {
@@ -22,26 +28,36 @@ const ownerSchema = new Schema(
       index: true,
       match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     },
-    passwordHash: { type: String, required: true },
+    /** Legacy: ya no se usa (auth OTP-only). Se conserva opcional para no
+     *  romper docs viejos; el flujo de login no lo lee. */
+    passwordHash: { type: String },
     nombre: { type: String, required: true },
 
-    /**
-     * 2FA TOTP secret (base32). Generado en alta y solo el owner lo conoce
-     * (via QR escaneado por Google Authenticator / Authy / 1Password).
-     * Si está vacío, el owner aún no completó el setup de 2FA.
-     */
+    /** Deprecado (auth OTP-only). Conservados para no romper docs viejos. */
     totpSecret: { type: String, default: '' },
     totpEnabled: { type: Boolean, default: false },
 
-    /** Rol funcional (sólo 'super' por ahora; más adelante: 'finance', 'ops'). */
+    /**
+     * Rol funcional (RBAC). El back enforcea por endpoint:
+     *   super    = control total + gestiona el equipo
+     *   admin    = apps/comercios/vecinos/pagos (no el equipo)
+     *   finanzas = métricas + suscripciones/cobranzas
+     *   soporte  = comercios + vecinos (sin pagos)
+     *   viewer   = solo lectura
+     * Default 'viewer' = mínimo privilegio (un alta sin rol no da poder).
+     */
     rol: {
       type: String,
-      enum: ['super'],
-      default: 'super',
+      enum: OWNER_ROLES,
+      default: 'viewer',
     },
 
     /** Si está deshabilitado, no puede loguear (sin borrar el registro). */
     enabled: { type: Boolean, default: true },
+
+    /** Trazabilidad de invitación (quién lo sumó al equipo y cuándo). */
+    invitedByOwnerId: { type: Types.ObjectId, ref: 'Owner' },
+    invitedAt: { type: Date },
 
     lastLoginAt: { type: Date },
     lastLoginIp: { type: String },

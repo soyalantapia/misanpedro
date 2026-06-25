@@ -110,35 +110,25 @@ async function tryRefresh(): Promise<boolean> {
 // ════════════════════════════════════════════════════════════════
 
 export const owner = {
-  // ─── Auth ─────────────────────────────────────────────────────
-  async login(input: { email: string; password: string; totp?: string }) {
+  // ─── Auth OTP (passwordless) ──────────────────────────────────
+  async requestOtp(email: string) {
+    return api<{ ok: true; _debugCode?: string } | { ok: false; error: string }>(
+      '/api/v1/owner/auth/request-otp',
+      { method: 'POST', body: { email }, skipAuth: true },
+    )
+  },
+
+  async verifyOtp(input: { email: string; code: string }) {
     return api<
       | {
           ok: true
-          setup2FA?: boolean
-          totpUri?: string
-          secret?: string
-          message?: string
-          needTotp?: boolean
-          access?: string
-          refresh?: string
-          refreshExpiresAt?: string
-          owner?: {
-            id: string
-            email: string
-            nombre: string
-            rol: string
-          }
+          access: string
+          refresh: string
+          refreshExpiresAt: string
+          owner: { id: string; email: string; nombre: string; rol: string }
         }
       | { ok: false; error: string }
-    >('/api/v1/owner/auth/login', { method: 'POST', body: input, skipAuth: true })
-  },
-
-  async verify2FA(input: { email: string; password: string; totp: string }) {
-    return api<{ ok: boolean; message?: string; error?: string }>(
-      '/api/v1/owner/auth/2fa/verify',
-      { method: 'POST', body: input, skipAuth: true },
-    )
+    >('/api/v1/owner/auth/verify-otp', { method: 'POST', body: input, skipAuth: true })
   },
 
   async logout(refresh: string) {
@@ -147,23 +137,6 @@ export const owner = {
       body: { refresh },
       skipAuth: true,
     })
-  },
-
-  // O1: password recovery del owner.
-  // forgotPassword devuelve { ok: true } siempre (anti-enumeration).
-  // resetPassword necesita el token del email.
-  async forgotPassword(email: string) {
-    return api<{ ok: true } | { ok: false; error: string }>(
-      '/api/v1/owner/auth/forgot-password',
-      { method: 'POST', body: { email }, skipAuth: true },
-    )
-  },
-
-  async resetPassword(input: { token: string; newPassword: string }) {
-    return api<{ ok: true } | { ok: false; error: string }>(
-      '/api/v1/owner/auth/reset-password',
-      { method: 'POST', body: input, skipAuth: true },
-    )
   },
 
   async me() {

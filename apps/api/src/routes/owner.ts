@@ -1,18 +1,17 @@
 import { Hono } from 'hono'
-import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { Types } from 'mongoose'
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, randomInt } from 'node:crypto'
 import {
   App,
   Owner,
+  Otp,
   User,
   Merchant,
   Coupon,
   Activation,
   Redemption,
   Subscription,
-  PasswordReset,
 } from '@/models'
 import { toAsciiLabel } from '@/middleware/tenant'
 import {
@@ -20,24 +19,12 @@ import {
   issueRefreshToken,
   rotateRefreshToken,
   revokeRefreshToken,
-  revokeAllForSubject,
 } from '@/services/jwt.service'
-import {
-  buildTotpUri,
-  generateTotpSecret,
-  verifyTotpCode,
-} from '@/services/totp.service'
-import { sendOwnerNewAppNotice, sendPasswordResetLink } from '@/services/email.service'
+import { sendOwnerNewAppNotice, sendOwnerOtpCode } from '@/services/email.service'
 import { requireOwnerAuth } from '@/middleware/auth'
 import { rateLimit } from '@/middleware/security'
-import { env } from '@/env'
 
 export const ownerRoutes = new Hono()
-
-// Anti fuerza-bruta del login del owner. La cuenta es cross-tenant y (por
-// decisión) sin 2FA, así que el password es el único factor: limitamos los
-// intentos por IP para que no quede expuesto a fuerza bruta sin freno.
-const ownerLoginLimiter = rateLimit({ prefix: 'owner-login', max: 10, windowMs: 60_000 })
 
 /**
  * Audit log mini del owner: registra la acción en `recentActions` (últimas 20,
@@ -68,88 +55,94 @@ async function logOwnerAction(ownerId: string | undefined, action: string, ip?: 
 //                            AUTH
 // ════════════════════════════════════════════════════════════════════
 
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  totp: z.string().regex(/^\d{6}$/).optional(),
+// ─── Login OTP (passwordless) ─────────────────────────────────────────
+// El owner entra con un código de 6 dígitos al email, sin contraseña — mismo
+// patrón que el comercio (merchant-auth.ts) pero CROSS-TENANT (sin appId).
+const OTP_TTL_MS = 5 * 60 * 1000
+const OTP_MAX_ATTEMPTS = 5
+const otpRequestLimiter = rateLimit({ prefix: 'owner-otp-request', max: 5, windowMs: 60 * 60_000 })
+const otpVerifyLimiter = rateLimit({ prefix: 'owner-otp-verify', max: 10, windowMs: 60_000 })
+const otpRequestSchema = z.object({ email: z.string().email().toLowerCase() })
+const otpVerifySchema = z.object({
+  email: z.string().email().toLowerCase(),
+  code: z.string().regex(/^\d{6}$/),
 })
 
-/**
- * Login del owner. Flujo:
- *  1. POST /api/v1/owner/auth/login { email, password }
- *     → si owner no tiene 2FA setup: devuelve { setup2FA: true, totpUri, secret }
- *     → si owner tiene 2FA pero falta totp: { needTotp: true }
- *     → si todo OK: { access, refresh }
- *  2. POST /api/v1/owner/auth/login { email, password, totp } → access + refresh
- *  3. POST /api/v1/owner/auth/2fa/verify { totp } → activa el 2FA (sólo primera vez)
- */
-ownerRoutes.post('/auth/login', ownerLoginLimiter, async (c) => {
-  const parsed = loginSchema.safeParse(await c.req.json().catch(() => ({})))
-  if (!parsed.success) {
-    return c.json({ ok: false, error: 'invalid input' }, 400)
-  }
-  const { email, password, totp } = parsed.data
+const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
+const generateOtp = () => randomInt(100_000, 1_000_000).toString()
 
-  const owner = await Owner.findOne({ email: email.toLowerCase(), enabled: true })
-  if (!owner) {
-    // No revelamos si existe o no. Mismo mensaje, mismo tiempo.
-    await bcrypt.compare(password, '$2a$10$invalidhashinvalidhashinvalidha')
-    return c.json({ ok: false, error: 'invalid credentials' }, 401)
-  }
+ownerRoutes.post('/auth/request-otp', otpRequestLimiter, async (c) => {
+  const parsed = otpRequestSchema.safeParse(await c.req.json().catch(() => ({})))
+  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
+  const { email } = parsed.data
 
-  const passOk = await bcrypt.compare(password, owner.passwordHash)
-  if (!passOk) {
-    return c.json({ ok: false, error: 'invalid credentials' }, 401)
-  }
+  const owner = await Owner.findOne({ email, enabled: true })
+  // Anti-enumeración: respondemos OK aunque el email no exista / esté deshabilitado.
+  if (!owner) return c.json({ ok: true })
 
-  // 2FA flow opcional. Si OWNER_2FA_REQUIRED=false (default), saltamos
-  // todo el flujo de TOTP y emitimos tokens directo. Si está activado,
-  // se exige: setup → verify → login con código.
-  if (env.OWNER_2FA_REQUIRED) {
-    if (!owner.totpEnabled || !owner.totpSecret) {
-      const secret = generateTotpSecret()
-      const uri = buildTotpUri({ email: owner.email, secret, issuer: 'Mi Ciudad' })
-      owner.totpSecret = secret
-      await owner.save()
-      return c.json({
-        ok: true,
-        setup2FA: true,
-        totpUri: uri,
-        secret,
-        message:
-          'Escaneá el QR con Google Authenticator y verificá con POST /owner/auth/2fa/verify',
-      })
+  await Otp.deleteMany({ email, purpose: 'owner' })
+  const code = generateOtp()
+  await Otp.create({
+    email,
+    purpose: 'owner',
+    codeHash: sha256(code),
+    expiresAt: new Date(Date.now() + OTP_TTL_MS),
+  })
+  console.log(`[otp/owner] ${email} → ${code}`)
+
+  // En prod esperamos el envío: si el email no sale, 503 (no un "ok" falso que
+  // dejaría al admin afuera). En dev devolvemos el código para testear el flujo.
+  if (process.env.NODE_ENV === 'production') {
+    const sent = await sendOwnerOtpCode(email, code).catch((err) => {
+      console.error('[owner-otp-email]', err)
+      return { ok: false as const }
+    })
+    if (!sent.ok) {
+      return c.json(
+        { ok: false, error: 'No pudimos enviar el código. Probá de nuevo en unos minutos.' },
+        503,
+      )
     }
-
-    if (!totp) {
-      return c.json({ ok: true, needTotp: true })
-    }
-
-    const totpOk = verifyTotpCode({ secret: owner.totpSecret, code: totp })
-    if (!totpOk) {
-      return c.json({ ok: false, error: 'invalid 2fa code' }, 401)
-    }
+    return c.json({ ok: true })
   }
+  sendOwnerOtpCode(email, code).catch((err) => console.error('[owner-otp-email]', err))
+  return c.json({ ok: true, _debugCode: code })
+})
 
-  // Emitir tokens
+ownerRoutes.post('/auth/verify-otp', otpVerifyLimiter, async (c) => {
+  const parsed = otpVerifySchema.safeParse(await c.req.json().catch(() => ({})))
+  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
+  const { email, code } = parsed.data
+
+  const otp = await Otp.findOne({ email, purpose: 'owner' })
+  if (!otp || otp.consumedAt) return c.json({ ok: false, error: 'código inválido' }, 401)
+  if (otp.expiresAt.getTime() < Date.now()) return c.json({ ok: false, error: 'código expirado' }, 401)
+  if (otp.attempts >= OTP_MAX_ATTEMPTS) return c.json({ ok: false, error: 'demasiados intentos' }, 429)
+  if (sha256(code) !== otp.codeHash) {
+    otp.attempts += 1
+    await otp.save()
+    return c.json({ ok: false, error: 'código inválido' }, 401)
+  }
+  // Anti-replay: consumimos el código antes de emitir tokens.
+  otp.consumedAt = new Date()
+  await otp.save()
+
+  const owner = await Owner.findOne({ email, enabled: true })
+  if (!owner) return c.json({ ok: false, error: 'no encontrado' }, 404)
+
   const ua = c.req.header('user-agent')
   const ip = c.req.header('x-forwarded-for') || ''
-
-  const access = signAccessToken({
-    sub: String(owner._id),
-    type: 'owner',
-    rol: owner.rol,
-  })
+  const access = signAccessToken({ sub: String(owner._id), type: 'owner', rol: owner.rol })
   const refresh = await issueRefreshToken({
     subjectType: 'owner',
     subjectId: String(owner._id),
     userAgent: ua,
     ip,
   })
-
   owner.lastLoginAt = new Date()
   owner.lastLoginIp = ip
   await owner.save()
+  await logOwnerAction(String(owner._id), 'auth.login', ip, owner.email)
 
   return c.json({
     ok: true,
@@ -163,33 +156,6 @@ ownerRoutes.post('/auth/login', ownerLoginLimiter, async (c) => {
       rol: owner.rol,
     },
   })
-})
-
-const verify2faSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  totp: z.string().regex(/^\d{6}$/),
-})
-
-/** Verifica el código TOTP la primera vez (activa el 2FA del owner). */
-ownerRoutes.post('/auth/2fa/verify', async (c) => {
-  const parsed = verify2faSchema.safeParse(await c.req.json().catch(() => ({})))
-  if (!parsed.success) {
-    return c.json({ ok: false, error: 'invalid input' }, 400)
-  }
-  const { email, password, totp } = parsed.data
-  const owner = await Owner.findOne({ email: email.toLowerCase(), enabled: true })
-  if (!owner) return c.json({ ok: false, error: 'not found' }, 404)
-  const passOk = await bcrypt.compare(password, owner.passwordHash)
-  if (!passOk) return c.json({ ok: false, error: 'invalid credentials' }, 401)
-  if (!owner.totpSecret) {
-    return c.json({ ok: false, error: 'no totp secret to verify, call /login first' }, 400)
-  }
-  const totpOk = verifyTotpCode({ secret: owner.totpSecret, code: totp })
-  if (!totpOk) return c.json({ ok: false, error: 'invalid 2fa code' }, 401)
-  owner.totpEnabled = true
-  await owner.save()
-  return c.json({ ok: true, message: '2FA activado correctamente' })
 })
 
 /** Logout — revoca el refresh token. */
@@ -226,91 +192,6 @@ ownerRoutes.post('/auth/refresh', async (c) => {
   })
 })
 
-// ─── O1: Password recovery del owner ──────────────────────────────────
-// Reusamos el modelo PasswordReset (ahora soporta ownerId | merchantUserId)
-// y el patrón de hash-en-DB + plain-en-email + single-use + TTL 30 min.
-// Sin esto el owner del SaaS queda lockout-eado si pierde su password.
-
-const OWNER_RESET_TTL_MS = 30 * 60 * 1000
-const ownerForgotLimiter = rateLimit({
-  prefix: 'owner-forgot',
-  max: 5,
-  windowMs: 60 * 60_000,
-})
-const ownerForgotSchema = z.object({ email: z.string().email().toLowerCase() })
-
-ownerRoutes.post('/auth/forgot-password', ownerForgotLimiter, async (c) => {
-  const body = await c.req.json().catch(() => ({}))
-  const parsed = ownerForgotSchema.safeParse(body)
-  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
-
-  const owner = await Owner.findOne({ email: parsed.data.email, enabled: true })
-  // Anti-enumeration: siempre OK aunque el email no exista
-  if (!owner) return c.json({ ok: true })
-
-  const token = randomBytes(32).toString('base64url')
-  const tokenHash = createHash('sha256').update(token).digest('hex')
-  const expiresAt = new Date(Date.now() + OWNER_RESET_TTL_MS)
-
-  await PasswordReset.deleteMany({ ownerId: owner._id })
-  await PasswordReset.create({
-    ownerId: owner._id,
-    tokenHash,
-    expiresAt,
-    requestedFromUa: c.req.header('user-agent'),
-  })
-
-  // Para el Owner panel el link va al deploy del owner panel, no al PWA.
-  // En prod (admin.misanpedro.app) usamos env.OWNER_APP_URL si está set,
-  // sino caemos a APP_URL_FRONT con prefijo /owner como convención.
-  const ownerUrl = (env as unknown as { OWNER_APP_URL?: string }).OWNER_APP_URL
-    ?? env.APP_URL_FRONT.replace(/\/?$/, '') + '/owner'
-  const resetLink = `${ownerUrl}/#/reset-password?token=${token}`
-  sendPasswordResetLink({
-    to: owner.email,
-    nombre: owner.nombre ?? owner.email.split('@')[0],
-    link: resetLink,
-  }).catch((err) => console.error('[owner-reset-email]', err))
-
-  return c.json({ ok: true })
-})
-
-const ownerResetSchema = z.object({
-  token: z.string().min(20),
-  newPassword: z.string().min(8, 'Mínimo 8 caracteres'),
-})
-
-ownerRoutes.post('/auth/reset-password', async (c) => {
-  const body = await c.req.json().catch(() => ({}))
-  const parsed = ownerResetSchema.safeParse(body)
-  if (!parsed.success) {
-    return c.json({ ok: false, error: 'invalid input', issues: parsed.error.format() }, 400)
-  }
-  const tokenHash = createHash('sha256').update(parsed.data.token).digest('hex')
-  const reset = await PasswordReset.findOne({ tokenHash })
-  if (!reset || reset.usedAt) return c.json({ ok: false, error: 'token inválido' }, 401)
-  if (reset.expiresAt.getTime() < Date.now()) {
-    return c.json({ ok: false, error: 'token expirado' }, 401)
-  }
-  if (!reset.ownerId) {
-    // Token de otro subject (merchantUser) — rechazo
-    return c.json({ ok: false, error: 'token inválido' }, 401)
-  }
-
-  const owner = await Owner.findById(reset.ownerId)
-  if (!owner || !owner.enabled) return c.json({ ok: false, error: 'owner not found' }, 404)
-
-  owner.passwordHash = await bcrypt.hash(parsed.data.newPassword, 10)
-  await owner.save()
-
-  reset.usedAt = new Date()
-  await reset.save()
-
-  await revokeAllForSubject(owner._id.toString())
-
-  return c.json({ ok: true })
-})
-
 /** Info del owner logueado. */
 ownerRoutes.get('/me', requireOwnerAuth, async (c) => {
   const auth = c.get('auth')
@@ -323,7 +204,6 @@ ownerRoutes.get('/me', requireOwnerAuth, async (c) => {
       email: owner.email,
       nombre: owner.nombre,
       rol: owner.rol,
-      totpEnabled: owner.totpEnabled,
       lastLoginAt: owner.lastLoginAt,
     },
   })

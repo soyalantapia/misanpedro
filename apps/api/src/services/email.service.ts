@@ -206,6 +206,49 @@ export async function sendOtpCode(to: string, code: string, appNombre = 'Mi Ciud
   })
 }
 
+/** Código OTP para el PANEL DE GESTIÓN (owner). Auth passwordless del owner. */
+export async function sendOwnerOtpCode(to: string, code: string) {
+  return sendEmail({
+    to,
+    fromName: 'Mi Ciudad · Gestión',
+    subject: `Tu código de acceso al panel: ${code}`,
+    html: wrap(
+      'Acceso al panel de gestión',
+      `
+        <p style="text-align:center;font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin:24px 0;color:#ea580c">${code}</p>
+        <p>Usalo para entrar al panel de gestión de Mi Ciudad. Vence en 5 minutos.</p>
+        <p style="font-size:13px;color:#8b8589">Si no pediste este código, ignorá este email y avisanos.</p>
+      `,
+      'Mi Ciudad · Gestión',
+    ),
+    text: `Tu código de acceso al panel de gestión: ${code}. Vence en 5 minutos.`,
+  })
+}
+
+/** Invitación a sumarse al equipo de gestión (multi-admin). El invitado entra
+ *  por OTP con su email, no necesita contraseña. */
+export async function sendOwnerTeamInvite(input: { to: string; nombre: string; rol: string; loginUrl?: string }) {
+  const cta = input.loginUrl
+    ? `<p style="text-align:center;margin:24px 0"><a href="${input.loginUrl}" style="background:#ea580c;color:#fff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:700">Entrar al panel</a></p>`
+    : ''
+  return sendEmail({
+    to: input.to,
+    fromName: 'Mi Ciudad · Gestión',
+    subject: 'Te sumaron al equipo de Mi Ciudad',
+    html: wrap(
+      `Hola ${input.nombre} 👋`,
+      `
+        <p>Te sumaron al equipo de gestión de <strong>Mi Ciudad</strong> con el rol <strong>${input.rol}</strong>.</p>
+        <p>Entrás con tu email <strong>${input.to}</strong> y un código que te llega al mail — no hace falta contraseña.</p>
+        ${cta}
+        <p style="font-size:13px;color:#8b8589">Si no esperabas esto, ignorá el email.</p>
+      `,
+      'Mi Ciudad · Gestión',
+    ),
+    text: `Te sumaron al equipo de gestión de Mi Ciudad con el rol ${input.rol}. Entrá con tu email ${input.to} y el código que te llega al mail.${input.loginUrl ? ' ' + input.loginUrl : ''}`,
+  })
+}
+
 // Stacks de fuentes seguras para email (sin depender de webfonts externas).
 const EMAIL_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
 const EMAIL_MONO = "ui-monospace,'SFMono-Regular',Menlo,Consolas,'Liberation Mono',monospace"

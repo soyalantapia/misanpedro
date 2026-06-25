@@ -9,27 +9,10 @@ type AuditAction = { action: string; at: string; ip?: string; detail?: string }
 
 export function SettingsPage() {
   const auth = useAuth()
-  // 2FA real: lo trae GET /owner/me (totpEnabled), no es un literal fijo.
-  const [twoFA, setTwoFA] = useState<boolean | null>(null)
 
   const [audit, setAudit] = useState<AuditAction[]>([])
   const [auditLoading, setAuditLoading] = useState(true)
   const [auditError, setAuditError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let alive = true
-    owner
-      .me()
-      .then((r) => {
-        if (alive) setTwoFA(!!r.owner?.totpEnabled)
-      })
-      .catch(() => {
-        if (alive) setTwoFA(null)
-      })
-    return () => {
-      alive = false
-    }
-  }, [])
 
   useEffect(() => {
     let alive = true
@@ -56,8 +39,6 @@ export function SettingsPage() {
     }
   }, [])
 
-  const twoFALabel = twoFA === null ? '—' : twoFA ? 'Activado' : 'No configurado'
-
   return (
     <div className="space-y-6">
       <PageHeader eyebrow="Configuración" title="Settings" subtitle="Cuenta del owner" />
@@ -70,12 +51,7 @@ export function SettingsPage() {
           <Field label="Nombre" value={auth.owner?.nombre} />
           <Field label="Email" value={auth.owner?.email} icon={Mail} />
           <Field label="Rol" value={auth.owner?.rol ?? 'super'} />
-          <Field
-            label="2FA"
-            value={twoFALabel}
-            icon={ShieldCheck}
-            accent={twoFA ? 'success' : undefined}
-          />
+          <Field label="Acceso" value="Código por email (OTP)" icon={ShieldCheck} accent="success" />
         </dl>
       </div>
 
