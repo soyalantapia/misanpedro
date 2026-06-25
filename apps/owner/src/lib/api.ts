@@ -157,6 +157,39 @@ export const owner = {
     }>('/api/v1/owner/metrics')
   },
 
+  // ─── Estadísticas (en vivo, cross-tenant) ─────────────────────
+  async stats() {
+    return api<{
+      ok: boolean
+      resumen: {
+        appsActivas: number
+        appsTotal: number
+        comerciosActivos: number
+        vecinos: number
+        ahorroTotal: number
+        suscripcionesActivas: number
+      }
+      mrr: {
+        byCurrency: Record<string, number>
+        byCity: { appId: string; ciudad: string; slug: string; moneda: string; mrr: number; suscripciones: number }[]
+        oculto?: boolean
+      }
+      comercios: { porEstado: Record<string, number>; enTrial: number }
+      altas: { comercios: { mes: string; n: number }[]; vecinos: { mes: string; n: number }[] }
+      canjesPorMes: { mes: string; canjes: number; ahorro: number }[]
+      topCiudades: { appId: string; ciudad: string; slug: string; canjes: number }[]
+      topComercios: { merchantId: string; nombre: string; canjes: number }[]
+      embudo: { conTrial: number; pagando: number }
+    }>('/api/v1/owner/stats')
+  },
+
+  async mrrTrend(days = 90) {
+    return api<{
+      ok: boolean
+      trend: { date: string; mrrByCurrency: Record<string, number>; comerciosActivos: number; suscripcionesActivas: number }[]
+    }>(`/api/v1/owner/stats/mrr-trend?days=${days}`)
+  },
+
   // ─── Apps ─────────────────────────────────────────────────────
   async listApps() {
     return api<{

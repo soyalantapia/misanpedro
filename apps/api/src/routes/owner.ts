@@ -12,8 +12,10 @@ import {
   Activation,
   Redemption,
   Subscription,
+  MrrSnapshot,
 } from '@/models'
 import { OWNER_ROLES } from '@/models/Owner'
+import { computeOwnerStats } from '@/services/ownerStats.service'
 import { toAsciiLabel } from '@/middleware/tenant'
 import {
   signAccessToken,
@@ -403,6 +405,46 @@ ownerRoutes.get('/metrics', requireOwnerAuth, async (c) => {
     },
   })
 })
+
+// ════════════════════════════════════════════════════════════════════
+//          ESTADÍSTICAS DE NEGOCIO (en vivo, cross-tenant)
+// ════════════════════════════════════════════════════════════════════
+
+/** Stats completas del negocio. soporte lo recibe SIN el bloque MRR (no ve pagos). */
+ownerRoutes.get('/stats', requireOwnerAuth, async (c) => {
+  const auth = c.get('auth') as { rol?: string }
+  const stats = await computeOwnerStats()
+  if (auth.rol === 'soporte') {
+    return c.json({ ...stats, mrr: { byCurrency: {}, byCity: [], oculto: true } })
+  }
+  return c.json(stats)
+})
+
+/** Tendencia de MRR a partir de los snapshots diarios (gráfico temporal). */
+ownerRoutes.get(
+  '/stats/mrr-trend',
+  requireOwnerAuth,
+  requireOwnerRole('super', 'admin', 'finanzas', 'viewer'),
+  async (c) => {
+    const days = Math.min(Math.max(Number(c.req.query('days')) || 90, 1), 365)
+    const desde = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    const snaps = await MrrSnapshot.find(
+      { date: { $gte: desde } },
+      'date mrrByCurrency comerciosActivos suscripcionesActivas',
+    )
+      .sort({ date: 1 })
+      .lean()
+    return c.json({
+      ok: true,
+      trend: snaps.map((s) => ({
+        date: s.date,
+        mrrByCurrency: s.mrrByCurrency ?? {},
+        comerciosActivos: s.comerciosActivos ?? 0,
+        suscripcionesActivas: s.suscripcionesActivas ?? 0,
+      })),
+    })
+  },
+)
 
 // ════════════════════════════════════════════════════════════════════
 //                          APPS CRUD

@@ -25,6 +25,7 @@ import { referralsRoutes } from '@/routes/referrals'
 import { pushRoutes } from '@/routes/push'
 import { seedIfEmpty } from '@/services/seed.service'
 import { startExpiryLoop, stopExpiryLoop } from '@/services/expiry.service'
+import { startSnapshotLoop, stopSnapshotLoop } from '@/services/ownerSnapshot.service'
 import { initWebPush } from '@/services/push.service'
 import { initSentry, captureException, flushSentry } from '@/services/sentry.service'
 import { httpsRedirect, requestId, securityHeaders } from '@/middleware/security'
@@ -371,6 +372,7 @@ async function bootstrap() {
     await seedIfEmpty()
     initWebPush()
     startExpiryLoop()
+    startSnapshotLoop()
   } catch (err) {
     console.error('[bootstrap] failed to connect DB; starting anyway:', err)
     captureException(err, { phase: 'bootstrap' })
@@ -402,6 +404,7 @@ async function shutdown(signal: string) {
 
   // 2) detener jobs background
   stopExpiryLoop()
+  stopSnapshotLoop()
 
   // 3) cerrar DB
   try {
