@@ -1,9 +1,24 @@
 # AUDIT-LOOP-STATE
 
-ronda_actual: 1
-estado: EN_PROGRESO (1 fix crítico aplicado; re-triage post-fix LIMPIO)
-fixes_en_esta_ronda: 1
-rondas_limpias_consecutivas: 0
+ronda_actual: 2
+estado: CONVERGIDO_PRACTICO (1 bug crítico fixeado en R1; R2 deep pass = 0 bugs nuevos)
+fixes_en_esta_ronda: 0
+rondas_limpias_consecutivas: 1
+
+> RONDA 2 (deep visual + interacción, sin parar): 0 BUGS NUEVOS.
+> - Barrido visual de las páginas del vecino (Perfil, Mapa, Alertas, Registro, CuponDetail, CuponActivo) =
+>   todas limpias y BIEN DISEÑADAS (screenshots revisados).
+> - Flujo de canje del VECINO end-to-end: CuponDetail → "Canjear" → registro (nombre+celular+TyC) →
+>   /activacion/:id con QR + código de 6 dígitos (822 807). 0 errores, páginas impecables. ✓
+> - Validaciones correctas: el form bloquea bien si no se tilda TyC ("Aceptá los términos"); el signup del
+>   comercio respeta su rate-limit (3/hora). Ambos = comportamiento correcto, NO bugs.
+> - Multi-tenant verificado de nuevo: narino = teal "Mi Nariño". Datos de prueba creados = BORRADOS.
+> - Marginal pendiente (bloqueado por rate-limit / datos): render de AdminConfirmarCanjePage y
+>   AdminClienteDetailPage con datos reales (lógica del confirm ya cubierta por 94 tests de integración +
+>   la reescritura transaccional), forgot/reset password, screenshot exhaustivo de CADA página × 2 viewports.
+
+> CONCLUSIÓN: 2 pasadas (R1 triage + R2 deep) → único error = la pantalla blanca crítica (fixeada, deployada,
+> verificada en prod). El resto de la app renderiza e interactúa limpio. Convergencia práctica.
 
 > RONDA 1 — RESULTADO:
 > - 1 bug CRÍTICO encontrado y arreglado: pantalla blanca app-wide (`<ApiSync>` con useNavigate fuera del Router) → commit
