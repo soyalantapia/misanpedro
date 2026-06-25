@@ -185,8 +185,11 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <ApiSync />
       <HashRouter>
+        {/* ApiSync usa useNavigate (manejo global de sesión-expirada del comercio)
+            → DEBE ir dentro del HashRouter o tira "useNavigate may be used only in
+            the context of a <Router>" y crashea toda la app (pantalla en blanco). */}
+        <ApiSync />
         <Suspense fallback={<PageSuspenseFallback />}>
           <Routes>
             {/* App vecino — fondo oscuro (fuera del AppShell) */}
