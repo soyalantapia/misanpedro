@@ -13,15 +13,21 @@ import {
   Redemption,
   Subscription,
 } from '@/models'
+import { OWNER_ROLES } from '@/models/Owner'
 import { toAsciiLabel } from '@/middleware/tenant'
 import {
   signAccessToken,
   issueRefreshToken,
   rotateRefreshToken,
   revokeRefreshToken,
+  revokeAllForSubject,
 } from '@/services/jwt.service'
-import { sendOwnerNewAppNotice, sendOwnerOtpCode } from '@/services/email.service'
-import { requireOwnerAuth } from '@/middleware/auth'
+import {
+  sendOwnerNewAppNotice,
+  sendOwnerOtpCode,
+  sendOwnerTeamInvite,
+} from '@/services/email.service'
+import { requireOwnerAuth, requireOwnerRole } from '@/middleware/auth'
 import { rateLimit } from '@/middleware/security'
 
 export const ownerRoutes = new Hono()
@@ -219,6 +225,141 @@ ownerRoutes.get('/me/audit', requireOwnerAuth, async (c) => {
 })
 
 // ════════════════════════════════════════════════════════════════════
+//              EQUIPO (multi-admin con roles — solo super)
+// ════════════════════════════════════════════════════════════════════
+
+const inviteAdminSchema = z.object({
+  email: z.string().email().toLowerCase(),
+  nombre: z.string().min(2).max(80),
+  rol: z.enum(OWNER_ROLES),
+})
+const updateAdminSchema = z.object({
+  rol: z.enum(OWNER_ROLES).optional(),
+  enabled: z.boolean().optional(),
+})
+
+/** Lista de administradores del panel. */
+ownerRoutes.get('/admins', requireOwnerAuth, requireOwnerRole('super'), async (c) => {
+  const admins = await Owner.find(
+    {},
+    'email nombre rol enabled lastLoginAt invitedAt createdAt',
+  )
+    .sort({ createdAt: 1 })
+    .lean()
+  return c.json({
+    ok: true,
+    admins: admins.map((a) => ({
+      id: String(a._id),
+      email: a.email,
+      nombre: a.nombre,
+      rol: a.rol,
+      enabled: a.enabled,
+      lastLoginAt: a.lastLoginAt,
+      invitedAt: a.invitedAt,
+      createdAt: a.createdAt,
+    })),
+  })
+})
+
+/** Invitar un nuevo administrador (entra por OTP con su email, sin contraseña). */
+ownerRoutes.post('/admins', requireOwnerAuth, requireOwnerRole('super'), async (c) => {
+  const auth = c.get('auth')
+  const parsed = inviteAdminSchema.safeParse(await c.req.json().catch(() => ({})))
+  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
+  const { email, nombre, rol } = parsed.data
+
+  const existing = await Owner.findOne({ email })
+  if (existing) return c.json({ ok: false, error: 'Ya existe un administrador con ese email' }, 409)
+
+  const admin = await Owner.create({
+    email,
+    nombre,
+    rol,
+    enabled: true,
+    invitedByOwnerId: auth.sub,
+    invitedAt: new Date(),
+  })
+  const ip = c.req.header('x-forwarded-for') || ''
+  await logOwnerAction(String(auth.sub), 'admin.invite', ip, `${email} · ${rol}`)
+  const ownerUrl = process.env.OWNER_APP_URL || undefined
+  sendOwnerTeamInvite({ to: email, nombre, rol, loginUrl: ownerUrl }).catch((err) =>
+    console.error('[owner-invite-email]', err),
+  )
+  return c.json({
+    ok: true,
+    admin: { id: String(admin._id), email, nombre, rol, enabled: true },
+  })
+})
+
+/** Cambiar rol / habilitar-deshabilitar un administrador. Guard "último super". */
+ownerRoutes.patch('/admins/:id', requireOwnerAuth, requireOwnerRole('super'), async (c) => {
+  const auth = c.get('auth')
+  const id = c.req.param('id')
+  if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'no encontrado' }, 404)
+  const parsed = updateAdminSchema.safeParse(await c.req.json().catch(() => ({})))
+  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
+  const target = await Owner.findById(id)
+  if (!target) return c.json({ ok: false, error: 'no encontrado' }, 404)
+  const { rol, enabled } = parsed.data
+
+  // Guard "último super": no degradar/deshabilitar al único super enabled.
+  const degradaUltimoSuper =
+    target.rol === 'super' && ((rol !== undefined && rol !== 'super') || enabled === false)
+  if (degradaUltimoSuper) {
+    const supersActivos = await Owner.countDocuments({ rol: 'super', enabled: true })
+    if (supersActivos <= 1) {
+      return c.json({ ok: false, error: 'No podés degradar/deshabilitar al último super-admin' }, 409)
+    }
+  }
+
+  const rolCambia = rol !== undefined && rol !== target.rol
+  if (rol !== undefined) target.rol = rol
+  if (enabled !== undefined) target.enabled = enabled
+  await target.save()
+  // Si se deshabilita o cambia el rol, cortamos sus sesiones (el access muere en ≤1h).
+  if (enabled === false || rolCambia) {
+    await revokeAllForSubject(String(target._id)).catch(() => {})
+  }
+  const ip = c.req.header('x-forwarded-for') || ''
+  await logOwnerAction(
+    String(auth.sub),
+    enabled === false ? 'admin.disable' : 'admin.role-change',
+    ip,
+    `${target.email} · ${target.rol}${enabled === false ? ' (deshabilitado)' : ''}`,
+  )
+  return c.json({
+    ok: true,
+    admin: {
+      id: String(target._id),
+      email: target.email,
+      nombre: target.nombre,
+      rol: target.rol,
+      enabled: target.enabled,
+    },
+  })
+})
+
+/** Eliminar = soft-disable (preserva el audit). Mismo guard "último super". */
+ownerRoutes.delete('/admins/:id', requireOwnerAuth, requireOwnerRole('super'), async (c) => {
+  const auth = c.get('auth')
+  const id = c.req.param('id')
+  if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'no encontrado' }, 404)
+  if (String(auth.sub) === id) return c.json({ ok: false, error: 'No podés eliminarte a vos mismo' }, 409)
+  const target = await Owner.findById(id)
+  if (!target) return c.json({ ok: false, error: 'no encontrado' }, 404)
+  if (target.rol === 'super') {
+    const supersActivos = await Owner.countDocuments({ rol: 'super', enabled: true })
+    if (supersActivos <= 1) return c.json({ ok: false, error: 'No podés eliminar al último super-admin' }, 409)
+  }
+  target.enabled = false
+  await target.save()
+  await revokeAllForSubject(String(target._id)).catch(() => {})
+  const ip = c.req.header('x-forwarded-for') || ''
+  await logOwnerAction(String(auth.sub), 'admin.disable', ip, `${target.email} (eliminado)`)
+  return c.json({ ok: true })
+})
+
+// ════════════════════════════════════════════════════════════════════
 //                       DASHBOARD GLOBAL
 // ════════════════════════════════════════════════════════════════════
 
@@ -367,7 +508,7 @@ const createAppSchema = z.object({
 })
 
 /** Crea una nueva app (ciudad). Genera el subdomain default = slug. */
-ownerRoutes.post('/apps', requireOwnerAuth, async (c) => {
+ownerRoutes.post('/apps', requireOwnerAuth, requireOwnerRole('super', 'admin'), async (c) => {
   const parsed = createAppSchema.safeParse(await c.req.json().catch(() => ({})))
   if (!parsed.success) {
     return c.json({ ok: false, error: 'invalid input', detail: parsed.error.flatten() }, 400)
@@ -488,7 +629,7 @@ const updateAppSchema = z.object({
 })
 
 /** Actualiza una app. */
-ownerRoutes.patch('/apps/:id', requireOwnerAuth, async (c) => {
+ownerRoutes.patch('/apps/:id', requireOwnerAuth, requireOwnerRole('super', 'admin'), async (c) => {
   const parsed = updateAppSchema.safeParse(await c.req.json().catch(() => ({})))
   if (!parsed.success) {
     return c.json({ ok: false, error: 'invalid input', detail: parsed.error.flatten() }, 400)
@@ -581,7 +722,7 @@ ownerRoutes.get('/merchants', requireOwnerAuth, async (c) => {
 
 /** Suspender / reactivar un comercio desde el owner. */
 const merchantActionSchema = z.object({ estado: z.enum(['activo', 'suspendido']) })
-ownerRoutes.patch('/merchants/:id', requireOwnerAuth, async (c) => {
+ownerRoutes.patch('/merchants/:id', requireOwnerAuth, requireOwnerRole('super', 'admin', 'soporte'), async (c) => {
   const auth = c.get('auth')
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
@@ -634,7 +775,7 @@ ownerRoutes.get('/users', requireOwnerAuth, async (c) => {
 // ════════════════════════════════════════════════════════════════════
 
 /** Listado de suscripciones con filtros. */
-ownerRoutes.get('/subscriptions', requireOwnerAuth, async (c) => {
+ownerRoutes.get('/subscriptions', requireOwnerAuth, requireOwnerRole('super', 'admin', 'finanzas', 'viewer'), async (c) => {
   const url = new URL(c.req.url)
   const appId = url.searchParams.get('appId')
   const status = url.searchParams.get('status')
@@ -661,7 +802,7 @@ ownerRoutes.get('/subscriptions', requireOwnerAuth, async (c) => {
 
 /** Pausar / cancelar / reactivar una suscripción desde el owner. */
 const subscriptionActionSchema = z.object({ status: z.enum(['authorized', 'paused', 'cancelled']) })
-ownerRoutes.patch('/subscriptions/:id', requireOwnerAuth, async (c) => {
+ownerRoutes.patch('/subscriptions/:id', requireOwnerAuth, requireOwnerRole('super', 'admin', 'finanzas'), async (c) => {
   const auth = c.get('auth')
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)

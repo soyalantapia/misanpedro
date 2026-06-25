@@ -84,6 +84,25 @@ export const requireOwnerAuth: MiddlewareHandler = async (c, next) => {
 }
 
 /**
+ * RBAC del owner: exige que el rol del token esté en `roles`. Asume que
+ * `requireOwnerAuth` corrió antes (lee c.get('auth').rol). El BACK es la fuente
+ * de verdad de los permisos — el front sólo oculta lo que no se puede.
+ * Roles: super | admin | finanzas | soporte | viewer (ver la matriz en
+ * routes/owner.ts). El access token vive ≤1h y el refresh re-lee el rol de DB,
+ * así que un cambio de rol propaga en ≤1h sin pegarle a la DB en cada request.
+ */
+export const requireOwnerRole =
+  (...roles: string[]): MiddlewareHandler =>
+  async (c, next) => {
+    const auth = c.get('auth') as { type?: string; rol?: string } | undefined
+    if (!auth || auth.type !== 'owner') return c.json({ ok: false, error: 'forbidden' }, 403)
+    if (!roles.includes(auth.rol ?? '')) {
+      return c.json({ ok: false, error: 'forbidden', rolRequerido: roles }, 403)
+    }
+    await next()
+  }
+
+/**
  * Verifica que el merchant del JWT esté en estado OPERATIVO (activo o
  * pending_payment). Bloquea endpoints "productivos" cuando el comercio:
  *   - canceló su suscripción         (estado='cancelado')
