@@ -37,6 +37,21 @@ let state: State = load()
 const listeners = new Set<() => void>()
 const notify = () => listeners.forEach((fn) => fn())
 
+// Sincronización entre PESTAÑAS: el `state` vive en memoria del módulo, así que un
+// login/logout o una expiración en otra tab no se veía acá (tab B seguía mostrando
+// el panel logueado tras un logout en tab A — caja compartida del comercio). Al
+// cambiar el STORAGE_KEY o los tokens del comercio en otra tab, recargamos el
+// estado desde localStorage y notificamos para que todas las pestañas coincidan.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    const relevant =
+      e.key === null || e.key === STORAGE_KEY || e.key.startsWith('msp.tok.merchant')
+    if (!relevant) return
+    state = load()
+    notify()
+  })
+}
+
 function update(updater: (s: State) => State) {
   state = updater(state)
   persist(state)

@@ -218,9 +218,9 @@ export function AdminCuponesPage() {
                           type="button"
                           onClick={() => setOpenMenuId(menuOpen ? null : c.id)}
                           aria-label="Acciones"
-                          className="grid h-7 w-7 place-items-center rounded-full text-ink-faint hover:bg-surface-2 hover:text-ink"
+                          className="-mr-1.5 grid h-10 w-10 place-items-center rounded-full text-ink-faint hover:bg-surface-2 hover:text-ink"
                         >
-                          <MoreVertical size={14} />
+                          <MoreVertical size={18} />
                         </button>
                         {menuOpen && (
                           <>
