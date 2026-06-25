@@ -230,29 +230,49 @@ redemptionsRoutes.post('/confirm', confirmLimiter, requireMerchantAuth, requireM
   }
 
   // Recién con el Redemption creado cerramos el canje: marcamos la activación y
-  // ajustamos el stock del cupón.
-  activation.status = 'canjeado'
-  activation.redeemedAt = redeemedAt
-  activation.montoTicket = montoEfectivo
-  activation.ahorroEstimado = ahorroEstimado
-  await activation.save()
+  // ajustamos el stock del cupón. Si ALGO de este cierre falla (Mongo blip,
+  // VersionError en activation.save, etc.) con el Redemption YA creado, COMPENSAMOS
+  // de forma simétrica: revertimos la activación a 'activo', borramos el Redemption
+  // y devolvemos el stock reclamado. Sin esto quedaría un estado inconsistente —
+  // canje registrado (lo ven stats/clientes del comercio) pero activación 'activo'
+  // (el vecino nunca ve 'canjeado' y un reintento del cajero choca el índice único
+  // → 409 'ya canjeado'). Con la compensación, el reintento queda LIMPIO. (Mongo de
+  // Railway es standalone → no podemos usar session.withTransaction.)
+  try {
+    activation.status = 'canjeado'
+    activation.redeemedAt = redeemedAt
+    activation.montoTicket = montoEfectivo
+    activation.ahorroEstimado = ahorroEstimado
+    await activation.save()
 
-  if (coupon.stockMaximo != null) {
-    // Si este canje consumió la última unidad, marcamos 'agotado' — chequeo
-    // ATÓMICO sobre el stockUsado REAL actual (no una lectura vieja del claim),
-    // así un doble-tap compensado no deja el cupón 'agotado' con stock libre.
-    await Coupon.updateOne(
-      {
-        _id: coupon._id,
-        appId,
-        estado: 'activo',
-        $expr: { $gte: [{ $ifNull: ['$stockUsado', 0] }, '$stockMaximo'] },
-      },
-      { estado: 'agotado' },
-    )
-  } else {
-    // Sin tope de stock: contamos el uso igual.
-    await Coupon.updateOne({ _id: coupon._id, appId }, { $inc: { stockUsado: 1 } })
+    if (coupon.stockMaximo != null) {
+      // Si este canje consumió la última unidad, marcamos 'agotado' — chequeo
+      // ATÓMICO sobre el stockUsado REAL actual (no una lectura vieja del claim),
+      // así un doble-tap compensado no deja el cupón 'agotado' con stock libre.
+      await Coupon.updateOne(
+        {
+          _id: coupon._id,
+          appId,
+          estado: 'activo',
+          $expr: { $gte: [{ $ifNull: ['$stockUsado', 0] }, '$stockMaximo'] },
+        },
+        { estado: 'agotado' },
+      )
+    } else {
+      // Sin tope de stock: contamos el uso igual.
+      await Coupon.updateOne({ _id: coupon._id, appId }, { $inc: { stockUsado: 1 } })
+    }
+  } catch (closeErr) {
+    // Compensación: deshacemos el canje a medias para que el reintento sea limpio.
+    await Activation.updateOne(
+      { _id: activation._id, appId },
+      { status: 'activo', $unset: { redeemedAt: '', montoTicket: '', ahorroEstimado: '' } },
+    ).catch(() => {})
+    await Redemption.deleteOne({ _id: redemption._id, appId }).catch(() => {})
+    if (claimedStock) {
+      await Coupon.updateOne({ _id: coupon._id, appId }, { $inc: { stockUsado: -1 } }).catch(() => {})
+    }
+    throw closeErr
   }
 
   // Email + event (no bloqueante)
@@ -283,7 +303,7 @@ redemptionsRoutes.post('/confirm', confirmLimiter, requireMerchantAuth, requireM
             couponTitulo: coupon.titulo,
             userNombre: user.nombre,
             ahorroEstimado,
-            montoTicket,
+            montoTicket: montoEfectivo,
             redeemedAt: activation.redeemedAt!.toISOString(),
           },
         })
@@ -299,7 +319,7 @@ redemptionsRoutes.post('/confirm', confirmLimiter, requireMerchantAuth, requireM
       id: redemption._id.toString(),
       activationId: activation._id.toString(),
       couponId: coupon._id.toString(),
-      montoTicket,
+      montoTicket: montoEfectivo,
       ahorroEstimado,
       redeemedAt: activation.redeemedAt.toISOString(),
     },
