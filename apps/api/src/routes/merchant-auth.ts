@@ -356,6 +356,17 @@ merchantAuthRoutes.post('/refresh', async (c) => {
   const user = await MerchantUser.findOne({ _id: consumed.subjectId, appId })
   if (!user) return c.json({ ok: false, error: 'user not found' }, 401)
 
+  // Re-chequeo del estado del comercio en CADA refresh (mismo gate que verify-otp).
+  // El refresh del comercio no expira nunca; sin esto, un comercio suspendido o
+  // cancelado seguiría minteando access tokens válidos para siempre y conservaría
+  // acceso de LECTURA a la PII de sus clientes (clientes/stats/recent).
+  const merchant = await Merchant.findOne({ appId, _id: user.merchantId })
+  if (!merchant) return c.json({ ok: false, error: 'comercio no encontrado' }, 401)
+  if (merchant.estado === 'suspendido' || merchant.estado === 'cancelado') {
+    await revokeRefreshToken(refreshToken).catch(() => {})
+    return c.json({ ok: false, error: `cuenta ${merchant.estado}`, estado: merchant.estado }, 403)
+  }
+
   const accessToken = signAccessToken({
     sub: user._id.toString(),
     type: 'merchant_user',

@@ -21,6 +21,8 @@ redemptionsRoutes.use('*', tenantContext)
 
 // Anti-brute force de códigos: 60 validates por minuto por comercio
 const validateLimiter = rateLimit({ prefix: 'validate', max: 60, windowMs: 60_000 })
+// /confirm muta estado (stock, canje) — también con rate-limit (antes no tenía).
+const confirmLimiter = rateLimit({ prefix: 'confirm', max: 60, windowMs: 60_000 })
 
 function serializeForValidation(
   activation: any,
@@ -120,7 +122,7 @@ redemptionsRoutes.post('/validate', validateLimiter, requireMerchantAuth, requir
 })
 
 // POST /redemptions/confirm — confirmar canje
-redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, async (c) => {
+redemptionsRoutes.post('/confirm', confirmLimiter, requireMerchantAuth, requireMerchantActive, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')
   const tenant = c.get('tenant')
@@ -168,8 +170,8 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
     )
   }
 
-  // Stock máximo: claim ATÓMICO antes de confirmar. $inc condicional a que
-  // stockUsado < stockMaximo → dos canjes concurrentes no pueden pasarse del
+  // Stock máximo: claim ATÓMICO antes de crear el Redemption. $inc condicional a
+  // que stockUsado < stockMaximo → dos canjes concurrentes no pueden pasarse del
   // tope. Si no queda stock, marcamos 'agotado' y bloqueamos. stockMaximo
   // null/undefined = sin tope (igual contamos el uso más abajo).
   let claimedStock = false
@@ -184,10 +186,6 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
       return c.json({ ok: false, error: 'el cupón está agotado', status: 'agotado' }, 409)
     }
     claimedStock = true
-    // Si este canje consumió la última unidad, dejamos el cupón 'agotado'.
-    if (claimed.stockMaximo != null && (claimed.stockUsado ?? 0) >= claimed.stockMaximo) {
-      await Coupon.updateOne({ _id: coupon._id, appId }, { estado: 'agotado' })
-    }
   }
 
   // PM-elite T1: el monto es OPCIONAL. Si el cajero no lo tipeó, usamos el
@@ -197,13 +195,13 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
   const montoEfectivo = montoTicket ?? coupon.precioReferencia ?? undefined
   // Ahorro por tipo de oferta (precio_fijo = diferencia; resto = % del ticket).
   const ahorroEstimado = calcAhorroCanje(coupon, montoEfectivo ?? 0)
+  const redeemedAt = new Date()
 
-  activation.status = 'canjeado'
-  activation.redeemedAt = new Date()
-  activation.montoTicket = montoEfectivo
-  activation.ahorroEstimado = ahorroEstimado
-  await activation.save()
-
+  // ORDEN IMPORTANTE: el Redemption se crea PRIMERO. Su índice único {activationId}
+  // es el guard de doble-canje, y crearlo antes de mutar la activación/cupón evita
+  // estados corruptos si falla: (a) activación 'canjeado' SIN Redemption (código
+  // quemado + canje perdido), (b) stock marcado 'agotado' que no se revierte. Si
+  // falla, sólo compensamos el stock reclamado; la activación sigue 'activo'.
   let redemption
   try {
     redemption = await Redemption.create({
@@ -215,28 +213,45 @@ redemptionsRoutes.post('/confirm', requireMerchantAuth, requireMerchantActive, a
       merchantUserId: auth.sub,
       montoTicket: montoEfectivo,
       ahorroEstimado,
-      redeemedAt: activation.redeemedAt,
+      redeemedAt,
     })
   } catch (err) {
-    // Carrera / doble-tap: el índice único {activationId} garantiza UN solo
-    // canje. Si otra confirmación simultánea ya lo registró, devolvemos un
-    // "ya canjeado" limpio en vez de un 500 con el error crudo de Mongo.
-    if ((err as { code?: number })?.code === 11000) {
-      // Compensamos el stock reclamado: este canje no se concretó (doble-tap).
-      if (claimedStock) {
-        await Coupon.updateOne({ _id: coupon._id, appId }, { $inc: { stockUsado: -1 } }).catch(() => {})
-      }
-      return c.json({ ok: false, error: 'ya canjeado' }, 409)
-    }
+    // Falló el registro del canje → devolvemos el stock reclamado. NO tocamos la
+    // activación (sigue 'activo': el código del vecino se puede reusar).
     if (claimedStock) {
       await Coupon.updateOne({ _id: coupon._id, appId }, { $inc: { stockUsado: -1 } }).catch(() => {})
+    }
+    // Carrera / doble-tap: el índice único garantiza UN solo canje. Si otra
+    // confirmación simultánea ya lo registró → "ya canjeado" limpio (no 500).
+    if ((err as { code?: number })?.code === 11000) {
+      return c.json({ ok: false, error: 'ya canjeado' }, 409)
     }
     throw err
   }
 
-  // Sin tope de stock: contamos el uso igual. Con tope, ya se incrementó
-  // atómicamente en el claim de arriba.
-  if (coupon.stockMaximo == null) {
+  // Recién con el Redemption creado cerramos el canje: marcamos la activación y
+  // ajustamos el stock del cupón.
+  activation.status = 'canjeado'
+  activation.redeemedAt = redeemedAt
+  activation.montoTicket = montoEfectivo
+  activation.ahorroEstimado = ahorroEstimado
+  await activation.save()
+
+  if (coupon.stockMaximo != null) {
+    // Si este canje consumió la última unidad, marcamos 'agotado' — chequeo
+    // ATÓMICO sobre el stockUsado REAL actual (no una lectura vieja del claim),
+    // así un doble-tap compensado no deja el cupón 'agotado' con stock libre.
+    await Coupon.updateOne(
+      {
+        _id: coupon._id,
+        appId,
+        estado: 'activo',
+        $expr: { $gte: [{ $ifNull: ['$stockUsado', 0] }, '$stockMaximo'] },
+      },
+      { estado: 'agotado' },
+    )
+  } else {
+    // Sin tope de stock: contamos el uso igual.
     await Coupon.updateOne({ _id: coupon._id, appId }, { $inc: { stockUsado: 1 } })
   }
 
