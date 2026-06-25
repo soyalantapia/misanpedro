@@ -324,7 +324,11 @@ function toLegacyResult(
   // status a un error distinto para NO decirle al vecino "ya lo usaste" cuando
   // en realidad el cupón está pausado / vencido / cancelado.
   let reason: string
-  if (v.reason === '404') {
+  if (v.reason === 'network') {
+    // Microcorte de conexión (el cajero valida con datos móviles): NO es que el
+    // código sea inválido. Mostramos 'sin conexión / reintentá', no 'inexistente'.
+    reason = 'offline'
+  } else if (v.reason === '404') {
     reason = 'not-found'
   } else if (v.reason === '403') {
     reason = 'wrong-merchant'
@@ -388,6 +392,11 @@ function errorCopy(reason: string): { title: string; hint: string } {
       return {
         title: 'Este descuento fue cancelado',
         hint: 'El cliente lo canceló desde su app. Puede reactivarlo si quiere usarlo.',
+      }
+    case 'offline':
+      return {
+        title: 'Sin conexión · Reintentá',
+        hint: 'No pudimos verificar el código por un corte de señal. El código puede ser válido — probá de nuevo en unos segundos.',
       }
     case 'not-found':
     default:

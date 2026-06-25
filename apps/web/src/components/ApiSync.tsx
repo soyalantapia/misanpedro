@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api, tokens } from '@/lib/api'
 import { getUserSnapshot, userActions } from '@/lib/stores'
 import { merchantAuth } from '@/lib/merchantStore'
@@ -21,6 +22,28 @@ import { syncMyActivations } from '@/lib/syncActivations'
  * No hace nada si no hay token o si el backend está caído (queda silencioso).
  */
 export function ApiSync() {
+  const navigate = useNavigate()
+
+  // Manejo GLOBAL de expiración de sesión del comercio. El cliente HTTP dispara
+  // `msp:session-expired` cuando el refresh falla. Antes el listener vivía sólo en
+  // MerchantShell, así que NO cubría rutas fuera del shell — en particular
+  // /admin/canje/:id (confirmar canje), la acción más crítica del comercio, donde
+  // la expiración dejaba al cajero en una página muerta. Acá (ApiSync, siempre
+  // montado) cubre TODAS las rutas. El guard `handled` evita el loop de re-entrada
+  // (logout() → tokens.clear() → re-dispatch de session-expired).
+  useEffect(() => {
+    let handled = false
+    const onMerchantExpired = (e: Event) => {
+      const detail = (e as CustomEvent<{ subject?: string }>).detail
+      if (detail?.subject !== 'merchant' || handled) return
+      handled = true
+      void merchantAuth.logout()
+      navigate('/admin/login?reason=expired', { replace: true })
+    }
+    window.addEventListener('msp:session-expired', onMerchantExpired)
+    return () => window.removeEventListener('msp:session-expired', onMerchantExpired)
+  }, [navigate])
+
   useEffect(() => {
     async function sync() {
       let cancelled = false

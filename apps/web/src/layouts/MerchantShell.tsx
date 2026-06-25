@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { Outlet, NavLink, Navigate, useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -61,19 +60,10 @@ export function MerchantShell() {
     `Soporte comercio ${appName()}`,
   )
 
-  // Si en cualquier momento se pierde la sesión (refresh token falló, etc.),
-  // el cliente HTTP dispara `msp:session-expired`. Limpiamos sesión local y
-  // redirigimos al login con flag para mostrar mensaje "Tu sesión expiró".
-  useEffect(() => {
-    const onExpired = (e: Event) => {
-      const detail = (e as CustomEvent<{ subject: string }>).detail
-      if (detail?.subject !== 'merchant') return
-      void merchantAuth.logout()
-      navigate('/admin/login?reason=expired', { replace: true })
-    }
-    window.addEventListener('msp:session-expired', onExpired)
-    return () => window.removeEventListener('msp:session-expired', onExpired)
-  }, [navigate])
+  // La expiración de sesión del comercio (`msp:session-expired`) la maneja ApiSync
+  // de forma GLOBAL, así cubre también las rutas fuera de este shell (en especial
+  // /admin/canje/:id, confirmar canje), donde antes el cajero quedaba en página
+  // muerta porque este listener no estaba montado.
 
   if (!session) return <Navigate to="/admin/login" replace />
 

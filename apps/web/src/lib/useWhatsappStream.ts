@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { tokens } from './api'
+import { api, tokens } from './api'
 import { useMerchantSession } from './merchantStore'
 
 export type WaStatus =
@@ -62,15 +62,34 @@ export function useWhatsappStream() {
       setState(initial)
       return
     }
-    const access = tokens.get('merchant').access
-    if (!access) return
-
     let stopped = false
+
+    // Reconexión: ANTES de reabrir, refrescamos el access (rota cada 1h; un error
+    // de SSE suele ser token vencido). me() pasa por api.ts → auto-refresh en 401;
+    // si el refresh falla, dispara session-expired y ApiSync redirige al login. Sin
+    // esto, el stream moría a la hora y reintentaba para siempre con el token muerto.
+    function scheduleReconnect() {
+      if (stopped) return
+      if (retryRef.current) window.clearTimeout(retryRef.current)
+      retryRef.current = window.setTimeout(() => {
+        void api.merchantApi
+          .me()
+          .catch(() => {})
+          .finally(() => open())
+      }, 5000)
+    }
 
     function open() {
       if (stopped) return
+      // Re-leemos el token en CADA (re)conexión (no un snapshot del montaje), para
+      // tomar el access ya refrescado.
+      const access = tokens.get('merchant').access
+      if (!access) {
+        scheduleReconnect()
+        return
+      }
       const url = `${API_URL.replace(/\/$/, '')}/api/v1/wa/stream?token=${encodeURIComponent(
-        access!,
+        access,
       )}`
       const es = new EventSource(url)
       esRef.current = es
@@ -133,9 +152,7 @@ export function useWhatsappStream() {
       es.onerror = () => {
         es.close()
         esRef.current = null
-        if (stopped) return
-        if (retryRef.current) window.clearTimeout(retryRef.current)
-        retryRef.current = window.setTimeout(open, 5000)
+        scheduleReconnect()
       }
     }
 

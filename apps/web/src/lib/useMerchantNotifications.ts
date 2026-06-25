@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { tokens } from './api'
+import { api, tokens } from './api'
 import { useMerchantSession } from './merchantStore'
 
 export type MerchantNotifEvent = {
@@ -65,15 +65,31 @@ export function useMerchantNotifications() {
       esRef.current = null
       return
     }
-    const access = tokens.get('merchant').access
-    if (!access) return
-
     let stopped = false
+
+    // Reconexión con refresh del access (rota cada 1h). Sin esto, el stream de
+    // notificaciones moría a la hora y reintentaba para siempre con el token muerto.
+    function scheduleReconnect() {
+      if (stopped) return
+      if (retryRef.current) window.clearTimeout(retryRef.current)
+      retryRef.current = window.setTimeout(() => {
+        void api.merchantApi
+          .me()
+          .catch(() => {})
+          .finally(() => open())
+      }, 5000)
+    }
 
     function open() {
       if (stopped) return
+      // Re-leemos el token en cada (re)conexión, no un snapshot del montaje.
+      const access = tokens.get('merchant').access
+      if (!access) {
+        scheduleReconnect()
+        return
+      }
       const url = `${API_URL.replace(/\/$/, '')}/api/v1/notifications/stream?token=${encodeURIComponent(
-        access!,
+        access,
       )}`
       const es = new EventSource(url)
       esRef.current = es
@@ -104,10 +120,7 @@ export function useMerchantNotifications() {
       es.onerror = () => {
         es.close()
         esRef.current = null
-        if (stopped) return
-        // Reintento con backoff simple a 5s
-        if (retryRef.current) window.clearTimeout(retryRef.current)
-        retryRef.current = window.setTimeout(open, 5000)
+        scheduleReconnect()
       }
     }
 
