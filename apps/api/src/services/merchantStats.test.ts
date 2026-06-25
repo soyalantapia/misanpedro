@@ -116,3 +116,26 @@ describe('computeAsesorStats — otros períodos', () => {
     expect(s.cuandoVienen.reduce((a, d) => a + d.canjes, 0)).toBe(0)
   })
 })
+
+describe('timezone del comercio (no la del server)', () => {
+  // Canje a las 23:30 de Argentina (UTC-3) del miércoles 10/06 = jueves 11/06 02:30 UTC.
+  const canjeNocturno = [
+    { userId: 'A', couponId: cX, montoTicket: 100, redeemedAt: new Date('2026-06-11T02:30:00Z') },
+  ]
+  const nowJun = new Date('2026-06-15T12:00:00Z')
+
+  it("histograma por día usa la TZ del comercio: cuenta el canje en MIÉ (no JUE de UTC)", () => {
+    const ar = computeAsesorStats(canjeNocturno, 'mes', nowJun, 'America/Argentina/Buenos_Aires')
+    expect(ar.cuandoVienen.find((d) => d.dia === 'mie')?.canjes).toBe(1)
+    expect(ar.cuandoVienen.find((d) => d.dia === 'jue')?.canjes).toBe(0)
+  })
+
+  it('borde de mes en la TZ del comercio: 30/06 22:00 ART (=01/07 01:00 UTC) cuenta en JUNIO', () => {
+    const canje = [
+      { userId: 'A', couponId: cX, montoTicket: 500, redeemedAt: new Date('2026-07-01T01:00:00Z') },
+    ]
+    const now = new Date('2026-06-30T23:00:00Z') // 30/06 20:00 ART
+    const ar = computeAsesorStats(canje, 'mes', now, 'America/Argentina/Buenos_Aires')
+    expect(ar.cuandoVienen.reduce((a, d) => a + d.canjes, 0)).toBe(1)
+  })
+})

@@ -17,16 +17,79 @@ export interface StatsRedemption {
 
 export const DIAS_SEMANA = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'] as const
 
-/** Rango [start, end) del período + el período anterior del MISMO largo. */
+/**
+ * IANA timezone por país (los países soportados hoy — AR/CO/etc. — no observan
+ * DST, así que el offset es estable). Fallback: Argentina. Las stats por fecha se
+ * calculan en la zona del comercio, no en la del server (Railway corre en UTC).
+ */
+const TZ_POR_PAIS: Record<string, string> = {
+  Argentina: 'America/Argentina/Buenos_Aires',
+  Colombia: 'America/Bogota',
+  Chile: 'America/Santiago',
+  México: 'America/Mexico_City',
+  Mexico: 'America/Mexico_City',
+  Uruguay: 'America/Montevideo',
+  Perú: 'America/Lima',
+  Peru: 'America/Lima',
+}
+export function tzForPais(pais?: string | null): string {
+  return (pais && TZ_POR_PAIS[pais]) || 'America/Argentina/Buenos_Aires'
+}
+
+/** Offset (ms) de una timezone en un instante dado: hora_local = UTC + offset. */
+function tzOffsetMs(d: Date, timeZone: string): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+  const p: Record<string, string> = {}
+  for (const part of dtf.formatToParts(d)) p[part.type] = part.value
+  const hour = p.hour === '24' ? 0 : Number(p.hour)
+  const asUTC = Date.UTC(
+    Number(p.year),
+    Number(p.month) - 1,
+    Number(p.day),
+    hour,
+    Number(p.minute),
+    Number(p.second),
+  )
+  return asUTC - d.getTime()
+}
+
+/** Día de semana (0=dom..6=sab) del instante EN la timezone (local si no hay tz). */
+function weekdayIn(d: Date, timeZone?: string): number {
+  if (!timeZone) return d.getDay()
+  return new Date(d.getTime() + tzOffsetMs(d, timeZone)).getUTCDay()
+}
+
+/** Instante UTC del comienzo (00:00) del mes de `now` desplazado `delta` meses,
+ *  en la timezone (o en la hora local del proceso si no se pasa timeZone). */
+function monthStart(now: Date, delta: number, timeZone?: string): Date {
+  if (!timeZone) return new Date(now.getFullYear(), now.getMonth() + delta, 1)
+  const local = new Date(now.getTime() + tzOffsetMs(now, timeZone))
+  const guess = Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + delta, 1)
+  return new Date(guess - tzOffsetMs(new Date(guess), timeZone))
+}
+
+/** Rango [start, end) del período + el período anterior del MISMO largo. Los
+ *  bordes de mes se calculan en `timeZone` (la del comercio); sin timeZone, en la
+ *  hora local del proceso (compat de tests). */
 export function periodRange(
   periodo: Periodo,
   now: Date,
+  timeZone?: string,
 ): { start: Date; end: Date; prevStart: Date | null; prevEnd: Date | null } {
   const DAY = 24 * 60 * 60 * 1000
   if (periodo === 'mesPasado') {
-    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const end = new Date(now.getFullYear(), now.getMonth(), 1)
-    return { start, end, prevStart: new Date(now.getFullYear(), now.getMonth() - 2, 1), prevEnd: start }
+    const start = monthStart(now, -1, timeZone)
+    const end = monthStart(now, 0, timeZone)
+    return { start, end, prevStart: monthStart(now, -2, timeZone), prevEnd: start }
   }
   if (periodo === '7dias') {
     const end = now
@@ -37,9 +100,9 @@ export function periodRange(
     return { start: new Date(0), end: now, prevStart: null, prevEnd: null }
   }
   // mes (default): mes calendario actual; anterior = mes pasado completo
-  const start = new Date(now.getFullYear(), now.getMonth(), 1)
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-  return { start, end, prevStart: new Date(now.getFullYear(), now.getMonth() - 1, 1), prevEnd: start }
+  const start = monthStart(now, 0, timeZone)
+  const end = monthStart(now, 1, timeZone)
+  return { start, end, prevStart: monthStart(now, -1, timeZone), prevEnd: start }
 }
 
 export interface AsesorStatsRaw {
@@ -68,8 +131,9 @@ export function computeAsesorStats(
   redemptions: StatsRedemption[],
   periodo: Periodo,
   now: Date,
+  timeZone?: string,
 ): AsesorStatsRaw {
-  const { start, end, prevStart, prevEnd } = periodRange(periodo, now)
+  const { start, end, prevStart, prevEnd } = periodRange(periodo, now, timeZone)
   const inPeriod = periodo === 'todo' ? () => true : (d: Date) => d >= start && d < end
 
   // Agregado LIFETIME por usuario: cantidad + primer canje (min).
@@ -114,7 +178,7 @@ export function computeAsesorStats(
   // ③ Cuándo vienen (período, lun..dom)
   const cuentaDia = [0, 0, 0, 0, 0, 0, 0]
   for (const r of period) {
-    const gd = r.redeemedAt.getDay() // 0=dom..6=sab
+    const gd = weekdayIn(r.redeemedAt, timeZone) // 0=dom..6=sab, en la TZ del comercio
     cuentaDia[gd === 0 ? 6 : gd - 1] += 1
   }
   const cuandoVienen = DIAS_SEMANA.map((dia, i) => ({ dia, canjes: cuentaDia[i] }))

@@ -3,7 +3,7 @@ import { merchantUpdateSchema } from '@misanpedro/shared'
 import { Coupon, Merchant, Redemption, User } from '@/models'
 import { requireMerchantAuth } from '@/middleware/auth'
 import { tenantContext, getAppId } from '@/middleware/tenant'
-import { computeAsesorStats, type Periodo } from '@/services/merchantStats'
+import { computeAsesorStats, tzForPais, type Periodo } from '@/services/merchantStats'
 
 export const merchantsRoutes = new Hono()
 
@@ -203,6 +203,10 @@ merchantsRoutes.get('/me/stats/asesor', requireMerchantAuth, async (c) => {
 
   // Scoping estricto: SOLO canjes de este comercio en este tenant.
   const all = await Redemption.find({ appId, merchantId: auth.merchantId })
+  // Las stats por fecha se calculan en la timezone del comercio (derivada del país
+  // del tenant), no en la del server (UTC en Railway) — así 'este mes'/'7 días'/el
+  // histograma por día no corren hasta 5h en el borde del día.
+  const tenant = c.get('tenant') as { pais?: string } | undefined
   const raw = computeAsesorStats(
     all.map((r) => ({
       userId: r.userId?.toString() ?? '',
@@ -212,6 +216,7 @@ merchantsRoutes.get('/me/stats/asesor', requireMerchantAuth, async (c) => {
     })),
     periodo,
     new Date(),
+    tzForPais(tenant?.pais),
   )
 
   // Joins de display: título del cupón y nombre del cliente (scoped por appId).
