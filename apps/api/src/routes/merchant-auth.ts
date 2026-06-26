@@ -220,9 +220,11 @@ merchantAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
   const { email } = parsed.data
 
   const user = await MerchantUser.findOne({ appId, email })
-  // Anti-enumeración: respondemos OK aunque el email no exista (no filtramos
-  // qué comercios están registrados).
-  if (!user) return c.json({ ok: true })
+  // El email no tiene un comercio en esta ciudad → se lo decimos al front
+  // (`registered:false`) para mandarlo al alta y arrancar el onboarding. NO
+  // enviamos código. Trade-off de enumeración aceptable acá: los comercios
+  // adheridos son públicos en la app (es el punto del producto).
+  if (!user) return c.json({ ok: true, registered: false })
 
   await Otp.deleteMany({ appId, email, purpose: 'merchant' })
   const code = generateOtp()
@@ -267,14 +269,14 @@ merchantAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
         503,
       )
     }
-    return c.json({ ok: true })
+    return c.json({ ok: true, registered: true })
   }
 
   // dev/test: fire-and-forget + devolvemos el código para poder testear el flujo.
   sendMerchantOtpCode(email, code, tenantNombreOtp, brandColor, loginUrl, logoUrl).catch((err) =>
     console.error('[merchant-otp-email]', err),
   )
-  return c.json({ ok: true, _debugCode: code })
+  return c.json({ ok: true, registered: true, _debugCode: code })
 })
 
 merchantAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {

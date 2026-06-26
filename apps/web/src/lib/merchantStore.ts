@@ -75,10 +75,12 @@ export const merchantAuth = {
   // ─── Login OTP (passwordless) ───
   async requestOtp(
     email: string,
-  ): Promise<{ ok: true; debugCode?: string } | { ok: false; error: string }> {
+  ): Promise<{ ok: true; registered: boolean; debugCode?: string } | { ok: false; error: string }> {
     try {
       const data = await merchantApi.requestOtp(email)
-      return { ok: true, debugCode: data._debugCode }
+      // Default conservador: si el backend no manda `registered` (versión vieja),
+      // asumimos registrado → flujo OTP normal, nunca redirigimos por error.
+      return { ok: true, registered: data.registered !== false, debugCode: data._debugCode }
     } catch (err) {
       const msg = (err as Error)?.message ?? ''
       const isNetwork = /fetch|network|connect/i.test(msg)

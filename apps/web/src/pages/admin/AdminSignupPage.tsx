@@ -125,13 +125,31 @@ function clearDraft() {
 }
 
 export function AdminSignupPage() {
+  const [searchParams] = useSearchParams()
+  const refCode = searchParams.get('ref')?.trim() || undefined
+  // Llegaste acá desde el login porque tu email todavía no tiene un comercio:
+  // precargamos el email y mostramos el contexto para que arranques el alta.
+  const prefillEmail = (searchParams.get('email') || '').trim().toLowerCase()
+  const prefillEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(prefillEmail)
+  const cameFromLogin = searchParams.get('nuevo') === '1' || prefillEmail.length > 0
+  // El borrador guardado es de OTRO comercio si su email no coincide con el que
+  // traés del login → no lo mezclamos (arrancás limpio con solo tu email).
+  const draftIsForAnotherEmail = (() => {
+    const d = loadDraft()
+    return !!prefillEmail && !!d?.emailAdmin && d.emailAdmin.toLowerCase() !== prefillEmail
+  })()
   const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<Form>(() => {
     const draft = loadDraft()
-    if (!draft) return empty
-    return { ...empty, ...draft }
+    if (draftIsForAnotherEmail) return { ...empty, emailAdmin: prefillEmail }
+    const base = draft ? { ...empty, ...draft } : empty
+    // El email que el comercio escribió en el login manda sobre el del draft.
+    return prefillEmail ? { ...base, emailAdmin: prefillEmail } : base
   })
-  const [draftRestored, setDraftRestored] = useState<boolean>(() => loadDraft() !== null)
+  // No anunciamos "recuperamos tu borrador" si lo descartamos por ser de otro email.
+  const [draftRestored, setDraftRestored] = useState<boolean>(
+    () => loadDraft() !== null && !draftIsForAnotherEmail,
+  )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -142,8 +160,6 @@ export function AdminSignupPage() {
     [tenant.config?.ciudad, tenant.config?.provincia].filter(Boolean).join(', ') ||
     tenant.config?.ciudad ||
     'tu ciudad'
-  const [searchParams] = useSearchParams()
-  const refCode = searchParams.get('ref')?.trim() || undefined
 
   useEffect(() => {
     if (step === 'listo') return
@@ -290,6 +306,22 @@ export function AdminSignupPage() {
             </p>
           </div>
         </div>
+
+        {cameFromLogin && step !== 'listo' && (
+          <div className="flex items-start gap-2.5 rounded-2xl bg-brand-soft px-4 py-3 text-brand-strong ring-1 ring-line">
+            <Store size={18} className="mt-0.5 shrink-0" />
+            <p className="text-xs leading-snug">
+              {prefillEmailValid ? (
+                <>
+                  <strong className="break-all">{prefillEmail}</strong> todavía no tiene un comercio creado.
+                </>
+              ) : (
+                <strong>Tu email todavía no tiene un comercio creado.</strong>
+              )}{' '}
+              Pero lo creás en segundos 👇
+            </p>
+          </div>
+        )}
 
         {refCode && step !== 'listo' && (
           <div className="flex items-center gap-2.5 rounded-2xl bg-status-success-bg px-4 py-3 text-status-success-fg ring-1 ring-status-success/20">

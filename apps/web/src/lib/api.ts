@@ -282,7 +282,7 @@ export type ApiUserSession = {
 export const merchantApi = {
   // ─── Login OTP (passwordless) ───
   async requestOtp(email: string) {
-    return request<{ ok: boolean; _debugCode?: string }>(
+    return request<{ ok: boolean; registered?: boolean; _debugCode?: string }>(
       '/merchant/auth/request-otp',
       json({ email }),
     )

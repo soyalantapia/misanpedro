@@ -87,7 +87,7 @@ export function AdminLoginPage() {
 
   const normalizedEmail = email.trim().toLowerCase()
 
-  async function sendCode(): Promise<boolean> {
+  async function sendCode(): Promise<{ ok: boolean; registered: boolean }> {
     setSubmitting(true)
     setError(null)
     setInfo(null)
@@ -95,20 +95,35 @@ export function AdminLoginPage() {
     setSubmitting(false)
     if (!result.ok) {
       setError(result.error)
-      return false
+      return { ok: false, registered: false }
     }
+    // Email sin comercio en esta ciudad: no hay código que enviar; el caller
+    // decide mandarlo al alta.
+    if (!result.registered) return { ok: true, registered: false }
     setDebugCode(result.debugCode ?? null)
     setCooldown(45)
-    return true
+    return { ok: true, registered: true }
+  }
+
+  // Email sin comercio → al alta, con el email precargado para arrancar el flujo
+  // en segundos. Preservamos ?ref (referido) si venía en el login.
+  function goToSignup() {
+    const ref = params.get('ref')?.trim()
+    const qs = new URLSearchParams({ email: normalizedEmail, nuevo: '1' })
+    if (ref) qs.set('ref', ref)
+    navigate(`/admin/registro?${qs.toString()}`)
   }
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const ok = await sendCode()
-    if (ok) {
-      setStep('code')
-      setInfo(`Te enviamos un código de 6 dígitos a ${normalizedEmail}.`)
+    const res = await sendCode()
+    if (!res.ok) return
+    if (!res.registered) {
+      goToSignup()
+      return
     }
+    setStep('code')
+    setInfo(`Te enviamos un código de 6 dígitos a ${normalizedEmail}.`)
   }
 
   async function handleCodeSubmit(e: React.FormEvent) {
@@ -127,8 +142,15 @@ export function AdminLoginPage() {
   async function handleResend() {
     if (cooldown > 0 || submitting) return
     setCode('')
-    const ok = await sendCode()
-    if (ok) setInfo('Te reenviamos un código nuevo.')
+    const res = await sendCode()
+    if (!res.ok) return
+    // Caso de borde: la cuenta dejó de existir entre el pedido y el reenvío →
+    // al alta, igual que en el submit (en vez de quedar mudo esperando un código).
+    if (!res.registered) {
+      goToSignup()
+      return
+    }
+    setInfo('Te reenviamos un código nuevo.')
   }
 
   function backToEmail() {
