@@ -188,40 +188,43 @@ export async function sendUserWelcome(
 }
 
 // Vecino — código OTP (reemplaza el debugCode en pantalla cuando hay Resend)
-export async function sendOtpCode(to: string, code: string, appNombre = 'Mi Ciudad') {
+export async function sendOtpCode(
+  to: string,
+  code: string,
+  appNombre = 'Mi Ciudad',
+  opts: { brandColor?: string; logoUrl?: string; loginUrl?: string } = {},
+) {
   return sendEmail({
     to,
     fromName: appNombre,
     subject: `Tu código ${appNombre}: ${code}`,
-    html: wrap(
-      'Tu código de acceso',
-      `
-        <p style="text-align:center;font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin:24px 0;color:#ea580c">${code}</p>
-        <p>Usalo para entrar a tu cuenta. Vence en 5 minutos.</p>
-        <p style="font-size:13px;color:#8b8589">Si no pediste este código, ignorá este email.</p>
-      `,
-      appNombre,
-    ),
-    text: `Tu código ${appNombre}: ${code}. Vence en 5 minutos.`,
+    html: renderOtpEmail({
+      code,
+      brandName: appNombre,
+      brandColor: opts.brandColor,
+      logoUrl: opts.logoUrl,
+      loginUrl: opts.loginUrl,
+      to,
+      context: 'vecino',
+    }),
+    text: otpPlainText({ code, brandName: appNombre, loginUrl: opts.loginUrl, to }),
   })
 }
 
 /** Código OTP para el PANEL DE GESTIÓN (owner). Auth passwordless del owner. */
-export async function sendOwnerOtpCode(to: string, code: string) {
+export async function sendOwnerOtpCode(to: string, code: string, loginUrl?: string) {
   return sendEmail({
     to,
     fromName: 'Mi Ciudad · Gestión',
     subject: `Tu código de acceso al panel: ${code}`,
-    html: wrap(
-      'Acceso al panel de gestión',
-      `
-        <p style="text-align:center;font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin:24px 0;color:#ea580c">${code}</p>
-        <p>Usalo para entrar al panel de gestión de Mi Ciudad. Vence en 5 minutos.</p>
-        <p style="font-size:13px;color:#8b8589">Si no pediste este código, ignorá este email y avisanos.</p>
-      `,
-      'Mi Ciudad · Gestión',
-    ),
-    text: `Tu código de acceso al panel de gestión: ${code}. Vence en 5 minutos.`,
+    html: renderOtpEmail({
+      code,
+      brandName: 'Mi Ciudad',
+      loginUrl,
+      to,
+      context: 'gestion',
+    }),
+    text: otpPlainText({ code, brandName: 'Mi Ciudad', loginUrl, to }),
   })
 }
 
@@ -259,76 +262,168 @@ function safeHex(c?: string): string {
   return c && /^#[0-9a-fA-F]{6}$/.test(c) ? c : '#ea580c'
 }
 
+/** Solo http(s) y sin caracteres que rompan el atributo HTML — evita inyección
+ *  en el `src` del logo o el `href` del botón. */
+function isHttpUrl(u?: string): boolean {
+  return !!u && /^https?:\/\/[^\s"'<>]+$/i.test(u)
+}
+
+/** Magic-link de "un toque": agrega email+code al loginUrl como query params
+ *  para que la pantalla de acceso autocomplete y entre sola. Respeta si el URL
+ *  ya trae query y funciona con HashRouter (el `?` cae después de `#/ruta`).
+ *  Devuelve undefined si no hay loginUrl válido. */
+function buildOtpMagicLink(
+  loginUrl: string | undefined,
+  to: string | undefined,
+  code: string,
+): string | undefined {
+  if (!isHttpUrl(loginUrl)) return undefined
+  const sep = loginUrl!.includes('?') ? '&' : '?'
+  const parts: string[] = []
+  if (to) parts.push(`email=${encodeURIComponent(to)}`)
+  parts.push(`code=${encodeURIComponent(code)}`)
+  return `${loginUrl}${sep}${parts.join('&')}`
+}
+
+type OtpContext = 'comercio' | 'gestion' | 'vecino'
+
 /**
- * Email de código OTP del comercio — diseño tenant-aware (nombre + color de la
- * ciudad). HTML email-client-safe: tablas, estilos inline, fuentes de sistema.
+ * Template ÚNICO de código OTP — lindo, branded y email-client-safe (tablas,
+ * estilos inline, fuentes de sistema). Lo usan los tres logins (vecino, comercio,
+ * owner). Trae: logo real de la marca (o monograma si no hay imagen), explicación
+ * clara, el código grande y fácil de copiar, y un botón de "un toque" que entra
+ * directo con el código ya cargado (magic-link).
  */
-function renderMerchantOtpEmail(input: {
+export function renderOtpEmail(input: {
   code: string
-  appNombre: string
+  brandName: string
   brandColor?: string
+  logoUrl?: string
   loginUrl?: string
+  to?: string
+  context?: OtpContext
 }): string {
   const accent = safeHex(input.brandColor)
-  const nombre = escapeHtml(input.appNombre)
-  // Monograma: primera letra de la ciudad (sin el "Mi ").
-  const initial = escapeHtml(
-    (input.appNombre.replace(/^mi\s+/i, '').trim().charAt(0) || 'M').toUpperCase(),
-  )
-  const codeSpaced = escapeHtml(input.code)
+  const brand = escapeHtml(input.brandName)
+  const code = escapeHtml(input.code)
   const support = escapeHtml(env.SUPPORT_EMAIL)
-  const cta = input.loginUrl
+  const ctx: OtpContext = input.context ?? 'vecino'
+  const copy = {
+    comercio: {
+      eyebrow: 'Acceso al panel',
+      lead: `Usá este código para entrar al panel de tu comercio en <b style="color:#15161a;font-weight:600">${brand}</b>.`,
+      cta: 'Entrar al panel',
+      tagline: 'descuentos en comercios adheridos',
+    },
+    gestion: {
+      eyebrow: 'Panel de gestión',
+      lead: `Usá este código para entrar al panel de gestión de <b style="color:#15161a;font-weight:600">${brand}</b>.`,
+      cta: 'Entrar al panel de gestión',
+      tagline: 'panel de administración de la plataforma',
+    },
+    vecino: {
+      eyebrow: 'Tu acceso',
+      lead: `Usá este código para entrar a tu cuenta de <b style="color:#15161a;font-weight:600">${brand}</b> y seguir ahorrando.`,
+      cta: `Entrar a ${brand}`,
+      tagline: 'descuentos en comercios adheridos',
+    },
+  }[ctx]
+
+  const magic = buildOtpMagicLink(input.loginUrl, input.to, input.code)
+  const ctaUrl = magic ?? (isHttpUrl(input.loginUrl) ? input.loginUrl : undefined)
+
+  // Logo: imagen real si hay logoUrl http(s) válido; si no, monograma + wordmark
+  // de la marca (siempre renderiza, no depende de que el cliente cargue imágenes).
+  const initial = escapeHtml(
+    (input.brandName.replace(/^mi\s+/i, '').trim().charAt(0) || 'M').toUpperCase(),
+  )
+  const logoBlock = isHttpUrl(input.logoUrl)
+    ? `<img src="${escapeHtml(input.logoUrl!)}" alt="${brand}" height="40" style="display:block;height:40px;max-height:40px;width:auto;border:0;outline:none;text-decoration:none">`
+    : `<table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td style="vertical-align:middle">
+            <div style="width:42px;height:42px;border-radius:12px;background:${accent};color:#ffffff;font:700 19px/42px ${EMAIL_FONT};text-align:center">${initial}</div>
+          </td>
+          <td style="vertical-align:middle;padding-left:12px;font:700 17px ${EMAIL_FONT};color:#15161a">${brand}</td>
+        </tr></table>`
+
+  // Botón de "un toque". Patrón bulletproof: tabla + bgcolor + anchor en bloque.
+  const ctaBlock = ctaUrl
     ? `
-            <tr><td align="center" style="padding:24px 40px 4px">
-              <a href="${input.loginUrl}" style="display:inline-block;background:${accent};color:#ffffff;font:500 15px ${EMAIL_FONT};text-decoration:none;border-radius:12px;padding:13px 28px">Abrir el panel del comercio</a>
-            </td></tr>`
+      <tr><td style="padding:20px 40px 0">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td style="border-bottom:1px solid #eef0f2;font-size:0;line-height:0">&nbsp;</td>
+          <td style="padding:0 12px;font:600 11px ${EMAIL_FONT};color:#b4b8be;letter-spacing:.08em;white-space:nowrap">O ENTRÁ SIN COPIAR NADA</td>
+          <td style="border-bottom:1px solid #eef0f2;font-size:0;line-height:0">&nbsp;</td>
+        </tr></table>
+      </td></tr>
+      <tr><td align="center" style="padding:18px 40px 0">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr>
+          <td align="center" bgcolor="${accent}" style="border-radius:12px">
+            <a href="${escapeHtml(ctaUrl)}" style="display:block;padding:15px 22px;font:600 16px ${EMAIL_FONT};color:#ffffff;text-decoration:none;border-radius:12px">${escapeHtml(copy.cta)} →</a>
+          </td>
+        </tr></table>
+        ${magic ? `<p style="margin:10px 0 0;font:400 12px/1.5 ${EMAIL_FONT};color:#a2a6ad">Un toque y entrás directo — el código ya va cargado.</p>` : ''}
+      </td></tr>`
     : ''
+
   return `<!doctype html>
 <html lang="es"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light only">
 <meta name="supported-color-schemes" content="light">
-<title>Tu código de acceso · ${nombre}</title>
+<title>Tu código de acceso · ${brand}</title>
 </head>
 <body style="margin:0;padding:0;background:#f4f5f7;-webkit-font-smoothing:antialiased">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f4f5f7">Tu código de acceso al panel vence en 5 minutos.</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f4f5f7">Tu código ${code} para entrar a ${brand}. Vence en 5 minutos.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f7">
   <tr><td align="center" style="padding:36px 12px">
-    <table role="presentation" width="468" cellpadding="0" cellspacing="0" style="width:468px;max-width:100%;background:#ffffff;border:1px solid #ebecf0;border-radius:20px">
-      <tr><td style="padding:34px 40px 0">
-        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-          <td style="vertical-align:middle">
-            <div style="width:40px;height:40px;border-radius:11px;background:${accent};color:#ffffff;font:600 18px/40px ${EMAIL_FONT};text-align:center">${initial}</div>
-          </td>
-          <td style="vertical-align:middle;padding-left:12px;font:600 16px ${EMAIL_FONT};color:#15161a">${nombre}</td>
-        </tr></table>
+    <table role="presentation" width="468" cellpadding="0" cellspacing="0" style="width:468px;max-width:100%;background:#ffffff;border:1px solid #ebecf0;border-radius:20px;overflow:hidden">
+      <tr><td style="height:4px;background:${accent};font-size:0;line-height:0">&nbsp;</td></tr>
+      <tr><td style="padding:32px 40px 0">
+        ${logoBlock}
       </td></tr>
       <tr><td style="padding:26px 40px 0">
-        <div style="font:500 12px ${EMAIL_FONT};letter-spacing:.09em;text-transform:uppercase;color:${accent}">Acceso al panel</div>
-        <h1 style="margin:6px 0 8px;font:600 25px ${EMAIL_FONT};color:#15161a">Tu código de acceso</h1>
-        <p style="margin:0;font:400 15px/1.6 ${EMAIL_FONT};color:#5b5f67">Ingresá este código para entrar al panel de tu comercio en <b style="color:#15161a;font-weight:600">${nombre}</b>.</p>
+        <div style="font:600 12px ${EMAIL_FONT};letter-spacing:.09em;text-transform:uppercase;color:${accent}">${escapeHtml(copy.eyebrow)}</div>
+        <h1 style="margin:6px 0 8px;font:700 25px ${EMAIL_FONT};color:#15161a">Tu código de acceso</h1>
+        <p style="margin:0;font:400 15px/1.6 ${EMAIL_FONT};color:#5b5f67">${copy.lead}</p>
       </td></tr>
       <tr><td style="padding:22px 40px 0">
-        <div style="background:#f7f8fa;border:1px solid #e9ebef;border-radius:14px;padding:24px 16px;text-align:center">
-          <div style="font:600 38px/1 ${EMAIL_MONO};letter-spacing:12px;color:${accent};padding-left:12px">${codeSpaced}</div>
+        <div style="background:#f7f8fa;border:1px solid #e9ebef;border-radius:14px;padding:20px 16px;text-align:center">
+          <div style="font:600 11px ${EMAIL_FONT};letter-spacing:.08em;text-transform:uppercase;color:#9aa0a8;margin-bottom:10px">Tu código</div>
+          <div style="font:700 40px/1 ${EMAIL_MONO};letter-spacing:10px;color:${accent};padding-left:10px">${code}</div>
         </div>
-      </td></tr>
-      <tr><td align="center" style="padding:16px 40px 0">
-        <span style="display:inline-block;font:500 13px ${EMAIL_FONT};color:#6b7079;background:#f1f2f5;border-radius:999px;padding:6px 14px">Vence en 5 minutos</span>
-      </td></tr>${cta}
+        <p style="margin:10px 0 0;text-align:center;font:400 13px/1.5 ${EMAIL_FONT};color:#8b8f98">Copialo y pegalo en la pantalla de acceso · <b style="color:#6b7079;font-weight:600">vence en 5 minutos</b></p>
+      </td></tr>${ctaBlock}
       <tr><td style="padding:24px 40px 0">
         <p style="margin:0;font:400 13px/1.6 ${EMAIL_FONT};color:#8b8f98">¿No pediste este código? Ignorá este email — tu cuenta sigue segura y nadie entró.</p>
       </td></tr>
-      <tr><td style="padding:24px 40px 32px">
+      <tr><td style="padding:22px 40px 32px">
         <div style="border-top:1px solid #eef0f2;height:1px;line-height:1px;font-size:1px">&nbsp;</div>
-        <p style="margin:16px 0 0;font:400 12px/1.7 ${EMAIL_FONT};color:#a2a6ad">${nombre} · descuentos en comercios adheridos<br>¿Ayuda? <a href="mailto:${support}" style="color:${accent};text-decoration:none">${support}</a></p>
+        <p style="margin:16px 0 0;font:400 12px/1.7 ${EMAIL_FONT};color:#a2a6ad">${brand} · ${copy.tagline}<br>¿Ayuda? <a href="mailto:${support}" style="color:${accent};text-decoration:none">${support}</a></p>
       </td></tr>
     </table>
-    <p style="margin:18px 0 0;font:400 11px ${EMAIL_FONT};color:#b4b8be">Enviado por ${nombre}. No respondas a este correo.</p>
+    <p style="margin:18px 0 0;font:400 11px ${EMAIL_FONT};color:#b4b8be">Enviado por ${brand}. No respondas a este correo.</p>
   </td></tr>
 </table>
 </body></html>`
+}
+
+/** Cuerpo de texto plano de fallback para el OTP (clientes sin HTML). */
+function otpPlainText(input: {
+  code: string
+  brandName: string
+  loginUrl?: string
+  to?: string
+}): string {
+  const magic = buildOtpMagicLink(input.loginUrl, input.to, input.code)
+  const lines = [
+    `Tu código para entrar a ${input.brandName}: ${input.code}`,
+    'Vence en 5 minutos.',
+  ]
+  if (magic) lines.push('', `O entrá directo (un toque): ${magic}`)
+  lines.push('', 'Si no pediste este código, ignorá este email.')
+  return lines.join('\n')
 }
 
 // Comercio — código OTP para entrar al panel (login passwordless)
@@ -338,13 +433,22 @@ export async function sendMerchantOtpCode(
   appNombre = 'Mi Ciudad',
   brandColor?: string,
   loginUrl?: string,
+  logoUrl?: string,
 ) {
   return sendEmail({
     to,
     fromName: appNombre,
     subject: `Tu código para el panel: ${code}`,
-    html: renderMerchantOtpEmail({ code, appNombre, brandColor, loginUrl }),
-    text: `Tu código para el panel de ${appNombre}: ${code}\nVence en 5 minutos. Si no lo pediste, ignorá este email.`,
+    html: renderOtpEmail({
+      code,
+      brandName: appNombre,
+      brandColor,
+      logoUrl,
+      loginUrl,
+      to,
+      context: 'comercio',
+    }),
+    text: otpPlainText({ code, brandName: appNombre, loginUrl, to }),
   })
 }
 

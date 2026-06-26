@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Store,
@@ -10,6 +10,7 @@ import {
   ScanLine,
   Users,
   TrendingUp,
+  Loader2,
 } from 'lucide-react'
 import { merchantAuth, useMerchantSession } from '@/lib/merchantStore'
 import { useTenant } from '@/lib/tenant'
@@ -36,13 +37,53 @@ export function AdminLoginPage() {
   const [cooldown, setCooldown] = useState(0)
   const navigate = useNavigate()
 
+  // Magic-link de "un toque" desde el email del comercio: #/admin/login?email=…&code=…
+  // Si vienen ambos, validamos y entramos sin que el comercio tipee nada.
+  const magic = useMemo(() => {
+    const e = (params.get('email') || '').trim().toLowerCase()
+    const c = (params.get('code') || '').replace(/\D/g, '').slice(0, 6)
+    return e && c.length === 6 ? { email: e, code: c } : null
+  }, [params])
+  const [autoLoggingIn, setAutoLoggingIn] = useState(!!magic)
+  const autoTried = useRef(false)
+
   useEffect(() => {
     if (cooldown <= 0) return
     const t = setInterval(() => setCooldown((c) => (c > 0 ? c - 1 : 0)), 1000)
     return () => clearInterval(t)
   }, [cooldown])
 
+  useEffect(() => {
+    if (!magic || autoTried.current || session) return
+    autoTried.current = true
+    setEmail(magic.email)
+    setCode(magic.code)
+    setStep('code')
+    ;(async () => {
+      const result = await merchantAuth.verifyOtp(magic.email, magic.code)
+      if (!result.ok) {
+        setAutoLoggingIn(false)
+        setError('Ese enlace ya venció o se usó. Pedí un código nuevo o ingresalo a mano.')
+        return
+      }
+      navigate('/admin', { replace: true })
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [magic, session])
+
   if (session) return <Navigate to="/admin" replace />
+
+  if (autoLoggingIn) {
+    return (
+      <div className="grid min-h-[100svh] place-items-center bg-surface-2 px-4 text-ink">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 size={28} className="animate-spin text-brand-strong" />
+          <p className="text-base font-bold">Validando tu acceso…</p>
+          <p className="text-sm text-ink-soft">Entrando al panel con tu enlace.</p>
+        </div>
+      </div>
+    )
+  }
 
   const normalizedEmail = email.trim().toLowerCase()
 

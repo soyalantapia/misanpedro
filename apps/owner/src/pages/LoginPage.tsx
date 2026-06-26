@@ -1,18 +1,62 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Mail, KeyRound, AlertCircle } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { ArrowRight, Mail, KeyRound, AlertCircle, Loader2 } from 'lucide-react'
 import { owner } from '@/lib/api'
 import { authActions } from '@/lib/store'
 
-type Phase = 'email' | 'code' | 'success'
+type Phase = 'email' | 'code' | 'verifying' | 'success'
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const [phase, setPhase] = useState<Phase>('email')
-  const [email, setEmail] = useState('')
-  const [code, setCode] = useState('')
+  const [params] = useSearchParams()
+  // Magic-link de "un toque" desde el email: ?email=…&code=…. Si vienen ambos,
+  // entramos solos sin que el admin tipee nada.
+  const magic = useMemo(() => {
+    const e = (params.get('email') || '').trim().toLowerCase()
+    const c = (params.get('code') || '').replace(/\D/g, '').slice(0, 6)
+    return e && c.length === 6 ? { email: e, code: c } : null
+  }, [params])
+  const [phase, setPhase] = useState<Phase>(magic ? 'verifying' : 'email')
+  const [email, setEmail] = useState(magic?.email ?? '')
+  const [code, setCode] = useState(magic?.code ?? '')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const autoTried = useRef(false)
+
+  function signInWith(res: Awaited<ReturnType<typeof owner.verifyOtp>> & { ok: true }) {
+    authActions.signIn({
+      access: res.access,
+      refresh: res.refresh,
+      refreshExpiresAt: res.refreshExpiresAt,
+      owner: res.owner,
+    })
+    setPhase('success')
+    setTimeout(() => navigate('/'), 300)
+  }
+
+  // Auto-login del magic-link: corre una sola vez al montar si hay email+code.
+  useEffect(() => {
+    if (!magic || autoTried.current) return
+    autoTried.current = true
+    ;(async () => {
+      try {
+        const res = await owner.verifyOtp({ email: magic.email, code: magic.code })
+        if (!res.ok) {
+          setError(
+            (res as { error?: string }).error ??
+              'Ese enlace ya venció o se usó. Pedí un código nuevo o ingresalo a mano.',
+          )
+          setPhase('code')
+          return
+        }
+        signInWith(res)
+      } catch {
+        setError('No pudimos entrarte automáticamente. Probá con el código.')
+        setPhase('code')
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [magic])
 
   async function handleRequestOtp(e: React.FormEvent) {
     e.preventDefault()
@@ -47,18 +91,23 @@ export function LoginPage() {
         setSubmitting(false)
         return
       }
-      authActions.signIn({
-        access: res.access,
-        refresh: res.refresh,
-        refreshExpiresAt: res.refreshExpiresAt,
-        owner: res.owner,
-      })
-      setPhase('success')
-      setTimeout(() => navigate('/'), 300)
+      signInWith(res)
     } catch (err) {
       setError((err as Error)?.message ?? 'Error verificando el código')
       setSubmitting(false)
     }
+  }
+
+  if (phase === 'verifying') {
+    return (
+      <div className="w-full rounded-2xl bg-white p-8 shadow-xl ring-1 ring-neutral-200">
+        <div className="flex flex-col items-center gap-3 py-6 text-center">
+          <Loader2 size={28} className="animate-spin text-accent-600" />
+          <h1 className="text-xl font-bold tracking-tight text-neutral-900">Validando tu acceso…</h1>
+          <p className="text-sm text-neutral-500">Entrando al panel de gestión con tu enlace.</p>
+        </div>
+      </div>
+    )
   }
 
   return (

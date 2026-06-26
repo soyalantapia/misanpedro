@@ -111,10 +111,19 @@ ownerRoutes.post('/auth/request-otp', otpRequestLimiter, async (c) => {
   })
   console.log(`[otp/owner] ${email} → ${code}`)
 
+  // URL del panel de gestión para el magic-link de "un toque" del email (entra
+  // con el código ya cargado). Normalizamos a la ruta /login del front owner.
+  const ownerBase = (process.env.OWNER_APP_URL || '').trim().replace(/\/+$/, '')
+  const ownerLoginUrl = ownerBase
+    ? ownerBase.endsWith('/login')
+      ? ownerBase
+      : `${ownerBase}/login`
+    : undefined
+
   // En prod esperamos el envío: si el email no sale, 503 (no un "ok" falso que
   // dejaría al admin afuera). En dev devolvemos el código para testear el flujo.
   if (process.env.NODE_ENV === 'production') {
-    const sent = await sendOwnerOtpCode(email, code).catch((err) => {
+    const sent = await sendOwnerOtpCode(email, code, ownerLoginUrl).catch((err) => {
       console.error('[owner-otp-email]', err)
       return { ok: false as const }
     })
@@ -126,7 +135,9 @@ ownerRoutes.post('/auth/request-otp', otpRequestLimiter, async (c) => {
     }
     return c.json({ ok: true })
   }
-  sendOwnerOtpCode(email, code).catch((err) => console.error('[owner-otp-email]', err))
+  sendOwnerOtpCode(email, code, ownerLoginUrl).catch((err) =>
+    console.error('[owner-otp-email]', err),
+  )
   return c.json({ ok: true, _debugCode: code })
 })
 
