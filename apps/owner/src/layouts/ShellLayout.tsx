@@ -9,6 +9,7 @@ import {
   CreditCard,
   Settings,
   ShieldCheck,
+  History,
   LogOut,
   Menu,
   X,
@@ -28,6 +29,7 @@ const NAV = [
   { to: '/estadisticas', label: 'Estadísticas', icon: BarChart3 },
   { to: '/pagos', label: 'Pagos', icon: CreditCard, gate: 'pagos' as const },
   { to: '/equipo', label: 'Equipo', icon: ShieldCheck, gate: 'equipo' as const },
+  { to: '/auditoria', label: 'Auditoría', icon: History, gate: 'auditoria' as const },
   { to: '/settings', label: 'Settings', icon: Settings },
 ] as const
 

@@ -11,6 +11,7 @@ import { UsersPage } from './pages/UsersPage'
 import { SubscriptionsPage } from './pages/SubscriptionsPage'
 import { StatsPage } from './pages/StatsPage'
 import { TeamPage } from './pages/TeamPage'
+import { AuditPage } from './pages/AuditPage'
 import { SettingsPage } from './pages/SettingsPage'
 
 export function App() {
@@ -35,6 +36,7 @@ export function App() {
           <Route path="estadisticas" element={<StatsPage />} />
           <Route path="pagos" element={<SubscriptionsPage />} />
           <Route path="equipo" element={<TeamPage />} />
+          <Route path="auditoria" element={<AuditPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

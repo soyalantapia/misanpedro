@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppWindow, Plus, ExternalLink, Store, Users, Receipt } from 'lucide-react'
 import { owner } from '@/lib/api'
+import { useAuth } from '@/lib/store'
+import { can } from '@/lib/rbac'
 import { fmtDate, fmtNumber } from '@/lib/format'
 import { PageHeader } from '@/components/PageHeader'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -10,6 +12,8 @@ import { EmptyState } from '@/components/EmptyState'
 type AppItem = Awaited<ReturnType<typeof owner.listApps>>['apps'][number]
 
 export function AppsPage() {
+  const auth = useAuth()
+  const puedeCrear = can(auth.owner?.rol, 'apps', 'editar')
   const [apps, setApps] = useState<AppItem[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -38,13 +42,15 @@ export function AppsPage() {
         title="Apps"
         subtitle={`${apps.length} ${apps.length === 1 ? 'ciudad' : 'ciudades'} en operación`}
         actions={
-          <Link
-            to="/apps/nueva"
-            className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white shadow shadow-accent-500/30 transition-all hover:-translate-y-0.5"
-          >
-            <Plus size={12} />
-            Nueva app
-          </Link>
+          puedeCrear ? (
+            <Link
+              to="/apps/nueva"
+              className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white shadow shadow-accent-500/30 transition-all hover:-translate-y-0.5"
+            >
+              <Plus size={12} />
+              Nueva app
+            </Link>
+          ) : null
         }
       />
 
@@ -91,7 +97,7 @@ export function AppsPage() {
               : 'Probá con otro filtro o creá una nueva app.'
           }
           action={
-            statusFilter === 'all' ? (
+            statusFilter === 'all' && puedeCrear ? (
               <Link
                 to="/apps/nueva"
                 className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-white"

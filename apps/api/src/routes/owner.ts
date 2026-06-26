@@ -13,6 +13,7 @@ import {
   Redemption,
   Subscription,
   MrrSnapshot,
+  OwnerAuditLog,
 } from '@/models'
 import { OWNER_ROLES } from '@/models/Owner'
 import { computeOwnerStats } from '@/services/ownerStats.service'
@@ -40,20 +41,32 @@ export const ownerRoutes = new Hono()
  * cross-tenant (quién creó/editó/suspendió qué) — antes el campo existía pero
  * nunca se escribía.
  */
-async function logOwnerAction(ownerId: string | undefined, action: string, ip?: string, detail?: string) {
+async function logOwnerAction(
+  ownerId: string | undefined,
+  action: string,
+  ip?: string,
+  detail?: string,
+  recursoId?: string,
+) {
   if (!ownerId) return
+  const recurso = action.split('.')[0] // 'app' | 'merchant' | 'subscription' | 'admin' | 'auth'
   try {
-    await Owner.updateOne(
-      { _id: ownerId },
-      {
-        $push: {
-          recentActions: {
-            $each: [{ action, at: new Date(), ip: ip || undefined, detail }],
-            $slice: -20,
+    await Promise.all([
+      // Vista rápida por owner (últimas 20) — alimenta GET /me/audit.
+      Owner.updateOne(
+        { _id: ownerId },
+        {
+          $push: {
+            recentActions: {
+              $each: [{ action, at: new Date(), ip: ip || undefined, detail }],
+              $slice: -20,
+            },
           },
         },
-      },
-    )
+      ),
+      // Auditoría COMPLETA (append-only) — alimenta GET /audit con filtros.
+      OwnerAuditLog.create({ ownerId, action, recurso, recursoId, detail, ip: ip || undefined, at: new Date() }),
+    ])
   } catch (err) {
     console.error('[owner-audit]', (err as Error)?.message)
   }
@@ -359,6 +372,55 @@ ownerRoutes.delete('/admins/:id', requireOwnerAuth, requireOwnerRole('super'), a
   const ip = c.req.header('x-forwarded-for') || ''
   await logOwnerAction(String(auth.sub), 'admin.disable', ip, `${target.email} (eliminado)`)
   return c.json({ ok: true })
+})
+
+// ════════════════════════════════════════════════════════════════════
+//              AUDITORÍA (quién hizo qué — super/admin)
+// ════════════════════════════════════════════════════════════════════
+
+/** Historial completo de acciones, paginado + filtros. */
+ownerRoutes.get('/audit', requireOwnerAuth, requireOwnerRole('super', 'admin'), async (c) => {
+  const limit = Math.min(Math.max(Number(c.req.query('limit')) || 50, 1), 200)
+  const offset = Math.max(Number(c.req.query('offset')) || 0, 0)
+  const q: Record<string, unknown> = {}
+  const ownerId = c.req.query('ownerId')
+  if (ownerId && Types.ObjectId.isValid(ownerId)) q.ownerId = new Types.ObjectId(ownerId)
+  const action = c.req.query('action')
+  if (action) q.action = action
+  const recurso = c.req.query('recurso')
+  if (recurso) q.recurso = recurso
+  const from = c.req.query('from')
+  const to = c.req.query('to')
+  if (from || to) {
+    q.at = {}
+    if (from) (q.at as Record<string, Date>).$gte = new Date(from)
+    if (to) (q.at as Record<string, Date>).$lte = new Date(to)
+  }
+
+  const [rows, total] = await Promise.all([
+    OwnerAuditLog.find(q).sort({ at: -1 }).skip(offset).limit(limit).populate('ownerId', 'email nombre').lean(),
+    OwnerAuditLog.countDocuments(q),
+  ])
+  return c.json({
+    ok: true,
+    total,
+    limit,
+    offset,
+    entries: rows.map((r) => {
+      const o = r.ownerId as unknown as { _id?: unknown; email?: string; nombre?: string } | null
+      return {
+        id: String(r._id),
+        admin: o?.email ?? r.ownerEmail ?? '—',
+        adminNombre: o?.nombre ?? null,
+        action: r.action,
+        recurso: r.recurso,
+        recursoId: r.recursoId,
+        detail: r.detail,
+        ip: r.ip,
+        at: r.at,
+      }
+    }),
+  })
 })
 
 // ════════════════════════════════════════════════════════════════════

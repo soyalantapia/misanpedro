@@ -22,6 +22,8 @@ import {
   YAxis,
 } from 'recharts'
 import { owner } from '@/lib/api'
+import { useAuth } from '@/lib/store'
+import { can } from '@/lib/rbac'
 import { fmtCompact, fmtMoney, fmtNumber } from '@/lib/format'
 import { PageHeader } from '@/components/PageHeader'
 import { StatCard } from '@/components/StatCard'
@@ -30,6 +32,8 @@ type GlobalMetrics = Awaited<ReturnType<typeof owner.metrics>>['metrics']
 type AppItem = Awaited<ReturnType<typeof owner.listApps>>['apps'][number]
 
 export function DashboardPage() {
+  const auth = useAuth()
+  const puedeCrearApp = can(auth.owner?.rol, 'apps', 'editar')
   const [metrics, setMetrics] = useState<GlobalMetrics | null>(null)
   const [apps, setApps] = useState<AppItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -258,7 +262,8 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* CTA — Sumar app */}
+      {/* CTA — Sumar app (sólo roles que pueden crear: super/admin) */}
+      {puedeCrearApp && (
       <section className="rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 p-6 text-white shadow-lg shadow-accent-500/20">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -279,6 +284,7 @@ export function DashboardPage() {
           </Link>
         </div>
       </section>
+      )}
     </div>
   )
 }

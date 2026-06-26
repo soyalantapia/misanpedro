@@ -336,6 +336,32 @@ export const owner = {
     }>('/api/v1/owner/me/audit')
   },
 
+  // ─── Auditoría completa (super/admin) ─────────────────────────
+  async audit(params: { limit?: number; offset?: number; action?: string; ownerId?: string } = {}) {
+    const q = new URLSearchParams()
+    if (params.limit) q.set('limit', String(params.limit))
+    if (params.offset) q.set('offset', String(params.offset))
+    if (params.action) q.set('action', params.action)
+    if (params.ownerId) q.set('ownerId', params.ownerId)
+    return api<{
+      ok: boolean
+      total: number
+      limit: number
+      offset: number
+      entries: Array<{
+        id: string
+        admin: string
+        adminNombre: string | null
+        action: string
+        recurso?: string
+        recursoId?: string
+        detail?: string
+        ip?: string
+        at: string
+      }>
+    }>(`/api/v1/owner/audit?${q.toString()}`)
+  },
+
   // ─── Equipo (multi-admin, solo super) ─────────────────────────
   async listAdmins() {
     return api<{
