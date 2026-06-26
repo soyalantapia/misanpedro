@@ -154,6 +154,17 @@ const safeImageSrcSchema = z
     (u) => /^(https?:|data:image\/(png|jpe?g|gif|webp|svg\+xml);)/i.test(u.trim()),
     { message: 'URL de imagen inválida (solo http/https o data:image/*)' },
   )
+  .refine(
+    (u) => {
+      // Tope de peso para data: URLs (van embebidas en la DB y en la respuesta).
+      // Las http(s) no pesan en lo nuestro. ~5 MB de imagen (base64 ≈ +33%).
+      const s = u.trim()
+      if (!s.startsWith('data:')) return true
+      const b64 = s.slice(s.indexOf(',') + 1)
+      return b64.length * 0.75 <= 5 * 1024 * 1024
+    },
+    { message: 'Imagen muy grande (máx 5 MB). Subila más liviana.' },
+  )
 
 /**
  * Teléfono: dígitos, espacios, guiones, paréntesis, +. No permitimos HTML
@@ -226,7 +237,7 @@ const plainTextSchema = (min: number, max: number, label: string) =>
       message: `${label} no puede contener < ni >`,
     })
 
-export const couponCreateSchema = z.object({
+const couponShape = z.object({
   titulo: plainTextSchema(8, 60, 'Título'),
   descripcion: plainTextSchema(20, 280, 'Descripción'),
   condiciones: plainTextSchema(0, 280, 'Condiciones').optional().default(''),
@@ -289,7 +300,23 @@ export const couponCreateSchema = z.object({
   estado: z.enum(['activo', 'pausado']).default('activo'),
 })
 
-export const couponUpdateSchema = couponCreateSchema.partial()
+/** Si hay franja horaria (happy_hour), "desde" debe ser anterior a "hasta". Se
+ *  comparten entre create y update (en update ambos pueden venir o no). */
+function franjaConsistente(
+  data: { franjaDesde?: string | null; franjaHasta?: string | null },
+  ctx: z.RefinementCtx,
+) {
+  if (data.franjaDesde && data.franjaHasta && data.franjaDesde >= data.franjaHasta) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'La franja "desde" tiene que ser anterior a la "hasta".',
+      path: ['franjaHasta'],
+    })
+  }
+}
+
+export const couponCreateSchema = couponShape.superRefine(franjaConsistente)
+export const couponUpdateSchema = couponShape.partial().superRefine(franjaConsistente)
 
 // ─── Activación / canje ───────────────────────────────────────────────
 

@@ -296,9 +296,15 @@ merchantAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
     return c.json({ ok: false, error: 'código inválido' }, 401)
   }
 
-  // Código correcto → consumir ya (anti-replay), después validar la cuenta.
-  otp.consumedAt = new Date()
-  await otp.save()
+  // Código correcto → consumir de forma ATÓMICA (anti-replay + anti-carrera):
+  // si dos requests con el mismo código llegan a la vez, solo UNO gana el
+  // findOneAndUpdate sobre consumedAt:null; el otro recibe null → 401.
+  const consumed = await Otp.findOneAndUpdate(
+    { _id: otp._id, consumedAt: null },
+    { consumedAt: new Date() },
+    { new: true },
+  )
+  if (!consumed) return c.json({ ok: false, error: 'código inválido' }, 401)
 
   const user = await MerchantUser.findOne({ appId, email })
   if (!user) return c.json({ ok: false, error: 'user not found' }, 404)

@@ -140,51 +140,58 @@ couponsRoutes.post('/', requireMerchantAuth, requireMerchantActive, async (c) =>
   //     el referido pendiente y acreditamos 1 semana gratis al referidor.
   //     Idempotente: gateado por firstCouponAt vacío + Referral 'pending'.
   if (merchant && coupon.estado === 'activo' && !merchant.firstCouponAt) {
-    try {
-      merchant.firstCouponAt = new Date()
-      await merchant.save()
-      const referral = await Referral.findOne({
-        appId,
-        referredMerchantId: merchant._id,
-        status: 'pending',
-      })
-      if (referral) {
-        const now = new Date()
-        const DAY = 24 * 60 * 60 * 1000
-        // ── Lado REFERIDO: +15 días gratis a su propio trial por activarse.
-        //    One-time (gateado por referredRewardGrantedAt; el bloque ya corre
-        //    una sola vez por firstCouponAt vacío). Independiente del tope del
-        //    referidor: el referido se ganó sus días por publicar su cupón.
-        if (!merchant.referredRewardGrantedAt) {
-          const baseRef =
-            merchant.freeTrialUntil && merchant.freeTrialUntil > now ? merchant.freeTrialUntil : now
-          merchant.freeTrialUntil = new Date(baseRef.getTime() + 15 * DAY)
-          merchant.referredRewardGrantedAt = now
-          await merchant.save()
-          referral.referredDaysGranted = 15
+    // Claim ATÓMICO del "primer cupón": si dos requests concurrentes crean el
+    // primer cupón a la vez, solo UNO gana este findOneAndUpdate (firstCouponAt:
+    // null) y procesa el referido → el referidor no se acredita dos veces. Usamos
+    // el doc reclamado (`claimed`) en adelante: el `merchant` en memoria tiene
+    // firstCouponAt:null y un .save() lo revertiría.
+    const claimed = await Merchant.findOneAndUpdate(
+      { _id: merchant._id, appId, firstCouponAt: null },
+      { firstCouponAt: new Date() },
+      { new: true },
+    )
+    if (claimed) {
+      try {
+        const referral = await Referral.findOne({
+          appId,
+          referredMerchantId: claimed._id,
+          status: 'pending',
+        })
+        if (referral) {
+          const now = new Date()
+          const DAY = 24 * 60 * 60 * 1000
+          // ── Lado REFERIDO: +15 días gratis a su propio trial por activarse.
+          if (!claimed.referredRewardGrantedAt) {
+            const baseRef =
+              claimed.freeTrialUntil && claimed.freeTrialUntil > now ? claimed.freeTrialUntil : now
+            claimed.freeTrialUntil = new Date(baseRef.getTime() + 15 * DAY)
+            claimed.referredRewardGrantedAt = now
+            await claimed.save()
+            referral.referredDaysGranted = 15
+          }
+          // ── Lado REFERIDOR: +7 días (tope 8 semanas).
+          const CAP_WEEKS = 8
+          const referrer = await Merchant.findById(referral.referrerMerchantId)
+          if (referrer && (referrer.referralWeeksEarned ?? 0) < CAP_WEEKS) {
+            const base =
+              referrer.freeTrialUntil && referrer.freeTrialUntil > now ? referrer.freeTrialUntil : now
+            referrer.freeTrialUntil = new Date(base.getTime() + 7 * DAY)
+            referrer.referralWeeksEarned = (referrer.referralWeeksEarned ?? 0) + 1
+            await referrer.save()
+            referral.status = 'confirmed'
+            referral.weeksGranted = 1
+            referral.confirmedAt = now
+          } else {
+            referral.status = 'confirmed'
+            referral.weeksGranted = 0
+            referral.rejectedReason = 'cap_reached'
+            referral.confirmedAt = now
+          }
+          await referral.save()
         }
-        // ── Lado REFERIDOR: +7 días (tope 8 semanas).
-        const CAP_WEEKS = 8
-        const referrer = await Merchant.findById(referral.referrerMerchantId)
-        if (referrer && (referrer.referralWeeksEarned ?? 0) < CAP_WEEKS) {
-          const base =
-            referrer.freeTrialUntil && referrer.freeTrialUntil > now ? referrer.freeTrialUntil : now
-          referrer.freeTrialUntil = new Date(base.getTime() + 7 * DAY)
-          referrer.referralWeeksEarned = (referrer.referralWeeksEarned ?? 0) + 1
-          await referrer.save()
-          referral.status = 'confirmed'
-          referral.weeksGranted = 1
-          referral.confirmedAt = now
-        } else {
-          referral.status = 'confirmed'
-          referral.weeksGranted = 0
-          referral.rejectedReason = 'cap_reached'
-          referral.confirmedAt = now
-        }
-        await referral.save()
+      } catch (err) {
+        console.error('[referral-confirm]', err)
       }
-    } catch (err) {
-      console.error('[referral-confirm]', err)
     }
   }
   return c.json(

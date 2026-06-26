@@ -57,6 +57,12 @@ describe('couponCreateSchema / couponUpdateSchema — asesor', () => {
     expect(couponUpdateSchema.safeParse({ franjaDesde: '00:00', franjaHasta: '23:59' }).success).toBe(true)
   })
 
+  it('rechaza franja con "desde" >= "hasta" (consistencia, no solo formato)', () => {
+    expect(couponUpdateSchema.safeParse({ franjaDesde: '18:00', franjaHasta: '09:00' }).success).toBe(false)
+    expect(couponUpdateSchema.safeParse({ franjaDesde: '12:00', franjaHasta: '12:00' }).success).toBe(false)
+    expect(couponUpdateSchema.safeParse({ franjaDesde: '09:00', franjaHasta: '18:00' }).success).toBe(true)
+  })
+
   it('rechaza objetivo inválido y costo negativo', () => {
     expect(couponUpdateSchema.safeParse({ objetivo: 'no_existe' }).success).toBe(false)
     expect(couponUpdateSchema.safeParse({ costoReferencia: -5 }).success).toBe(false)
@@ -95,6 +101,13 @@ describe('imagenUrl — validación de imagen segura (anti-XSS)', () => {
 
   it('acepta null para limpiar la imagen al editar (update)', () => {
     expect(couponUpdateSchema.safeParse({ imagenUrl: null }).success).toBe(true)
+  })
+
+  it('RECHAZA data: URL gigante (tope ~5 MB) y acepta una chica', () => {
+    const chica = 'data:image/png;base64,' + 'A'.repeat(1000)
+    const gigante = 'data:image/png;base64,' + 'A'.repeat(8 * 1024 * 1024) // ~6 MB decodificado
+    expect(couponCreateSchema.safeParse({ ...base, imagenUrl: chica }).success).toBe(true)
+    expect(couponCreateSchema.safeParse({ ...base, imagenUrl: gigante }).success).toBe(false)
   })
 })
 

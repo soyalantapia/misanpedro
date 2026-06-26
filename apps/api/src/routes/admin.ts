@@ -88,7 +88,9 @@ adminRoutes.get('/merchants', requireSuperAdmin, async (c) => {
   const q = c.req.query('q')?.toLowerCase()
   const filter: Record<string, any> = {}
   if (estado) filter.estado = estado
-  if (q) filter.nombre = { $regex: q, $options: 'i' }
+  // Escapamos el input antes de meterlo en $regex: evita regex-DoS (catastrophic
+  // backtracking) y que un metacaracter cambie la búsqueda. Igual que owner.ts.
+  if (q) filter.nombre = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' }
   const list = await Merchant.find(filter).sort({ createdAt: -1 }).limit(200)
   return c.json({
     ok: true,

@@ -155,9 +155,14 @@ ownerRoutes.post('/auth/verify-otp', otpVerifyLimiter, async (c) => {
     await otp.save()
     return c.json({ ok: false, error: 'código inválido' }, 401)
   }
-  // Anti-replay: consumimos el código antes de emitir tokens.
-  otp.consumedAt = new Date()
-  await otp.save()
+  // Anti-replay + anti-carrera: consumo ATÓMICO. Dos requests concurrentes con el
+  // mismo código → solo UNO gana el findOneAndUpdate sobre consumedAt:null.
+  const consumed = await Otp.findOneAndUpdate(
+    { _id: otp._id, consumedAt: null },
+    { consumedAt: new Date() },
+    { new: true },
+  )
+  if (!consumed) return c.json({ ok: false, error: 'código inválido' }, 401)
 
   const owner = await Owner.findOne({ email, enabled: true })
   if (!owner) return c.json({ ok: false, error: 'no encontrado' }, 404)
