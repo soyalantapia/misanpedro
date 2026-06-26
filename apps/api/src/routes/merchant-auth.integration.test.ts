@@ -86,4 +86,18 @@ describe('merchant /request-otp — flag registered (integración Mongo real)', 
     const { body } = await requestOtp('testcity', 'multi@comercio.com')
     expect(body.registered).toBe(false)
   })
+
+  it('normaliza el email (espacios + mayúsculas) antes de buscar el comercio', async () => {
+    await MerchantUser.create({
+      appId,
+      merchantId: new Types.ObjectId(),
+      email: 'Case@Comercio.com', // el model lo guarda lowercase
+      nombre: 'Case Test',
+    })
+    // Pedimos con espacios y mayúsculas → el schema trimea+lowercasea → matchea
+    // el MerchantUser guardado en minúsculas → registered:true (sin 400).
+    const { status, body } = await requestOtp('testcity', '  CASE@COMERCIO.COM  ')
+    expect(status).toBe(200)
+    expect(body.registered).toBe(true)
+  })
 })

@@ -86,11 +86,19 @@ const empty: Form = {
  */
 const DRAFT_KEY = 'msp.admin.signup.draft.v1'
 
+// La clave del borrador se scopea por email cuando venís del login con uno
+// precargado. Así dos altas simultáneas (dos pestañas, emails distintos) NO se
+// pisan el borrador, y cada email resume el suyo. Sin email (visita directa) cae
+// a la clave base. Ver bug "draft multi-pestaña".
+function draftKeyFor(email: string): string {
+  return email ? `${DRAFT_KEY}:${email}` : DRAFT_KEY
+}
+
 type StoredDraft = Omit<Form, 'acceptedTc'>
 
-function loadDraft(): Partial<Form> | null {
+function loadDraft(key: string): Partial<Form> | null {
   try {
-    const raw = localStorage.getItem(DRAFT_KEY)
+    const raw = localStorage.getItem(key)
     if (!raw) return null
     const parsed = JSON.parse(raw) as StoredDraft
     return parsed && typeof parsed === 'object' ? parsed : null
@@ -99,7 +107,7 @@ function loadDraft(): Partial<Form> | null {
   }
 }
 
-function saveDraft(form: Form) {
+function saveDraft(key: string, form: Form) {
   try {
     const { acceptedTc: __, ...rest } = form
     void __
@@ -107,18 +115,18 @@ function saveDraft(form: Form) {
       (v) => typeof v === 'string' && v.trim().length > 0,
     )
     if (!someFilled) {
-      localStorage.removeItem(DRAFT_KEY)
+      localStorage.removeItem(key)
       return
     }
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(rest))
+    localStorage.setItem(key, JSON.stringify(rest))
   } catch {
     /* storage lleno o bloqueado — no es crítico */
   }
 }
 
-function clearDraft() {
+function clearDraft(key: string) {
   try {
-    localStorage.removeItem(DRAFT_KEY)
+    localStorage.removeItem(key)
   } catch {
     /* noop */
   }
@@ -132,24 +140,16 @@ export function AdminSignupPage() {
   const prefillEmail = (searchParams.get('email') || '').trim().toLowerCase()
   const prefillEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(prefillEmail)
   const cameFromLogin = searchParams.get('nuevo') === '1' || prefillEmail.length > 0
-  // El borrador guardado es de OTRO comercio si su email no coincide con el que
-  // traés del login → no lo mezclamos (arrancás limpio con solo tu email).
-  const draftIsForAnotherEmail = (() => {
-    const d = loadDraft()
-    return !!prefillEmail && !!d?.emailAdmin && d.emailAdmin.toLowerCase() !== prefillEmail
-  })()
+  // Clave de borrador scopeada por el email del login (aislamiento multi-pestaña).
+  const draftKey = draftKeyFor(prefillEmail)
   const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<Form>(() => {
-    const draft = loadDraft()
-    if (draftIsForAnotherEmail) return { ...empty, emailAdmin: prefillEmail }
+    const draft = loadDraft(draftKey)
     const base = draft ? { ...empty, ...draft } : empty
     // El email que el comercio escribió en el login manda sobre el del draft.
     return prefillEmail ? { ...base, emailAdmin: prefillEmail } : base
   })
-  // No anunciamos "recuperamos tu borrador" si lo descartamos por ser de otro email.
-  const [draftRestored, setDraftRestored] = useState<boolean>(
-    () => loadDraft() !== null && !draftIsForAnotherEmail,
-  )
+  const [draftRestored, setDraftRestored] = useState<boolean>(() => loadDraft(draftKey) !== null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -163,8 +163,8 @@ export function AdminSignupPage() {
 
   useEffect(() => {
     if (step === 'listo') return
-    saveDraft(form)
-  }, [form, step])
+    saveDraft(draftKey, form)
+  }, [form, step, draftKey])
 
   function update<K extends keyof Form>(key: K, value: Form[K]) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -178,7 +178,7 @@ export function AdminSignupPage() {
   }
 
   function discardDraft() {
-    clearDraft()
+    clearDraft(draftKey)
     setForm(empty)
     setDraftRestored(false)
     setStep(1)
@@ -205,7 +205,9 @@ export function AdminSignupPage() {
     }
     // Paso 3 — Tu cuenta: nombre del responsable + email.
     if (form.nombreAdmin.trim().length < 3) return 'Falta tu nombre completo'
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAdmin)) return 'Email inválido'
+    // Trimeamos igual que el submit (form.emailAdmin.trim()) para no rechazar un
+    // email válido por un espacio accidental al tipear/pegar.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAdmin.trim())) return 'Email inválido'
     return null
   }
 
@@ -259,7 +261,7 @@ export function AdminSignupPage() {
     if (result.ok) {
       // Comercio creado y ACTIVO con 3 meses gratis — sin pago ni MercadoPago.
       // Ya es visible para los vecinos. Lo llevamos a completar su perfil.
-      clearDraft()
+      clearDraft(draftKey)
       setSubmitting(false)
       setStep('listo')
       toast.success('¡Listo! Tu comercio ya está dentro', 'Visible para los vecinos. Sumale tu perfil.')

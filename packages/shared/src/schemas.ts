@@ -122,7 +122,8 @@ export const merchantLoginSchema = z.object({
 // El comercio entra con un código de 6 dígitos al email (igual que el vecino),
 // sin contraseña. `purpose: 'merchant'` separa estos OTP de los del vecino.
 export const merchantOtpRequestSchema = z.object({
-  email: z.string().email().toLowerCase(),
+  // trim antes de validar: un espacio accidental no debe dar "invalid input".
+  email: z.string().trim().toLowerCase().email(),
 })
 
 export const merchantOtpVerifySchema = z.object({
