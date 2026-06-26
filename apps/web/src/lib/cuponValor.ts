@@ -21,6 +21,24 @@ export type ValorDisplay = {
   franja?: { desde: string; hasta: string }
 }
 
+/**
+ * Ahorro registrado al CANJEAR, por tipo de oferta. DUPLICADO del canónico
+ * packages/shared/src/valor.ts (el front no importa @misanpedro/shared, ver
+ * usoLimite.ts). MANTENER EN SINCRONÍA: el preview del ahorro que ve el cajero
+ * DEBE coincidir con lo que persiste el backend al confirmar. Lockeado por
+ * cuponValor.test.ts con los mismos vectores que valor.test.ts.
+ */
+export function calcAhorroCanje(
+  coupon: { tipoOferta?: string | null; porcentaje: number; precioFijo?: number | null },
+  montoTicket: number,
+): number {
+  if (!montoTicket || montoTicket <= 0) return 0
+  if (coupon.tipoOferta === 'precio_fijo' && coupon.precioFijo != null) {
+    return Math.max(0, Math.round(montoTicket - coupon.precioFijo))
+  }
+  return Math.round((montoTicket * coupon.porcentaje) / 100)
+}
+
 type ValorInput = Pick<
   Coupon,
   | 'porcentaje'

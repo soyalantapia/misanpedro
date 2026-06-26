@@ -118,6 +118,10 @@ export type ValidationResult =
       couponId: string
       /** Precio normal de lista (ARS) — el canje pre-carga el monto con esto. */
       precioReferencia?: number
+      /** Tipo de oferta + precio fijo: el preview del ahorro usa calcAhorroCanje
+       *  (idéntico al backend); para precio_fijo necesita estos campos. */
+      tipoOferta?: string | null
+      precioFijo?: number | null
       customerName: string
       customerDni: string
       expiresAt: string
@@ -155,6 +159,8 @@ export function useApiValidateByCode(code: string): {
           couponTitulo: v.coupon.titulo,
           couponId: v.coupon.id,
           precioReferencia: v.coupon.precioReferencia,
+          tipoOferta: v.coupon.tipoOferta,
+          precioFijo: v.coupon.precioFijo,
           customerName: v.user.nombre,
           customerDni: v.user.dni,
           expiresAt: v.expiresAt,

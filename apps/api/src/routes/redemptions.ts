@@ -47,6 +47,11 @@ function serializeForValidation(
       // PM-elite T1: el FE pre-carga el monto del canje con este precio normal,
       // así el cajero confirma de un toque sin tipear nada.
       precioReferencia: coupon.precioReferencia,
+      // El FE calcula el preview del ahorro con calcAhorroCanje (la MISMA fórmula
+      // del backend) → para precio_fijo necesita el tipo y el precio fijo, si no
+      // mostraría el % y divergiría de lo que se persiste.
+      tipoOferta: coupon.tipoOferta,
+      precioFijo: coupon.precioFijo,
     },
     user: {
       id: user._id.toString(),

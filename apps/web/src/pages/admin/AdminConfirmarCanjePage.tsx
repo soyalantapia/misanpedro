@@ -9,6 +9,7 @@ import { useActivation, useUserById } from '@/lib/stores'
 import { useCoupon } from '@/lib/couponsStore'
 import { useToast } from '@/components/Toast'
 import { formatMoney } from '@/lib/format'
+import { calcAhorroCanje } from '@/lib/cuponValor'
 import { api, ApiError } from '@/lib/api'
 import { readCachedValidation, clearCachedValidation } from '@/lib/apiQueries'
 
@@ -36,6 +37,8 @@ export function AdminConfirmarCanjePage() {
         porcentaje: apiCached.porcentaje,
         couponTitulo: apiCached.couponTitulo,
         precioReferencia: apiCached.precioReferencia,
+        tipoOferta: apiCached.tipoOferta,
+        precioFijo: apiCached.precioFijo,
         customerName: apiCached.customerName,
         activatedAt: apiCached.activatedAt ?? new Date().toISOString(),
         source: 'api' as const,
@@ -47,6 +50,8 @@ export function AdminConfirmarCanjePage() {
           porcentaje: localCoupon.porcentaje,
           couponTitulo: localCoupon.titulo,
           precioReferencia: localCoupon.precioReferencia,
+          tipoOferta: localCoupon.tipoOferta,
+          precioFijo: localCoupon.precioFijo,
           customerName: localUser?.nombre ?? 'Vecino registrado',
           activatedAt: localActivation.activatedAt,
           source: 'local' as const,
@@ -133,9 +138,18 @@ export function AdminConfirmarCanjePage() {
     setSubmitting(false)
   }
 
-  const ahorroPreview = monto
-    ? Math.round((parseInt(monto.replace(/\D/g, ''), 10) * view.porcentaje) / 100)
-    : null
+  // Preview del ahorro: usamos calcAhorroCanje (la MISMA fórmula del backend) con
+  // el monto tipeado o, si está vacío, el precioReferencia — exactamente lo que el
+  // backend usará al confirmar (montoTicket ?? precioReferencia). Así el cajero ve
+  // siempre el ahorro REAL (incluye precio_fijo, no solo el %).
+  const montoPreview = monto ? parseInt(monto.replace(/\D/g, ''), 10) : (view.precioReferencia ?? 0)
+  const ahorroPreview =
+    Number.isFinite(montoPreview) && montoPreview > 0
+      ? calcAhorroCanje(
+          { tipoOferta: view.tipoOferta, porcentaje: view.porcentaje, precioFijo: view.precioFijo },
+          montoPreview,
+        )
+      : null
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-md flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">

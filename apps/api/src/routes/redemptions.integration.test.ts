@@ -294,4 +294,20 @@ describe('canje /validate + /confirm — invariantes del dinero (integración Mo
     expect(r2.body.motivo).toBe('limite_por_persona')
     expect(await Redemption.countDocuments({ userId: user._id })).toBe(1)
   })
+
+  it('validate serializa tipoOferta + precioFijo (el preview del cajero los necesita)', async () => {
+    const merchant = await mkMerchant()
+    const user = await mkUser()
+    const coupon = await mkCoupon(merchant._id, { tipoOferta: 'precio_fijo', precioFijo: 3000, porcentaje: 1 })
+    const act = await mkActivation(coupon, user)
+    const auth = authHeader(new Types.ObjectId(), merchant._id)
+    const v = await validate('ciudada', auth, { codigoNumerico: act.codigoNumerico })
+    expect(v.status).toBe(200)
+    // Sin estos campos, el front mostraría el % en vez de (ticket − precioFijo).
+    expect(v.body.validation.coupon.tipoOferta).toBe('precio_fijo')
+    expect(v.body.validation.coupon.precioFijo).toBe(3000)
+    // El ahorro confirmado usa la fórmula precio_fijo, igual que mostraría el preview.
+    const r = await confirm('ciudada', auth, { activationId: act._id.toString(), montoTicket: 5000 })
+    expect(r.body.redemption.ahorroEstimado).toBe(2000)
+  })
 })
