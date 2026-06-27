@@ -61,6 +61,9 @@ const AdminLoginPage = lazy(() =>
 const AdminSignupPage = lazy(() =>
   import('@/pages/admin/AdminSignupPage').then((m) => ({ default: m.AdminSignupPage })),
 )
+const SupportLoginPage = lazy(() =>
+  import('@/pages/admin/SupportLoginPage').then((m) => ({ default: m.SupportLoginPage })),
+)
 const AdminClienteDetailPage = lazy(() =>
   import('@/pages/admin/AdminClienteDetailPage').then((m) => ({
     default: m.AdminClienteDetailPage,
@@ -221,6 +224,7 @@ export default function App() {
 
             {/* Panel comercio — rutas SIN shell (login OTP) */}
             <Route path="admin/login" element={<AdminLoginPage />} />
+            <Route path="admin/soporte" element={<SupportLoginPage />} />
             <Route path="admin/registro" element={<AdminSignupPage />} />
             <Route path="admin/canje/:activationId" element={<AdminConfirmarCanjePage />} />
 

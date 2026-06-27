@@ -30,6 +30,7 @@ import { initWebPush } from '@/services/push.service'
 import { initSentry, captureException, flushSentry } from '@/services/sentry.service'
 import { httpsRedirect, requestId, securityHeaders } from '@/middleware/security'
 import { findTenantByKey, toAsciiLabel } from '@/middleware/tenant'
+import { auditImpersonation } from '@/middleware/auditImpersonation'
 
 const app = new Hono()
 
@@ -115,6 +116,10 @@ app.get('/api/v1/health/ready', (c) => {
   const dbReady = mongoose.connection.readyState === 1
   return c.json({ ok: dbReady }, dbReady ? 200 : 503)
 })
+
+// Auditoría del MODO SOPORTE: envuelve todas las rutas /api/v1 y registra las
+// mutaciones hechas mientras un owner impersona un comercio (impersonatedBy en el JWT).
+app.use('/api/v1/*', auditImpersonation)
 
 app.route('/api/v1/merchant/auth', merchantAuthRoutes)
 app.route('/api/v1/auth', userAuthRoutes)

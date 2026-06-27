@@ -329,6 +329,14 @@ export const owner = {
     })
   },
 
+  // ─── Modo soporte: entrar al panel de un comercio como el propietario ──
+  async startSupportSession(merchantId: string) {
+    return api<{ ok: boolean; panelUrl: string; merchant: { id: string; nombre: string } }>(
+      `/api/v1/owner/merchants/${merchantId}/support-session`,
+      { method: 'POST' },
+    )
+  },
+
   async auditLog() {
     return api<{
       ok: boolean

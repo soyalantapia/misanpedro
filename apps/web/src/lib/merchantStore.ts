@@ -8,9 +8,11 @@ type State = {
   session: MerchantSession | null
   apiUser?: { id: string; email: string; nombre: string; rol: string; merchantId: string } | null
   apiMerchant?: { id: string; slug: string; nombre: string; categoria: string; estado?: string } | null
+  /** Modo soporte: si la sesión es un owner impersonando, datos para el banner. */
+  support?: { impersonatedBy: string; ownerEmail?: string | null } | null
 }
 
-const empty: State = { session: null, apiUser: null, apiMerchant: null }
+const empty: State = { session: null, apiUser: null, apiMerchant: null, support: null }
 
 function load(): State {
   if (typeof window === 'undefined') return empty
@@ -22,6 +24,7 @@ function load(): State {
       session: parsed.session ?? null,
       apiUser: parsed.apiUser ?? null,
       apiMerchant: parsed.apiMerchant ?? null,
+      support: parsed.support ?? null,
     }
   } catch {
     return empty
@@ -140,6 +143,39 @@ export const merchantAuth = {
         error: isNetwork
           ? 'Sin conexión. Verificá tu red e intentá de nuevo.'
           : 'No pudimos verificar el código. Reintentá.',
+      }
+    }
+  },
+  // Modo soporte: canjea el código (que el owner generó) por una sesión que actúa
+  // como el propietario. Guarda la sesión + el flag de soporte para el banner.
+  async supportExchange(
+    code: string,
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    try {
+      const data = await merchantApi.supportExchange(code)
+      const session: MerchantSession = {
+        userId: data.user.id,
+        merchantId: data.merchant.id,
+        loggedAt: new Date().toISOString(),
+      }
+      update(() => ({
+        session,
+        apiUser: data.user,
+        apiMerchant: { ...data.merchant },
+        support: {
+          impersonatedBy: data.support.impersonatedBy,
+          ownerEmail: data.support.ownerEmail,
+        },
+      }))
+      return { ok: true }
+    } catch (err) {
+      const msg = (err as Error)?.message ?? ''
+      const expired = /inv[áa]lido|vencid/i.test(msg)
+      return {
+        ok: false,
+        error: expired
+          ? 'El enlace de soporte venció o ya se usó. Generá uno nuevo desde el panel owner.'
+          : 'No pudimos iniciar el modo soporte. Probá de nuevo.',
       }
     }
   },

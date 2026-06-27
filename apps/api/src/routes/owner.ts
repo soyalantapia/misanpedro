@@ -1,20 +1,24 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { Types } from 'mongoose'
-import { createHash, randomInt } from 'node:crypto'
+import { createHash, randomInt, randomBytes } from 'node:crypto'
 import {
   App,
   Owner,
   Otp,
   User,
   Merchant,
+  MerchantUser,
   Coupon,
   Activation,
   Redemption,
   Subscription,
   MrrSnapshot,
   OwnerAuditLog,
+  SupportCode,
+  RefreshToken,
 } from '@/models'
+import { tenantFrontUrl } from '@/lib/urls'
 import { OWNER_ROLES } from '@/models/Owner'
 import { computeOwnerStats } from '@/services/ownerStats.service'
 import { toAsciiLabel } from '@/middleware/tenant'
@@ -857,6 +861,87 @@ ownerRoutes.patch('/merchants/:id', requireOwnerAuth, requireOwnerRole('super', 
     `${merchant.nombre} (${String(merchant._id)})`,
   )
   return c.json({ ok: true, merchant })
+})
+
+const supportSessionLimiter = rateLimit({ prefix: 'owner-support', max: 30, windowMs: 60_000 })
+
+/**
+ * MODO SOPORTE — el owner pide entrar al panel de un comercio como el propietario.
+ * Genera un CÓDIGO DE UN SOLO USO (vence en 2 min) que el panel del comercio canjea
+ * por una sesión (POST /merchant/auth/support-exchange). Cualquier owner puede
+ * (decisión de producto). El rastro queda en OwnerAuditLog. NO emite el token acá:
+ * el token se mintea recién al canjear el código, en el host de la ciudad.
+ */
+ownerRoutes.post('/merchants/:id/support-session', requireOwnerAuth, supportSessionLimiter, async (c) => {
+  const auth = c.get('auth')
+  const id = c.req.param('id')
+  if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
+
+  const merchant = await Merchant.findById(id)
+  if (!merchant) return c.json({ ok: false, error: 'comercio no encontrado' }, 404)
+
+  const app = await App.findById(merchant.appId)
+  if (!app) return c.json({ ok: false, error: 'ciudad no encontrada' }, 404)
+
+  // El admin del comercio es a quien vamos a impersonar (todo se atribuye a él).
+  const merchantUser =
+    (await MerchantUser.findOne({ appId: merchant.appId, merchantId: merchant._id, rol: 'admin' })) ??
+    (await MerchantUser.findOne({ appId: merchant.appId, merchantId: merchant._id }))
+  if (!merchantUser) {
+    return c.json({ ok: false, error: 'el comercio no tiene un usuario para impersonar' }, 409)
+  }
+
+  const ownerDoc = await Owner.findById(auth.sub).select('email').lean()
+  const code = randomBytes(32).toString('base64url')
+  await SupportCode.create({
+    codeHash: sha256(code),
+    appId: merchant.appId,
+    merchantId: merchant._id,
+    merchantUserId: merchantUser._id,
+    ownerId: auth.sub,
+    ownerEmail: ownerDoc?.email,
+    expiresAt: new Date(Date.now() + 2 * 60_000),
+  })
+
+  await logOwnerAction(
+    auth.sub,
+    'support.session.start',
+    c.req.header('x-forwarded-for'),
+    `${merchant.nombre} (${String(merchant._id)})`,
+    String(merchant._id),
+  )
+
+  const panelUrl = `${tenantFrontUrl(app)}/#/admin/soporte?code=${code}`
+  return c.json({ ok: true, panelUrl, merchant: { id: String(merchant._id), nombre: merchant.nombre } })
+})
+
+/** Revoca TODAS las sesiones de soporte activas de un comercio (no toca la sesión
+ *  real del propietario). La sesión muere en el próximo /refresh (≤1h). */
+ownerRoutes.post('/merchants/:id/revoke-support', requireOwnerAuth, async (c) => {
+  const auth = c.get('auth')
+  const id = c.req.param('id')
+  if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
+  const merchant = await Merchant.findById(id)
+  if (!merchant) return c.json({ ok: false, error: 'comercio no encontrado' }, 404)
+  const users = await MerchantUser.find({ appId: merchant.appId, merchantId: merchant._id })
+    .select('_id')
+    .lean()
+  const res = await RefreshToken.updateMany(
+    {
+      subjectId: { $in: users.map((u) => u._id) },
+      impersonatedBy: { $exists: true },
+      revokedAt: { $exists: false },
+    },
+    { revokedAt: new Date() },
+  )
+  await logOwnerAction(
+    auth.sub,
+    'support.session.revoke',
+    c.req.header('x-forwarded-for'),
+    merchant.nombre,
+    String(merchant._id),
+  )
+  return c.json({ ok: true, revoked: res.modifiedCount ?? 0 })
 })
 
 /**

@@ -6,7 +6,7 @@ import {
   merchantOtpRequestSchema,
   merchantOtpVerifySchema,
 } from '@misanpedro/shared'
-import { Merchant, MerchantUser, Otp, Referral } from '@/models'
+import { Merchant, MerchantUser, Otp, Referral, SupportCode } from '@/models'
 import { generateReferralCode } from '@/routes/referrals'
 import {
   issueRefreshToken,
@@ -376,7 +376,12 @@ merchantAuthRoutes.post('/refresh', async (c) => {
   // acceso de LECTURA a la PII de sus clientes (clientes/stats/recent).
   const merchant = await Merchant.findOne({ appId, _id: user.merchantId })
   if (!merchant) return c.json({ ok: false, error: 'comercio no encontrado' }, 401)
-  if (merchant.estado === 'suspendido' || merchant.estado === 'cancelado') {
+  // Las sesiones de SOPORTE (impersonatedBy) pueden operar un comercio suspendido/
+  // cancelado — justamente para entrar a arreglarlo. Solo bloqueamos a la sesión REAL.
+  if (
+    !consumed.impersonatedBy &&
+    (merchant.estado === 'suspendido' || merchant.estado === 'cancelado')
+  ) {
     await revokeRefreshToken(refreshToken).catch(() => {})
     return c.json({ ok: false, error: `cuenta ${merchant.estado}`, estado: merchant.estado }, 403)
   }
@@ -386,8 +391,73 @@ merchantAuthRoutes.post('/refresh', async (c) => {
     type: 'merchant_user',
     merchantId: user.merchantId.toString(),
     appId: String(appId),
+    ...(consumed.impersonatedBy ? { impersonatedBy: consumed.impersonatedBy } : {}),
   })
   return c.json({ ok: true, accessToken, refreshToken })
+})
+
+const supportExchangeLimiter = rateLimit({ prefix: 'merchant-support-exchange', max: 20, windowMs: 60_000 })
+
+// MODO SOPORTE — canjea el código de un solo uso (que generó el owner) por una
+// sesión que actúa como el PROPIETARIO del comercio. El token lleva
+// `impersonatedBy` = id del owner (rastro para auditar; el `sub` sigue siendo el
+// MerchantUser, así todo se atribuye al propietario). Sesión sin vencimiento
+// (como la del comercio) pero revocable. No necesita auth: el código ES la credencial.
+merchantAuthRoutes.post('/support-exchange', supportExchangeLimiter, async (c) => {
+  const appId = getAppId(c)
+  const { code } = await c.req.json().catch(() => ({}))
+  if (!code || typeof code !== 'string') return c.json({ ok: false, error: 'invalid input' }, 400)
+
+  // Consumo ATÓMICO: el código vale una sola vez, no vencido, de ESTA ciudad.
+  const sc = await SupportCode.findOneAndUpdate(
+    { codeHash: sha256(code), appId, consumedAt: null, expiresAt: { $gt: new Date() } },
+    { consumedAt: new Date() },
+    { new: true },
+  )
+  if (!sc) return c.json({ ok: false, error: 'código inválido o vencido' }, 401)
+
+  const user = await MerchantUser.findOne({ _id: sc.merchantUserId, appId })
+  if (!user) return c.json({ ok: false, error: 'usuario del comercio no encontrado' }, 404)
+  const merchant = await Merchant.findOne({ _id: sc.merchantId, appId })
+  if (!merchant) return c.json({ ok: false, error: 'comercio no encontrado' }, 404)
+
+  const ownerId = String(sc.ownerId)
+  // Soporte puede entrar a CUALQUIER estado del comercio (incluso suspendido, para
+  // arreglarlo). El gate de estado del /refresh se saltea cuando hay impersonatedBy.
+  const accessToken = signAccessToken({
+    sub: user._id.toString(),
+    type: 'merchant_user',
+    merchantId: user.merchantId.toString(),
+    appId: String(appId),
+    impersonatedBy: ownerId,
+  })
+  const { token: refreshToken } = await issueRefreshToken({
+    subjectType: 'merchant_user',
+    subjectId: user._id.toString(),
+    userAgent: c.req.header('user-agent'),
+    impersonatedBy: ownerId,
+  })
+
+  return c.json({
+    ok: true,
+    accessToken,
+    refreshToken,
+    user: {
+      id: user._id.toString(),
+      email: user.email,
+      nombre: user.nombre,
+      rol: user.rol,
+      merchantId: user.merchantId.toString(),
+    },
+    merchant: {
+      id: merchant._id.toString(),
+      slug: merchant.slug,
+      nombre: merchant.nombre,
+      categoria: merchant.categoria,
+      estado: merchant.estado,
+    },
+    support: { impersonatedBy: ownerId, ownerEmail: sc.ownerEmail ?? null },
+  })
 })
 
 merchantAuthRoutes.post('/logout', async (c) => {

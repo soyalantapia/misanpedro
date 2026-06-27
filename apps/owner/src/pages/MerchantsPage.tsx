@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Store, Search } from 'lucide-react'
+import { Store, Search, LifeBuoy } from 'lucide-react'
 import { owner } from '@/lib/api'
 import { fmtDate } from '@/lib/format'
 import { PageHeader } from '@/components/PageHeader'
@@ -96,6 +96,20 @@ export function MerchantsPage() {
     }
   }
 
+  // Modo soporte: pide la sesión y abre el panel del comercio en otra pestaña.
+  async function startSupport(m: any) {
+    setActingId(m._id)
+    setError(null)
+    try {
+      const res = await owner.startSupportSession(m._id)
+      window.open(res.panelUrl, '_blank', 'noopener')
+    } catch (err: any) {
+      setError(err?.message ?? 'No se pudo iniciar el soporte')
+    } finally {
+      setActingId(null)
+    }
+  }
+
   const hasMore = merchants.length < total
 
   return (
@@ -185,18 +199,30 @@ export function MerchantsPage() {
                         {fmtDate(m.createdAt)}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => toggleEstado(m)}
-                          disabled={acting}
-                          className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ring-1 transition-colors disabled:opacity-50 ${
-                            isActive
-                              ? 'text-danger ring-danger/30 hover:bg-danger-bg'
-                              : 'text-success ring-success/30 hover:bg-success-bg'
-                          }`}
-                        >
-                          {acting ? '…' : isActive ? 'Suspender' : 'Reactivar'}
-                        </button>
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => startSupport(m)}
+                            disabled={acting}
+                            title="Entrar al panel del comercio como el propietario"
+                            className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-accent-600 ring-1 ring-accent-500/30 transition-colors hover:bg-accent-50 disabled:opacity-50"
+                          >
+                            <LifeBuoy size={12} />
+                            {acting ? '…' : 'Soporte'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleEstado(m)}
+                            disabled={acting}
+                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ring-1 transition-colors disabled:opacity-50 ${
+                              isActive
+                                ? 'text-danger ring-danger/30 hover:bg-danger-bg'
+                                : 'text-success ring-success/30 hover:bg-success-bg'
+                            }`}
+                          >
+                            {acting ? '…' : isActive ? 'Suspender' : 'Reactivar'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )

@@ -297,6 +297,19 @@ export const merchantApi = {
     tokens.set('merchant', data.accessToken, data.refreshToken)
     return data
   },
+  // Modo soporte: canjea el código de un solo uso (del owner) por una sesión que
+  // actúa como el propietario del comercio. Guarda los tokens como un login normal.
+  async supportExchange(code: string) {
+    const data = await request<{
+      accessToken: string
+      refreshToken: string
+      user: ApiMerchantSession['user']
+      merchant: ApiMerchantSession['merchant']
+      support: { impersonatedBy: string; ownerEmail: string | null }
+    }>('/merchant/auth/support-exchange', json({ code }))
+    tokens.set('merchant', data.accessToken, data.refreshToken)
+    return data
+  },
   async signup(payload: {
     comercio: {
       nombre: string

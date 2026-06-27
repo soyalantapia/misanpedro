@@ -25,6 +25,10 @@ export type AccessPayload = {
   merchantId?: string // si type = merchant_user
   appId?: string // si type = user o merchant_user — tenant scope
   rol?: string // si type = owner — 'super' por ahora
+  /** Si la sesión es de SOPORTE: id del owner que impersona al comercio. El `sub`
+   *  sigue siendo el MerchantUser del comercio (todo se atribuye al propietario);
+   *  este claim es el rastro para auditar QUIÉN entró a dar soporte. */
+  impersonatedBy?: string
 }
 
 export function signAccessToken(
@@ -50,6 +54,9 @@ export async function issueRefreshToken(input: {
   ip?: string
   /** Forzar refresh sin vencimiento. Default: true para merchant_user. */
   neverExpires?: boolean
+  /** Sesión de soporte: id del owner que impersona (se persiste para reinyectarlo
+   *  en el access de cada /refresh y poder revocar solo las sesiones de soporte). */
+  impersonatedBy?: string
 }): Promise<{ token: string; expiresAt: Date }> {
   const token = randomBytes(48).toString('base64url')
   const tokenHash = sha256(token)
@@ -63,6 +70,7 @@ export async function issueRefreshToken(input: {
     expiresAt,
     userAgent: input.userAgent,
     ip: input.ip,
+    ...(input.impersonatedBy ? { impersonatedBy: input.impersonatedBy } : {}),
   })
   return { token, expiresAt }
 }
@@ -74,6 +82,7 @@ export async function issueRefreshToken(input: {
 export async function consumeRefreshToken(token: string): Promise<{
   subjectType: Subject
   subjectId: string
+  impersonatedBy?: string
 } | null> {
   const tokenHash = sha256(token)
   const doc = await RefreshToken.findOne({ tokenHash })
@@ -83,6 +92,7 @@ export async function consumeRefreshToken(token: string): Promise<{
   return {
     subjectType: doc.subjectType,
     subjectId: doc.subjectId.toString(),
+    impersonatedBy: doc.impersonatedBy ? String(doc.impersonatedBy) : undefined,
   }
 }
 

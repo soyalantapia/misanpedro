@@ -10,6 +10,10 @@ const refreshTokenSchema = new Schema(
     revokedAt: { type: Date },
     userAgent: { type: String },
     ip: { type: String },
+    /** Sesión de SOPORTE (owner impersonando al comercio): id del owner que
+     *  entró. El access que se mintea en cada /refresh lo re-incluye, y permite
+     *  revocar SOLO las sesiones de soporte de un comercio. */
+    impersonatedBy: { type: Types.ObjectId, index: true },
   },
   { timestamps: true },
 )
