@@ -35,6 +35,10 @@ Todo el contexto está centralizado en el repo. Leé en este orden según lo que
 | **Trabajar entre varios** (flujo, ramas, reglas) | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | **Cuando algo se rompe en prod** (incidentes/ops) | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) |
 | **Qué se shippeó y cuándo** | [`CHANGELOG.md`](CHANGELOG.md) |
+| **Referencia de la API** (endpoints + auth) | [`docs/API.md`](docs/API.md) |
+| **Modelo de datos** (diagrama ER + campos) | [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md) |
+| **Sumar un comercio** (proceso repetible) | [`docs/playbook-onboarding-comercio.md`](docs/playbook-onboarding-comercio.md) |
+| **Glosario de términos** | [`docs/GLOSARIO.md`](docs/GLOSARIO.md) |
 | Cómo cobramos por ciudad | [`ESTRATEGIA-PAGOS.md`](ESTRATEGIA-PAGOS.md) |
 | Estrategia multi-ciudad | [`ESTRATEGIA-MULTICIUDAD.md`](ESTRATEGIA-MULTICIUDAD.md) |
 | Runbooks de infra | [`SETUP-MICUIDAD.md`](SETUP-MICUIDAD.md) · [`SETUP-CLOUDFLARE.md`](SETUP-CLOUDFLARE.md) · [`SETUP-OWNER.md`](SETUP-OWNER.md) |
