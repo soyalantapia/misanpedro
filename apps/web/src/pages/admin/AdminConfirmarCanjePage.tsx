@@ -10,6 +10,7 @@ import { useCoupon } from '@/lib/couponsStore'
 import { useToast } from '@/components/Toast'
 import { formatMoney } from '@/lib/format'
 import { calcAhorroCanje } from '@/lib/cuponValor'
+import { SupportBanner } from '@/components/SupportBanner'
 import { api, ApiError } from '@/lib/api'
 import { readCachedValidation, clearCachedValidation } from '@/lib/apiQueries'
 
@@ -152,7 +153,11 @@ export function AdminConfirmarCanjePage() {
       : null
 
   return (
-    <div className="animate-fade-up mx-auto flex w-full max-w-md flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
+    <>
+      {/* El canje vive FUERA del MerchantShell → el banner de modo soporte no se
+          heredaría. Lo renderizamos acá para que esté visible también al confirmar. */}
+      <SupportBanner />
+      <div className="animate-fade-up mx-auto flex w-full max-w-md flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
       <Link
         to="/admin/validar"
         className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-ink-soft hover:text-ink"
@@ -252,7 +257,8 @@ export function AdminConfirmarCanjePage() {
         </div>,
         document.body,
       )}
-    </div>
+      </div>
+    </>
   )
 }
 
