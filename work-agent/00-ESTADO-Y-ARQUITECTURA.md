@@ -114,4 +114,4 @@ misanpedro/
   otplib (TOTP owner) · nodemailer (email) · Mercado Pago Preapproval · web-push (VAPID) ·
   whatsapp-web.js (planeado). Build = `tsc -b --noEmit && node build.mjs` (esbuild bundle).
 - **web/owner:** Vite 7 · React 19 · Tailwind 4 · React Router 7 · lucide-react · vite-plugin-pwa.
-- **Tests:** vitest, **128 en total** (`apps/api` integración con Mongo en memoria + JWT, y `apps/web` schemas/guardrail/lógica). Suites clave: `redemptions` (canje), `tenant-isolation`, `support` (modo soporte), `merchant-auth`. `pnpm typecheck` = 6 paquetes.
+- **Tests:** vitest, **238 en total** (128 `apps/api` integración con Mongo en memoria + JWT, y 110 `apps/web` schemas/guardrail/lógica). Correr todo: `pnpm turbo run test` (OJO: `pnpm test` a secas no corre nada). Suites clave: `redemptions` (canje), `tenant-isolation`, `support` (modo soporte), `merchant-auth`. `pnpm typecheck` = 6 paquetes.

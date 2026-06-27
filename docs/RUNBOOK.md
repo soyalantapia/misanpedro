@@ -50,7 +50,7 @@ curl -s -o /dev/null -w "%{http_code}" https://sanpedro.micuidad.com   # ¿sirve
 2. Mirá los **Build Logs** en Railway. Causas típicas:
    - El **guardrail** `check-no-hardcoded-tenant.mjs` encontró un nombre de ciudad hardcodeado → arreglalo (usá `appName()`/`useTenant()`).
    - Error de typecheck/test en el build.
-3. Reproducí local: `pnpm typecheck && pnpm test && pnpm check:tenant && pnpm build`.
+3. Reproducí local: `pnpm typecheck && pnpm turbo run test && pnpm check:tenant && pnpm build`.
 4. **Rollback:** en Railway → Deployments → "Redeploy" sobre el último deploy sano.
 
 ## Incidente: el API está caído (502/503)

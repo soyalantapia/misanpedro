@@ -16,7 +16,7 @@ Guía para trabajar **entre varios** sin pisarnos. Lee primero [`PROJECT.MD`](PR
    `test(multi-tenant): …`, `docs: …`, `harden(prelaunch): …`. Explicá el **porqué**, no solo el qué.
 3. **Antes de pushear**, el set mínimo verde:
    ```bash
-   pnpm typecheck && pnpm test && pnpm check:tenant
+   pnpm typecheck && pnpm turbo run test && pnpm check:tenant
    ```
 4. **PR:** describí qué cambia y cómo lo verificaste. CI corre solo (typecheck + check:tenant + tests).
 5. **Deploy:** `railway up --detach --environment production --service api` deploya **todo**
@@ -42,9 +42,9 @@ Guía para trabajar **entre varios** sin pisarnos. Lee primero [`PROJECT.MD`](PR
 
 ## Tests
 ```bash
-pnpm test                              # todo (128)
-pnpm --filter @misanpedro/api test     # solo API
-pnpm --filter @misanpedro/web test     # solo web (incluye el guardrail)
+pnpm turbo run test                    # todo (238: api 128 + web 110) — OJO: "pnpm test" a secas NO corre nada
+pnpm --filter @misanpedro/api test     # solo API (128)
+pnpm --filter @misanpedro/web test     # solo web (110, incluye el guardrail)
 ```
 Suites de referencia para copiar el patrón: `redemptions.integration.test.ts` (camino del dinero),
 `tenant-isolation.integration.test.ts` (multi-tenant), `support.integration.test.ts` (modo soporte).

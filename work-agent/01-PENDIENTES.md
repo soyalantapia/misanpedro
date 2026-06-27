@@ -2,7 +2,7 @@
 
 > ## ✅ Tanda lanzamiento 2026-06-26/27 — SHIPPED a prod
 > La semana del lanzamiento. Todo en `main`, deployado y **verificado e2e/empíricamente en prod**.
-> **typecheck 6/6 · check:tenant ✓ · 128 tests verdes · build OK.**
+> **typecheck 6/6 · check:tenant ✓ · 238 tests verdes (128 api + 110 web) · build OK.**
 >
 > - **Owner expandido (Fases 1-4)** — auth OTP passwordless · multi-admin con **RBAC**
 >   (super/admin/finanzas/soporte/viewer) + sección Equipo · **auditoría** `OwnerAuditLog` ·

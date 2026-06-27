@@ -355,8 +355,9 @@ Owner/URLs/otros: `OWNER_BOOTSTRAP_EMAIL/PASSWORD/NOMBRE`, `OWNER_APP_URL`, `APP
 
 ## 11. Calidad y testing
 
-- **128 tests** (vitest): `apps/api` (integración con Mongo en memoria + JWT minteado) + `apps/web`
-  (schemas, guardrail, lógica). CI en `.github/workflows/ci.yml` (install + typecheck + check:tenant + tests).
+- **238 tests** (vitest: 128 api + 110 web): `apps/api` (integración con Mongo en memoria + JWT minteado) + `apps/web`
+  (schemas, guardrail, lógica). Correr todo: `pnpm turbo run test` (OJO: `pnpm test` a secas no corre nada).
+  CI en `.github/workflows/ci.yml` (install + typecheck + check:tenant + tests api/web por filtro).
 - **Suites de integración clave:** `redemptions` (canje/dinero), `tenant-isolation` (multi-tenant),
   `support` (modo soporte), `merchant-auth` (login/onboarding).
 - **Metodología de QA del asistente:** bug-hunt adversarial multi-agente (finders por dimensión →
@@ -389,7 +390,7 @@ Owner/URLs/otros: `OWNER_BOOTSTRAP_EMAIL/PASSWORD/NOMBRE`, `OWNER_APP_URL`, `APP
 
 ### En vivo y sólido
 Plataforma multi-ciudad (San Pedro + Nariño), camino del dinero auditado, aislamiento verificado,
-emails lindos, onboarding del comercio, owner con RBAC + auditoría + estadísticas, modo soporte. 128 tests.
+emails lindos, onboarding del comercio, owner con RBAC + auditoría + estadísticas, modo soporte. 238 tests.
 
 ### Pendientes (ver `work-agent/01-PENDIENTES.md`)
 - **Pasos del usuario (no código):** confirmar `SMTP_PASSWORD` en Railway (rotada), localidad/geoCenter
@@ -411,7 +412,7 @@ el wildcard), email andando (`SMTP_PASSWORD`), y el medio de pago del país (MP 
 1. **Leé esto + [`README.md`](README.md) + [`work-agent/`](work-agent/)** (en ese orden de profundidad).
 2. **Node 22 + pnpm.** `export PATH="/opt/homebrew/opt/node@22/bin:$PATH"` · `pnpm install` · `pnpm dev`.
 3. **Trabajá contra la DB de Atlas (dev)**, no la de prod (interna). Probá un tenant con `?tenant=narino`.
-4. **Antes de pushear:** `pnpm typecheck` · `pnpm test` · `pnpm check:tenant`.
+4. **Antes de pushear:** `pnpm typecheck` · `pnpm turbo run test` · `pnpm check:tenant`.
 5. **Convenciones:** todo lo que se muestre sale del tenant (nunca hardcodear ciudad); respetá la narrativa
    LOCKED; el front no importa `shared`; verde = ahorro, no marca.
 6. **Deploy:** `railway up …` (un comando deploya todo). Verificá el `uptime` + un smoke en prod.

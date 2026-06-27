@@ -90,13 +90,16 @@ pnpm dev            # web + api en paralelo (turbo)
 pnpm dev:web        # solo la PWA vecino/comercio
 pnpm dev:api        # solo la API
 pnpm build          # build de todo (turbo)
-pnpm typecheck      # tsc en los 6 paquetes
-pnpm test           # vitest (api + web) — 128 tests
-pnpm lint           # eslint (turbo)
-pnpm check:tenant   # guardrail: que NO haya nombre de ciudad hardcodeado en web/owner
+pnpm typecheck         # tsc en los 6 paquetes
+pnpm turbo run test    # vitest api + web (238 = 128 api + 110 web)
+pnpm lint              # eslint (turbo)
+pnpm check:tenant      # guardrail: que NO haya nombre de ciudad hardcodeado en web/owner
 ```
 
-Antes de pushear/deployar, el set mínimo: **`pnpm typecheck && pnpm test && pnpm check:tenant`**.
+> ⚠️ **`pnpm test` a secas NO corre nada** (el root no tiene script `test`). Usá `pnpm turbo run test`,
+> o por paquete: `pnpm --filter @misanpedro/api test` / `pnpm --filter @misanpedro/web test`.
+
+Antes de pushear/deployar, el set mínimo: **`pnpm typecheck && pnpm turbo run test && pnpm check:tenant`**.
 
 ---
 
@@ -109,7 +112,7 @@ Antes de pushear/deployar, el set mínimo: **`pnpm typecheck && pnpm test && pnp
 | **Front comercio/vecino (`apps/web`)** | **Vite 7** · **React 19** · **Tailwind 4** · **React Router 7** (HashRouter) · `lucide-react` (íconos) · `vite-plugin-pwa` (service worker / Workbox) · Leaflet (mapa) |
 | **Front owner (`apps/owner`)** | Vite + React + Tailwind · React Router 7 (BrowserRouter) · sin service worker |
 | **Shared (`packages/shared`)** | Zod schemas + types + helpers puros (valor del cupón, límite de uso, legales). Consumido por TS paths (sin build). |
-| **Tests** | **vitest** — `apps/api` (integración con Mongo en memoria + JWT) + `apps/web` (schemas, guardrail, lógica). 128 en total. |
+| **Tests** | **vitest** — `apps/api` (integración con Mongo en memoria + JWT) + `apps/web` (schemas, guardrail, lógica). **238 en total** (128 api + 110 web). |
 | **CI** | GitHub Actions (`.github/workflows/ci.yml`): install + typecheck + check:tenant + tests en push/PR. |
 | **Infra** | **Railway** (1 servicio `api` que corre el backend Y sirve los fronts + servicio MongoDB) · **Cloudflare** (DNS/SSL wildcard `*.micuidad.com`) · **Hostinger** (legacy: redirect 301 + buzón `soporte@micuidad.com`). |
 
@@ -223,7 +226,7 @@ refresh, Cmd+Shift+R). El owner no tiene SW. Más trampas en
 
 ## ✅ Testing y calidad
 
-- **128 tests** (vitest). Suites de integración clave: `redemptions` (canje/dinero),
+- **238 tests** (vitest: 128 api + 110 web). Suites de integración clave: `redemptions` (canje/dinero),
   `tenant-isolation` (multi-tenant), `support` (modo soporte), `merchant-auth` (login/onboarding).
 - **CI** corre en cada push/PR (typecheck + check:tenant + tests).
 - El **guardrail `check:tenant`** garantiza que ningún nombre de ciudad quede hardcodeado en `web`/`owner`.
@@ -236,7 +239,7 @@ refresh, Cmd+Shift+R). El owner no tiene SW. Más trampas en
 2. Node 22 + pnpm. Trabajá contra Atlas (dev), no la DB de prod. Probá tenants con `?tenant=…`.
 3. **Convenciones:** todo lo visible sale del tenant (nunca hardcodear ciudad) · el front no importa
    `shared` · verde = ahorro, no marca · respetá la narrativa LOCKED (ver `PROJECT.MD` §2.2).
-4. Antes de pushear: `pnpm typecheck && pnpm test && pnpm check:tenant`.
+4. Antes de pushear: `pnpm typecheck && pnpm turbo run test && pnpm check:tenant`.
 5. Deploy: `railway up …` (un comando deploya todo) + verificá el `uptime` y un smoke en prod.
 6. **Actualizá el `work-agent/` cuando shippees algo grande** — es la fuente de verdad viva.
 
