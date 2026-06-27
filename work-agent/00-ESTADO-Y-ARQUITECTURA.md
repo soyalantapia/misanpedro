@@ -28,7 +28,15 @@ Origen: empezó como "Mi San Pedro" (una sola ciudad) y se generalizó. Ciudades
 - ✅ Login del comercio rediseñado (claro/premium, sin mockup). Registro del comercio en layout split (form + banner con mockup).
 - ✅ Owner captura por ciudad: nombre, **localidad**, país→(moneda/locale/**prefijo telefónico** auto), **precio mensual**, color, **geoCenter (lat/lng)**, datos legales.
 - ✅ Guardrail anti-"Mi San Pedro" hardcodeado (falla el build/tests si reaparece).
-- 🟡 Hay ajustes de UI **a medio hacer** y pasos manuales del usuario → **doc 01**.
+- ✅ **Owner expandido (Fases 1-4):** auth OTP passwordless, **multi-admin con RBAC** (super/admin/finanzas/soporte/viewer) + sección Equipo, **auditoría completa** (`OwnerAuditLog` + `GET /owner/audit`), **estadísticas en vivo** + snapshot diario de MRR.
+- ✅ **Emails OTP rediseñados:** template único lindo/branded (logo + código copiable + **login de un toque** magic-link) para los 3 logins. DNS de email todo correcto, llega al inbox.
+- ✅ **Onboarding del comercio:** en el login, email sin comercio → redirige al **alta** con el flujo precargado (draft localStorage scopeado por email).
+- ✅ **Camino del dinero (canje) auditado:** claim atómico anti-oversell + índice único anti doble-canje + compensación; preview del cajero == backend (fix `precio_fijo`). **13 tests de integración.**
+- ✅ **Aislamiento multi-tenant verificado** de 3 formas: empírico en prod + 5 tests de integración + auditoría de código (207 queries → **0 leaks**).
+- ✅ **Modo soporte (impersonación owner→comercio):** cualquier owner entra al panel de cualquier comercio como el propietario, con auditoría de cada mutación + banner siempre visible. Verificado e2e en prod. (Ver doc 03 §18 + `PROJECT.MD` §7.4.)
+- ✅ **Barrido pre-launch** (bug-hunt 7 dimensiones): 0 blockers, 5 hardening menores. **Veredicto: listo para lanzar.**
+- ✅ Arrancando con los **primeros 3 comercios reales** de San Pedro (onboarding manual).
+- 🟡 Quedan **pasos manuales del usuario** (secretos/datos en Railway/owner) → **doc 01**.
 
 ## 3. Arquitectura del código (monorepo)
 
@@ -106,4 +114,4 @@ misanpedro/
   otplib (TOTP owner) · nodemailer (email) · Mercado Pago Preapproval · web-push (VAPID) ·
   whatsapp-web.js (planeado). Build = `tsc -b --noEmit && node build.mjs` (esbuild bundle).
 - **web/owner:** Vite 7 · React 19 · Tailwind 4 · React Router 7 · lucide-react · vite-plugin-pwa.
-- **Tests:** vitest en `apps/api` (83) y `apps/web` (104, incluye el guardrail). `pnpm typecheck` = 6 paquetes.
+- **Tests:** vitest, **128 en total** (`apps/api` integración con Mongo en memoria + JWT, y `apps/web` schemas/guardrail/lógica). Suites clave: `redemptions` (canje), `tenant-isolation`, `support` (modo soporte), `merchant-auth`. `pnpm typecheck` = 6 paquetes.

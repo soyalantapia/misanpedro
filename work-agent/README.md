@@ -1,7 +1,11 @@
 # work-agent — Contexto completo de Mi Ciudad (micuidad.com)
 
-Esta carpeta es el **handoff completo** del proyecto: si abrís un chat nuevo (o entra
+Esta carpeta es el **handoff vivo** del proyecto: si abrís un chat nuevo (o entra
 otra persona), leyendo esto entendés qué es, cómo está armado, dónde estamos y qué falta.
+
+> **Para la visión completa del proyecto** (negocio, arquitectura a fondo, flujos, seguridad,
+> historia, roadmap) → **[`../PROJECT.MD`](../PROJECT.MD)**. Para el onboarding técnico
+> (cómo correrlo, stack, env) → **[`../README.md`](../README.md)**. Esta carpeta es el **estado vivo**.
 
 > **Producto en una línea:** plataforma **multi-ciudad / multi-país** de descuentos
 > vecinales, marca blanca ("Mi <Ciudad>"), sobre **un solo codebase**. Cada pueblo/ciudad

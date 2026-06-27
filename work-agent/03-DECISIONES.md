@@ -61,3 +61,24 @@ No deshagas esto sin entender el motivo. Son decisiones del usuario o aprendizaj
     `packages/shared`, `tsconfig.base` extendido por las apps, y manifest PWA por-tenant
     (debe hacerse server-side por host, NO con blob runtime — rompería instalabilidad).
     Documentados en `01-PENDIENTES.md`.
+
+18. **Modo soporte = impersonación owner→comercio** (decisiones del usuario): **cualquier** owner
+    registrado puede entrar a **cualquier** comercio (aunque no sea su email aliado) para soporte
+    técnico; es **silencioso para el comercio** (la auditoría es interna nuestra); la sesión **no
+    vence pero es revocable**. El truco de identidad: el token lleva `sub = MerchantUser admin`
+    (TODO se atribuye al propietario) + claim `impersonatedBy = ownerId` (el rastro). El handoff
+    cross-host se hace con un **código de un solo uso** (`SupportCode`, 2 min, scoped por appId),
+    NO con el token en la URL. Cada mutación se audita (`auditImpersonation` → `OwnerAuditLog`).
+    Chequea `Owner.enabled` al generar y en cada `/refresh`. Ver `PROJECT.MD` §7.4. No reintroducir
+    el token en la URL ni saltear el chequeo de `enabled`.
+
+19. **Onboarding del comercio: email sin comercio → al alta** (no error). En el login, si el email
+    no tiene comercio en esa ciudad, se redirige al alta con el flujo precargado. El `request-otp`
+    devuelve `registered:false/true` — **se relajó el anti-enumeración a propósito** porque los
+    comercios son públicos (aparecen en el catálogo); el trade-off vale la pena por la UX del alta.
+    El draft del alta vive en localStorage **scopeado por email** (dos altas en pestañas no se pisan).
+
+20. **Emails OTP: template único + login de un toque.** Un solo template lindo/branded
+    (`renderOtpEmail`) para los 3 logins (vecino/comercio/owner): logo/monograma + código grande
+    copiable + botón **magic-link** que entra directo con el código precargado. Transporte SMTP
+    global (un buzón `soporte@micuidad.com`); lo único per-tenant es el display name.

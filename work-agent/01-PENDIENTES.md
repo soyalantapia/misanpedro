@@ -1,5 +1,29 @@
 # 01 · Pendientes (qué falta, en orden)
 
+> ## ✅ Tanda lanzamiento 2026-06-26/27 — SHIPPED a prod
+> La semana del lanzamiento. Todo en `main`, deployado y **verificado e2e/empíricamente en prod**.
+> **typecheck 6/6 · check:tenant ✓ · 128 tests verdes · build OK.**
+>
+> - **Owner expandido (Fases 1-4)** — auth OTP passwordless · multi-admin con **RBAC**
+>   (super/admin/finanzas/soporte/viewer) + sección Equipo · **auditoría** `OwnerAuditLog` ·
+>   estadísticas en vivo + snapshot diario de MRR. Commits `df9f302`/`c53cbf5`/`23a7696`/`d928b2e`/`a6d373f`.
+> - **Emails OTP rediseñados** (`b7f81fb`) — template único lindo/branded, logo + código copiable +
+>   **login de un toque** (magic-link). Seteado `OWNER_APP_URL` en Railway.
+> - **Onboarding del comercio** (`42472ca` + `1353188`) — login con email sin comercio → al alta
+>   con flujo precargado. Bug-hunt: 18→2 bugs fixeados (email con espacios + draft multi-pestaña).
+> - **Camino del dinero (canje)** (`664e2f1` + `4aa9606` + `cc47fb7`) — 13 tests de integración +
+>   fix de consistencia del ahorro `precio_fijo` (preview cajero == backend) + cierre compensado.
+> - **Aislamiento multi-tenant** (`51e4402`) — 5 tests de integración + auditoría 207 queries → 0 leaks.
+> - **Hardening pre-launch** (`5c9cee2`) — 5 fixes del barrido final (regex escape, OTP atómico,
+>   franja desde<hasta, tope 5MB imágenes, claim atómico referido). 0 blockers.
+> - **Modo soporte** (`a9a68fb` + `5fb94f6` + `d56a2ec`) — impersonación owner→comercio con
+>   auditoría de cada mutación + banner siempre visible. 2 bug-hunts: 2 bugs reales fixeados
+>   (owner deshabilitado + banner del canje), auditoría-en-mutación verificada e2e en prod. Ver doc 03 §18-20.
+>
+> **Pasos del usuario que SIGUEN pendientes:** ver sección B abajo (SMTP_PASSWORD, Nariño localidad/geo,
+> rotar password owner, MercadoPago Colombia, domicilio fiscal SP). **Nice-to-have del soporte:** botón
+> "cerrar sesiones de soporte" en el owner (endpoint `revoke-support` ya existe) + vista de auditoría filtrada.
+
 > ## ✅ Tanda pre-producción 2026-06-23 — SHIPPED a prod
 > Commits en `main`: `db06da9` (hardening/owner/web) · `4f011ad` (ci.yml) · `c37d68d` (tests integración). Deployado (`railway up`), CI verde, QA de prod (browse) 0 bugs.
 > **typecheck 6/6 · check:tenant ✓ · API 93/93 · web 104/104 · build OK.**
