@@ -874,6 +874,13 @@ const supportSessionLimiter = rateLimit({ prefix: 'owner-support', max: 30, wind
  */
 ownerRoutes.post('/merchants/:id/support-session', requireOwnerAuth, supportSessionLimiter, async (c) => {
   const auth = c.get('auth')
+  // El owner debe seguir HABILITADO: el access token vive 1h, así que si lo
+  // desactivaron del equipo no puede seguir generando sesiones de soporte (alto
+  // poder). Mismo gate que /owner/auth/refresh.
+  const ownerDoc = await Owner.findById(auth.sub).select('email enabled').lean()
+  if (!ownerDoc || !ownerDoc.enabled) {
+    return c.json({ ok: false, error: 'owner deshabilitado' }, 403)
+  }
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
 
@@ -891,7 +898,6 @@ ownerRoutes.post('/merchants/:id/support-session', requireOwnerAuth, supportSess
     return c.json({ ok: false, error: 'el comercio no tiene un usuario para impersonar' }, 409)
   }
 
-  const ownerDoc = await Owner.findById(auth.sub).select('email').lean()
   const code = randomBytes(32).toString('base64url')
   await SupportCode.create({
     codeHash: sha256(code),

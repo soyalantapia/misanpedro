@@ -4,7 +4,7 @@ import mongoose, { Types } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { ownerRoutes } from '@/routes/owner'
 import { merchantAuthRoutes } from '@/routes/merchant-auth'
-import { App, Merchant, MerchantUser, SupportCode } from '@/models'
+import { App, Merchant, MerchantUser, SupportCode, Owner } from '@/models'
 import { signAccessToken, verifyAccessToken } from '@/services/jwt.service'
 
 // MODO SOPORTE: el owner genera un código de un solo uso y el panel del comercio
@@ -52,6 +52,7 @@ beforeAll(async () => {
   await mongoose.connect(mongod.getUri())
   await Promise.all([Merchant.createIndexes(), MerchantUser.createIndexes(), SupportCode.createIndexes()])
   await App.create({ _id: appId, slug: 'ciudada', subdomain: 'ciudada', nombre: 'Mi CiudadA', ciudad: 'A', status: 'active' })
+  await Owner.create({ _id: ownerId, email: 'owner@micuidad.com', nombre: 'Owner Test', rol: 'super', enabled: true })
 }, 120_000)
 
 afterAll(async () => {
@@ -127,6 +128,17 @@ describe('modo soporte — owner impersona al comercio (integración Mongo real)
   it('comercio inexistente → 404', async () => {
     const s = await startSupport(new Types.ObjectId().toString())
     expect(s.status).toBe(404)
+  })
+
+  it('owner DESHABILITADO no puede generar sesión de soporte (aunque su token siga vivo)', async () => {
+    // Token válido de un owner que ya no existe / fue deshabilitado.
+    const ghost = 'Bearer ' + signAccessToken({ sub: new Types.ObjectId().toString(), type: 'owner', rol: 'super' })
+    const s = await startSupport(merchant._id.toString(), ghost)
+    expect(s.status).toBe(403)
+    await Owner.updateOne({ _id: ownerId }, { enabled: false })
+    const s2 = await startSupport(merchant._id.toString())
+    expect(s2.status).toBe(403)
+    await Owner.updateOne({ _id: ownerId }, { enabled: true }) // restaurar para otros tests
   })
 
   it('un código de la ciudad A no se canjea desde la ciudad B (aislamiento)', async () => {
