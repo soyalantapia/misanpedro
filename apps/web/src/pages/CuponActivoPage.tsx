@@ -10,6 +10,7 @@ import { getMerchant } from '@/data/mockData'
 import { useCoupon } from '@/lib/couponsStore'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 import { api, ApiError, tokens } from '@/lib/api'
+import { syncMyActivations } from '@/lib/syncActivations'
 
 export function CuponActivoPage() {
   const { id } = useParams<{ id: string }>()
@@ -45,6 +46,9 @@ export function CuponActivoPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const [confirmCancel, setConfirmCancel] = useState(false)
+  // Bug #5: cuando el polling automático se agota (6 min sin confirmación),
+  // dejamos de prometer "se actualiza solo" y ofrecemos un botón para chequear.
+  const [pollExhausted, setPollExhausted] = useState(false)
 
   const [nowMs, setNowMs] = useState(() => Date.now())
   useEffect(() => {
@@ -66,16 +70,9 @@ export function CuponActivoPage() {
     let ticks = 0
     const MAX_TICKS = 72
     async function check() {
-      if (++ticks > MAX_TICKS) {
-        if (pollIntervalRef.current) {
-          window.clearInterval(pollIntervalRef.current)
-          pollIntervalRef.current = null
-        }
-        return
-      }
       try {
         const res = await api.activations.get(actId)
-        if (cancelled) return
+        if (cancelled) return false
         if (res.activation.status === 'canjeado') {
           activationActions.markRedeemed(
             actId,
@@ -84,14 +81,42 @@ export function CuponActivoPage() {
           )
           toast.success('¡Cupón canjeado!', 'El comercio confirmó tu cupón.')
           navigate('/canjeados', { replace: true })
+          return true
         }
       } catch {
         /* silencioso; volvemos a chequear en el próximo tick */
       }
+      return false
     }
-    pollIntervalRef.current = window.setInterval(check, 5000)
+    function tick() {
+      if (++ticks > MAX_TICKS) {
+        if (pollIntervalRef.current) {
+          window.clearInterval(pollIntervalRef.current)
+          pollIntervalRef.current = null
+        }
+        // No cortamos en seco la promesa: avisamos que dejamos de chequear solo.
+        if (!cancelled) setPollExhausted(true)
+        return
+      }
+      void check()
+    }
+    pollIntervalRef.current = window.setInterval(tick, 5000)
+    setPollExhausted(false)
+    // Bug #5: al volver el foco al tab (común en mobile en la caja), re-chequeamos
+    // de una y reiniciamos el contador del poll si seguía agotado.
+    function onVisible() {
+      if (document.hidden || cancelled) return
+      ticks = 0
+      void check()
+      if (!pollIntervalRef.current) {
+        setPollExhausted(false)
+        pollIntervalRef.current = window.setInterval(tick, 5000)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
     return () => {
       cancelled = true
+      document.removeEventListener('visibilitychange', onVisible)
       if (pollIntervalRef.current) {
         window.clearInterval(pollIntervalRef.current)
         pollIntervalRef.current = null
@@ -201,10 +226,24 @@ export function CuponActivoPage() {
                 Mostrale este código al encargado de {merchant.nombre}
               </p>
               <p className="text-[11px] leading-relaxed">
-                {livePollingActive
+                {livePollingActive && !pollExhausted
                   ? 'Cuando lo valide, esta pantalla se actualiza automáticamente y el cupón queda en tu historial. No tenés que hacer nada más.'
-                  : 'Mostrá el código; el comercio lo valida desde su panel. Después vas a ver el cupón en tu historial.'}
+                  : livePollingActive && pollExhausted
+                    ? '¿Ya te lo validaron? Tocá Actualizar para ver tu cupón en el historial.'
+                    : 'Mostrá el código; el comercio lo valida desde su panel. Después vas a ver el cupón en tu historial.'}
               </p>
+              {livePollingActive && pollExhausted && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPollExhausted(false)
+                    syncMyActivations()
+                  }}
+                  className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-fin-surface px-3 py-1.5 text-[11px] font-bold text-fin-ink ring-1 ring-fin-line hover:bg-fin-surface2"
+                >
+                  <RotateCw size={12} /> Actualizar
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -325,15 +364,20 @@ function ExpiryHint({
   nowMs: number
   isActive: boolean
 }) {
-  if (!expiresAt) {
+  const ms = expiresAt ? new Date(expiresAt).getTime() - nowMs : Infinity
+  // Bug #6: los códigos ya no expiran por tiempo. Si la activación sigue ACTIVA,
+  // ignoramos un expiresAt legacy ya vencido (el QR igual se canjea en el backend)
+  // y mostramos "sin tiempo límite" en vez de un "venció" que contradice el QR
+  // usable de arriba. El "venció" real sale solo cuando la activación NO está
+  // activa (cancelada/expirada por status).
+  if (isActive && (!expiresAt || ms <= 0)) {
     return (
       <p className="max-w-xs text-center text-[11px] text-fin-faint">
         Sin tiempo límite — el código vale hasta que lo uses.
       </p>
     )
   }
-  const ms = new Date(expiresAt).getTime() - nowMs
-  if (!isActive || ms <= 0) {
+  if (!isActive) {
     return (
       <p className="max-w-xs text-center text-[11px] font-semibold text-fin-danger">
         El cupón venció. Reactivalo desde Cupones.

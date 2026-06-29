@@ -56,7 +56,16 @@ export function ApiSync() {
             const me = await api.userApi.me()
             if (cancelled) return
             const localUser = getUserSnapshot()
-            if (!localUser || localUser.id !== me.user.id) {
+            // Bug #22: re-espejar también cuando cambió el NOMBRE/teléfono con el
+            // mismo id (re-claim con otro nombre desde otro celu, o corrección por
+            // soporte). Antes solo se hacía replace si cambiaba el id → el perfil
+            // mostraba el nombre viejo indefinidamente en el dispositivo secundario.
+            if (
+              !localUser ||
+              localUser.id !== me.user.id ||
+              localUser.nombre !== me.user.nombre ||
+              localUser.telefono !== me.user.telefono
+            ) {
               const apiUser: User = {
                 id: me.user.id,
                 nombre: me.user.nombre,

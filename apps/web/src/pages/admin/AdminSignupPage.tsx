@@ -199,8 +199,15 @@ export function AdminSignupPage() {
       return null
     }
     if (s === 2) {
-      // Paso 2 — Contacto: teléfono (los horarios son opcionales).
-      if (!form.telefono.trim()) return 'Falta el teléfono'
+      // Paso 2 — Contacto: teléfono (los horarios son opcionales). Bug #8:
+      // replicamos la regla del backend (phoneSchema: min 6 + solo dígitos/
+      // espacios/-+().) acá, para frenar al comercio en el paso del teléfono con
+      // un error claro, en vez de un 'invalid input' genérico recién en el paso 3.
+      const tel = form.telefono.trim()
+      if (!tel) return 'Falta el teléfono'
+      if (tel.length < 6) return 'El teléfono es muy corto'
+      if (!/^[\d\s\-+()\.]+$/.test(tel))
+        return 'El teléfono solo puede tener números, espacios, guiones, paréntesis y +'
       return null
     }
     // Paso 3 — Tu cuenta: nombre del responsable + email.

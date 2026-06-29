@@ -304,7 +304,7 @@ export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'local
               icon={Search}
               title="No encontramos cupones"
               description={
-                categoria || search || minPct > 0
+                categoria || deferredSearch || minPct > 0
                   ? 'Probá quitar algún filtro o cambiar la búsqueda.'
                   : 'Pronto vamos a sumar más comercios al programa.'
               }
@@ -340,7 +340,7 @@ export function DescuentosPage({ mode = 'cupones' }: { mode?: 'cupones' | 'local
             icon={Search}
             title="No encontramos comercios"
             description={
-              categoria || search || minPct > 0
+              categoria || deferredSearch || minPct > 0
                 ? 'Probá quitar algún filtro o cambiar la búsqueda.'
                 : 'Pronto vamos a sumar más comercios al programa.'
             }

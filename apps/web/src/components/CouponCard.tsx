@@ -76,6 +76,10 @@ export function CouponCard({
 }) {
   const cat = CATEGORIAS.find((c) => c.id === merchant.categoria)?.label ?? merchant.categoria
   const v = valorCupon(coupon)
+  // Bug #17: un precio_fijo SIN precio normal de referencia no tiene un % real
+  // (porcentaje queda en el default del slider) → el badge "30% OFF" mentiría.
+  // En ese caso mostramos "FIJO" en vez de un porcentaje inventado.
+  const badgeFijoSinRef = v.modo === 'precio_fijo' && v.ahorro == null
   const bloqueado = !!usoEstado?.bloqueado
   const dispoTxt = bloqueado ? textoDisponible(usoEstado?.nextDisponible ?? null) : null
 
@@ -91,7 +95,9 @@ export function CouponCard({
             bloqueado ? 'bg-fin-surface2 text-fin-soft' : 'bg-fin-lime text-fin-bg shadow-fin-glow'
           }`}
         >
-          <span className="text-sm font-extrabold leading-none tabular-nums">{coupon.porcentaje}%</span>
+          <span className="text-sm font-extrabold leading-none tabular-nums">
+            {badgeFijoSinRef ? 'FIJO' : `${coupon.porcentaje}%`}
+          </span>
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-bold leading-tight text-fin-ink">{coupon.titulo}</h3>
@@ -128,8 +134,14 @@ export function CouponCard({
           className="h-36 w-full"
         />
         <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-fin-bg px-3 py-1.5 font-bold text-fin-lime shadow-floating ring-1 ring-fin-line">
-          <span className="text-base tabular-nums">{coupon.porcentaje}%</span>
-          <span className="ml-1 text-[10px] font-extrabold tracking-widest">OFF</span>
+          {badgeFijoSinRef ? (
+            <span className="text-[10px] font-extrabold tracking-widest">PRECIO FIJO</span>
+          ) : (
+            <>
+              <span className="text-base tabular-nums">{coupon.porcentaje}%</span>
+              <span className="ml-1 text-[10px] font-extrabold tracking-widest">OFF</span>
+            </>
+          )}
         </span>
         {distanceKm !== undefined && !bloqueado && (
           <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-fin-bg px-2.5 py-1 text-[11px] font-semibold text-fin-ink shadow-fin-card ring-1 ring-fin-line">
