@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import mongoose, { Types } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { redemptionsRoutes } from '@/routes/redemptions'
+import { activationsRoutes } from '@/routes/activations'
 import { App, Merchant, User, Coupon, Activation, Redemption } from '@/models'
 import { signAccessToken } from '@/services/jwt.service'
 
@@ -20,6 +21,14 @@ const appBId = new Types.ObjectId()
 
 const app = new Hono()
 app.route('/', redemptionsRoutes)
+
+// App separada para /activations/me (requiere token de USUARIO vecino).
+const actApp = new Hono()
+actApp.route('/', activationsRoutes)
+function userAuthHeader(userId: Types.ObjectId, tenantId = appId) {
+  const token = signAccessToken({ sub: userId.toString(), type: 'user', appId: tenantId.toString() })
+  return `Bearer ${token}`
+}
 
 function authHeader(merchantUserId: Types.ObjectId, merchantId: Types.ObjectId, tenantId = appId) {
   const token = signAccessToken({
@@ -293,6 +302,67 @@ describe('canje /validate + /confirm — invariantes del dinero (integración Mo
     expect(r2.status).toBe(409)
     expect(r2.body.motivo).toBe('limite_por_persona')
     expect(await Redemption.countDocuments({ userId: user._id })).toBe(1)
+  })
+
+  it('snapshot del cupón: tras borrar el cupón, /recent sigue resolviendo título y % (bugs #2/#3)', async () => {
+    const merchant = await mkMerchant()
+    const user = await mkUser()
+    const coupon = await mkCoupon(merchant._id, { titulo: 'Combo desayuno 25% OFF', porcentaje: 25 })
+    const act = await mkActivation(coupon, user)
+    const auth = authHeader(new Types.ObjectId(), merchant._id)
+
+    const r = await confirm('ciudada', auth, { activationId: act._id.toString(), montoTicket: 4000 })
+    expect(r.status).toBe(200)
+    // El canje guardó el snapshot del cupón.
+    const red = await Redemption.findOne({ activationId: act._id })
+    expect(red?.couponTituloSnapshot).toBe('Combo desayuno 25% OFF')
+    expect(red?.couponPorcentajeSnapshot).toBe(25)
+
+    // El comercio BORRA el cupón (hard delete) — los redemptions quedan huérfanos.
+    await Coupon.deleteOne({ _id: coupon._id })
+    expect(await Coupon.countDocuments({ _id: coupon._id })).toBe(0)
+
+    // /recent igual resuelve título + % desde el snapshot (antes: coupon=undefined).
+    const res = await app.request('/recent', {
+      headers: { 'x-tenant-slug': 'ciudada', authorization: auth },
+    })
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as Record<string, any>
+    const row = body.redemptions.find((x: any) => x.id === red?._id.toString())
+    expect(row).toBeTruthy()
+    expect(row.coupon).toBeTruthy()
+    expect(row.coupon.titulo).toBe('Combo desayuno 25% OFF')
+    expect(row.coupon.porcentaje).toBe(25)
+  })
+
+  it('snapshot en la activación: /activations/me resuelve título/comercio tras borrar el cupón (bug #3)', async () => {
+    const merchant = await mkMerchant()
+    const user = await mkUser()
+    const coupon = await mkCoupon(merchant._id, { titulo: 'Helado 2x1 del finde', porcentaje: 50 })
+    const act = await mkActivation(coupon, user)
+    const auth = authHeader(new Types.ObjectId(), merchant._id)
+
+    const r = await confirm('ciudada', auth, { activationId: act._id.toString(), montoTicket: 3000 })
+    expect(r.status).toBe(200)
+    const freshAct = await Activation.findById(act._id)
+    expect(freshAct?.couponTituloSnapshot).toBe('Helado 2x1 del finde')
+    expect(freshAct?.couponPorcentajeSnapshot).toBe(50)
+    expect(freshAct?.merchantNombreSnapshot).toBe('Comercio Test')
+
+    // Se borra el cupón (hard delete).
+    await Coupon.deleteOne({ _id: coupon._id })
+
+    // /activations/me (token de vecino) igual devuelve coupon/merchant del snapshot.
+    const res = await actApp.request('/me', {
+      headers: { 'x-tenant-slug': 'ciudada', authorization: userAuthHeader(user._id) },
+    })
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as Record<string, any>
+    const row = body.activations.find((x: any) => x.id === act._id.toString())
+    expect(row).toBeTruthy()
+    expect(row.coupon?.titulo).toBe('Helado 2x1 del finde')
+    expect(row.coupon?.porcentaje).toBe(50)
+    expect(row.merchant?.nombre).toBe('Comercio Test')
   })
 
   it('validate serializa tipoOferta + precioFijo (el preview del cajero los necesita)', async () => {

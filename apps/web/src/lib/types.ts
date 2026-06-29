@@ -184,6 +184,12 @@ export type Activation = {
   ahorroEstimado?: number
   /** Monto del ticket que registró el cajero al confirmar el canje. */
   montoTicket?: number
+  /** Snapshot del cupón/comercio embebido al canjear (bug #3): permite resolver
+   *  el historial "Canjeados" aunque el cupón se haya borrado/pausado/vencido. */
+  couponTitulo?: string
+  couponPorcentaje?: number
+  merchantNombre?: string
+  merchantCategoria?: string
 }
 
 export type Merchant_ = Merchant // re-export for type narrowing

@@ -85,9 +85,23 @@ export function AdminClienteDetailPage() {
     }
   }, [apiClientes.data, apiRedemptions.data, userId])
 
-  // Mergeamos cupones para que los couponId de Mongo se resuelvan
+  // Mergeamos cupones para que los couponId de Mongo se resuelvan.
   const couponMap = useMemo(() => {
     const m = new Map<string, { id: string; titulo: string; porcentaje: number; merchantId: string }>()
+    // Bugs #2/LTV/favorito: sembramos PRIMERO con el snapshot que viene embebido
+    // en cada canje (/recent → r.coupon), para que un cupón borrado/pausado/
+    // vencido (ausente del catálogo activo) igual resuelva título + %. El catálogo
+    // vivo de abajo lo pisa con el dato más fresco cuando el cupón aún existe.
+    apiRedemptions.data?.forEach((r: any) => {
+      if (r.coupon && !m.has(String(r.couponId))) {
+        m.set(String(r.couponId), {
+          id: String(r.couponId),
+          titulo: r.coupon.titulo,
+          porcentaje: r.coupon.porcentaje ?? 0,
+          merchantId: '',
+        })
+      }
+    })
     localCoupons.forEach((c) =>
       m.set(c.id, {
         id: c.id,
@@ -105,7 +119,7 @@ export function AdminClienteDetailPage() {
       }),
     )
     return m
-  }, [localCoupons, apiCoupons.data])
+  }, [localCoupons, apiCoupons.data, apiRedemptions.data])
 
   const client = apiClient ?? localClient
 
@@ -130,12 +144,18 @@ export function AdminClienteDetailPage() {
   // en este comercio. Para cada canje:
   //   ticket_estimado = ahorro / (porcentaje / 100)
   // Es una estimación porque solo registramos el ahorro, no el ticket exacto.
+  // LTV: con el snapshot del cupón (arriba) hoy resuelven todos los canjes;
+  // para canjes legacy sin snapshot ni cupón vivo, contamos cuántos entraron
+  // al LTV y dividimos por ESE total (no por `count`), así LTV y ticket promedio
+  // quedan consistentes entre sí (bug LTV/ticket subestimado).
+  let ltvCount = 0
   const ltv = redemptions.reduce((s, r) => {
     const c = couponMap.get(r.couponId)
     if (!c || !r.ahorroEstimado || c.porcentaje === 0) return s
+    ltvCount += 1
     return s + (r.ahorroEstimado * 100) / c.porcentaje
   }, 0)
-  const avgTicket = count > 0 ? Math.round(ltv / count) : 0
+  const avgTicket = ltvCount > 0 ? Math.round(ltv / ltvCount) : 0
 
   const dayCount = new Map<number, number>()
   redemptions.forEach((r) => {
@@ -266,7 +286,13 @@ export function AdminClienteDetailPage() {
           <PatternCard
             icon={TrendingUp}
             label="Frecuencia"
-            value={`${avgPerMonth}/mes`}
+            // Bug #16: un cliente recién llegado (monthsActive===0) no tiene
+            // cadencia mensual — mostramos cantidad de canjes, no "N/mes".
+            value={
+              monthsActive > 0
+                ? `${avgPerMonth}/mes`
+                : `${count} ${count === 1 ? 'canje' : 'canjes'}`
+            }
             sub={
               monthsActive > 0
                 ? `${monthsActive} ${monthsActive === 1 ? 'mes' : 'meses'} de actividad`
@@ -426,10 +452,14 @@ function PatternCard({
   )
 }
 
-function monthsSince(iso: string | undefined): number {
+/** Meses (redondeados) desde la fecha dada. Bug #16: NO forzamos piso de 1 —
+ *  un cliente con su primer (y único) canje hoy debe dar 0, así la card de
+ *  Frecuencia cae en la rama 'Cliente nuevo' en vez de mostrar '1/mes · 1 mes
+ *  de actividad', que insinúa una cadencia mensual inexistente. */
+export function monthsSince(iso: string | undefined, nowMs = Date.now()): number {
   if (!iso) return 0
-  const months = (Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24 * 30)
-  return Math.max(1, Math.round(months))
+  const months = (nowMs - new Date(iso).getTime()) / (1000 * 60 * 60 * 24 * 30)
+  return Math.max(0, Math.round(months))
 }
 
 function ageFrom(iso: string): number | null {

@@ -17,7 +17,7 @@ export async function syncMyActivations(): Promise<void> {
   if (!userId) return
   try {
     const data = await api.activations.mine()
-    for (const a of data.activations) {
+    for (const a of data.activations as any[]) {
       const local: Activation = {
         id: a.id,
         couponId: a.couponId,
@@ -30,6 +30,12 @@ export async function syncMyActivations(): Promise<void> {
         redeemedAt: a.redeemedAt,
         ahorroEstimado: a.ahorroEstimado,
         montoTicket: a.montoTicket,
+        // Snapshot embebido (bug #3) para resolver el historial aunque el cupón
+        // se haya borrado/pausado/vencido (sale del catálogo activo).
+        couponTitulo: a.coupon?.titulo,
+        couponPorcentaje: a.coupon?.porcentaje,
+        merchantNombre: a.merchant?.nombre,
+        merchantCategoria: a.merchant?.categoria,
       }
       demoStoreActions.upsertActivation(local)
     }

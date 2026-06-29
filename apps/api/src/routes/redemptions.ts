@@ -219,6 +219,10 @@ redemptionsRoutes.post('/confirm', confirmLimiter, requireMerchantAuth, requireM
       montoTicket: montoEfectivo,
       ahorroEstimado,
       redeemedAt,
+      // Snapshot del cupón (bugs #2/#3): el historial se resuelve aunque el
+      // cupón se borre/pause/venza después.
+      couponTituloSnapshot: coupon.titulo,
+      couponPorcentajeSnapshot: coupon.porcentaje,
     })
   } catch (err) {
     // Falló el registro del canje → devolvemos el stock reclamado. NO tocamos la
@@ -248,6 +252,17 @@ redemptionsRoutes.post('/confirm', confirmLimiter, requireMerchantAuth, requireM
     activation.redeemedAt = redeemedAt
     activation.montoTicket = montoEfectivo
     activation.ahorroEstimado = ahorroEstimado
+    // Snapshot del cupón/comercio (bug #3): el historial del vecino resuelve
+    // título/% y nombre del comercio aunque el cupón se borre/pause/venza.
+    activation.couponTituloSnapshot = coupon.titulo
+    activation.couponPorcentajeSnapshot = coupon.porcentaje
+    const merchantSnap = await Merchant.findById(coupon.merchantId)
+      .select('nombre categoria')
+      .lean()
+    if (merchantSnap) {
+      activation.merchantNombreSnapshot = merchantSnap.nombre
+      activation.merchantCategoriaSnapshot = merchantSnap.categoria
+    }
     await activation.save()
 
     if (coupon.stockMaximo != null) {
@@ -355,6 +370,13 @@ redemptionsRoutes.get('/recent', requireMerchantAuth, async (c) => {
     redemptions: redemptions.map((r) => {
       const coupon = couponMap.get(r.couponId.toString())
       const user = r.userId ? userMap.get(r.userId.toString()) : undefined
+      // Bugs #2/#3: si el cupón ya no existe (borrado/pausado/vencido), caemos
+      // al snapshot guardado en el canje para no perder título/% en el historial.
+      const couponInfo = coupon
+        ? { titulo: coupon.titulo, porcentaje: coupon.porcentaje }
+        : r.couponTituloSnapshot != null
+          ? { titulo: r.couponTituloSnapshot, porcentaje: r.couponPorcentajeSnapshot ?? 0 }
+          : undefined
       return {
         id: r._id.toString(),
         couponId: r.couponId.toString(),
@@ -362,7 +384,7 @@ redemptionsRoutes.get('/recent', requireMerchantAuth, async (c) => {
         montoTicket: r.montoTicket,
         ahorroEstimado: r.ahorroEstimado,
         redeemedAt: r.redeemedAt.toISOString(),
-        coupon: coupon ? { titulo: coupon.titulo, porcentaje: coupon.porcentaje } : undefined,
+        coupon: couponInfo,
         user: user ? { nombre: user.nombre, dni: user.dni } : undefined,
       }
     }),

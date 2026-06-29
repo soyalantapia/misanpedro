@@ -25,6 +25,15 @@ const activationSchema = new Schema(
     redeemedAt: { type: Date },
     ahorroEstimado: { type: Number },
     montoTicket: { type: Number },
+    /**
+     * Snapshot del cupón/comercio al confirmar el canje (bug #3). El historial
+     * "Canjeados" del vecino resuelve título/% aunque el cupón se borre, pause
+     * o venza (sale del catálogo activo). Solo se setean al canjear.
+     */
+    couponTituloSnapshot: { type: String },
+    couponPorcentajeSnapshot: { type: Number },
+    merchantNombreSnapshot: { type: String },
+    merchantCategoriaSnapshot: { type: String },
     location: {
       type: { type: String, enum: ['Point'] },
       coordinates: { type: [Number] },

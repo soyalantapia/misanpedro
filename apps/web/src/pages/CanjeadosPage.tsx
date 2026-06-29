@@ -63,8 +63,13 @@ export function CanjeadosPage() {
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
     const totalAhorro = redemptions.reduce((s, r) => s + (r.ahorroEstimado ?? 0), 0)
+    // Bug #21: el conteo de comercios depende de couponMap (catálogo), así que
+    // va en deps; y con fallback al nombre del snapshot para no decir "0
+    // comercios" cuando el catálogo aún no cargó o el cupón se borró.
     const allMerchants = new Set(
-      redemptions.map((r) => getCoupon(r.couponId)?.merchantId).filter(Boolean) as string[],
+      redemptions
+        .map((r) => getCoupon(r.couponId)?.merchantId ?? r.merchantNombre)
+        .filter(Boolean) as string[],
     )
     const thisMonth = redemptions.filter(
       (r) => new Date(r.redeemedAt!).getTime() >= startOfMonth,
@@ -77,7 +82,8 @@ export function CanjeadosPage() {
       monthAhorro,
       monthCount: thisMonth.length,
     }
-  }, [redemptions])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [redemptions, couponMap])
 
   if (isLoading && localCoupons.length === 0) {
     return (
@@ -156,7 +162,14 @@ export function CanjeadosPage() {
               const c = getCoupon(r.couponId)
               const m = c ? getMerchantBySlug(c.merchantId) : undefined
               if (!r.redeemedAt) return null
-              if (!c || !m) {
+              // Bug #3: si el cupón/comercio ya no está en el catálogo activo
+              // (borrado/pausado/vencido), resolvemos desde el snapshot embebido
+              // en la activación, así el canje histórico no desaparece.
+              const titulo = c?.titulo ?? r.couponTitulo
+              const porcentaje = c?.porcentaje ?? r.couponPorcentaje
+              const merchantNombre = m?.nombre ?? r.merchantNombre
+              const merchantCategoria = (m?.categoria ?? r.merchantCategoria) as any
+              if (!titulo || !merchantNombre) {
                 return isLoading ? (
                   <div key={r.id} className="h-20 animate-pulse rounded-2xl bg-fin-surface ring-1 ring-fin-line" />
                 ) : null
@@ -171,16 +184,18 @@ export function CanjeadosPage() {
                   className="animate-fade-up flex flex-col gap-2 rounded-2xl bg-fin-surface p-3 ring-1 ring-fin-line shadow-fin-card"
                 >
                   <div className="flex items-center gap-3">
-                    <CardImage categoria={m.categoria} className="h-12 w-12 rounded-xl" size="sm" />
+                    <CardImage categoria={merchantCategoria} className="h-12 w-12 rounded-xl" size="sm" />
                     <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-bold text-fin-ink">{m.nombre}</p>
+                      <p className="truncate text-sm font-bold text-fin-ink">{merchantNombre}</p>
                       <p className="text-xs text-fin-soft">
-                        {formatRedeemedDate(r.redeemedAt)} · {c.titulo}
+                        {formatRedeemedDate(r.redeemedAt)} · {titulo}
                       </p>
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-sm font-bold text-fin-up">−{formatMoney(ahorro)}</p>
-                      <p className="text-[11px] font-semibold text-fin-faint">{c.porcentaje}% off</p>
+                      {porcentaje != null && (
+                        <p className="text-[11px] font-semibold text-fin-faint">{porcentaje}% off</p>
+                      )}
                     </div>
                   </div>
                   {ticket > 0 && (

@@ -47,7 +47,17 @@ function serializeActivation(a: any, coupon?: any, merchant?: any) {
           merchantId: coupon.merchantId.toString(),
           imagenUrl: coupon.imagenUrl,
         }
-      : undefined,
+      : // Bug #3: si el cupón ya no existe (borrado/pausado/vencido) pero el
+        // canje guardó snapshot, lo devolvemos para que el historial resuelva.
+        a.couponTituloSnapshot != null
+        ? {
+            id: a.couponId.toString(),
+            titulo: a.couponTituloSnapshot,
+            porcentaje: a.couponPorcentajeSnapshot ?? 0,
+            merchantId: '',
+            imagenUrl: undefined,
+          }
+        : undefined,
     merchant: merchant
       ? {
           id: merchant._id.toString(),
@@ -56,7 +66,15 @@ function serializeActivation(a: any, coupon?: any, merchant?: any) {
           categoria: merchant.categoria,
           logoSeed: merchant.logoSeed,
         }
-      : undefined,
+      : a.merchantNombreSnapshot != null
+        ? {
+            id: '',
+            slug: '',
+            nombre: a.merchantNombreSnapshot,
+            categoria: a.merchantCategoriaSnapshot ?? 'otro',
+            logoSeed: undefined,
+          }
+        : undefined,
   }
 }
 

@@ -22,6 +22,15 @@ const redemptionSchema = new Schema(
     montoTicket: { type: Number },
     ahorroEstimado: { type: Number, required: true },
     redeemedAt: { type: Date, required: true, default: Date.now },
+    /**
+     * Snapshot del cupón al momento del canje (bugs #2/#3/LTV/favorito). El
+     * cupón puede borrarse (hard delete), pausarse o vencer y desaparecer del
+     * catálogo activo; sin esto el historial del cliente/vecino no podía
+     * resolver título ni % y mostraba tarjetas faltantes o '—'. Opcionales para
+     * compatibilidad con canjes viejos (anteriores a este campo).
+     */
+    couponTituloSnapshot: { type: String },
+    couponPorcentajeSnapshot: { type: Number },
   },
   { timestamps: true },
 )
