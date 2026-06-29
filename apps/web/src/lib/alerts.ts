@@ -129,21 +129,37 @@ function activeAlerts(): Alert[] {
   return store.alerts.filter((a) => a.activa)
 }
 
-function recentSorted(list: AlertCoupon[]): AlertCoupon[] {
-  const cutoff = Date.now() - RECENT_MS
-  return list
-    .filter((c) => objectIdTime(c.id) >= cutoff)
-    .sort((a, b) => objectIdTime(b.id) - objectIdTime(a.id))
+/** Ordena por novedad (timestamp del ObjectId), sin recortar por antigüedad. */
+function byNewest(list: AlertCoupon[]): AlertCoupon[] {
+  return [...list].sort((a, b) => objectIdTime(b.id) - objectIdTime(a.id))
 }
 
-/** Cupones recientes que matchean UNA alerta puntual. */
+/** Filtra a los cargados en los últimos RECENT_MS (para "novedades"/badge). */
+function recentSorted(list: AlertCoupon[]): AlertCoupon[] {
+  const cutoff = Date.now() - RECENT_MS
+  return byNewest(list).filter((c) => objectIdTime(c.id) >= cutoff)
+}
+
+/**
+ * Cupones que matchean UNA alerta puntual. Bug #4: el CONTADOR de la tarjeta de
+ * alerta cuenta TODOS los que coinciden (el backend ya filtró a estado=activo +
+ * vigente), sin recortar por antigüedad de creación — un cupón vigente cargado
+ * hace >21 días igual cuenta. El cutoff de 21 días es solo para "novedades".
+ */
 export function couponsForAlert(alertId: string): AlertCoupon[] {
   const a = store.alerts.find((x) => x.id === alertId)
   if (!a) return []
-  return recentSorted(coupons.filter((c) => matchesAlert(c, a)))
+  return byNewest(coupons.filter((c) => matchesAlert(c, a)))
 }
 
-/** Cupones recientes que matchean CUALQUIER alerta activa (feed combinado). */
+/** Cupones que matchean CUALQUIER alerta activa (feed combinado de la página). */
+function matchingAny(): AlertCoupon[] {
+  const active = activeAlerts()
+  if (active.length === 0) return []
+  return byNewest(coupons.filter((c) => active.some((a) => matchesAlert(c, a))))
+}
+
+/** Como matchingAny pero solo los recientes (badge de novedades / unread). */
 function recentMatchingAny(): AlertCoupon[] {
   const active = activeAlerts()
   if (active.length === 0) return []
@@ -160,10 +176,14 @@ export type AlertsSnapshot = {
 let snapshot: AlertsSnapshot = computeSnapshot()
 
 function computeSnapshot(): AlertsSnapshot {
-  const feed = recentMatchingAny()
+  // El FEED muestra todos los cupones vigentes que matchean (bug #4: no recortar
+  // por antigüedad). El UNREAD (badge de novedades) cuenta solo los recientes
+  // no vistos.
+  const feed = matchingAny()
+  const recientes = recentMatchingAny()
   return {
     feed,
-    unread: feed.filter((c) => !seen.has(c.id)).length,
+    unread: recientes.filter((c) => !seen.has(c.id)).length,
     alerts: store.alerts,
     pushEnabled: store.pushEnabled,
   }
@@ -176,9 +196,24 @@ function notify() {
 
 /** El watcher (campana) llama esto con el catálogo actual. */
 export function setAlertCoupons(list: AlertCoupon[]) {
+  // Bug #19: dedup por CONTENIDO, no solo id+orden. Si un comercio editó el % o
+  // el título de un cupón existente (mismo id), antes el early-return descartaba
+  // la actualización y el feed/matchesAlert seguían con el valor viejo.
   const sameLength = list.length === coupons.length
-  const sameIds = sameLength && list.every((c, i) => c.id === coupons[i]?.id)
-  if (sameIds) return
+  const sameContent =
+    sameLength &&
+    list.every((c, i) => {
+      const p = coupons[i]
+      return (
+        p &&
+        c.id === p.id &&
+        c.porcentaje === p.porcentaje &&
+        c.titulo === p.titulo &&
+        c.categoria === p.categoria &&
+        c.merchantSlug === p.merchantSlug
+      )
+    })
+  if (sameContent) return
   coupons = list
   if (!initialized && list.length > 0) {
     // Línea de base: nada es "nuevo" en el primer uso.

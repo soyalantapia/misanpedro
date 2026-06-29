@@ -45,10 +45,13 @@ export function AlertasPage() {
   const merchants = merchantsRes.data ?? []
   const [showForm, setShowForm] = useState(false)
 
-  // Ver la página = ver las alertas → marcamos como vistas.
+  // Ver la página = ver las alertas → marcamos como vistas. Bug #20: lo hacíamos
+  // con un setTimeout(400) cancelable; si el vecino tocaba un cupón del feed antes
+  // de los 400ms, el cleanup cancelaba el marcado y el badge quedaba "fantasma".
+  // markAllSeen es idempotente (solo notifica si cambió), así que lo corremos al
+  // montar, de una.
   useEffect(() => {
-    const t = setTimeout(markAllSeen, 400)
-    return () => clearTimeout(t)
+    markAllSeen()
   }, [])
 
   const open = (id: string) => navigate(`/cupon/${id}`)
@@ -120,16 +123,22 @@ export function AlertasPage() {
         </ul>
       )}
 
-      {/* Cupones que coinciden */}
-      {hasActive && (
+      {/* Cupones que coinciden. Bug #18: la sección se muestra mientras existan
+          alertas (aunque estén todas en pausa), con un texto que explica el
+          estado — antes desaparecía de golpe al pausar la última alerta. */}
+      {alerts.length > 0 && (
         <div className="mt-8">
           <h2 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-fin-faint">
             Cupones para vos
           </h2>
           <MatchFeed
-            coupons={feed}
+            coupons={hasActive ? feed : []}
             onOpen={open}
-            emptyText="Por ahora no hay cupones que coincidan con tus alertas. Te avisamos cuando salgan."
+            emptyText={
+              hasActive
+                ? 'Por ahora no hay cupones que coincidan con tus alertas. Te avisamos cuando salgan.'
+                : 'Tenés todas tus alertas en pausa. Activá una para volver a ver cupones acá.'
+            }
           />
         </div>
       )}
