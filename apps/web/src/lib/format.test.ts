@@ -9,6 +9,7 @@ import {
   defaultHorariosSemana,
   isOpenNow,
   pluralize,
+  localISODate,
   pad,
 } from './format'
 import type { HorariosSemana } from './types'
@@ -117,6 +118,25 @@ describe('pluralize', () => {
   it('plural irregular explícito', () => {
     expect(pluralize(1, 'envío', 'envíos')).toBe('1 envío')
     expect(pluralize(4, 'envío', 'envíos')).toBe('4 envíos')
+  })
+})
+
+describe('localISODate', () => {
+  // Bug #12/#13: debe devolver el día de CALENDARIO LOCAL, no el truncado en UTC.
+  it('usa los componentes de fecha locales', () => {
+    // 29/06/2026 23:00 hora local. En AR (UTC-3) el UTC ya sería el 30, pero
+    // localISODate usa getters locales → debe devolver "2026-06-29".
+    const d = new Date(2026, 5, 29, 23, 0, 0)
+    expect(localISODate(d)).toBe('2026-06-29')
+  })
+
+  it('zero-padea mes y día', () => {
+    expect(localISODate(new Date(2026, 0, 5, 10, 0))).toBe('2026-01-05')
+  })
+
+  it('coincide con el día local incluso a las 23:59', () => {
+    const d = new Date(2026, 11, 31, 23, 59, 59)
+    expect(localISODate(d)).toBe('2026-12-31')
   })
 })
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { formatMoney } from '@/lib/format'
+import { formatMoney, localISODate } from '@/lib/format'
 import {
   ChevronLeft,
   ArrowLeft,
@@ -97,7 +97,8 @@ const TIPOS: { id: TipoOferta; label: string }[] = [
 ]
 
 function defaultExpiry(): string {
-  return addDays(new Date(), 30).toISOString().slice(0, 10)
+  // Día local, no UTC (bug #12): de noche en AR el slice UTC saltaba +1 día.
+  return localISODate(addDays(new Date(), 30))
 }
 function addDays(d: Date, days: number): Date {
   const next = new Date(d)
@@ -647,6 +648,11 @@ function Asesor({
     tienePrecio && tieneCosto && costo < precio
       ? Math.min(70, Math.max(5, Math.floor(((1 - costo / precio) * 100) / 5) * 5))
       : 70
+  // Bug #15: si el margen real es <5%, NINGÚN % del slider (mínimo 5%) protege el
+  // costo — un 5% off ya vende bajo costo. En esa banda el "Tope X% para no vender
+  // bajo tu costo" miente. La detectamos para mostrar un copy honesto.
+  const margenMuyChico =
+    tienePrecio && tieneCosto && costo < precio && Math.floor(((1 - costo / precio) * 100) / 5) * 5 === 0
   // Si el costo baja el tope por debajo del % elegido, lo recortamos solo.
   useEffect(() => {
     if (form.porcentaje > maxDescuento) update('porcentaje', maxDescuento)
@@ -837,7 +843,13 @@ function Asesor({
                   className="mt-1 w-full accent-brand"
                 />
                 <div className="flex justify-between text-[10px] text-ink-faint"><span>5%</span><span>{maxDescuento}%</span></div>
-                {tieneCosto && !costoMayorQuePrecio && maxDescuento < 70 && (
+                {tieneCosto && !costoMayorQuePrecio && margenMuyChico && (
+                  <p className="mt-1 text-[11px] font-semibold text-status-warning-fg">
+                    Tu margen es muy chico (menos de 5%): cualquier descuento te deja
+                    abajo del costo. Mejor usá <span className="font-bold">Precio fijo</span>.
+                  </p>
+                )}
+                {tieneCosto && !costoMayorQuePrecio && !margenMuyChico && maxDescuento < 70 && (
                   <p className="mt-1 text-[11px] text-ink-soft">
                     Tope <span className="font-bold text-ink">{maxDescuento}%</span> para no vender bajo tu costo.
                   </p>
@@ -1012,12 +1024,18 @@ function Asesor({
                 min={1}
                 inputMode="numeric"
                 value={form.stockMaximo}
-                onChange={(e) => update('stockMaximo', e.target.value.replace(/[^0-9]/g, ''))}
+                onChange={(e) => {
+                  // Bug #14: "0" no es un tope válido (el backend exige min 1 y lo
+                  // descarta → quedaría ilimitado mientras el texto dice "0 canjes").
+                  // Normalizamos un "0" solo a vacío = sin límite.
+                  const v = e.target.value.replace(/[^0-9]/g, '')
+                  update('stockMaximo', v === '0' ? '' : v)
+                }}
                 placeholder="Sin límite"
                 className="w-32 rounded-xl bg-surface px-3 py-2 text-sm ring-1 ring-line focus:outline-none focus:ring-2 focus:ring-brand"
               />
               <span className="text-[11px] text-ink-faint">
-                {form.stockMaximo
+                {Number(form.stockMaximo) > 0
                   ? `${form.stockMaximo} canjes en total — al agotarse deja de mostrarse.`
                   : 'Vacío = sin límite de cantidad.'}
               </span>
@@ -1237,7 +1255,7 @@ function VigenciaChips({ value, onChange }: { value: string; onChange: (v: strin
           { label: '3 meses', days: 90 },
           { label: '6 meses', days: 180 },
         ].map((p) => {
-          const target = addDays(new Date(), p.days).toISOString().slice(0, 10)
+          const target = localISODate(addDays(new Date(), p.days))
           const active = value === target
           return (
             <button key={p.label} type="button" onClick={() => onChange(target)} className={`rounded-full px-3 py-1 text-xs font-bold transition-all ${active ? 'bg-gradient-to-br from-brand to-brand-strong text-on-brand shadow-cta' : 'bg-surface text-ink ring-1 ring-line hover:bg-bg'}`}>
@@ -1246,7 +1264,7 @@ function VigenciaChips({ value, onChange }: { value: string; onChange: (v: strin
           )
         })}
       </div>
-      <input type="date" id="cupon-vigencia" name="vigenciaHasta" value={value} onChange={(e) => onChange(e.target.value)} className={inputCls} min={new Date().toISOString().slice(0, 10)} />
+      <input type="date" id="cupon-vigencia" name="vigenciaHasta" value={value} onChange={(e) => onChange(e.target.value)} className={inputCls} min={localISODate()} />
       {value && <p className="text-[11px] text-ink-soft">Hasta el <span className="font-bold text-ink">{formatDateLong(value)}</span></p>}
     </div>
   )

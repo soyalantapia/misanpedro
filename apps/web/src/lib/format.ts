@@ -116,6 +116,20 @@ export function pluralize(n: number, singular: string, plural = `${singular}s`):
   return `${n} ${n === 1 ? singular : plural}`
 }
 
+/**
+ * Fecha de calendario LOCAL en formato "YYYY-MM-DD" (para `<input type="date">`
+ * value/min y cálculos de vigencia). A diferencia de `new Date().toISOString()
+ * .slice(0,10)` —que trunca en UTC y de noche en AR (UTC-3) salta al día
+ * siguiente— esto usa los getters locales, así el día coincide con el que ve
+ * el usuario. Bugs #12/#13.
+ */
+export function localISODate(d: Date = new Date()): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 import type { HorariosSemana, DiaSemana } from './types'
 import { DIAS_SEMANA } from './types'
 

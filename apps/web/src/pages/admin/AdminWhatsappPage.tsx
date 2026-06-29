@@ -18,7 +18,7 @@ import {
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useToast } from '@/components/Toast'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { formatRedeemedDate } from '@/lib/format'
+import { formatRedeemedDate, localISODate } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { api, ApiError } from '@/lib/api'
 import {
@@ -380,7 +380,7 @@ function ComposerScreen({
   const [vigenciaDate, setVigenciaDate] = useState(() => {
     const d = new Date()
     d.setDate(d.getDate() + 14)
-    return d.toISOString().slice(0, 10)
+    return localISODate(d) // día local, no UTC (bug #13)
   })
   const vigencia = formatVigenciaDate(vigenciaDate)
   const [phase, setPhase] = useState<SendingPhase>({ kind: 'idle' })
@@ -677,7 +677,7 @@ function ComposerScreen({
                 type="date"
                 value={vigenciaDate}
                 onChange={(e) => setVigenciaDate(e.target.value)}
-                min={new Date().toISOString().slice(0, 10)}
+                min={localISODate()}
                 className={inputCls}
                 aria-label="Fecha hasta la que vale el descuento"
               />
