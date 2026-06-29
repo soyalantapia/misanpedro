@@ -7,6 +7,38 @@ afterEach(() => {
   cleanup()
 })
 
+// localStorage: Node 25 expone un `localStorage` nativo experimental que
+// shadowea el de jsdom y cuyo getItem no funciona sin archivo de respaldo
+// (warning "--localstorage-file ... without a valid path"). Instalamos un
+// stub in-memory garantizado para que window.localStorage funcione en tests
+// (lib/tenant.ts lo lee al cargar el módulo).
+class LocalStorageMock {
+  private store = new Map<string, string>()
+  get length() {
+    return this.store.size
+  }
+  clear() {
+    this.store.clear()
+  }
+  getItem(key: string): string | null {
+    return this.store.has(key) ? this.store.get(key)! : null
+  }
+  setItem(key: string, value: string) {
+    this.store.set(String(key), String(value))
+  }
+  removeItem(key: string) {
+    this.store.delete(key)
+  }
+  key(i: number): string | null {
+    return [...this.store.keys()][i] ?? null
+  }
+}
+Object.defineProperty(window, 'localStorage', {
+  configurable: true,
+  writable: true,
+  value: new LocalStorageMock(),
+})
+
 // Mock global: ResizeObserver (lo usa lucide-react / radix-like)
 // y matchMedia (algunos componentes que respetan prefers-reduced-motion)
 class ResizeObserverMock {

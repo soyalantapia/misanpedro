@@ -282,6 +282,29 @@ function corajeMsg(objetivo: Objetivo | '', m: ReturnType<typeof calcMoney> | nu
  * descuento"). Devuelve el primer % del título que NO coincida con el real,
  * o null si no hay contradicción. Aviso suave, no bloquea.
  */
+/**
+ * % efectivo que se publica. En 'precio_fijo' con precio normal y precio con
+ * descuento válidos (normal > fijo), se DERIVA del ahorro real; si no, es el del
+ * slider. Única fuente de verdad para preview, título, guard y payload (bug #1):
+ * antes el preview usaba el % del slider (default 30) y el payload derivaba otro.
+ */
+export function derivarPorcentaje(
+  tipoOferta: string,
+  precioNormal: number | undefined,
+  precioFijo: number | undefined,
+  porcentajeSlider: number,
+): number {
+  if (
+    tipoOferta === 'precio_fijo' &&
+    precioNormal &&
+    precioFijo &&
+    precioNormal > precioFijo
+  ) {
+    return Math.max(1, Math.round(((precioNormal - precioFijo) / precioNormal) * 100))
+  }
+  return porcentajeSlider
+}
+
 function detectarPorcentajeEnTitulo(titulo: string, porcentajeReal: number): number | null {
   const matches = titulo.matchAll(/(\d{1,3})\s*%/g)
   for (const m of matches) {
@@ -455,12 +478,17 @@ export function AdminCuponEditPage() {
     const franjaOk = !!(form.franjaDesde && form.franjaHasta)
     const precioRefNum = num(form.precioReferencia)
     const precioFijoVal = num(form.precioFijo)
-    // precio_fijo: el % se DERIVA del ahorro (precio normal − precio con cupón) para
-    // mantener consistente el modelo (porcentaje requerido) y el badge del vecino.
-    const porcentajeFinal =
-      form.tipoOferta === 'precio_fijo' && precioRefNum && precioFijoVal && precioRefNum > precioFijoVal
-        ? Math.max(1, Math.round(((precioRefNum - precioFijoVal) / precioRefNum) * 100))
-        : form.porcentaje
+    // precio_fijo: el % se DERIVA del ahorro (precio normal − precio con cupón).
+    // MISMA fórmula que `porcentajeEfectivo` (nivel componente, usado por
+    // preview/título/guard) para que lo publicado sea lo que vio el comercio.
+    // Bug #1: antes preview usaba form.porcentaje (default 30) y acá se derivaba
+    // otro número → el comercio revisaba 30% y publicaba 33%.
+    const porcentajeFinal = derivarPorcentaje(
+      form.tipoOferta,
+      precioRefNum,
+      precioFijoVal,
+      form.porcentaje,
+    )
     const apiPayload = {
       titulo: form.titulo.trim(),
       descripcion: form.descripcion.trim(),
@@ -586,6 +614,17 @@ function Asesor({
   const tieneCosto = form.costoReferencia.trim() !== '' && Number.isFinite(costo) && costo > 0
   const tieneFijo = form.precioFijo.trim() !== '' && Number.isFinite(precioFijoNum) && precioFijoNum > 0
   const esPrecioFijo = form.tipoOferta === 'precio_fijo'
+  // Bug #1/#9: el % EFECTIVO que se va a publicar. En precio_fijo con precio
+  // normal cargado, se DERIVA del ahorro real (igual que porcentajeFinal en
+  // handleSubmit); si no, es el del slider. Antes el preview/título/guard usaban
+  // form.porcentaje (default 30 del slider, que precio_fijo nunca toca) → el
+  // comercio revisaba 30% y publicaba otro número.
+  const porcentajeEfectivo = derivarPorcentaje(
+    form.tipoOferta,
+    tienePrecio ? precio : undefined,
+    tieneFijo ? precioFijoNum : undefined,
+    form.porcentaje,
+  )
   // El MOTOR DE PLATA siempre usa el precio (aunque el toggle de mostrar al
   // vecino esté OFF): es la cuenta interna del comercio (margen + ahorro).
   const money = esPrecioFijo
@@ -619,20 +658,20 @@ function Asesor({
     if (paso !== 'publicar') return
     const g = form.productoGancho.trim()
     if (!form.titulo.trim()) {
-      update('titulo', g ? `${form.porcentaje}% OFF en ${g}` : `${form.porcentaje}% OFF en el local`)
+      update('titulo', g ? `${porcentajeEfectivo}% OFF en ${g}` : `${porcentajeEfectivo}% OFF en el local`)
     }
     if (!form.descripcion.trim()) {
       update(
         'descripcion',
-        `Aprovechá ${form.porcentaje}% OFF${g ? ` en ${g}` : ''} en ${merchant.nombre}. Mostrá el cupón en el local para usarlo.`,
+        `Aprovechá ${porcentajeEfectivo}% OFF${g ? ` en ${g}` : ''} en ${merchant.nombre}. Mostrá el cupón en el local para usarlo.`,
       )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paso])
   const fuerza = calcFuerza(form)
   // Aviso suave: el título dice un % que no coincide con el descuento real
-  // (el badge del catálogo usa form.porcentaje). No bloquea publicar.
-  const porcentajeEnTitulo = detectarPorcentajeEnTitulo(form.titulo, form.porcentaje)
+  // (el badge del catálogo usa el % efectivo). No bloquea publicar.
+  const porcentajeEnTitulo = detectarPorcentajeEnTitulo(form.titulo, porcentajeEfectivo)
   // La franja necesita que el cierre sea MAYOR al inicio. Como "HH:MM" está
   // zero-padded, la comparación de strings alcanza. Si está al revés, avisamos
   // y bloqueamos el "Siguiente".
@@ -992,7 +1031,7 @@ function Asesor({
       {paso === 'publicar' && (
         <Step title="Tu descuento" hint="Así lo ve el vecino. Revisá, ajustá y publicá.">
           <FuerzaMeter fuerza={fuerza} />
-          <Preview merchant={merchant} form={form} money={money} />
+          <Preview merchant={merchant} form={form} money={money} porcentaje={porcentajeEfectivo} />
 
           <Field label="Título del descuento" hint={`${form.titulo.length}/60`}>
             <input
@@ -1008,7 +1047,7 @@ function Asesor({
             {porcentajeEnTitulo != null && (
               <p className="mt-1 flex items-start gap-1.5 rounded-xl bg-status-warning-bg px-3 py-2 text-[11px] font-semibold leading-snug text-status-warning-fg">
                 <Zap size={13} className="mt-0.5 shrink-0" />
-                Ojo: el título dice {porcentajeEnTitulo}% pero el descuento es {form.porcentaje}%. Revisá que coincidan, así no le mostrás dos números distintos al vecino.
+                Ojo: el título dice {porcentajeEnTitulo}% pero el descuento es {porcentajeEfectivo}%. Revisá que coincidan, así no le mostrás dos números distintos al vecino.
               </p>
             )}
           </Field>
@@ -1296,10 +1335,14 @@ function Preview({
   merchant,
   form,
   money,
+  porcentaje,
 }: {
   merchant: { id: string; nombre: string; categoria: Categoria }
   form: FormState
   money: ReturnType<typeof calcMoney> | null
+  /** % efectivo a publicar (derivado en precio_fijo). Bug #1: el badge usaba
+   *  form.porcentaje, que en precio_fijo queda en el default del slider. */
+  porcentaje: number
 }) {
   return (
     <div className="overflow-hidden rounded-3xl bg-surface shadow-card ring-1 ring-line">
@@ -1309,7 +1352,7 @@ function Preview({
       <div className="relative">
         <CardImage categoria={merchant.categoria} coverImageUrl={form.imagenUrl || undefined} className="h-32 w-full" />
         <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-surface/95 px-3 py-1 font-bold text-brand-strong shadow-card backdrop-blur-md">
-          <span className="text-base tabular-nums">{form.porcentaje}%</span>
+          <span className="text-base tabular-nums">{porcentaje}%</span>
           <span className="ml-1 text-[10px] font-extrabold tracking-widest">OFF</span>
         </span>
         {form.exclusiva && (

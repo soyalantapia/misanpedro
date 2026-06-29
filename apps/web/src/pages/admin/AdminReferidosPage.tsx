@@ -16,6 +16,7 @@ import { useReferralsMe, useReferralsMine } from '@/lib/apiQueries'
 import { useToast } from '@/components/Toast'
 import { useTenant } from '@/lib/tenant'
 import { cn } from '@/lib/cn'
+import { pluralize } from '@/lib/format'
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
@@ -183,7 +184,7 @@ export function AdminReferidosPage() {
               <p className="text-[11px] text-on-brand/90">
                 {data.weeksEarned >= data.cap
                   ? '¡Llegaste al tope! Gracias por sumar comercios.'
-                  : `Te quedan ${data.cap - data.weeksEarned} semanas por ganar.`}
+                  : `Te quedan ${pluralize(data.cap - data.weeksEarned, 'semana')} por ganar.`}
               </p>
             </div>
             <div className="flex items-center gap-3 rounded-2xl bg-surface p-4 shadow-card ring-1 ring-line">

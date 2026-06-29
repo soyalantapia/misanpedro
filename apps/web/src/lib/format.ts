@@ -95,13 +95,25 @@ export function formatTimeRemaining(expiresAtIso: string, nowMs = Date.now()): s
 }
 
 export function distanceLabel(km: number): string {
-  if (km < 0.4) return `A ${Math.max(1, Math.round(km * 12))} cuadras`
+  if (km < 0.4) {
+    const cuadras = Math.max(1, Math.round(km * 12))
+    return `A ${cuadras} ${cuadras === 1 ? 'cuadra' : 'cuadras'}`
+  }
   if (km < 1) return `A ${Math.round(km * 1000)} m`
   return `A ${km.toFixed(1)} km`
 }
 
 export function pad(n: number): string {
   return String(n).padStart(2, '0')
+}
+
+/**
+ * Pluraliza en español: pluralize(1, 'semana') → "1 semana", pluralize(3, 'semana')
+ * → "3 semanas". Para plurales irregulares pasar la forma plural explícita:
+ * pluralize(2, 'envío', 'envíos'). Evita los "1 semanas" / "1 cuadras" sueltos.
+ */
+export function pluralize(n: number, singular: string, plural = `${singular}s`): string {
+  return `${n} ${n === 1 ? singular : plural}`
 }
 
 import type { HorariosSemana, DiaSemana } from './types'
@@ -181,18 +193,35 @@ export function isOpenNow(
 ): boolean | null {
   if (!detalle || typeof detalle !== 'object') return null
   const map: DiaSemana[] = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab']
-  const h = detalle[map[now.getDay()]]
-  if (!h) return null
-  if (!h.abierto) return false
   const toMin = (s: string) => {
     const [hh, mm] = s.split(':').map(Number)
     return Number.isNaN(hh) || Number.isNaN(mm) ? null : hh * 60 + mm
   }
+  const cur = now.getHours() * 60 + now.getMinutes()
+
+  // Cola de la franja del día ANTERIOR que cruza medianoche: un bar abierto
+  // lun 20:00–02:00 sigue abierto a la 01:00 del martes aunque el martes esté
+  // cerrado. Sin esto, isOpenNow miraba solo el día calendario actual.
+  const prev = detalle[map[(now.getDay() + 6) % 7]]
+  if (prev && prev.abierto) {
+    const pDesde = toMin(prev.desde)
+    const pHasta = toMin(prev.hasta)
+    if (pDesde != null && pHasta != null && pHasta < pDesde && cur <= pHasta) {
+      return true
+    }
+  }
+
+  const h = detalle[map[now.getDay()]]
+  if (!h) return null
+  if (!h.abierto) return false
   const desde = toMin(h.desde)
   const hasta = toMin(h.hasta)
   if (desde == null || hasta == null) return null
-  const cur = now.getHours() * 60 + now.getMinutes()
-  return hasta < desde ? cur >= desde || cur <= hasta : cur >= desde && cur <= hasta
+  // Franja que cruza medianoche (ej. 20:00–02:00): el día actual solo cubre la
+  // parte de la TARDE (cur >= desde). La cola de la madrugada (cur <= hasta) la
+  // resuelve el chequeo del día anterior arriba — contarla acá también marcaría
+  // "abierto" a la 01:00 del MISMO día, antes de que arranque la franja.
+  return hasta < desde ? cur >= desde : cur >= desde && cur <= hasta
 }
 
 /** Convierte "1992-06-15" → "15 de junio de 1992" (es-AR).

@@ -7,8 +7,11 @@ import {
   formatBirthdate,
   formatHorariosSemana,
   defaultHorariosSemana,
+  isOpenNow,
+  pluralize,
   pad,
 } from './format'
+import type { HorariosSemana } from './types'
 
 describe('formatMoney', () => {
   // format.ts guarda estado de módulo (_money). Si otra suite llama setMoneyLocale
@@ -63,6 +66,16 @@ describe('distanceLabel', () => {
     expect(distanceLabel(0.2)).toMatch(/cuadras/)
   })
 
+  // Bug #10: plural mal "A 1 cuadras" cuando el vecino está casi encima.
+  it('1 cuadra → singular, no "1 cuadras"', () => {
+    expect(distanceLabel(0.05)).toBe('A 1 cuadra')
+    expect(distanceLabel(0)).toBe('A 1 cuadra')
+  })
+
+  it('2+ cuadras → plural', () => {
+    expect(distanceLabel(0.2)).toBe('A 2 cuadras')
+  })
+
   it('< 1km → metros', () => {
     expect(distanceLabel(0.5)).toBe('A 500 m')
   })
@@ -90,6 +103,23 @@ describe('formatBirthdate', () => {
   })
 })
 
+describe('pluralize', () => {
+  // Bug #11: "Te quedan 1 semanas por ganar" → debe ser singular.
+  it('1 → singular', () => {
+    expect(pluralize(1, 'semana')).toBe('1 semana')
+  })
+
+  it('2+ → plural por defecto (+s)', () => {
+    expect(pluralize(3, 'semana')).toBe('3 semanas')
+    expect(pluralize(0, 'semana')).toBe('0 semanas')
+  })
+
+  it('plural irregular explícito', () => {
+    expect(pluralize(1, 'envío', 'envíos')).toBe('1 envío')
+    expect(pluralize(4, 'envío', 'envíos')).toBe('4 envíos')
+  })
+})
+
 describe('pad', () => {
   it('agrega 0 a un dígito', () => {
     expect(pad(5)).toBe('05')
@@ -101,6 +131,50 @@ describe('pad', () => {
 
   it('maneja 0', () => {
     expect(pad(0)).toBe('00')
+  })
+})
+
+describe('isOpenNow', () => {
+  // Bug #7: una franja que cruza medianoche (ej. bar lun 20:00–02:00) debe
+  // figurar "abierto" a la 01:00 del día siguiente aunque ese día esté cerrado.
+  const nocturno: HorariosSemana = {
+    lun: { abierto: true, desde: '20:00', hasta: '02:00' },
+    mar: { abierto: false },
+    mie: { abierto: false },
+    jue: { abierto: false },
+    vie: { abierto: false },
+    sab: { abierto: false },
+    dom: { abierto: false },
+  }
+
+  it('abierto a la 01:00 del martes por la franja del lunes que cruza medianoche', () => {
+    // Martes 30/06/2026 01:00 local
+    expect(isOpenNow(nocturno, new Date(2026, 5, 30, 1, 0))).toBe(true)
+  })
+
+  it('cerrado a las 03:00 del martes (ya pasó la cola del lunes)', () => {
+    expect(isOpenNow(nocturno, new Date(2026, 5, 30, 3, 0))).toBe(false)
+  })
+
+  it('abierto el lunes 22:00 (dentro de su propia franja)', () => {
+    // Lunes 29/06/2026 22:00
+    expect(isOpenNow(nocturno, new Date(2026, 5, 29, 22, 0))).toBe(true)
+  })
+
+  it('cerrado el lunes 01:00 (antes de que arranque su franja, sin cola de domingo)', () => {
+    expect(isOpenNow(nocturno, new Date(2026, 5, 29, 1, 0))).toBe(false)
+  })
+
+  it('horario normal mismo día: abierto dentro de la franja, cerrado fuera', () => {
+    const diurno = defaultHorariosSemana() // Lun–Vie 09–18, Sáb 09–13, Dom cerrado
+    expect(isOpenNow(diurno, new Date(2026, 5, 29, 12, 0))).toBe(true) // lun 12:00
+    expect(isOpenNow(diurno, new Date(2026, 5, 29, 20, 0))).toBe(false) // lun 20:00
+    expect(isOpenNow(diurno, new Date(2026, 5, 28, 12, 0))).toBe(false) // dom 12:00
+  })
+
+  it('null si no hay detalle', () => {
+    expect(isOpenNow(undefined)).toBe(null)
+    expect(isOpenNow(null)).toBe(null)
   })
 })
 
