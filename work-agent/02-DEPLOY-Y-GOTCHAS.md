@@ -17,8 +17,9 @@ pnpm dev:api             # API
 ## Verificación antes de deployar
 ```bash
 pnpm typecheck                 # tsc en los 6 paquetes
-pnpm --filter @misanpedro/api test     # vitest API (83)
-pnpm --filter @misanpedro/web test     # vitest web (104, incluye guardrail)
+pnpm turbo run test            # TODOS los tests (268 = 130 api + 138 web) — OJO: "pnpm test" a secas NO corre nada
+pnpm --filter @misanpedro/api test     # solo API (130)
+pnpm --filter @misanpedro/web test     # solo web (138, incluye guardrail)
 pnpm check:tenant              # guardrail: no "Mi San Pedro" hardcodeado en web/owner
 ```
 
@@ -42,7 +43,7 @@ railway up --detach --environment production --service api
 
 | Variable | Para qué | Estado |
 |---|---|---|
-| `SMTP_PASSWORD` | login OTP del comercio (buzón soporte@micuidad.com) | **FALTA** (bloquea login en prod) |
+| `SMTP_PASSWORD` | login OTP (buzón soporte@micuidad.com) | ✅ seteada — SMTP FUNCIONA en prod (verificado 02/07). Pendiente: **rotarla** (se pegó en un chat), ver doc 01 §B |
 | `SMTP_HOST/PORT/SECURE/USER`, `EMAIL_FROM` | resto del SMTP | ✅ seteadas |
 | `MP_ACCESS_TOKEN` / `MP_PUBLIC_KEY` / `MP_WEBHOOK_SECRET` | cobros MercadoPago (sin token = modo MOCK) | faltan (cuando se quiera cobrar real) |
 | `MONGODB_URI`, `JWT_SECRET`, `JWT_REFRESH_SECRET` | core | ✅ |
