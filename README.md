@@ -91,7 +91,7 @@ pnpm dev:web        # solo la PWA vecino/comercio
 pnpm dev:api        # solo la API
 pnpm build          # build de todo (turbo)
 pnpm typecheck         # tsc en los 6 paquetes
-pnpm turbo run test    # vitest api + web (238 = 128 api + 110 web)
+pnpm turbo run test    # vitest api + web (268 = 130 api + 138 web)
 pnpm lint              # eslint (turbo)
 pnpm check:tenant      # guardrail: que NO haya nombre de ciudad hardcodeado en web/owner
 ```
@@ -112,7 +112,7 @@ Antes de pushear/deployar, el set mínimo: **`pnpm typecheck && pnpm turbo run t
 | **Front comercio/vecino (`apps/web`)** | **Vite 7** · **React 19** · **Tailwind 4** · **React Router 7** (HashRouter) · `lucide-react` (íconos) · `vite-plugin-pwa` (service worker / Workbox) · Leaflet (mapa) |
 | **Front owner (`apps/owner`)** | Vite + React + Tailwind · React Router 7 (BrowserRouter) · sin service worker |
 | **Shared (`packages/shared`)** | Zod schemas + types + helpers puros (valor del cupón, límite de uso, legales). Consumido por TS paths (sin build). |
-| **Tests** | **vitest** — `apps/api` (integración con Mongo en memoria + JWT) + `apps/web` (schemas, guardrail, lógica). **238 en total** (128 api + 110 web). |
+| **Tests** | **vitest** — `apps/api` (integración con Mongo en memoria + JWT) + `apps/web` (schemas, guardrail, lógica). **268 en total** (130 api + 138 web). |
 | **CI** | GitHub Actions (`.github/workflows/ci.yml`): install + typecheck + check:tenant + tests en push/PR. |
 | **Infra** | **Railway** (1 servicio `api` que corre el backend Y sirve los fronts + servicio MongoDB) · **Cloudflare** (DNS/SSL wildcard `*.micuidad.com`) · **Hostinger** (legacy: redirect 301 + buzón `soporte@micuidad.com`). |
 
@@ -226,7 +226,7 @@ refresh, Cmd+Shift+R). El owner no tiene SW. Más trampas en
 
 ## ✅ Testing y calidad
 
-- **238 tests** (vitest: 128 api + 110 web). Suites de integración clave: `redemptions` (canje/dinero),
+- **268 tests** (vitest: 130 api + 138 web). Suites de integración clave: `redemptions` (canje/dinero),
   `tenant-isolation` (multi-tenant), `support` (modo soporte), `merchant-auth` (login/onboarding).
 - **CI** corre en cada push/PR (typecheck + check:tenant + tests).
 - El **guardrail `check:tenant`** garantiza que ningún nombre de ciudad quede hardcodeado en `web`/`owner`.

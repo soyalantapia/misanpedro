@@ -24,7 +24,7 @@ Origen: empezó como "Mi San Pedro" (una sola ciudad) y se generalizó. Ciudades
 - ✅ `misanpedro.com` (dominio viejo) **redirige 301** a `sanpedro.micuidad.com` (San Pedro quedó centralizado en la plataforma).
 - ✅ Aislamiento por ciudad verificado (cada query filtra por `appId`).
 - ✅ Multi-país: moneda/locale/teléfono/legales por país; Nariño cobra en COP, formatos es-CO.
-- ✅ Email transaccional por **SMTP** (nodemailer) con `soporte@micuidad.com`; DNS de email (MX/SPF/DKIM/DMARC) propagado. **Falta solo cargar el `SMTP_PASSWORD` en Railway** (ver doc 01).
+- ✅ Email transaccional por **SMTP** (nodemailer) con `soporte@micuidad.com` — **FUNCIONANDO en prod** (verificado 02/07: el OTP responde 200; DNS MX/SPF/DKIM/DMARC OK). Pendiente solo rotar la password del buzón (higiene, ver doc 01 §B).
 - ✅ Login del comercio rediseñado (claro/premium, sin mockup). Registro del comercio en layout split (form + banner con mockup).
 - ✅ Owner captura por ciudad: nombre, **localidad**, país→(moneda/locale/**prefijo telefónico** auto), **precio mensual**, color, **geoCenter (lat/lng)**, datos legales.
 - ✅ Guardrail anti-"Mi San Pedro" hardcodeado (falla el build/tests si reaparece).
@@ -36,7 +36,12 @@ Origen: empezó como "Mi San Pedro" (una sola ciudad) y se generalizó. Ciudades
 - ✅ **Modo soporte (impersonación owner→comercio):** cualquier owner entra al panel de cualquier comercio como el propietario, con auditoría de cada mutación + banner siempre visible. Verificado e2e en prod. (Ver doc 03 §18 + `PROJECT.MD` §7.4.)
 - ✅ **Barrido pre-launch** (bug-hunt 7 dimensiones): 0 blockers, 5 hardening menores. **Veredicto: listo para lanzar.**
 - ✅ Arrancando con los **primeros 3 comercios reales** de San Pedro (onboarding manual).
-- 🟡 Quedan **pasos manuales del usuario** (secretos/datos en Railway/owner) → **doc 01**.
+- ✅ **Bug-hunt PM/UX 29/06 + aterrizaje 02/07 EN PROD:** ~20 bugs de producto fixeados (rama
+  `fix/bug-hunt-26` mergeada ff a main) — lo gordo: **snapshot del cupón en el canje** (cupón
+  borrado/pausado no rompe historial/LTV), fechas de vigencia en día LOCAL (no UTC), cupo 0,
+  alertas (dedup/contador/race), polling del cupón activo. Detalle en doc 01 (tanda de arriba).
+- 🟡 Quedan **pasos manuales del usuario** (rotar password del buzón, limpiar comercios de prueba
+  del catálogo, domicilio fiscal SP, VAPID, MP con trigger) → **doc 01 §B**.
 
 ## 3. Arquitectura del código (monorepo)
 
@@ -114,4 +119,4 @@ misanpedro/
   otplib (TOTP owner) · nodemailer (email) · Mercado Pago Preapproval · web-push (VAPID) ·
   whatsapp-web.js (planeado). Build = `tsc -b --noEmit && node build.mjs` (esbuild bundle).
 - **web/owner:** Vite 7 · React 19 · Tailwind 4 · React Router 7 · lucide-react · vite-plugin-pwa.
-- **Tests:** vitest, **238 en total** (128 `apps/api` integración con Mongo en memoria + JWT, y 110 `apps/web` schemas/guardrail/lógica). Correr todo: `pnpm turbo run test` (OJO: `pnpm test` a secas no corre nada). Suites clave: `redemptions` (canje), `tenant-isolation`, `support` (modo soporte), `merchant-auth`. `pnpm typecheck` = 6 paquetes.
+- **Tests:** vitest, **268 en total** (130 `apps/api` integración con Mongo en memoria + JWT, y 138 `apps/web` schemas/guardrail/lógica). Correr todo: `pnpm turbo run test` (OJO: `pnpm test` a secas no corre nada). Suites clave: `redemptions` (canje), `tenant-isolation`, `support` (modo soporte), `merchant-auth`. `pnpm typecheck` = 6 paquetes.

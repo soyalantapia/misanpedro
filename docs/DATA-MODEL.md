@@ -113,10 +113,15 @@ publicar el primer cupón confirma un **Referral** pendiente y acredita semanas 
 ### `Activation` — cupón activado · `activations` · scoped `appId`
 `appId`→App, `couponId`→Coupon, `userId`→User, `codigoNumerico` (unique por app), `qrPayload`,
 `activatedAt`, `status` (activo/canjeado/expirado/cancelado), `redeemedAt`, `ahorroEstimado`, `montoTicket`, `location`.
+**Snapshot al canjear** (bug-hunt 29/06 — el cupón es hard-delete sin cascada): `couponTituloSnapshot`,
+`couponPorcentajeSnapshot`, `merchantNombreSnapshot`, `merchantCategoriaSnapshot` — el historial
+"Canjeados" del vecino resuelve título/%/comercio aunque el cupón se borre/pause/venza.
 
 ### `Redemption` — canje confirmado · `redemptions` · scoped `appId`
 `appId`→App, `activationId`→Activation **(unique)**, `couponId`→Coupon, `merchantId`→Merchant,
 `userId`→User, `merchantUserId`→MerchantUser, `montoTicket`, `ahorroEstimado`, `redeemedAt`. Append-only.
+**Snapshot al canjear** (bug-hunt 29/06): `couponTituloSnapshot`, `couponPorcentajeSnapshot` — el
+historial del comercio (LTV, "descuento favorito", ticket promedio) no se rompe si el cupón se borra.
 
 ### `Referral` — referido comercio→comercio · `referrals` · scoped `appId`
 `appId`→App, `referrerMerchantId`→Merchant, `referredMerchantId`→Merchant **(unique por app)**,

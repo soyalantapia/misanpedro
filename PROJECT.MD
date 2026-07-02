@@ -8,7 +8,7 @@
 > [`README.md`](README.md) y [`work-agent/`](work-agent/). Este documento es el "porqué"
 > y el "qué hay" completo; el work-agent es el "estado vivo".
 
-Última actualización: **2026-06-27**. Estado: **en producción, abriendo a los primeros comercios reales.**
+Última actualización: **2026-07-02**. Estado: **en producción, abriendo a los primeros comercios reales.**
 
 ---
 
@@ -97,6 +97,8 @@ reales), no puntos abstractos.
 | **Barrido pre-launch (26/06)** | Bug-hunt de 7 dimensiones: 0 blockers, 5 hardening menores. Veredicto: listo para lanzar. |
 | **Modo soporte (27/06)** | Cualquier owner entra al panel de cualquier comercio como el propietario (impersonación) con auditoría. Verificado e2e en prod. |
 | **Primeros comercios (27/06)** | Onboarding manual de los 3 primeros comercios reales de San Pedro. |
+| **Bug-hunt PM/UX (29/06)** | ~20 bugs de producto fixeados en 5 grupos (rama `fix/bug-hunt-26`): snapshot del cupón en el canje, fechas de vigencia en día local, cupo 0, alertas, polling. Tests 238→268. |
+| **Aterrizaje (02/07)** | Auditoría integral → push de todo lo sin respaldo, merge del bug-hunt, deploy a prod, doc sincronizada. |
 
 La auditoría de cada tanda y los reportes están en los `.md` de la raíz y en la memoria del asistente.
 
@@ -355,7 +357,7 @@ Owner/URLs/otros: `OWNER_BOOTSTRAP_EMAIL/PASSWORD/NOMBRE`, `OWNER_APP_URL`, `APP
 
 ## 11. Calidad y testing
 
-- **238 tests** (vitest: 128 api + 110 web): `apps/api` (integración con Mongo en memoria + JWT minteado) + `apps/web`
+- **268 tests** (vitest: 130 api + 138 web): `apps/api` (integración con Mongo en memoria + JWT minteado) + `apps/web`
   (schemas, guardrail, lógica). Correr todo: `pnpm turbo run test` (OJO: `pnpm test` a secas no corre nada).
   CI en `.github/workflows/ci.yml` (install + typecheck + check:tenant + tests api/web por filtro).
 - **Suites de integración clave:** `redemptions` (canje/dinero), `tenant-isolation` (multi-tenant),
@@ -390,7 +392,7 @@ Owner/URLs/otros: `OWNER_BOOTSTRAP_EMAIL/PASSWORD/NOMBRE`, `OWNER_APP_URL`, `APP
 
 ### En vivo y sólido
 Plataforma multi-ciudad (San Pedro + Nariño), camino del dinero auditado, aislamiento verificado,
-emails lindos, onboarding del comercio, owner con RBAC + auditoría + estadísticas, modo soporte. 238 tests.
+emails lindos, onboarding del comercio, owner con RBAC + auditoría + estadísticas, modo soporte. 268 tests.
 
 ### Pendientes (ver `work-agent/01-PENDIENTES.md`)
 - **Pasos del usuario (no código):** confirmar `SMTP_PASSWORD` en Railway (rotada), localidad/geoCenter

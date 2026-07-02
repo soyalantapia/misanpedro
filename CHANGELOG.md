@@ -5,6 +5,27 @@ agrupamos por **tanda**. Lo más nuevo arriba. Detalle vivo en [`work-agent/01-P
 
 ---
 
+## 2026-07-02 — Aterrizaje: bug-hunt a prod + sincronización
+- **Deploy del bug-hunt PM/UX** (rama `fix/bug-hunt-26`, merge ff a main) — ver entrada 2026-06-29.
+- **Backup**: `main` estaba 13 commits sin pushear a GitHub (incluyendo código ya en prod) y la rama
+  del bug-hunt no existía en el remoto — pusheado todo.
+- **Sincronización de doc**: `01-PENDIENTES` reescrito con el estado real (A.1-A.3 hechos, SMTP
+  funciona, Nariño resuelto, backlog depurado), conteo de tests 238→268, CHANGELOG al día.
+- Fuente: auditoría integral de la plataforma (6 dimensiones, verificada contra prod en vivo).
+
+## 2026-06-29 — Bug-hunt PM/UX (~20 fixes, 5 grupos)
+Rama `fix/bug-hunt-26` (`2c979dd..a55f086`), hecha en sesión paralela. Tests: API 128→130, web 110→138.
+- **G1**: % efectivo de `precio_fijo` derivado del ahorro real (`derivarPorcentaje`) · `isOpenNow`
+  cruzando medianoche (bar hasta las 02:00 figura abierto a la 01:00) · plurales (`pluralize`).
+- **G2**: `localISODate()` — vigencias en día LOCAL, no UTC (de noche en AR saltaba +1 día) ·
+  "Cupo total: 0" = sin límite · copy honesto con margen <5%.
+- **G3**: **snapshot del cupón en el canje** — `Redemption`/`Activation` guardan título/% al canjear;
+  cupón borrado/pausado ya no rompe historial, LTV, ticket promedio ni "en N comercios".
+- **G4**: alertas — contador completo, dedup por contenido, feed visible en pausa, badge sin race.
+- **G5**: polling del cupón activo (botón "Actualizar" + re-check al foco) · `ExpiryHint` legacy ·
+  validación de teléfono en paso 2 del alta · badge "PRECIO FIJO" · perfil re-espeja datos · búsqueda
+  sin parpadeo.
+
 ## 2026-06-27 — Modo soporte + documentación
 - **Modo soporte (impersonación owner→comercio)** — cualquier owner entra al panel de cualquier
   comercio como el propietario, para soporte técnico, con auditoría de cada mutación y banner

@@ -145,7 +145,7 @@ Este es el eje de tu rol: **sos el dev que no rompe.** En un producto vivo, con 
 ```bash
 export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
 cd /Users/alannaimtapia/dev/misanpedro
-pnpm typecheck && pnpm turbo run test && pnpm check:tenant   # typecheck (6 paquetes) · tests (api 128 + web 110 = 238) · guardrail
+pnpm typecheck && pnpm turbo run test && pnpm check:tenant   # typecheck (6 paquetes) · tests (api 130 + web 138 = 268) · guardrail
 ```
 > ⚠️ **OJO con `pnpm test` a secas:** el root **NO tiene** un script `test`, así que `pnpm test` en la raíz no corre NADA. Para correr TODOS los tests usá `pnpm turbo run test` (corre api + web vía turbo). Si querés correr uno solo: `pnpm --filter @misanpedro/api test` o `pnpm --filter @misanpedro/web test` (este último incluye el guardrail). Es exactamente lo que hace el CI (`.github/workflows/ci.yml`): typecheck + check:tenant + `--filter @misanpedro/api test` + `--filter @misanpedro/web test`.
 
@@ -180,7 +180,7 @@ Un resumen estructurado que pruebe que **leíste todo** y construiste el modelo 
 5. **Flujos clave** — auth passwordless por OTP (3 tipos de sesión: vecino/comercio/owner); **el camino del dinero / canje** (claim atómico anti-oversell + índice anti doble-canje + compensación; preview del cajero == backend); onboarding del comercio; **modo soporte** (impersonación owner→comercio con `SupportCode` + auditoría en cada mutación); emails transaccionales; owner / RBAC.
 6. **Seguridad** — anti-IDOR (ownership por `:id`), atomicidad (Mongo standalone), guardrail anti-hardcodeo, aislamiento por `appId`, rate-limit owner, manejo de secretos.
 7. **Infra y deploy** — Railway (1 servicio), Cloudflare (DNS wildcard), Hostinger (legacy/buzón), el comando de deploy, los gotchas top que respetás.
-8. **Calidad** — 238 tests (128 API + 110 web), el set de verificación, las suites de integración clave.
+8. **Calidad** — 268 tests (130 API + 138 web), el set de verificación, las suites de integración clave.
 9. **Decisiones que NO se tocan** — 3-5 de `03-DECISIONES.md`, con su porqué.
 10. **Estado actual** — qué está vivo y sólido vs. qué quedó abierto, cruzando `00-ESTADO-Y-ARQUITECTURA.md`, `01-PENDIENTES.md` y los commits recientes; en qué rama estás y qué ramas `feat/*` conviene no pisar.
 

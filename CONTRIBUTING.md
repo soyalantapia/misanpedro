@@ -42,9 +42,9 @@ Guía para trabajar **entre varios** sin pisarnos. Lee primero [`PROJECT.MD`](PR
 
 ## Tests
 ```bash
-pnpm turbo run test                    # todo (238: api 128 + web 110) — OJO: "pnpm test" a secas NO corre nada
-pnpm --filter @misanpedro/api test     # solo API (128)
-pnpm --filter @misanpedro/web test     # solo web (110, incluye el guardrail)
+pnpm turbo run test                    # todo (268: api 130 + web 138) — OJO: "pnpm test" a secas NO corre nada
+pnpm --filter @misanpedro/api test     # solo API (130)
+pnpm --filter @misanpedro/web test     # solo web (138, incluye el guardrail)
 ```
 Suites de referencia para copiar el patrón: `redemptions.integration.test.ts` (camino del dinero),
 `tenant-isolation.integration.test.ts` (multi-tenant), `support.integration.test.ts` (modo soporte).

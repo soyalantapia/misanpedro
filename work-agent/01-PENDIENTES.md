@@ -1,8 +1,28 @@
 # 01 · Pendientes (qué falta, en orden)
 
+> ## ✅ Bug-hunt PM/UX 2026-06-29 + aterrizaje 2026-07-02 — SHIPPED a prod
+> **Bug-hunt de otra sesión** (rama `fix/bug-hunt-26`, commits `2c979dd..a55f086`): ~20 bugs
+> reales de producto fixeados en 5 grupos, con tests nuevos (API 128→130, web 110→138):
+> - **G1**: % efectivo de `precio_fijo` derivado del ahorro real (helper `derivarPorcentaje`) ·
+>   `isOpenNow` cruzando medianoche · plurales (`pluralize`).
+> - **G2**: `localISODate()` — fechas de vigencia en día LOCAL, no UTC (de noche en AR saltaba
+>   +1 día) · "Cupo total: 0" se normaliza a sin límite · copy honesto con margen <5%.
+> - **G3 (el gordo)**: **snapshot del cupón en el canje** — `Redemption`/`Activation` guardan
+>   `couponTitulo/Porcentaje` al canjear; cupón borrado/pausado ya no rompe historial, LTV,
+>   ticket promedio ni "en N comercios" (el cupón es hard-delete sin cascada; decisión: snapshot).
+> - **G4**: alertas — contador cuenta todos los vigentes, dedup por contenido, feed visible en
+>   pausa, `markAllSeen` sin race del badge fantasma.
+> - **G5**: polling del cupón activo con botón "Actualizar" al agotarse + re-check al foco ·
+>   `ExpiryHint` legacy no miente "venció" · validación de teléfono en paso 2 del alta · badge
+>   "PRECIO FIJO" · perfil re-espeja nombre/teléfono · búsqueda sin parpadeo.
+>
+> **Aterrizaje 02/07 (auditoría integral + esta sesión):** push de `main` (estaba 13 commits sin
+> respaldo en GitHub) + push y merge ff de `fix/bug-hunt-26` → deploy a prod → esta pasada de doc.
+> **typecheck 6/6 · check:tenant ✓ · 268 tests verdes (130 api + 138 web) · build OK.**
+
 > ## ✅ Tanda lanzamiento 2026-06-26/27 — SHIPPED a prod
 > La semana del lanzamiento. Todo en `main`, deployado y **verificado e2e/empíricamente en prod**.
-> **typecheck 6/6 · check:tenant ✓ · 238 tests verdes (128 api + 110 web) · build OK.**
+> **typecheck 6/6 · check:tenant ✓ · 268 tests verdes (130 api + 138 web) · build OK.**
 >
 > - **Owner expandido (Fases 1-4)** — auth OTP passwordless · multi-admin con **RBAC**
 >   (super/admin/finanzas/soporte/viewer) + sección Equipo · **auditoría** `OwnerAuditLog` ·
@@ -43,40 +63,16 @@
 >
 > **Sigue siendo paso del usuario:** `SMTP_HOST`+`SMTP_PASSWORD` (o `RESEND_API_KEY`) en Railway — sin esto el login OTP del comercio da 503 en prod; decidir 2FA del owner (quedó **OFF + rate-limit**); cuenta MercadoPago Colombia; rotar password del owner; geoCenter/localidad reales de Nariño; domicilio fiscal de SP.
 
-Tres grupos: **(A) UI a medio hacer**, **(B) pasos manuales del usuario** (no son código),
-**(C) backlog** (mejoras y Fase 2). Empezá por A.
+Dos grupos vivos: **(B) pasos manuales del usuario** (no son código) y **(C) backlog**.
 
 ---
 
-## A. Ajustes de UI pedidos — EN PROGRESO (4 pedidos del usuario)
+## A. Ajustes de UI pedidos — ✅ TODOS RESUELTOS (verificado en código 02/07)
 
-El usuario pidió 4 cosas sobre las pantallas del comercio. Estado:
-
-### A.1 — Login: "el formulario queda muy blanco, metele bordes y demás" 🟡 PARCIAL
-- Archivo: `apps/web/src/pages/admin/AdminLoginPage.tsx`.
-- **Hecho:** fondo de la página tintado (`bg-surface-2`) para que la tarjeta blanca resalte (commit `fdd6b9b`).
-- **Falta:** darle más estructura/bordes a la **tarjeta del form**: header con ícono (ej. `KeyRound` en un chip `bg-brand-soft`), un divisor (`border-t border-line`) bajo el header, borde más definido. Objetivo: que no sea una caja blanca plana.
-
-### A.2 — Install prompt: rediseñarlo ❌ NO EMPEZADO
-- Componente: `apps/web/src/components/InstallPrompt.tsx` (toast global "Instalá Mi Ciudad").
-- Pedido: **NO** mostrarlo como toast flotante como hoy. Ponerlo como **algo discreto a un costado / en una barra**, y que al tocar "instalar" aparezca un **popup/modal** que **explique para qué sirve y cómo se usa** (instalar la PWA en el celu).
-- Sugerencia: un botón/pill chico fijo (ej. esquina) → al click, modal con: qué es la app instalada, beneficios, y los pasos según navegador (Chrome Android: menú → "Agregar a pantalla de inicio"; iOS Safari: compartir → "Agregar a inicio"). Usar el evento `beforeinstallprompt` si está disponible para el install directo, y el modal explicativo como fallback/ayuda.
-- Ojo: hoy el InstallPrompt aparece también en login/registro del comercio (PWA del vecino). Revisar en qué superficies conviene mostrarlo.
-
-### A.3 — Registro del comercio: "hacelo en 3" (pasos) ❌ NO EMPEZADO
-- Archivo: `apps/web/src/pages/admin/AdminSignupPage.tsx`. Hoy es **1 paso** de datos (`'datos'`) + `'listo'`. El `Stepper` ya existe pero con 2 ítems.
-- Pedido: dividir el alta en **3 pasos**. Propuesta de corte:
-  1. **Comercio** — nombre, categoría, dirección + mapa (`LocationPicker`).
-  2. **Contacto** — teléfono (placeholder por país ya está), horarios.
-  3. **Tu cuenta** — nombre del responsable, email, T&C + botón "Crear mi comercio".
-  (+ paso final `'listo'`.) Mantener la persistencia del draft (localStorage) y validar por paso (`validateDatos` se parte en `validateStep(1|2|3)`). Actualizar el `Stepper` a 3 ítems.
-
-### A.4 — Mockup del vecino: "parece de tablet" → más angosto ✅ HECHO
-- `apps/web/src/components/VecinoAppMockup.tsx`: `max-w-[320px]` → `max-w-[260px]` (commit `fdd6b9b`). El mockup aparece SOLO en el banner del registro.
-
-> **Estado de deploy:** A.1 (fondo) y A.4 (mockup) están commiteados/deployados (`fdd6b9b`).
-> A.1 (bordes del form), A.2 y A.3 quedan por hacer. Verificar siempre con **hard refresh**
-> (la PWA tiene service worker que cachea; ver doc 02 "Gotchas").
+Los 4 pedidos del usuario quedaron hechos en la tanda del 23/06: A.1 login con header/chip/divisor ✅ ·
+A.2 InstallPrompt rediseñado (pill + modal explicativo, solo superficie vecino) ✅ · A.3 alta del
+comercio en **3 pasos** ✅ · A.4 mockup angosto ✅. *(Esta sección quedaba marcada "en progreso" por
+error — la auditoría del 02/07 verificó el código real y está todo shipped.)*
 
 ---
 
@@ -85,49 +81,60 @@ El usuario pidió 4 cosas sobre las pantallas del comercio. Estado:
 > El asistente **no** puede: tocar la DB de prod (es interna), ingresar contraseñas/secretos,
 > ni operar las cuentas (Railway/Cloudflare/Hostinger) para meter secretos. Esto es del usuario.
 
-1. **`SMTP_PASSWORD` en Railway** (servicio `api` → Variables) = contraseña del buzón
-   `soporte@micuidad.com`. **Sin esto el login por OTP del comercio NO funciona** (en prod
-   `/request-otp` devuelve 503). Las otras 5 SMTP_* ya están seteadas (host/port/secure/user/EMAIL_FROM).
-   > ⚠️ La password del buzón se pegó en el chat en sesiones previas → conviene **rotarla** en
-   > Hostinger y poner la nueva en Railway.
-2. **Nariño: Localidad + posición del mapa.** En `administracion.micuidad.com → Mi Nariño →
-   Editar`: poner **Localidad = `Nariño`** (hoy dice "Pasto") y **Centro del mapa = lat
-   `1.2136` / lng `-77.2811`** (Pasto). Hoy Nariño tiene esos dos datos con valores viejos
-   (localidad "Pasto", geoCenter = coords de San Pedro).
-3. **Rotar la contraseña del owner** (`alannaimtapia@gmail.com`) — es débil y se eligió 2FA
-   OFF (`OWNER_2FA_REQUIRED=false`) por decisión del usuario.
-4. **MercadoPago Colombia** para que los comercios de Nariño puedan pagar (la cuenta MP de AR
-   no cobra en CO). Hoy el billing es 1 cuenta MP global (= la de San Pedro). Ver doc 03 + `ESTRATEGIA-PAGOS.md`.
-5. **Domicilio fiscal real de San Pedro** (para las legales): cargarlo en el owner (campo legal),
-   hoy queda vacío y la página lo omite.
+**Resueltos (verificado 02/07):** ~~SMTP_PASSWORD~~ (el OTP de prod responde 200 → SMTP **funciona**;
+lo confirmó también la tanda 23/06) · ~~Nariño localidad/geoCenter~~ (geoCenter = Pasto cargado) ·
+~~rotar password del owner~~ (obsoleto: el owner es **passwordless por OTP** desde el 25/06).
+
+**Siguen pendientes:**
+1. **Rotar la password del buzón `soporte@micuidad.com`** (Hostinger + actualizar `SMTP_PASSWORD`
+   en Railway) — se pegó en un chat en sesiones previas; todo el login de la plataforma depende de
+   ese transporte. 10 min, coordinar con un momento de poco tráfico de logins.
+2. **Limpiar el catálogo de San Pedro**: confirmar qué comercios son reales y suspender los de
+   prueba/demo desde el owner ("Café Prueba QA", "Tap", "TAP AI" + ~7 del seed demo tienen cupones
+   activos visibles a vecinos reales; solo Butti parece claramente real). **Antes de difundir a vecinos.**
+3. **Domicilio fiscal real de San Pedro** (para las legales): cargarlo en el owner (editar ciudad →
+   Legales); hoy queda vacío y Términos/Privacidad lo omiten. Nariño tiene `legal:{}` vacío (puede
+   esperar a que tenga comercios).
+4. **Verificar claves VAPID en Railway** (Web Push puede estar en no-op silencioso: el log de
+   arranque dice `[push] VAPID vacío` si faltan; la tanda 23/06 las dio por seteadas — confirmar).
+5. **MercadoPago AR real + Colombia** — con **trigger explícito**: activar MP AR ~2 semanas antes
+   de que venza el primer trial de 90 días (≈ fines de septiembre para las altas del 27/06). MP
+   Colombia recién cuando Nariño tenga comercios. Ver doc 03 + `ESTRATEGIA-PAGOS.md`.
 
 ---
 
-## C. Backlog (mejoras / "mayores" de la auditoría / Fase 2)
+## C. Backlog (mejoras / Fase 2)
 
-De `AUDITORIA-LANZAMIENTO-MICUIDAD.md` (mayores no tocados) + estrategia:
+**Resueltos en la tanda 23/06 (quedaban acá por error):** ~~back_url/CTAs por-tenant~~ (`lib/urls.ts`
+`tenantFrontUrl`) · ~~stockMaximo sin validar~~ (claim atómico + `agotado`) · ~~tiers de SavingsWallet
+en ARS~~ (escalados por moneda) · ~~geoCenter default SP~~ (mitigado: requerido al crear ciudad).
 
-- **`back_url` de MercadoPago y CTAs de email son globales** (usan `APP_URL_FRONT`), no
-  por-tenant → un comercio de Nariño post-pago/CTA cae a la PWA "principal". Construir la URL
-  desde `tenant.subdomain` (`https://<sub>.micuidad.com/...`). (Audit M9/M10.)
-- **`stockMaximo` del cupón no se valida** al activar/canjear (no bloquea ni marca "agotado").
-  Ver `activations.ts` / `redemptions.ts`. (Audit M5.)
-- **Tiers de `SavingsWallet`** hardcodeados en magnitudes ARS → en COP un vecino sube de nivel
-  con ~USD 12. Parametrizar por moneda/tenant. (Audit M11.)
-- **`geoCenter` por defecto = San Pedro** en el modelo/route → una ciudad sin geoCenter cae a
-  SP. Idealmente: quitar el default, backfillear SP explícito, fallback neutro. (Audit M1; mitigado porque ahora se setea por ciudad en el owner.)
-- Restos varios: fechas `es-AR` fijas en algunos lugares del panel, copy legal AR inline fuera de
-  `/legal`, etc. (ver el reporte de auditoría).
+**Vivo:**
+- **WhatsApp inoperativo en Railway** — el código está bien integrado (sesión por comercio, anti-ban,
+  tope 4 campañas/mes) pero `nixpacks.toml` setea `PUPPETEER_SKIP_DOWNLOAD=true` (sin Chromium) y las
+  sesiones van a `/tmp` efímero. El comercio ve `/admin/whatsapp` cableado pero no puede levantar.
+  **Decidir:** activarlo (nixPkgs chromium + `PUPPETEER_EXECUTABLE_PATH` + volumen persistente) o
+  comunicar "requiere activación" en la UI. No dejar el limbo.
+- **Modo soporte sin UI de cierre** — `POST /owner/merchants/:id/revoke-support` existe en el API pero
+  el front del owner no lo usa; cerrar una sesión de soporte hoy es a mano. Botón "Cerrar sesiones de
+  soporte" en la ficha del comercio + filtro `support.*` en la vista de auditoría (~1h).
+- **Higiene git** — podar ~9 ramas 100% mergeadas (locales y remotas, cerrar PRs #1-#3); revisar y
+  casi seguro borrar `feat/asesor-cupones` (WIP del 06/06, superado por `feat/valor-cupon` — NO
+  mergear: pisa `AdminCuponEditPage` que el bug-hunt también tocó).
+- Restos cosméticos: fechas `es-AR` fijas en algunos lugares del panel, copy legal AR inline fuera
+  de `/legal`.
 - **Fase 2 de pagos** ("Conectar MercadoPago/Stripe" por ciudad, OAuth tipo Stripe Connect):
   modelo `App.payment{provider, tokens encriptados, status}`, abstracción `PaymentProvider`,
   webhook ruteado por ciudad. NO se construye hasta que cobre la 2da ciudad. Detalle en
   `ESTRATEGIA-PAGOS.md`.
 - **`NewAppPage`** todavía no tiene **todos** los campos legales (sí prefijo + geoCenter +
   localidad); los legales se cargan en `AppDetailPage` (editar) tras crear.
+- **Refactors diferidos** (de la tanda 23/06, siguen diferidos a propósito): schemas owner/billing a
+  `packages/shared` · apps extendiendo `tsconfig.base.json` · manifest PWA por-host (server-side).
 
 ---
 
 ## Definición de "listo para cobrar una ciudad nueva"
 Crear la ciudad en el owner (nombre/localidad/país/precio/geoCenter), que resuelva su
-subdominio (ya automático por el wildcard), email andando (SMTP_PASSWORD), y el medio de pago
-del país (MP AR hoy; MP CO / Stripe = Fase 2).
+subdominio (ya automático por el wildcard), email andando (ya funciona con el buzón global), y el
+medio de pago del país (MP AR hoy; MP CO / Stripe = Fase 2).
