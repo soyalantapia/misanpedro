@@ -89,9 +89,11 @@ lo confirmó también la tanda 23/06) · ~~Nariño localidad/geoCenter~~ (geoCen
 1. **Rotar la password del buzón `soporte@micuidad.com`** (Hostinger + actualizar `SMTP_PASSWORD`
    en Railway) — se pegó en un chat en sesiones previas; todo el login de la plataforma depende de
    ese transporte. 10 min, coordinar con un momento de poco tráfico de logins.
-2. **Limpiar el catálogo de San Pedro**: confirmar qué comercios son reales y suspender los de
-   prueba/demo desde el owner ("Café Prueba QA", "Tap", "TAP AI" + ~7 del seed demo tienen cupones
-   activos visibles a vecinos reales; solo Butti parece claramente real). **Antes de difundir a vecinos.**
+2. ~~Limpiar el catálogo de San Pedro~~ — **RESUELTO por decisión del usuario (02/07): los 11
+   comercios del catálogo son reales y quedan activos** (Butti, Café Prueba QA, Café del Centro,
+   Carmen Vintage, Confitería La Esquina, Despensa Don Pepe, Estación 25, Inmobiliaria Del Río,
+   TAP AI, Tap, Vivero El Pampero). Si alguno resultara de prueba más adelante, suspenderlo es un
+   click en el owner (Merchants → acción).
 3. **Domicilio fiscal real de San Pedro** (para las legales): cargarlo en el owner (editar ciudad →
    Legales); hoy queda vacío y Términos/Privacidad lo omiten. Nariño tiene `legal:{}` vacío (puede
    esperar a que tenga comercios).
