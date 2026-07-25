@@ -49,9 +49,9 @@ export function Hero() {
             className="animate-fade-up mt-7 max-w-2xl text-pretty text-lg leading-relaxed text-neutral-600 sm:text-xl"
             style={{ animationDelay: '120ms' }}
           >
-            Ponés un descuento el día flojo y los vecinos entran. Lo elegís vos, así que
-            no regalás margen — y cada persona que canjea queda como cliente tuyo, con
-            nombre y teléfono. Sin comisiones, sin contratos.
+            Publicás un descuento para tu día flojo y entran vecinos. Cada uno queda como
+            cliente tuyo —con nombre y teléfono— para que vuelva. Vos elegís el descuento y
+            no tocamos un peso de tu venta.
           </p>
 
           <div

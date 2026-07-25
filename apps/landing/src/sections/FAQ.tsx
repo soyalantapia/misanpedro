@@ -11,7 +11,7 @@ function buildFaqs(config: LandingTenant | null) {
   return [
   {
     q: '¿Qué necesito para empezar?',
-    a: 'Sólo un celular con WhatsApp. No necesitás computadora, scanner ni hardware extra, y no cargás tarjeta ni medio de pago para arrancar. Te registrás, completás los datos del comercio, subís tu primer descuento y listo.',
+    a: 'Sólo un celular. No necesitás computadora ni ningún aparato especial, y no cargás tarjeta ni medio de pago para arrancar. Te registrás, completás los datos del comercio, subís tu primer descuento y listo.',
   },
   {
     q: '¿El vecino paga algo por usar la app?',

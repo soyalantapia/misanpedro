@@ -20,12 +20,12 @@ function buildFeatures(config: LandingTenant | null) {
   {
     icon: Hash,
     title: 'Código de 6 dígitos',
-    body: 'Tu cajero valida desde el celular. Sin escáner, sin hardware.',
+    body: 'Tu cajero lo valida desde su celular. Sin ningún aparato especial.',
   },
   {
     icon: Users,
-    title: 'CRM automático',
-    body: 'Cada canje guarda nombre, documento, cumpleaños y frecuencia del cliente.',
+    title: 'Tu lista de clientes, sola',
+    body: 'Cada canje guarda el nombre, el cumpleaños y cuántas veces te visitó cada cliente.',
   },
   {
     icon: MessageCircle,
@@ -57,9 +57,9 @@ export function Features() {
           Todo lo que necesitás
         </span>
         <h2 className="mt-3 text-balance text-4xl font-bold leading-[1.1] tracking-tight text-neutral-900 sm:text-5xl">
-          Cero código. Cero hardware extra.
+          Con tu celular alcanza.
           <br className="hidden sm:inline" />
-          {' '}Solo tu celular.
+          {' '}No instalás nada.
         </h2>
       </AnimatedSection>
 
