@@ -80,16 +80,24 @@ export function useMerchantNotifications() {
       }, 5000)
     }
 
-    function open() {
+    async function open() {
       if (stopped) return
-      // Re-leemos el token en cada (re)conexión, no un snapshot del montaje.
-      const access = tokens.get('merchant').access
-      if (!access) {
+      // Pedimos un ticket efímero (60s) por header en vez de mandar el access
+      // token en la URL. Si no hay sesión o el ticket falla, reintentamos.
+      if (!tokens.get('merchant').access) {
         scheduleReconnect()
         return
       }
-      const url = `${API_URL.replace(/\/$/, '')}/api/v1/notifications/stream?token=${encodeURIComponent(
-        access,
+      let ticket: string
+      try {
+        ticket = (await api.merchantApi.notificationsTicket()).ticket
+      } catch {
+        if (!stopped) scheduleReconnect()
+        return
+      }
+      if (stopped) return
+      const url = `${API_URL.replace(/\/$/, '')}/api/v1/notifications/stream?ticket=${encodeURIComponent(
+        ticket,
       )}`
       const es = new EventSource(url)
       esRef.current = es

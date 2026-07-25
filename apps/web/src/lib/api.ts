@@ -356,6 +356,14 @@ export const merchantApi = {
       { subject: 'merchant' },
     )
   },
+  // Tickets efímeros (60s) para abrir los streams SSE sin poner el access token
+  // en la URL. Se piden autenticados por header y se pasan como ?ticket=.
+  async notificationsTicket() {
+    return request<{ ok: boolean; ticket: string }>('/notifications/ticket', { subject: 'merchant' })
+  },
+  async waTicket() {
+    return request<{ ok: boolean; ticket: string }>('/wa/ticket', { subject: 'merchant' })
+  },
 }
 
 // ─── Plantillas de cupones ───────────────────────────────────────────

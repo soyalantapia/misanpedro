@@ -337,6 +337,15 @@ export const owner = {
     )
   },
 
+  // Corta TODAS las sesiones de soporte activas de un comercio (revoca los
+  // refresh con impersonatedBy). Devuelve cuántas revocó.
+  async revokeSupport(merchantId: string) {
+    return api<{ ok: boolean; revoked?: number }>(
+      `/api/v1/owner/merchants/${merchantId}/revoke-support`,
+      { method: 'POST' },
+    )
+  },
+
   async auditLog() {
     return api<{
       ok: boolean

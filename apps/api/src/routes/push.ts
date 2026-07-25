@@ -3,10 +3,14 @@ import { z } from 'zod'
 import { PushSubscription } from '@/models'
 import { env } from '@/env'
 import { tenantContext, getAppId } from '@/middleware/tenant'
+import { rateLimit } from '@/middleware/security'
 
 export const pushRoutes = new Hono()
 
 pushRoutes.use('*', tenantContext)
+
+// Únicos endpoints públicos de mutación sin auth del API → rate-limit como el resto.
+const pushWriteLimiter = rateLimit({ prefix: 'push-write', max: 10, windowMs: 60_000 })
 
 // Clave pública VAPID para que el frontend pueda suscribirse.
 pushRoutes.get('/vapid-public', (c) =>
@@ -21,7 +25,7 @@ const subscribeSchema = z.object({
   categories: z.array(z.string()).optional().default([]),
 })
 
-pushRoutes.post('/subscribe', async (c) => {
+pushRoutes.post('/subscribe', pushWriteLimiter, async (c) => {
   const appId = getAppId(c)
   const body = await c.req.json().catch(() => ({}))
   const parsed = subscribeSchema.safeParse(body)
@@ -47,7 +51,7 @@ pushRoutes.post('/subscribe', async (c) => {
 
 const unsubscribeSchema = z.object({ endpoint: z.string().url() })
 
-pushRoutes.post('/unsubscribe', async (c) => {
+pushRoutes.post('/unsubscribe', pushWriteLimiter, async (c) => {
   const appId = getAppId(c)
   const body = await c.req.json().catch(() => ({}))
   const parsed = unsubscribeSchema.safeParse(body)

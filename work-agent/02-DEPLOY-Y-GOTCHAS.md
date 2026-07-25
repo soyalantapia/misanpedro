@@ -17,11 +17,20 @@ pnpm dev:api             # API
 ## Verificación antes de deployar
 ```bash
 pnpm typecheck                 # tsc en los 6 paquetes
-pnpm turbo run test            # TODOS los tests (268 = 130 api + 138 web) — OJO: "pnpm test" a secas NO corre nada
+pnpm turbo run test            # TODOS los tests (269 = 130 api + 139 web) — OJO: "pnpm test" a secas NO corre nada
 pnpm --filter @misanpedro/api test     # solo API (130)
-pnpm --filter @misanpedro/web test     # solo web (138, incluye guardrail)
+pnpm --filter @misanpedro/web test     # solo web (139, incluye guardrail)
 pnpm check:tenant              # guardrail: no "Mi San Pedro" hardcodeado en web/owner
 ```
+
+## Checklist de cierre de tanda (cortar el drift recurrente)
+El deploy es manual desde el working tree y la doc se mantiene a mano → la auditoría del 02/07 encontró
+drift 3 veces. Para no repetirlo, al terminar una tanda hacé SIEMPRE, en este orden:
+1. **Verde local:** `pnpm typecheck && pnpm turbo run test && pnpm check:tenant`.
+2. **Commit + push** (nunca deployar sin haber pusheado — así GitHub no queda atrás de prod).
+3. **Deploy:** `railway up …` + confirmar `uptime` reseteado en `/api/v1/health` + smoke del flujo tocado.
+4. **Doc en el mismo cierre:** `CHANGELOG` (entrada de la tanda) + `01-PENDIENTES` (mover lo hecho, agregar
+   lo nuevo) + conteo de tests si cambió. La doc viva se actualiza en la misma sesión, no "después".
 
 ## Deploy a producción (Railway)
 **Un solo comando** (sube el código local, buildea web+owner+api con nixpacks y lo sirve):

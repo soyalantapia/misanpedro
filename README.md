@@ -91,7 +91,7 @@ pnpm dev:web        # solo la PWA vecino/comercio
 pnpm dev:api        # solo la API
 pnpm build          # build de todo (turbo)
 pnpm typecheck         # tsc en los 6 paquetes
-pnpm turbo run test    # vitest api + web (268 = 130 api + 138 web)
+pnpm turbo run test    # vitest api + web (269 = 130 api + 139 web)
 pnpm lint              # eslint (turbo)
 pnpm check:tenant      # guardrail: que NO haya nombre de ciudad hardcodeado en web/owner
 ```
@@ -112,7 +112,7 @@ Antes de pushear/deployar, el set mínimo: **`pnpm typecheck && pnpm turbo run t
 | **Front comercio/vecino (`apps/web`)** | **Vite 7** · **React 19** · **Tailwind 4** · **React Router 7** (HashRouter) · `lucide-react` (íconos) · `vite-plugin-pwa` (service worker / Workbox) · Leaflet (mapa) |
 | **Front owner (`apps/owner`)** | Vite + React + Tailwind · React Router 7 (BrowserRouter) · sin service worker |
 | **Shared (`packages/shared`)** | Zod schemas + types + helpers puros (valor del cupón, límite de uso, legales). Consumido por TS paths (sin build). |
-| **Tests** | **vitest** — `apps/api` (integración con Mongo en memoria + JWT) + `apps/web` (schemas, guardrail, lógica). **268 en total** (130 api + 138 web). |
+| **Tests** | **vitest** — `apps/api` (integración con Mongo en memoria + JWT) + `apps/web` (schemas, guardrail, lógica). **269 en total** (130 api + 139 web). |
 | **CI** | GitHub Actions (`.github/workflows/ci.yml`): install + typecheck + check:tenant + tests en push/PR. |
 | **Infra** | **Railway** (1 servicio `api` que corre el backend Y sirve los fronts + servicio MongoDB) · **Cloudflare** (DNS/SSL wildcard `*.micuidad.com`) · **Hostinger** (legacy: redirect 301 + buzón `soporte@micuidad.com`). |
 
@@ -186,8 +186,10 @@ test). Ej.: `calcAhorroCanje` vive en `apps/web/src/lib/cuponValor.ts` **y** en
 | **Push** | `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY` · `VAPID_SUBJECT` |
 | **Owner / URLs / otros** | `OWNER_BOOTSTRAP_EMAIL/PASSWORD/NOMBRE` · `OWNER_APP_URL` · `APP_URL_FRONT` · `APP_URL_API` · `SENTRY_DSN` · `CORS_ORIGINS` · `SUPER_ADMIN_TOKEN` · `SUPPORT_WHATSAPP` · `WHATSAPP_SESSIONS_DIR` |
 
-**El que falta hoy y bloquea el login en prod:** `SMTP_PASSWORD` (sin el buzón configurado,
-`/request-otp` da 503). Detalle de cada secreto en [`work-agent/02-DEPLOY-Y-GOTCHAS.md`](work-agent/02-DEPLOY-Y-GOTCHAS.md).
+**SMTP configurado y FUNCIONANDO en prod** (el OTP responde 200; verificado en la auditoría del 02/07).
+Pendiente de higiene: **rotar la password del buzón** (`work-agent/01-PENDIENTES.md §B`). Si `/request-otp`
+diera 503 → ver [`docs/RUNBOOK.md`](docs/RUNBOOK.md). Detalle de cada secreto en
+[`work-agent/02-DEPLOY-Y-GOTCHAS.md`](work-agent/02-DEPLOY-Y-GOTCHAS.md).
 
 ---
 
@@ -226,7 +228,7 @@ refresh, Cmd+Shift+R). El owner no tiene SW. Más trampas en
 
 ## ✅ Testing y calidad
 
-- **268 tests** (vitest: 130 api + 138 web). Suites de integración clave: `redemptions` (canje/dinero),
+- **269 tests** (vitest: 130 api + 139 web). Suites de integración clave: `redemptions` (canje/dinero),
   `tenant-isolation` (multi-tenant), `support` (modo soporte), `merchant-auth` (login/onboarding).
 - **CI** corre en cada push/PR (typecheck + check:tenant + tests).
 - El **guardrail `check:tenant`** garantiza que ningún nombre de ciudad quede hardcodeado en `web`/`owner`.

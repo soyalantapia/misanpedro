@@ -20,6 +20,6 @@
 
 | ID | Sev | Tipo | Ubicación | Problema | Esperado | Estado |
 |----|-----|------|-----------|----------|----------|--------|
-| F-01 | Bajo | funcional | apps/landing-vecino (CTA "Ir a la app") | Link "Ir a la app" hardcodea `https://app.misanpedro.com/#/` (dominio legacy; plataforma actual = micuidad.com). No tenant-aware. | Link relativo/derivado del dominio actual. | Abierto (app legacy, prioridad baja) |
+| F-01 | Bajo | funcional | apps/landing-vecino (CTA "Ir a la app") | Link "Ir a la app" hardcodeaba `https://app.misanpedro.com/#/` (dominio legacy). | Link derivado del dominio actual. | ✅ **Resuelto** (verificado 02/07: `git grep app.misanpedro.com` en `apps/` → 0 hits funcionales, solo un comentario en vite.config). |
 | F-02 | — | consola | apps/web (todas las pantallas) | Warning "Couldn't load preload assets" ×N. **Causa: sandbox sin red externa** (no es código de la app). | — | NO-BUG (artefacto de entorno) |
 | F-03 | Bajo | red/robustez | apps/web/index.html:13-14 | Fuente Satoshi se carga de CDN externo `api.fontshare.com` sin fallback self-hosted. En el sandbox falla (ERR_FAILED); en real carga. Mejora latente: self-hostear la fuente para resiliencia + cero dependencia externa. | Fuente self-hosted o degradación elegante. | Abierto (mejora, no rompe en real) |

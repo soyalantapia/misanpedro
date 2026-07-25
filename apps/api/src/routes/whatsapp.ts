@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
 import { requireMerchantAuth, requireMerchantActive } from '@/middleware/auth'
 import { tenantContext, getAppId } from '@/middleware/tenant'
-import { verifyAccessToken } from '@/services/jwt.service'
+import { resolveSseMerchant, signSseTicket } from '@/services/jwt.service'
 import { WaSend } from '@/models'
 import * as wa from '@/services/whatsapp.service'
 
@@ -31,22 +31,23 @@ async function campaignsThisMonth(appId: ReturnType<typeof getAppId>, merchantId
 }
 
 /**
- * GET /wa/stream — Server-Sent Events. El token viaja por query.
- * NO requiere tenantContext porque hace pub/sub interno por merchantId.
+ * GET /wa/ticket — ticket efímero (60s) para abrir el stream sin poner el access
+ * token en la URL. Autenticado por header. NO requiere tenantContext.
+ */
+whatsappRoutes.get('/ticket', requireMerchantAuth, (c) => {
+  const auth = c.get('auth') as { merchantId?: string }
+  if (!auth?.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
+  return c.json({ ok: true, ticket: signSseTicket(auth.merchantId) })
+})
+
+/**
+ * GET /wa/stream — Server-Sent Events. Preferimos `?ticket=` efímero; aceptamos
+ * `?token=` legacy por compat con bundles cacheados. NO requiere tenantContext
+ * (hace pub/sub interno por merchantId).
  */
 whatsappRoutes.get('/stream', (c) => {
-  const token = c.req.query('token')
-  if (!token) return c.json({ ok: false, error: 'token required' }, 401)
-  let auth
-  try {
-    auth = verifyAccessToken(token)
-  } catch {
-    return c.json({ ok: false, error: 'invalid token' }, 401)
-  }
-  if (auth.type !== 'merchant_user' || !auth.merchantId) {
-    return c.json({ ok: false, error: 'forbidden' }, 403)
-  }
-  const merchantId = auth.merchantId
+  const merchantId = resolveSseMerchant(c.req.query('ticket'), c.req.query('token'))
+  if (!merchantId) return c.json({ ok: false, error: 'invalid ticket' }, 401)
 
   return streamSSE(c, async (stream) => {
     let alive = true

@@ -256,7 +256,7 @@ redemptionsRoutes.post('/confirm', confirmLimiter, requireMerchantAuth, requireM
     // título/% y nombre del comercio aunque el cupón se borre/pause/venza.
     activation.couponTituloSnapshot = coupon.titulo
     activation.couponPorcentajeSnapshot = coupon.porcentaje
-    const merchantSnap = await Merchant.findById(coupon.merchantId)
+    const merchantSnap = await Merchant.findOne({ _id: coupon.merchantId, appId })
       .select('nombre categoria')
       .lean()
     if (merchantSnap) {

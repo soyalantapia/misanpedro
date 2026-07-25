@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Store, Search, LifeBuoy } from 'lucide-react'
+import { Store, Search, LifeBuoy, LogOut } from 'lucide-react'
 import { owner } from '@/lib/api'
 import { fmtDate } from '@/lib/format'
 import { PageHeader } from '@/components/PageHeader'
@@ -110,6 +110,21 @@ export function MerchantsPage() {
     }
   }
 
+  // Corta todas las sesiones de soporte activas de un comercio.
+  async function revokeSupport(m: any) {
+    if (!confirm(`¿Cerrar todas las sesiones de soporte activas de "${m.nombre}"?`)) return
+    setActingId(m._id)
+    setError(null)
+    try {
+      const res = await owner.revokeSupport(m._id)
+      alert(`Listo: se cerraron ${res.revoked ?? 0} sesión(es) de soporte.`)
+    } catch (err: any) {
+      setError(err?.message ?? 'No se pudo cerrar el soporte')
+    } finally {
+      setActingId(null)
+    }
+  }
+
   const hasMore = merchants.length < total
 
   return (
@@ -209,6 +224,16 @@ export function MerchantsPage() {
                           >
                             <LifeBuoy size={12} />
                             {acting ? '…' : 'Soporte'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => revokeSupport(m)}
+                            disabled={acting}
+                            title="Cerrar todas las sesiones de soporte activas de este comercio"
+                            className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-neutral-500 ring-1 ring-neutral-300 transition-colors hover:bg-neutral-100 disabled:opacity-50"
+                          >
+                            <LogOut size={12} />
+                            Cerrar soporte
                           </button>
                           <button
                             type="button"

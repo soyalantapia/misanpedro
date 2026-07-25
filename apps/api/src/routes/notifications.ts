@@ -1,32 +1,32 @@
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import { verifyAccessToken } from '@/services/jwt.service'
+import { resolveSseMerchant, signSseTicket } from '@/services/jwt.service'
+import { requireMerchantAuth } from '@/middleware/auth'
 import { subscribe } from '@/services/notifications.service'
 
 export const notificationsRoutes = new Hono()
 
 /**
+ * GET /notifications/ticket — emite un ticket efímero (60s) para abrir el stream.
+ * Va autenticado por header (Authorization), así el access token NO viaja en la URL.
+ */
+notificationsRoutes.get('/ticket', requireMerchantAuth, (c) => {
+  const auth = c.get('auth') as { merchantId?: string }
+  if (!auth?.merchantId) return c.json({ ok: false, error: 'forbidden' }, 403)
+  return c.json({ ok: true, ticket: signSseTicket(auth.merchantId) })
+})
+
+/**
  * GET /notifications/stream — Server-Sent Events para notificaciones real-time
  * del comercio autenticado.
  *
- * El navegador no puede agregar headers a EventSource, así que aceptamos el
- * token en query string `?token=...` (válido para este caso porque el token
- * sólo va a localhost o https).
+ * EventSource no permite headers → el credencial viaja en la query. Preferimos un
+ * `?ticket=` efímero (ver /ticket); aceptamos `?token=` legacy por compat con
+ * bundles cacheados por el Service Worker.
  */
 notificationsRoutes.get('/stream', (c) => {
-  const token = c.req.query('token')
-  if (!token) return c.json({ ok: false, error: 'token required' }, 401)
-
-  let auth
-  try {
-    auth = verifyAccessToken(token)
-  } catch {
-    return c.json({ ok: false, error: 'invalid token' }, 401)
-  }
-  if (auth.type !== 'merchant_user' || !auth.merchantId) {
-    return c.json({ ok: false, error: 'forbidden' }, 403)
-  }
-  const merchantId = auth.merchantId
+  const merchantId = resolveSseMerchant(c.req.query('ticket'), c.req.query('token'))
+  if (!merchantId) return c.json({ ok: false, error: 'invalid ticket' }, 401)
 
   return streamSSE(c, async (stream) => {
     let unsubscribe: (() => void) | null = null

@@ -123,7 +123,7 @@ pnpm --filter @misanpedro/web build     # el build del front que reciben los vec
 
 Si querés desglosar: `pnpm --filter @misanpedro/api test` y `pnpm --filter @misanpedro/web test` (este último incluye el guardrail). Es lo mismo que corre el CI (`.github/workflows/ci.yml` — verificá que siga siendo así).
 
-**Reportá:** del output de tests, los **conteos EXACTOS por paquete** (las líneas `Tests  N passed` de vitest, textuales; ej. "api 130 passed · web 138 passed = 268") y **compará contra lo que declara la doc** (`work-agent/01-PENDIENTES.md`, `CONTRIBUTING.md`, `PROJECT.MD §11` — al momento de escribir este prompt la doc declara **268 = 130 api + 138 web**, pero el número canónico lo leés de la doc EL DÍA de tu auditoría). Tres resultados posibles, los tres son datos: coinciden (verde) · hay MÁS tests que los declarados (doc desactualizada → D4) · hay MENOS o hay rojos (hallazgo ALTO: alguien rompió o borró tests). Si algo está rojo, NO lo arregles: reportá el output textual del fallo.
+**Reportá:** del output de tests, los **conteos EXACTOS por paquete** (las líneas `Tests  N passed` de vitest, textuales; ej. "api 130 passed · web 139 passed = 269") y **compará contra lo que declara la doc** (`work-agent/01-PENDIENTES.md`, `CONTRIBUTING.md`, `PROJECT.MD §11` — al momento de escribir este prompt la doc declara **269 = 130 api + 139 web**, pero el número canónico lo leés de la doc EL DÍA de tu auditoría). Tres resultados posibles, los tres son datos: coinciden (verde) · hay MÁS tests que los declarados (doc desactualizada → D4) · hay MENOS o hay rojos (hallazgo ALTO: alguien rompió o borró tests). Si algo está rojo, NO lo arregles: reportá el output textual del fallo.
 
 ### D3 — Producción en vivo: "¿qué están usando los vecinos AHORA?" (solo lectura — JAMÁS deployar)
 
@@ -240,7 +240,7 @@ Cinco frases en lenguaje llano que digan dónde está parada la plataforma hoy. 
 | Dimensión | Estado | Por qué (1 línea, con el dato) |
 |---|---|---|
 | D1 Git / respaldo | 🟢 / 🟡 / 🔴 | ej.: "🟡 3 commits de main sin pushear (`git rev-list` → 0/3)" |
-| D2 Verificación (tests/build) | … | ej.: "🟢 typecheck 6/6 · 268 tests verdes (130+138) · check:tenant ✓ · build web OK" |
+| D2 Verificación (tests/build) | … | ej.: "🟢 typecheck 6/6 · 269 tests verdes (130+139) · check:tenant ✓ · build web OK" |
 | D3 Producción en vivo | … | ej.: "🔴 build de hace N días; drift de M commits" |
 | D4 Doc vs. realidad | … | … |
 | D5 Seguridad / aislamiento | … | … |

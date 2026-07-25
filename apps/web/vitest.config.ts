@@ -20,7 +20,10 @@ export default defineConfig({
     // así no contaminamos los tipos del app y no tocamos tsconfig.app.json.
     setupFiles: ['./src/test/setup.ts'],
     css: false,
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // `mjs` incluido a propósito: el guardrail multi-tenant vive en
+    // __tests__/no-hardcoded-tenant.test.mjs (importa el script .mjs del repo);
+    // sin esa extensión vitest no lo colecta y el test queda muerto.
+    include: ['src/**/*.{test,spec}.{ts,tsx,mjs}'],
     // Excluimos `e2e/` porque esos son tests de Playwright (browser).
     // Si vitest los encuentra, falla porque @playwright/test no es compatible.
     exclude: ['node_modules', 'dist', 'e2e'],

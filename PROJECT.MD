@@ -160,8 +160,9 @@ accentColor, logoUrl, hero*}`, `precioMensual`, `status`, `plan`, `geoCenter{lat
 
 ### 5.2 Regla de oro: **todo dato de negocio lleva `appId`**
 Llevan `appId` (scoped por ciudad): Coupon, Merchant, MerchantUser, User, Activation, Redemption,
-Referral, CustomerNote, PushSubscription, Subscription, Otp, WaSend, MrrSnapshot.
-**NO** llevan appId (globales): Owner, RefreshToken, PasswordReset, OwnerAuditLog, SupportCode tiene appId.
+Referral, CustomerNote, PushSubscription, Subscription, Otp, WaSend, SupportCode.
+**NO** llevan appId (globales): Owner, RefreshToken, PasswordReset, OwnerAuditLog, **MrrSnapshot** (el
+snapshot de MRR agrega todas las ciudades — lleva `mrrByCity[]` adentro, no un `appId`).
 
 ### 5.3 Resolución del tenant
 - **Backend:** header `X-Tenant-Slug` (o el subdominio del host) → `middleware/tenant.ts`
@@ -357,7 +358,7 @@ Owner/URLs/otros: `OWNER_BOOTSTRAP_EMAIL/PASSWORD/NOMBRE`, `OWNER_APP_URL`, `APP
 
 ## 11. Calidad y testing
 
-- **268 tests** (vitest: 130 api + 138 web): `apps/api` (integración con Mongo en memoria + JWT minteado) + `apps/web`
+- **269 tests** (vitest: 130 api + 139 web): `apps/api` (integración con Mongo en memoria + JWT minteado) + `apps/web`
   (schemas, guardrail, lógica). Correr todo: `pnpm turbo run test` (OJO: `pnpm test` a secas no corre nada).
   CI en `.github/workflows/ci.yml` (install + typecheck + check:tenant + tests api/web por filtro).
 - **Suites de integración clave:** `redemptions` (canje/dinero), `tenant-isolation` (multi-tenant),
@@ -392,16 +393,18 @@ Owner/URLs/otros: `OWNER_BOOTSTRAP_EMAIL/PASSWORD/NOMBRE`, `OWNER_APP_URL`, `APP
 
 ### En vivo y sólido
 Plataforma multi-ciudad (San Pedro + Nariño), camino del dinero auditado, aislamiento verificado,
-emails lindos, onboarding del comercio, owner con RBAC + auditoría + estadísticas, modo soporte. 268 tests.
+emails lindos, onboarding del comercio, owner con RBAC + auditoría + estadísticas, modo soporte. 269 tests.
 
 ### Pendientes (ver `work-agent/01-PENDIENTES.md`)
-- **Pasos del usuario (no código):** confirmar `SMTP_PASSWORD` en Railway (rotada), localidad/geoCenter
-  reales de Nariño, rotar password del owner, cuenta MercadoPago Colombia, domicilio fiscal de SP.
+- **Pasos del usuario (no código):** rotar la password del buzón SMTP (higiene) · domicilio fiscal de SP ·
+  verificar las claves VAPID en Railway · activar **MercadoPago AR ~2 semanas antes del 1er vencimiento de
+  trial (~mediados de septiembre)** · MercadoPago Colombia cuando Nariño tenga comercios. (Nariño geoCenter ya
+  cargado; el owner es passwordless por OTP desde el 25/06.)
 - **Fase 2 de pagos:** "Conectar MercadoPago/Stripe" por ciudad (OAuth, tokens por tenant) — cuando cobre
   la 2da ciudad. Ver `ESTRATEGIA-PAGOS.md`.
 - **Refactors diferidos:** promover schemas owner/billing a `shared`, manifest PWA por-host (server-side).
-- **Nice-to-have del soporte:** botón "cerrar sesiones de soporte" en el owner (el endpoint `revoke-support`
-  ya existe) + vista de auditoría de soporte filtrada.
+- **WhatsApp:** el envío por `whatsapp-web.js` está cableado pero no puede levantar Chromium en Railway
+  (aviso "en activación" en la UI); decidir activarlo (chromium + volumen) o dejarlo así.
 
 ### Definición de "listo para cobrar una ciudad nueva"
 Crearla en el owner (nombre/localidad/país/precio/geoCenter), que resuelva su subdominio (automático por

@@ -17,8 +17,9 @@ No deshagas esto sin entender el motivo. Son decisiones del usuario o aprendizaj
 5. **Email por SMTP, no Resend.** El usuario no tiene Resend. `email.service.ts` usa nodemailer
    (SMTP preferido → Resend fallback → stub/503). Buzón `soporte@micuidad.com` en Hostinger.
 
-6. **Owner sin 2FA + email/password** (`OWNER_2FA_REQUIRED=false`), por decisión del usuario.
-   (La password es débil → pendiente rotar; está en el backlog, no es un olvido.)
+6. **Owner: login OTP passwordless** (desde el 25/06). *(Reemplazó al email+password original; el flujo
+   2FA TOTP quedó cableado pero OFF, `OWNER_2FA_REQUIRED=false`, por decisión del usuario. Ya no hay
+   "password del owner" que rotar — ese pendiente quedó obsoleto.)*
 
 7. **Marca = naranja `#ea580c`** por defecto; cada ciudad puede overridear su `brand.primaryColor`.
    El verde está RESERVADO para semántica de "ahorro" (no como color de marca).
@@ -44,10 +45,9 @@ No deshagas esto sin entender el motivo. Son decisiones del usuario o aprendizaj
 13. **Prod Mongo interno → seeds por env/owner.** No se expone la DB; los cambios de datos de prod van
     por el panel owner o `SEED_CITY_JSON`.
 
-14. **2FA del owner: queda OFF + se agregó rate-limit** (tanda 2026-06-23, decisión del usuario).
-    El panel super-admin sigue con email+password (`OWNER_2FA_REQUIRED=false`), pero ahora
-    `/owner/auth/login` tiene rate-limit (10/min por IP) para frenar fuerza bruta. El flujo 2FA
-    sigue cableado (front+back) para activarlo cuando se quiera (flip de env).
+14. **2FA del owner: queda OFF + rate-limit** (decisión del usuario). *(Histórico: en la tanda 23/06 el
+    owner era email+password con rate-limit en `/auth/login`; el 25/06 se migró a **OTP passwordless**
+    —ver #6—. El flujo TOTP sigue cableado para activarlo con un flip de env.)*
 
 15. **URL por-tenant centralizada en `lib/urls.ts` (`tenantFrontUrl`).** Toda URL externa
     (back_url MP, CTAs de email) sale del subdomain del tenant, no de `APP_URL_FRONT` global.
@@ -82,3 +82,13 @@ No deshagas esto sin entender el motivo. Son decisiones del usuario o aprendizaj
     (`renderOtpEmail`) para los 3 logins (vecino/comercio/owner): logo/monograma + código grande
     copiable + botón **magic-link** que entra directo con el código precargado. Transporte SMTP
     global (un buzón `soporte@micuidad.com`); lo único per-tenant es el display name.
+
+21. **Catálogo de San Pedro: los 11 comercios son reales** (decisión del usuario, 02/07). En la
+    auditoría aparecían nombres con pinta de prueba ("Café Prueba QA", "TAP AI", "Tap") — el usuario
+    confirmó que todos quedan activos. Regla para futuras auditorías: NO re-reportarlos como sospechosos;
+    suspender un comercio es un click en el owner si alguno resultara de prueba.
+
+22. **Tickets efímeros para SSE** (02/07). Los streams (`/wa/stream`, `/notifications/stream`) ya no
+    reciben el access token por query (quedaba en logs de proxy): el front pide un **ticket de un solo
+    propósito y 60s** por header (`/wa/ticket`, `/notifications/ticket`) y lo pasa como `?ticket=`. Se
+    mantiene el `?token=` legacy como fallback por los bundles cacheados por el Service Worker.

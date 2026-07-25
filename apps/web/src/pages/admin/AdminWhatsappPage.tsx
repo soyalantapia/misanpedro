@@ -14,6 +14,7 @@ import {
   RefreshCw,
   WifiOff,
   RotateCw,
+  Clock,
 } from 'lucide-react'
 import { useMerchantSession } from '@/lib/merchantStore'
 import { useToast } from '@/components/Toast'
@@ -186,6 +187,22 @@ function ConnectionScreen({ onConnected }: { onConnected: () => void }) {
 
   return (
     <div className="animate-fade-up mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-6 pb-32 sm:px-6 sm:pt-10">
+      {/* Aviso honesto: el envío por WhatsApp está en fase de activación en el
+          servidor. La página se ve para que sepas qué va a poder hacer, pero la
+          conexión todavía no está habilitada en producción. */}
+      <div
+        role="status"
+        className="flex items-start gap-2.5 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+      >
+        <Clock size={18} className="mt-0.5 shrink-0 text-amber-600" aria-hidden="true" />
+        <div>
+          <p className="font-bold">WhatsApp está en activación</p>
+          <p className="mt-0.5 text-amber-800">
+            Estamos habilitando el envío de mensajes desde el servidor. Podés ver cómo va a
+            funcionar, pero todavía no se puede conectar. Te avisamos apenas esté listo.
+          </p>
+        </div>
+      </div>
       <header className="flex flex-col gap-1.5">
         {/* N5: chip "Promociones" → "WhatsApp" para coincidir con el label
             del nav (post-F17). Antes había dos palabras distintas para la

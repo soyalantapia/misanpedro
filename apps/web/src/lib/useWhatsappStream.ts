@@ -79,17 +79,24 @@ export function useWhatsappStream() {
       }, 5000)
     }
 
-    function open() {
+    async function open() {
       if (stopped) return
-      // Re-leemos el token en CADA (re)conexión (no un snapshot del montaje), para
-      // tomar el access ya refrescado.
-      const access = tokens.get('merchant').access
-      if (!access) {
+      // Pedimos un ticket efímero (60s) por header, en vez de mandar el access
+      // token en la URL (que puede quedar en logs de proxy).
+      if (!tokens.get('merchant').access) {
         scheduleReconnect()
         return
       }
-      const url = `${API_URL.replace(/\/$/, '')}/api/v1/wa/stream?token=${encodeURIComponent(
-        access,
+      let ticket: string
+      try {
+        ticket = (await api.merchantApi.waTicket()).ticket
+      } catch {
+        if (!stopped) scheduleReconnect()
+        return
+      }
+      if (stopped) return
+      const url = `${API_URL.replace(/\/$/, '')}/api/v1/wa/stream?ticket=${encodeURIComponent(
+        ticket,
       )}`
       const es = new EventSource(url)
       esRef.current = es

@@ -43,6 +43,51 @@ export function verifyAccessToken(token: string): AccessPayload {
   return jwt.verify(token, env.JWT_SECRET) as AccessPayload
 }
 
+// --- Tickets efímeros para SSE ------------------------------------------------
+// EventSource no permite mandar headers → el token viaja en la query string, que
+// puede quedar en logs de proxies/servidores. En vez del access token (1h, sirve
+// para TODA la API), el front pide un TICKET de un solo propósito y vida corta
+// (60s, solo abre el stream de ESE comercio). Si se filtra un log, el ticket ya
+// venció y no da acceso a nada más.
+const SSE_TICKET_TTL = '60s'
+type SseTicketPayload = { typ: 'sse'; merchantId: string }
+
+export function signSseTicket(merchantId: string): string {
+  return jwt.sign({ typ: 'sse', merchantId } satisfies SseTicketPayload, env.JWT_SECRET, {
+    expiresIn: SSE_TICKET_TTL,
+  })
+}
+
+export function verifySseTicket(token: string): { merchantId: string } {
+  const p = jwt.verify(token, env.JWT_SECRET) as SseTicketPayload
+  if (p.typ !== 'sse' || !p.merchantId) throw new Error('not an sse ticket')
+  return { merchantId: p.merchantId }
+}
+
+/**
+ * Resuelve el merchantId de un stream SSE aceptando un ticket efímero (`?ticket=`,
+ * preferido) o, por compat con bundles del front cacheados por el Service Worker,
+ * el access token legacy (`?token=`). Devuelve null si no valida ninguno.
+ */
+export function resolveSseMerchant(ticket?: string, legacyToken?: string): string | null {
+  if (ticket) {
+    try {
+      return verifySseTicket(ticket).merchantId
+    } catch {
+      /* probamos con el token legacy abajo */
+    }
+  }
+  if (legacyToken) {
+    try {
+      const auth = verifyAccessToken(legacyToken)
+      if (auth.type === 'merchant_user' && auth.merchantId) return auth.merchantId
+    } catch {
+      /* cae a null */
+    }
+  }
+  return null
+}
+
 /**
  * Genera un refresh token random (no JWT — entropía pura).
  * Persiste el HASH; devuelve el plano al cliente.

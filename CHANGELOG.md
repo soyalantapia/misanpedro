@@ -5,6 +5,18 @@ agrupamos por **tanda**. Lo más nuevo arriba. Detalle vivo en [`work-agent/01-P
 
 ---
 
+## 2026-07-02 — Prompts reusables + fixes de auditoría
+- **Prompts reusables** (`53abaf4`, `d744211`): `work-agent/PROMPT-ONBOARDING-DEV-SENIOR.md` (entender el
+  proyecto) y `work-agent/PROMPT-AUDITORIA-COMPLETA.md` (auditarlo, read-only, 6 dimensiones).
+- **Decisión de negocio** (`3afbe56`): los 11 comercios del catálogo de San Pedro son reales y quedan activos.
+- **Ejecución de la auditoría + resolución de todo lo solucionable** (esta tanda):
+  - Código: guardrail web vivo en vitest · rate-limit en `/push/*` · `findOne({_id,appId})` en el snapshot
+    del canje · borrado de script suelto · **tickets efímeros (60s) para los SSE** (JWT fuera de la URL).
+  - Owner: botón "Cerrar soporte" (`revoke-support`) + filtro `support.*` en Auditoría.
+  - UX: aviso "WhatsApp en activación" en el panel del comercio.
+  - Higiene git: 11 refs mergeadas podadas, `feat/asesor-cupones` archivada como tag.
+  - Doc: sincronizada con la realidad (SMTP funciona, catálogo resuelto, MrrSnapshot global, §C depurado).
+
 ## 2026-07-02 — Aterrizaje: bug-hunt a prod + sincronización
 - **Deploy del bug-hunt PM/UX** (rama `fix/bug-hunt-26`, merge ff a main) — ver entrada 2026-06-29.
 - **Backup**: `main` estaba 13 commits sin pushear a GitHub (incluyendo código ya en prod) y la rama

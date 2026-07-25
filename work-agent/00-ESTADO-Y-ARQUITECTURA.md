@@ -40,8 +40,9 @@ Origen: empezó como "Mi San Pedro" (una sola ciudad) y se generalizó. Ciudades
   `fix/bug-hunt-26` mergeada ff a main) — lo gordo: **snapshot del cupón en el canje** (cupón
   borrado/pausado no rompe historial/LTV), fechas de vigencia en día LOCAL (no UTC), cupo 0,
   alertas (dedup/contador/race), polling del cupón activo. Detalle en doc 01 (tanda de arriba).
-- 🟡 Quedan **pasos manuales del usuario** (rotar password del buzón, limpiar comercios de prueba
-  del catálogo, domicilio fiscal SP, VAPID, MP con trigger) → **doc 01 §B**.
+- 🟡 Quedan **pasos manuales del usuario** (rotar password del buzón, domicilio fiscal SP, verificar
+  VAPID, MP AR con trigger ~sept) → **doc 01 §B**. (El catálogo de SP quedó resuelto el 02/07: los 11
+  comercios son reales por decisión del dueño.)
 
 ## 3. Arquitectura del código (monorepo)
 
@@ -119,4 +120,4 @@ misanpedro/
   otplib (TOTP owner) · nodemailer (email) · Mercado Pago Preapproval · web-push (VAPID) ·
   whatsapp-web.js (planeado). Build = `tsc -b --noEmit && node build.mjs` (esbuild bundle).
 - **web/owner:** Vite 7 · React 19 · Tailwind 4 · React Router 7 · lucide-react · vite-plugin-pwa.
-- **Tests:** vitest, **268 en total** (130 `apps/api` integración con Mongo en memoria + JWT, y 138 `apps/web` schemas/guardrail/lógica). Correr todo: `pnpm turbo run test` (OJO: `pnpm test` a secas no corre nada). Suites clave: `redemptions` (canje), `tenant-isolation`, `support` (modo soporte), `merchant-auth`. `pnpm typecheck` = 6 paquetes.
+- **Tests:** vitest, **269 en total** (130 `apps/api` integración con Mongo en memoria + JWT, y 139 `apps/web` schemas/guardrail/lógica). Correr todo: `pnpm turbo run test` (OJO: `pnpm test` a secas no corre nada). Suites clave: `redemptions` (canje), `tenant-isolation`, `support` (modo soporte), `merchant-auth`. `pnpm typecheck` = 6 paquetes.

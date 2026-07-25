@@ -1,5 +1,18 @@
 # 01 · Pendientes (qué falta, en orden)
 
+> ## ✅ Tanda fixes de auditoría 2026-07-02 — SHIPPED a prod
+> Ejecutar la propia auditoría integral (`PROMPT-AUDITORIA-COMPLETA.md`) → resolver TODO lo solucionable:
+> - **Código:** guardrail web ahora sí lo colecta vitest (`.mjs` en el include) · rate-limit en
+>   `POST /push/{subscribe,unsubscribe}` · `Merchant.findOne({_id,appId})` en el snapshot del canje ·
+>   borrado `apps/api/test-audit-flow.js` · **tickets efímeros (60s) para los SSE** (el JWT ya no viaja
+>   en la query de `/wa/stream` ni `/notifications/stream`; nuevos `/wa/ticket` y `/notifications/ticket`).
+> - **Owner:** botón **"Cerrar soporte"** (`revoke-support`) + chip de filtro **Soporte** en Auditoría
+>   (el backend soporta filtro por prefijo `support.`).
+> - **UX:** aviso **"WhatsApp en activación"** en `/admin/whatsapp` (honesto: la UI se ve, el envío no).
+> - **Higiene git:** podadas 11 refs mergeadas · `feat/asesor-cupones` archivada como tag y borrada.
+> - **Doc:** README/SMTP, 00-ESTADO/catálogo, PROJECT.MD §13/§5.2 (MrrSnapshot global), §C depurado,
+>   CHANGELOG, 03-DECISIONES, QA-FINDINGS — todo alineado con la realidad.
+
 > ## ✅ Bug-hunt PM/UX 2026-06-29 + aterrizaje 2026-07-02 — SHIPPED a prod
 > **Bug-hunt de otra sesión** (rama `fix/bug-hunt-26`, commits `2c979dd..a55f086`): ~20 bugs
 > reales de producto fixeados en 5 grupos, con tests nuevos (API 128→130, web 110→138):
@@ -18,11 +31,11 @@
 >
 > **Aterrizaje 02/07 (auditoría integral + esta sesión):** push de `main` (estaba 13 commits sin
 > respaldo en GitHub) + push y merge ff de `fix/bug-hunt-26` → deploy a prod → esta pasada de doc.
-> **typecheck 6/6 · check:tenant ✓ · 268 tests verdes (130 api + 138 web) · build OK.**
+> **typecheck 6/6 · check:tenant ✓ · 269 tests verdes (130 api + 139 web) · build OK.**
 
 > ## ✅ Tanda lanzamiento 2026-06-26/27 — SHIPPED a prod
 > La semana del lanzamiento. Todo en `main`, deployado y **verificado e2e/empíricamente en prod**.
-> **typecheck 6/6 · check:tenant ✓ · 268 tests verdes (130 api + 138 web) · build OK.**
+> **typecheck 6/6 · check:tenant ✓ · 269 tests verdes (130 api + 139 web) · build OK.**
 >
 > - **Owner expandido (Fases 1-4)** — auth OTP passwordless · multi-admin con **RBAC**
 >   (super/admin/finanzas/soporte/viewer) + sección Equipo · **auditoría** `OwnerAuditLog` ·
@@ -111,26 +124,25 @@ lo confirmó también la tanda 23/06) · ~~Nariño localidad/geoCenter~~ (geoCen
 `tenantFrontUrl`) · ~~stockMaximo sin validar~~ (claim atómico + `agotado`) · ~~tiers de SavingsWallet
 en ARS~~ (escalados por moneda) · ~~geoCenter default SP~~ (mitigado: requerido al crear ciudad).
 
+**Resueltos en la tanda de fixes 02/07 (post-auditoría):** ~~Modo soporte sin UI de cierre~~ (botón
+"Cerrar soporte" + filtro `support.*` en AuditPage, commit de la tanda 02/07) · ~~Higiene git~~ (podadas
+11 refs mergeadas, PRs #1-#3 ya estaban MERGED, `feat/asesor-cupones` archivada como tag
+`archive/asesor-cupones-wip` y borrada) · ~~NewAppPage sin todos los legales~~ (falso: el wizard tiene
+paso 4 Legales con los 6 campos) · ~~JWT en query del SSE~~ (tickets efímeros de 60s) · ~~push sin
+rate-limit~~ · ~~guardrail web muerto~~.
+
 **Vivo:**
 - **WhatsApp inoperativo en Railway** — el código está bien integrado (sesión por comercio, anti-ban,
   tope 4 campañas/mes) pero `nixpacks.toml` setea `PUPPETEER_SKIP_DOWNLOAD=true` (sin Chromium) y las
-  sesiones van a `/tmp` efímero. El comercio ve `/admin/whatsapp` cableado pero no puede levantar.
-  **Decidir:** activarlo (nixPkgs chromium + `PUPPETEER_EXECUTABLE_PATH` + volumen persistente) o
-  comunicar "requiere activación" en la UI. No dejar el limbo.
-- **Modo soporte sin UI de cierre** — `POST /owner/merchants/:id/revoke-support` existe en el API pero
-  el front del owner no lo usa; cerrar una sesión de soporte hoy es a mano. Botón "Cerrar sesiones de
-  soporte" en la ficha del comercio + filtro `support.*` en la vista de auditoría (~1h).
-- **Higiene git** — podar ~9 ramas 100% mergeadas (locales y remotas, cerrar PRs #1-#3); revisar y
-  casi seguro borrar `feat/asesor-cupones` (WIP del 06/06, superado por `feat/valor-cupon` — NO
-  mergear: pisa `AdminCuponEditPage` que el bug-hunt también tocó).
+  sesiones van a `/tmp` efímero. **Ya se agregó el aviso "en activación" en la UI** (02/07); falta la
+  decisión de fondo: activarlo (nixPkgs chromium + `PUPPETEER_EXECUTABLE_PATH` + volumen persistente) o
+  dejarlo comunicado como está.
 - Restos cosméticos: fechas `es-AR` fijas en algunos lugares del panel, copy legal AR inline fuera
-  de `/legal`.
+  de `/legal`. Fuente Satoshi por CDN externo sin fallback self-hosted (QA F-03).
 - **Fase 2 de pagos** ("Conectar MercadoPago/Stripe" por ciudad, OAuth tipo Stripe Connect):
   modelo `App.payment{provider, tokens encriptados, status}`, abstracción `PaymentProvider`,
   webhook ruteado por ciudad. NO se construye hasta que cobre la 2da ciudad. Detalle en
   `ESTRATEGIA-PAGOS.md`.
-- **`NewAppPage`** todavía no tiene **todos** los campos legales (sí prefijo + geoCenter +
-  localidad); los legales se cargan en `AppDetailPage` (editar) tras crear.
 - **Refactors diferidos** (de la tanda 23/06, siguen diferidos a propósito): schemas owner/billing a
   `packages/shared` · apps extendiendo `tsconfig.base.json` · manifest PWA por-host (server-side).
 

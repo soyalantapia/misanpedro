@@ -19,6 +19,11 @@ const ACTION_META: Record<string, { label: string; color: string }> = {
   'admin.invite': { label: 'Invitó admin', color: 'bg-accent-50 text-accent-700' },
   'admin.role-change': { label: 'Cambió rol', color: 'bg-accent-50 text-accent-700' },
   'admin.disable': { label: 'Deshabilitó admin', color: 'bg-danger-bg text-danger' },
+  'support.session.start': { label: 'Entró a soporte', color: 'bg-violet-100 text-violet-700' },
+  'support.post': { label: 'Soporte: creó', color: 'bg-violet-100 text-violet-700' },
+  'support.patch': { label: 'Soporte: editó', color: 'bg-violet-100 text-violet-700' },
+  'support.put': { label: 'Soporte: editó', color: 'bg-violet-100 text-violet-700' },
+  'support.delete': { label: 'Soporte: borró', color: 'bg-violet-100 text-violet-700' },
 }
 function meta(action: string) {
   return ACTION_META[action] ?? { label: action, color: 'bg-neutral-100 text-neutral-600' }
@@ -30,6 +35,7 @@ const FILTERS: { value: string; label: string }[] = [
   { value: 'app.update', label: 'Ciudades' },
   { value: 'merchant.suspend', label: 'Comercios' },
   { value: 'admin.invite', label: 'Equipo' },
+  { value: 'support.', label: 'Soporte' },
 ]
 
 export function AuditPage() {

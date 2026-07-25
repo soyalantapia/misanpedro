@@ -406,7 +406,16 @@ ownerRoutes.get('/audit', requireOwnerAuth, requireOwnerRole('super', 'admin'), 
   const ownerId = c.req.query('ownerId')
   if (ownerId && Types.ObjectId.isValid(ownerId)) q.ownerId = new Types.ObjectId(ownerId)
   const action = c.req.query('action')
-  if (action) q.action = action
+  if (action) {
+    // Un `action` terminado en "." filtra por PREFIJO (ej. "support." trae
+    // support.session.start + support.post + support.patch…). Sin punto = exacto.
+    if (action.endsWith('.')) {
+      const safe = action.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      q.action = { $regex: `^${safe}` }
+    } else {
+      q.action = action
+    }
+  }
   const recurso = c.req.query('recurso')
   if (recurso) q.recurso = recurso
   const from = c.req.query('from')
@@ -925,6 +934,12 @@ ownerRoutes.post('/merchants/:id/support-session', requireOwnerAuth, supportSess
  *  real del propietario). La sesión muere en el próximo /refresh (≤1h). */
 ownerRoutes.post('/merchants/:id/revoke-support', requireOwnerAuth, async (c) => {
   const auth = c.get('auth')
+  // Mismo gate que support-session: un owner deshabilitado del equipo no puede
+  // seguir operando el surface de soporte durante la ventana del access (≤1h).
+  const ownerDoc = await Owner.findById(auth.sub).select('enabled').lean()
+  if (!ownerDoc || !ownerDoc.enabled) {
+    return c.json({ ok: false, error: 'owner deshabilitado' }, 403)
+  }
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
   const merchant = await Merchant.findById(id)
