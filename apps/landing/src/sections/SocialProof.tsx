@@ -1,7 +1,7 @@
 import { Sparkles, Gift, Lock, Headphones } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
 import { useTenant, cityName, priceLabel, cupos, type LandingTenant } from '@/lib/tenant'
-import { TOTAL_CUPOS, MESES_GRATIS } from '@/lib/launch'
+import { TOTAL_CUPOS } from '@/lib/launch'
 
 // LA1 (audit v8): reemplazamos los "logos de pioneros" inventados por los
 // beneficios reales del programa de lanzamiento. No fabricamos clientes — la prueba
@@ -11,10 +11,10 @@ function buildBeneficios(config: LandingTenant | null) {
   return [
     {
       icon: Gift,
-      title: `${MESES_GRATIS} meses gratis`,
+      title: 'Gratis para arrancar',
       text: isSanPedro
-        ? `Sin tarjeta. Los primeros ${TOTAL_CUPOS} comercios entran sin pagar los primeros ${MESES_GRATIS} meses.`
-        : `Sin tarjeta. Los comercios del programa de lanzamiento entran sin pagar los primeros ${MESES_GRATIS} meses.`,
+        ? `Sin tarjeta. Los primeros ${TOTAL_CUPOS} comercios usan la plataforma gratis hasta que se complete el cupo.`
+        : `Sin tarjeta. Los comercios del programa de lanzamiento arrancan gratis hasta que se complete el cupo.`,
     },
     {
       icon: Lock,
@@ -45,11 +45,11 @@ export function SocialProof() {
           </span>
           <h2 className="text-balance text-base font-semibold leading-snug text-neutral-700 sm:text-lg">
             {config?.slug === 'sanpedro' ? (
-              <>Los primeros {TOTAL_CUPOS} comercios entran con{' '}</>
+              <>Los primeros {TOTAL_CUPOS} comercios entran{' '}</>
             ) : (
-              <>Los comercios del lanzamiento entran con{' '}</>
+              <>Los comercios del lanzamiento entran{' '}</>
             )}
-            <strong className="text-neutral-900">{MESES_GRATIS} meses gratis</strong> y, después,{' '}
+            <strong className="text-neutral-900">gratis</strong> y, después,{' '}
             <strong className="text-neutral-900">{priceLabel(config)}/mes congelado de por vida</strong>
           </h2>
         </AnimatedSection>
@@ -72,7 +72,7 @@ export function SocialProof() {
         <div className="mt-8 flex flex-col items-center gap-2 text-center">
           <p className="text-xs text-neutral-500">
             {config?.slug === 'sanpedro'
-              ? `Ya van ${cupos(config).adheridos} de ${TOTAL_CUPOS} comercios — quedan ${cupos(config).restantes} lugares. Cuando se completen, cierra la oferta de lanzamiento.`
+              ? `Ya van ${cupos(config).adheridos} de ${TOTAL_CUPOS} comercios — quedan ${cupos(config).restantes} lugares gratis. Cuando se completen, arranca el precio mensual.`
               : 'Sumate ahora: cuando se completen los cupos, cierra la oferta de lanzamiento.'}
           </p>
           <a

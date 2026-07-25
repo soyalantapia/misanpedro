@@ -41,8 +41,8 @@ function buildFeatures(config: LandingTenant | null) {
     icon: CreditCard,
     title: ar ? 'MercadoPago integrado' : 'Cobro mensual online',
     body: ar
-      ? 'Empezás sin tarjeta. Recién cobramos por MercadoPago cuando terminan los 3 meses gratis.'
-      : 'Empezás sin tarjeta. Recién cobramos cuando terminan los 3 meses gratis.',
+      ? 'Empezás sin tarjeta. Recién cobramos por MercadoPago cuando se completa el cupo de lanzamiento.'
+      : 'Empezás sin tarjeta. Recién cobramos cuando se completa el cupo de lanzamiento.',
   },
   ] as const
 }

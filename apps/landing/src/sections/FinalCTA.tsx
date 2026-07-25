@@ -2,7 +2,6 @@ import { ArrowRight } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
 import { useTenant, cityName, cupos } from '@/lib/tenant'
-import { MESES_GRATIS } from '@/lib/launch'
 
 export function FinalCTA() {
   const { config } = useTenant()
@@ -27,7 +26,7 @@ export function FinalCTA() {
           </h2>
 
           <p className="mt-5 text-pretty text-lg leading-relaxed text-white/85">
-            Sumate al programa de lanzamiento: <strong>{MESES_GRATIS} meses gratis</strong> y,
+            Sumate al programa de lanzamiento: <strong>gratis hasta los primeros {total} comercios</strong> y,
             después, tu precio <strong>congelado de por vida</strong> mientras tu cuenta esté activa.
           </p>
 
@@ -42,7 +41,7 @@ export function FinalCTA() {
           </div>
 
           <p className="mt-8 text-xs text-white/90">
-            3 meses gratis, sin tarjeta · Cancelás cuando quieras · Hecho en {cityName(config)}
+            Gratis hasta los primeros {total} comercios, sin tarjeta · Cancelás cuando quieras · Hecho en {cityName(config)}
           </p>
         </div>
       </AnimatedSection>

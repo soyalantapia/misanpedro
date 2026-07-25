@@ -6,6 +6,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@misanpedro/web", "dev"],
       "port": 5180
+    },
+    {
+      "name": "misanpedro-landing",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@misanpedro/landing", "dev"],
+      "port": 5181
     }
   ]
 }

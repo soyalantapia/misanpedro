@@ -49,10 +49,9 @@ export function Hero() {
             className="animate-fade-up mt-7 max-w-2xl text-pretty text-lg leading-relaxed text-neutral-600 sm:text-xl"
             style={{ animationDelay: '120ms' }}
           >
-            Ponés tu descuento el día flojo, los vecinos cerca se enteran y entran.
-            El descuento lo elegís vos, así que no regalás margen. Cada persona que
-            canjea te queda como cliente tuyo y no nos quedamos un peso de tu ticket.
-            Sin contratos. Sin app que aprender. {config?.ciudad ? `Hecho para ${cityName(config)}.` : 'Hecho para vos.'}
+            Ponés un descuento el día flojo y los vecinos entran. Lo elegís vos, así que
+            no regalás margen — y cada persona que canjea queda como cliente tuyo, con
+            nombre y teléfono. Sin comisiones, sin contratos.
           </p>
 
           <div
@@ -75,23 +74,23 @@ export function Hero() {
             </a>
           </div>
 
-          {/* Oferta de lanzamiento: los primeros 20 comercios entran con 3 meses
-              gratis y sin tarjeta; después el precio mensual del tenant queda
-              congelado de por vida (priceLabel sale del tenant, fuente: @/lib/tenant).
-              El contador "X de 20" sale de @/lib/launch (fuente única). */}
+          {/* Oferta de lanzamiento: la plataforma es GRATIS hasta completar los
+              primeros TOTAL_CUPOS comercios; después el precio mensual del tenant
+              queda congelado de por vida (priceLabel sale del tenant, fuente:
+              @/lib/tenant). El contador "X de N" sale de @/lib/launch (fuente única). */}
           <p
             className="animate-fade-up mt-5 inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-xs font-bold text-accent-700 ring-1 ring-accent-100"
             style={{ animationDelay: '210ms' }}
           >
             {config?.slug === 'sanpedro'
-              ? `🔥 Ya van ${adheridos} de ${total} comercios · quedan ${restantes} lugares`
-              : '🔥 Programa de lanzamiento · 3 meses gratis y precio congelado'}
+              ? `🔥 Ya van ${adheridos} de ${total} comercios · quedan ${restantes} lugares gratis`
+              : `🔥 Programa de lanzamiento · gratis hasta los primeros ${total} comercios`}
           </p>
           <p
             className="animate-fade-up mt-4 text-xs text-neutral-500"
             style={{ animationDelay: '240ms' }}
           >
-            3 meses gratis, sin tarjeta · Después {priceLabel(config)}/mes congelado de por vida · Hecho en {cityName(config)}
+            Gratis, sin tarjeta, hasta los primeros {total} comercios · Después {priceLabel(config)}/mes congelado de por vida · Hecho en {cityName(config)}
           </p>
         </div>
 

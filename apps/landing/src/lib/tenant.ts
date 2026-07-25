@@ -206,8 +206,8 @@ export const isArgentina = (c: LandingTenant | null): boolean => c?.pais === 'Ar
 export const pagoLabel = (c: LandingTenant | null): string =>
   isArgentina(c) ? 'MercadoPago' : 'pago online'
 
-/** Precio mensual formateado en la moneda/locale del tenant (ej. "$50.000" o
- *  "$ 50.000" en COP). Si el tenant no trae precioMensual, usa el default. */
+/** Precio mensual formateado en la moneda/locale del tenant (ej. "$30.000" o
+ *  "$ 30.000" en COP). Si el tenant no trae precioMensual, usa el default. */
 export function priceLabel(c: LandingTenant | null): string {
   const amount = c?.precioMensual && c.precioMensual > 0 ? c.precioMensual : PRECIO_MENSUAL
   const moneda = c?.moneda || 'ARS'

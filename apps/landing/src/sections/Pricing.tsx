@@ -2,7 +2,7 @@ import { ArrowRight, Check, Sparkles } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
 import { useTenant, priceLabel, isArgentina, pagoLabel, cupos } from '@/lib/tenant'
-import { TOTAL_CUPOS, MESES_GRATIS } from '@/lib/launch'
+import { TOTAL_CUPOS } from '@/lib/launch'
 
 export function Pricing() {
   const { config } = useTenant()
@@ -30,8 +30,8 @@ export function Pricing() {
           Un solo plan. Sin sorpresas.
         </h2>
         <p className="mt-5 text-pretty text-lg leading-relaxed text-neutral-600">
-          Empezás con {MESES_GRATIS} meses gratis y sin tarjeta. Después, un plan único
-          mensual por {pagoLabel(config)}. Cancelás cuando quieras desde tu panel.
+          Gratis y sin tarjeta hasta que se completen los primeros {TOTAL_CUPOS} comercios.
+          Después, un plan único mensual por {pagoLabel(config)}. Cancelás cuando quieras desde tu panel.
         </p>
       </AnimatedSection>
 
@@ -79,7 +79,7 @@ export function Pricing() {
             {/* RIGHT */}
             <div className="flex flex-col justify-center rounded-2xl bg-white p-8 shadow-xl sm:p-10">
               <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                Primeros {MESES_GRATIS} meses
+                Programa de lanzamiento
               </p>
 
               <p className="mt-2 flex items-baseline gap-2">
@@ -88,7 +88,7 @@ export function Pricing() {
                 </span>
               </p>
               <p className="mt-1 text-sm font-medium text-neutral-500">
-                Sin tarjeta. No cargás nada para empezar.
+                Hasta los primeros {TOTAL_CUPOS} comercios. Sin tarjeta.
               </p>
 
               <div className="mt-4 rounded-xl bg-neutral-50 p-3 ring-1 ring-neutral-200">
@@ -127,7 +127,7 @@ export function Pricing() {
           {config?.slug === 'sanpedro' ? (
             <>
               <strong className="text-neutral-700">
-                Los {MESES_GRATIS} meses gratis y el precio congelado valen para los primeros{' '}
+                El período gratis y el precio congelado valen para los primeros{' '}
                 {TOTAL_CUPOS} comercios.
               </strong>{' '}
               Ya van {adheridos} — quedan {restantes} lugares. Después, el
@@ -136,7 +136,7 @@ export function Pricing() {
           ) : (
             <>
               <strong className="text-neutral-700">
-                Los {MESES_GRATIS} meses gratis y el precio congelado son parte del programa de
+                El período gratis y el precio congelado son parte del programa de
                 lanzamiento.
               </strong>{' '}
               Sumate ahora y tu precio queda congelado de por vida. Después, el precio sube para
