@@ -7,7 +7,7 @@ export function Solution() {
   const { config } = useTenant()
 
   return (
-    <section className="px-6 py-20 sm:py-28">
+    <section id="como-funciona" className="scroll-mt-20 px-6 py-20 sm:py-28">
       <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1.05fr_1fr] lg:items-center">
         <AnimatedSection>
           <span className="text-xs font-bold uppercase tracking-widest text-accent-700">
@@ -100,7 +100,7 @@ function FlowVisual() {
               <s.icon size={18} />
             </span>
             <div className="flex-1">
-              <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+              <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
                 Paso 0{i + 1}
               </p>
               <p className="mt-0.5 font-bold text-neutral-900">{s.title}</p>

@@ -1,10 +1,7 @@
 import {
   FileText,
   MegaphoneOff,
-  Ban,
   UserX,
-  BarChart3,
-  Clock,
 } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
 
@@ -20,24 +17,9 @@ const PAINS = [
     body: 'Subís una promo. El algoritmo decide que tus seguidores no la vean. Pagás publicidad. Te llegan likes pero no clientes.',
   },
   {
-    icon: Ban,
-    title: 'WhatsApp masivo que Meta te bloquea',
-    body: 'Mandás un mensaje a 50 contactos. Meta detecta spam. Te suspenden la cuenta. Perdés el contacto con todos.',
-  },
-  {
     icon: UserX,
     title: 'No sabés quiénes son tus clientes',
     body: 'Atendés a 80 personas por día. Ni un nombre. Ni un cumpleaños. Ni un teléfono. Cada cliente entra y sale anónimo.',
-  },
-  {
-    icon: BarChart3,
-    title: 'No medís si una promo funcionó',
-    body: 'Cargás un descuento, repartís flyers, ¿cuántos canjearon? No sabés. ¿Generó clientes nuevos? No sabés. ¿Conviene repetirla? Decidís a ojo.',
-  },
-  {
-    icon: Clock,
-    title: 'No tenés cómo invitarlos a volver',
-    body: 'Carlos vino una vez y no apareció más. No tenés su contacto, no podés mandarle nada. Si vuelve, vuelve solo. Si no vuelve, perdiste todo.',
   },
 ] as const
 
@@ -61,7 +43,7 @@ export function Problem() {
         </p>
       </AnimatedSection>
 
-      <div className="mx-auto mt-16 grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mx-auto mt-16 grid max-w-6xl gap-5 sm:grid-cols-3">
         {PAINS.map((p, i) => (
           <AnimatedSection
             key={p.title}

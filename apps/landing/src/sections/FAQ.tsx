@@ -1,6 +1,6 @@
 import { ChevronDown } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
-import { useTenant, priceLabel, isSanPedro, pagoLabel, cupos, type LandingTenant } from '@/lib/tenant'
+import { useTenant, priceLabel, isSanPedro, pagoLabel, cupos, cityName, type LandingTenant } from '@/lib/tenant'
 import { TOTAL_CUPOS } from '@/lib/launch'
 
 function buildFaqs(config: LandingTenant | null) {
@@ -8,10 +8,23 @@ function buildFaqs(config: LandingTenant | null) {
   const sp = isSanPedro(config)
   const pago = pagoLabel(config)
   const { adheridos, restantes } = cupos(config)
+  const ciudad = cityName(config)
   return [
   {
     q: '¿Qué necesito para empezar?',
     a: 'Sólo un celular. No necesitás computadora ni ningún aparato especial, y no cargás tarjeta ni medio de pago para arrancar. Te registrás, completás los datos del comercio, subís tu primer descuento y listo.',
+  },
+  {
+    // La pregunta #1 del comerciante ("¿a cuánta gente le llega?") — contestada de
+    // frente y sin inflar. Auditoría PM 25/07: no estaba en ningún lado.
+    q: `¿Cuánta gente de ${ciudad} está usando la app hoy?`,
+    a: sp
+      ? `Te contesto de frente: estamos arrancando. No te vamos a mentir con un número inflado. Hoy hay ${adheridos} comercios adentro y los vecinos se van sumando a medida que hay descuentos para usar — por eso los primeros ${TOTAL_CUPOS} entran gratis: estamos construyendo esto juntos. El que entra ahora no paga nada mientras se llena; el que espera a que esté lleno arranca pagando ${precio}/mes.`
+      : `Estamos arrancando en ${ciudad} y no te vamos a mentir con un número inflado: los vecinos se suman a medida que hay descuentos para usar. Por eso los primeros ${TOTAL_CUPOS} comercios entran gratis — estamos construyendo esto juntos.`,
+  },
+  {
+    q: '¿Qué me van a pedir para registrarme?',
+    a: 'Tres pantallas y dos minutos: el nombre y el rubro de tu comercio, la dirección y los horarios, tu nombre, tu teléfono y tu mail. No te pedimos tarjeta, ni CUIT, ni contraseña (para entrar al panel te mandamos un código al mail). El logo y las fotos los cargás después, cuando tengas tiempo.',
   },
   {
     q: '¿El vecino paga algo por usar la app?',
@@ -23,7 +36,7 @@ function buildFaqs(config: LandingTenant | null) {
   },
   {
     q: '¿Puedo cancelar cuando quiera?',
-    a: 'Sí. No hay contrato anual, no hay permanencia, no hay penalidad. Cancelás desde tu panel y la cuenta queda pausada el mes siguiente. Si volvés, conservás tu historial.',
+    a: 'Sí. No hay contrato, no hay permanencia, no hay multa. Lo cancelás vos desde tu celular, en el panel, y no te cobramos el mes siguiente. Tu lista de clientes te la llevás igual, y si volvés conservás tu historial.',
   },
   {
     q: '¿Cómo cobro al cliente? ¿Ustedes se quedan con algo?',
@@ -36,8 +49,8 @@ function buildFaqs(config: LandingTenant | null) {
   {
     q: '¿Cómo es el período gratis?',
     a: sp
-      ? `Los primeros ${TOTAL_CUPOS} comercios que se suman usan la plataforma gratis hasta que se complete el cupo, sin cargar tarjeta. Cuando lleguemos a los ${TOTAL_CUPOS}, empezás a pagar ${precio}/mes por ${pago}, y ese precio te queda congelado de por vida. Hoy van ${adheridos} de ${TOTAL_CUPOS} lugares (quedan ${restantes}).`
-      : `Los comercios del programa de lanzamiento usan la plataforma gratis hasta que se complete el cupo, sin cargar tarjeta. Después empezás a pagar ${precio}/mes por ${pago}, y ese precio te queda congelado de por vida.`,
+      ? `Los primeros ${TOTAL_CUPOS} comercios que se suman usan la plataforma gratis hasta que se complete el cupo, sin cargar tarjeta. Cuando lleguemos a los ${TOTAL_CUPOS}, empezás a pagar ${precio}/mes por ${pago}, y ese precio te queda congelado de por vida. Antes de empezar a cobrarte te avisamos con 30 días de anticipación, así decidís tranquilo. Hoy van ${adheridos} de ${TOTAL_CUPOS} lugares (quedan ${restantes}).`
+      : `Los comercios del programa de lanzamiento usan la plataforma gratis hasta que se complete el cupo, sin cargar tarjeta. Después empezás a pagar ${precio}/mes por ${pago}, y ese precio te queda congelado de por vida. Antes de empezar a cobrarte te avisamos con 30 días de anticipación, así decidís tranquilo.`,
   },
   {
     q: `¿El precio de ${precio}/mes es para siempre?`,

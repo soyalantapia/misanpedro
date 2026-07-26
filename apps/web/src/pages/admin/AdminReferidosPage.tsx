@@ -17,6 +17,7 @@ import { useToast } from '@/components/Toast'
 import { useTenant } from '@/lib/tenant'
 import { cn } from '@/lib/cn'
 import { pluralize } from '@/lib/format'
+import { TOTAL_CUPOS } from '@/lib/launch'
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
@@ -34,7 +35,7 @@ export function AdminReferidosPage() {
   const [copied, setCopied] = useState(false)
 
   const link = data?.link ?? ''
-  const shareText = `¡Sumá tu comercio a ${appName}! 3 meses gratis sin tarjeta, y si entrás con mi link te llevás 15 días extra 👉 ${link}`
+  const shareText = `¡Sumá tu comercio a ${appName}! Gratis hasta los primeros ${TOTAL_CUPOS} comercios, sin tarjeta, y si entrás con mi link te llevás 15 días extra 👉 ${link}`
   const waHref = `https://wa.me/?text=${encodeURIComponent(shareText)}`
 
   async function copyLink() {
@@ -152,8 +153,9 @@ export function AdminReferidosPage() {
               <ShieldCheck size={18} />
             </span>
             <p className="text-xs leading-relaxed text-status-success-fg">
-              <strong>Recomendá tranquilo.</strong> Tu colega entra con 3 meses gratis, sin tarjeta
-              ni compromiso: si no le sirve, no paga nada. Vos no arriesgás nada y sumás semanas.
+              <strong>Recomendá tranquilo.</strong> Tu colega entra gratis —como vos— hasta que se
+              completen los primeros {TOTAL_CUPOS} comercios, sin tarjeta ni compromiso: si no le
+              sirve, no paga nada. Vos no arriesgás nada y sumás semanas.
             </p>
           </div>
 

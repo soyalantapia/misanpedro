@@ -1,23 +1,20 @@
 import { ArrowRight, Check, Sparkles } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
-import { useTenant, priceLabel, isArgentina, pagoLabel, cupos } from '@/lib/tenant'
+import { useTenant, priceLabel, isArgentina, pagoLabel, cupos, cityName } from '@/lib/tenant'
 import { TOTAL_CUPOS } from '@/lib/launch'
 
 export function Pricing() {
   const { config } = useTenant()
   const { adheridos, restantes } = cupos(config)
-  // Lo incluido en el plan. El medio de pago se gatea por país (MercadoPago solo
-  // donde aplica) y el CRM usa "documento" neutro en vez de "DNI" (AR-específico).
+  // Lista corta y sin jerga: lo que ya se explicó en Funciones no se repite acá
+  // (auditoría PM 25/07 — eran 8 ítems, 4 duplicaban la sección de arriba).
   const included = [
-    'Descuentos ilimitados',
-    'CRM completo (cumpleaños, frecuencia, visitas)',
-    'WhatsApp Business (próximamente)',
-    'Panel desde el celular',
-    'Validación con código de 6 dígitos',
-    isArgentina(config) ? 'MercadoPago integrado' : 'Cobro mensual online',
-    'Reportes en tiempo real',
-    'Soporte dedicado',
+    'Todos los descuentos que quieras',
+    'Tu lista de clientes, con cumpleaños y visitas',
+    'Todos los canjes que hagas, sin tope',
+    'Soporte con nosotros, gente de ' + cityName(config),
+    'WhatsApp Business cuando esté listo, sin costo extra',
   ]
 
   return (
@@ -58,7 +55,7 @@ export function Pricing() {
               <p className="mt-2 text-base text-white/75 sm:text-lg">
                 Todo lo que necesitás para que tus clientes vuelvan.
                 <br className="hidden sm:inline" />
-                Sin tiers, sin add-ons, sin sorpresas.
+                Un solo precio: no hay plan chico ni plan grande, ni cosas aparte que se pagan después.
               </p>
 
               <ul className="mt-8 grid gap-x-6 gap-y-3 sm:grid-cols-2">
@@ -107,7 +104,7 @@ export function Pricing() {
 
               <a
                 href={signupUrl(config)}
-                className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-accent-600 to-accent-800 px-6 py-4 text-sm font-bold text-on-brand shadow-lg shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40"
+                className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-accent-600 to-accent-800 px-6 py-4 text-sm font-bold text-on-brand shadow-lg shadow-accent-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent-500/40 active:scale-[0.97] active:shadow-md"
               >
                 Empezá gratis
                 <ArrowRight
@@ -118,6 +115,9 @@ export function Pricing() {
 
               <p className="mt-4 text-center text-xs leading-relaxed text-neutral-500">
                 Sin tarjeta ahora · Cancelás cuando quieras desde tu panel
+              </p>
+              <p className="mt-2 text-center text-[11px] leading-relaxed text-neutral-500">
+                Son 3 pantallas y 2 minutos. No te pedimos tarjeta, ni CUIT, ni contraseña.
               </p>
             </div>
           </div>

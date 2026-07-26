@@ -13,7 +13,7 @@ export function Footer() {
             <span className="text-xs font-black">M</span>
           </span>
           <span className="text-sm text-neutral-900">{appName(config)}</span>
-          <span className="ml-2 text-xs text-neutral-400">
+          <span className="ml-2 text-xs text-neutral-500">
             © {year} · Hecho en {cityName(config)}
           </span>
         </div>

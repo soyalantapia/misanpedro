@@ -41,23 +41,26 @@ export function UseCase() {
             </figcaption>
           </figure>
 
-          {/* Narración hipotética + números de referencia */}
+          {/* Narración hipotética. Los 3 números son VERDADES del producto (lo que
+              cuesta y lo que tarda), no resultados prometidos: la auditoría PM del
+              25/07 sacó "+40 canjes" y "~25% vuelve", que eran inventados y se leían
+              como datos reales. */}
           <div className="flex flex-col">
-            <p className="text-pretty text-xl leading-relaxed text-neutral-700 sm:text-2xl">
+            <p className="mb-4 text-[13px] font-semibold text-neutral-500">
+              Esto es un ejemplo inventado para que veas cómo funciona, no un caso real.
+            </p>
+            <p className="text-pretty text-lg leading-relaxed text-neutral-700 sm:text-xl">
               Un martes flojo a las 10 subís tu primer descuento, 25% en helado hasta el
               viernes. Los vecinos cerca lo activan desde la app y empiezan a llegar al
               local. Cada uno que canjea te queda en tu base, con nombre y frecuencia.{' '}
               <strong className="text-neutral-900">Así llenás el día que no entraba nadie.</strong>
             </p>
 
-            <div className="mt-8 grid grid-cols-3 gap-4 border-t border-neutral-200 pt-6">
-              <Metric value="+40" label="canjes" hint="en una semana de promo" />
-              <Metric value="~25%" label="vuelve" hint="sin remarketing" />
-              <Metric value="0" label="volantes" hint="impresos" />
+            <div className="mt-7 grid grid-cols-3 gap-4 border-t border-neutral-200 pt-6">
+              <Metric value="5 min" label="publicar" hint="un descuento, desde el celular" />
+              <Metric value="$0" label="en imprenta" hint="ni un volante" />
+              <Metric value="0%" label="de comisión" hint="sobre lo que vendés" />
             </div>
-            <p className="mt-4 text-[11px] text-neutral-400">
-              Ejemplo de demo. Los números dependen de tu rubro y tu descuento.
-            </p>
           </div>
         </AnimatedSection>
       </div>

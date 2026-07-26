@@ -13,6 +13,7 @@ import {
   ScanLine,
 } from 'lucide-react'
 import { CATEGORIAS, type Categoria } from '@/lib/types'
+import { TOTAL_CUPOS } from '@/lib/launch'
 import { merchantAuth } from '@/lib/merchantStore'
 import { useToast } from '@/components/Toast'
 import { Select } from '@/components/Select'
@@ -266,7 +267,8 @@ export function AdminSignupPage() {
     })
 
     if (result.ok) {
-      // Comercio creado y ACTIVO con 3 meses gratis — sin pago ni MercadoPago.
+      // Comercio creado y ACTIVO: gratis hasta completar el cupo de lanzamiento
+      // (TOTAL_CUPOS, espejo de apps/landing) — sin pago ni MercadoPago.
       // Ya es visible para los vecinos. Lo llevamos a completar su perfil.
       clearDraft(draftKey)
       setSubmitting(false)
@@ -303,7 +305,7 @@ export function AdminSignupPage() {
           </div>
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-brand-strong">
-              Sumá tu comercio · 3 meses gratis
+              Sumá tu comercio · Gratis hasta los primeros {TOTAL_CUPOS} comercios
             </p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">
               {step !== 'listo' && 'Sumá tu comercio'}
@@ -557,11 +559,11 @@ export function AdminSignupPage() {
                 {/* Tranquilidad del plan, sin paso de "pago" (no se cobra nada ahora). */}
                 <div className="rounded-2xl bg-status-success-bg p-3.5 text-status-success-fg ring-1 ring-status-success/20">
                   <p className="flex items-center gap-1.5 text-sm font-bold">
-                    <Sparkles size={14} /> 3 meses gratis · todo incluido
+                    <Sparkles size={14} /> Gratis · todo incluido
                   </p>
                   <p className="mt-0.5 text-xs leading-snug">
-                    Descuentos, validaciones y clientes ilimitados. Sin tarjeta, sin MercadoPago.
-                    Cancelás cuando quieras.
+                    Descuentos, validaciones y clientes ilimitados. Gratis hasta que se completen los
+                    primeros {TOTAL_CUPOS} comercios de la ciudad. Sin tarjeta ahora, cancelás cuando quieras.
                   </p>
                 </div>
 
@@ -672,7 +674,7 @@ export function AdminSignupPage() {
           </div>
           <VecinoAppMockup className="relative" />
           <ul className="relative flex flex-col gap-3">
-            <BannerPoint icon={Sparkles}>3 meses gratis · sin tarjeta</BannerPoint>
+            <BannerPoint icon={Sparkles}>Gratis hasta los primeros {TOTAL_CUPOS} comercios · sin tarjeta</BannerPoint>
             <BannerPoint icon={Users}>Clientes propios, exportables</BannerPoint>
             <BannerPoint icon={ScanLine}>Validás descuentos en 2 segundos</BannerPoint>
           </ul>

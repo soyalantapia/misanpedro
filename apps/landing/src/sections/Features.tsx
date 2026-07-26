@@ -3,14 +3,12 @@ import {
   Hash,
   Users,
   MessageCircle,
-  Smartphone,
-  CreditCard,
+
 } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
-import { useTenant, isArgentina, type LandingTenant } from '@/lib/tenant'
+import { useTenant, type LandingTenant } from '@/lib/tenant'
 
-function buildFeatures(config: LandingTenant | null) {
-  const ar = isArgentina(config)
+function buildFeatures(_config: LandingTenant | null) {
   return [
   {
     icon: Ticket,
@@ -25,24 +23,12 @@ function buildFeatures(config: LandingTenant | null) {
   {
     icon: Users,
     title: 'Tu lista de clientes, sola',
-    body: 'Cada canje guarda el nombre, el cumpleaños y cuántas veces te visitó cada cliente.',
+    body: 'Cada canje guarda el nombre, el cumpleaños y cuántas veces te visitó. La bajás cuando querés: si un día te vas, la lista te la llevás igual. Es tuya.',
   },
   {
     icon: MessageCircle,
     title: 'WhatsApp Business (pronto)',
-    body: 'Campañas a tus clientes desde la plataforma. Lo estamos integrando con la API oficial de Meta.',
-  },
-  {
-    icon: Smartphone,
-    title: 'Panel desde el celular',
-    body: 'No necesitás computadora. Todo desde tu teléfono.',
-  },
-  {
-    icon: CreditCard,
-    title: ar ? 'MercadoPago integrado' : 'Cobro mensual online',
-    body: ar
-      ? 'Empezás sin tarjeta. Recién cobramos por MercadoPago cuando se completa el cupo de lanzamiento.'
-      : 'Empezás sin tarjeta. Recién cobramos cuando se completa el cupo de lanzamiento.',
+    body: 'Campañas a tus clientes desde la plataforma. Todavía no está activo: lo estamos integrando con la API oficial de Meta.',
   },
   ] as const
 }
@@ -63,7 +49,7 @@ export function Features() {
         </h2>
       </AnimatedSection>
 
-      <div className="mx-auto mt-16 grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mx-auto mt-16 grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {FEATURES.map((f, i) => (
           <AnimatedSection
             key={f.title}

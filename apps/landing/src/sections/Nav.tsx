@@ -78,7 +78,7 @@ export function Nav() {
         <div className="flex items-center gap-3">
           <a
             href={signupUrl(config)}
-            className="group hidden items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-on-brand shadow-sm shadow-accent-500/20 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-accent-500/30 sm:inline-flex"
+            className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-600 to-accent-800 px-3.5 py-2.5 text-sm font-bold text-on-brand shadow-sm shadow-accent-500/20 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md hover:shadow-accent-500/30 active:scale-[0.97] sm:px-4"
           >
             Empezá gratis
             <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
@@ -110,7 +110,7 @@ export function Nav() {
             ))}
             <a
               href={signupUrl(config)}
-              className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 px-4 py-2 text-xs font-bold text-on-brand"
+              className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-gradient-to-br from-accent-600 to-accent-800 px-4 py-2.5 text-sm font-bold text-on-brand active:scale-[0.97]"
             >
               Empezá gratis
               <ArrowRight size={12} />
