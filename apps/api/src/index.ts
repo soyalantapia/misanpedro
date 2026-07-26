@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import mongoose from 'mongoose'
 import { env, isProd } from '@/env'
-import { connectDB } from '@/db/connection'
+import { connectDB, bootMutationsAllowed } from '@/db/connection'
 import { merchantAuthRoutes } from '@/routes/merchant-auth'
 import { userAuthRoutes } from '@/routes/user-auth'
 import { merchantsRoutes } from '@/routes/merchants'
@@ -374,10 +374,19 @@ async function bootstrap() {
   await initSentry()
   try {
     await connectDB()
-    await seedIfEmpty()
     initWebPush()
-    startExpiryLoop()
-    startSnapshotLoop()
+    // Escrituras de arranque + loops de background (seed, expiración de cupones,
+    // snapshot de MRR) son del runtime de PRODUCCIÓN. Sin producción ni
+    // DB_BOOTSTRAP=true no corren, para que un `pnpm dev:api` con el .env que apunta
+    // a Atlas no muta la base de prod (seed, marcado de expirados, upsert de MRR).
+    // [cazabug S14-02]
+    if (bootMutationsAllowed()) {
+      await seedIfEmpty()
+      startExpiryLoop()
+      startSnapshotLoop()
+    } else {
+      console.log('[bootstrap] boot mutations OFF — skip seedIfEmpty/expiryLoop/snapshotLoop')
+    }
   } catch (err) {
     console.error('[bootstrap] failed to connect DB; starting anyway:', err)
     captureException(err, { phase: 'bootstrap' })

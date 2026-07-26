@@ -4,6 +4,18 @@ import { App, User, Owner, PushSubscription } from '@/models'
 
 let connectingPromise: Promise<typeof mongoose> | null = null
 
+/**
+ * ¿Podemos correr las MUTACIONES de arranque (drop+recreate de índices, bootstrap
+ * del owner, seed de ciudad)? Son operaciones del runtime de PRODUCCIÓN. El .env
+ * local apunta al MISMO Atlas que prod (dbName 'misanpedro' hardcodeado), así que
+ * si corrieran en cada boot, `pnpm dev:api` dropearía índices de PROD desde una
+ * laptop. Solo las habilitamos en producción (Railway) o con opt-in explícito
+ * DB_BOOTSTRAP=true (para reconciliar a propósito una Mongo LOCAL). [cazabug S14-02]
+ */
+export function bootMutationsAllowed(): boolean {
+  return env.NODE_ENV === 'production' || process.env.DB_BOOTSTRAP === 'true'
+}
+
 export async function connectDB(): Promise<typeof mongoose> {
   if (mongoose.connection.readyState === 1) return mongoose
   if (connectingPromise) return connectingPromise
@@ -17,6 +29,16 @@ export async function connectDB(): Promise<typeof mongoose> {
     })
     .then(async (m) => {
       console.log('[db] connected:', m.connection.host)
+      // GUARD anti-mutación-de-prod: sin producción ni DB_BOOTSTRAP, no tocamos la
+      // DB en el arranque (ni drop de índices, ni bootstrap, ni seed). Evita que un
+      // `pnpm dev:api` local mute la base de prod. [cazabug S14-02]
+      if (!bootMutationsAllowed()) {
+        console.log(
+          '[db] boot mutations OFF (no es producción y sin DB_BOOTSTRAP=true) — ' +
+            'skip syncIndexes/bootstrapOwner/seedCity',
+        )
+        return m
+      }
       // Reconciliación de índices de User (idempotente, NO fatal): el onboarding
       // sin fricción cambió la identidad a `telefono`. Dropea los unique viejos
       // (dni/email) que rompen el alta por dup-key en null, y crea el parcial
