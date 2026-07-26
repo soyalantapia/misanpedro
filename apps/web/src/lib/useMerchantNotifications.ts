@@ -27,14 +27,31 @@ export type MerchantNotifEvent = {
   payload: any
 }
 
-const STORAGE_KEY = 'misanpedro.merchant.notif.v1'
+const STORAGE_PREFIX = 'misanpedro.merchant.notif.v1'
+// Key GLOBAL vieja (sin scope por comercio): en un dispositivo compartido, el
+// comercio B cargaba las notificaciones —con PII de clientes (canjes)— del comercio
+// A. Ya no se escribe; la borramos al cargar para limpiar la fuga. [cazabug S10-01]
+const LEGACY_GLOBAL_KEY = STORAGE_PREFIX
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001'
 const MAX_EVENTS = 50
 
-function loadStored(): MerchantNotifEvent[] {
+/** Bucket de localStorage scopeado por comercio: el historial de un comercio no
+ *  es legible por otro que use el mismo browser. */
+export function notifStorageKey(merchantId: string): string {
+  return `${STORAGE_PREFIX}.${merchantId}`
+}
+
+export function loadStored(merchantId: string | null | undefined): MerchantNotifEvent[] {
   if (typeof window === 'undefined') return []
+  // Higiene: eliminamos el bucket GLOBAL viejo (PII de otro comercio) si sigue ahí.
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
+    window.localStorage.removeItem(LEGACY_GLOBAL_KEY)
+  } catch {
+    /* noop */
+  }
+  if (!merchantId) return []
+  try {
+    const raw = window.localStorage.getItem(notifStorageKey(merchantId))
     if (!raw) return []
     const parsed = JSON.parse(raw) as MerchantNotifEvent[]
     return Array.isArray(parsed) ? parsed.slice(0, MAX_EVENTS) : []
@@ -43,10 +60,10 @@ function loadStored(): MerchantNotifEvent[] {
   }
 }
 
-function persist(events: MerchantNotifEvent[]) {
-  if (typeof window === 'undefined') return
+export function persistNotif(merchantId: string | null | undefined, events: MerchantNotifEvent[]) {
+  if (typeof window === 'undefined' || !merchantId) return
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(events.slice(0, MAX_EVENTS)))
+    window.localStorage.setItem(notifStorageKey(merchantId), JSON.stringify(events.slice(0, MAX_EVENTS)))
   } catch {
     /* noop */
   }
@@ -54,9 +71,16 @@ function persist(events: MerchantNotifEvent[]) {
 
 export function useMerchantNotifications() {
   const { session } = useMerchantSession()
-  const [events, setEvents] = useState<MerchantNotifEvent[]>(() => loadStored())
+  const merchantId = session?.merchantId ?? null
+  const [events, setEvents] = useState<MerchantNotifEvent[]>(() => loadStored(merchantId))
   const esRef = useRef<EventSource | null>(null)
   const retryRef = useRef<number | null>(null)
+
+  // Al cambiar de comercio (otro login en el MISMO browser) recargamos el bucket
+  // scopeado: nunca mostramos las notificaciones (con PII) del comercio anterior.
+  useEffect(() => {
+    setEvents(loadStored(merchantId))
+  }, [merchantId])
 
   useEffect(() => {
     if (!session) {
@@ -115,7 +139,7 @@ export function useMerchantNotifications() {
               payload: data,
             }
             const merged = [next, ...prev].slice(0, MAX_EVENTS)
-            persist(merged)
+            persistNotif(merchantId, merged)
             return merged
           })
         } catch {
@@ -145,14 +169,14 @@ export function useMerchantNotifications() {
   function markAllRead() {
     setEvents((prev) => {
       const next = prev.map((e) => ({ ...e, read: true }))
-      persist(next)
+      persistNotif(merchantId, next)
       return next
     })
   }
 
   function clearAll() {
     setEvents(() => {
-      persist([])
+      persistNotif(merchantId, [])
       return []
     })
   }
