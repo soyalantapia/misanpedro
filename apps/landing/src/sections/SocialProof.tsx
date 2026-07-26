@@ -1,5 +1,6 @@
 import { Sparkles, Gift, Lock, Headphones } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { Stagger } from '@/components/Stagger'
 import { useTenant, cityName, priceLabel, cupos, type LandingTenant } from '@/lib/tenant'
 import { TOTAL_CUPOS } from '@/lib/launch'
 
@@ -54,7 +55,7 @@ export function SocialProof() {
           </h2>
         </AnimatedSection>
 
-        <AnimatedSection delay={120} className="mt-10 grid gap-4 sm:grid-cols-3">
+        <Stagger variant="card" className="mt-10 grid gap-4 sm:grid-cols-3">
           {BENEFICIOS.map((b) => (
             <div
               key={b.title}
@@ -67,7 +68,7 @@ export function SocialProof() {
               <p className="text-xs leading-relaxed text-neutral-500">{b.text}</p>
             </div>
           ))}
-        </AnimatedSection>
+        </Stagger>
 
         <div className="mt-8 flex flex-col items-center gap-2 text-center">
           <p className="text-xs text-neutral-500">

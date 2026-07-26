@@ -6,6 +6,7 @@ import {
 
 } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { Stagger } from '@/components/Stagger'
 import { useTenant, type LandingTenant } from '@/lib/tenant'
 
 function buildFeatures(_config: LandingTenant | null) {
@@ -49,12 +50,10 @@ export function Features() {
         </h2>
       </AnimatedSection>
 
-      <div className="mx-auto mt-16 grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {FEATURES.map((f, i) => (
-          <AnimatedSection
+      <Stagger variant="card" className="mx-auto mt-12 grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {FEATURES.map((f) => (
+          <article
             key={f.title}
-            delay={60 + i * 40}
-            as="article"
             className="group rounded-2xl bg-white p-6 ring-1 ring-neutral-200 transition-all hover:-translate-y-1 hover:shadow-lg hover:ring-accent-200"
           >
             <span className="inline-grid h-11 w-11 place-items-center rounded-xl bg-accent-50 text-accent-700 transition-all group-hover:bg-accent-100 group-hover:scale-110">
@@ -62,9 +61,9 @@ export function Features() {
             </span>
             <h3 className="mt-5 text-[length:var(--text-card)] font-bold leading-snug text-neutral-900">{f.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-neutral-600">{f.body}</p>
-          </AnimatedSection>
+          </article>
         ))}
-      </div>
+      </Stagger>
     </section>
   )
 }

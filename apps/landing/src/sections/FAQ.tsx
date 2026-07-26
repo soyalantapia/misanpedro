@@ -84,7 +84,7 @@ export function FAQ() {
         >
           <dl>
             {FAQS.map((qa, i) => (
-              <details key={qa.q} className="group py-6 pr-2" open={i === 0}>
+              <details key={qa.q} className="faq-item group py-6 pr-2" open={i === 0}>
                 <summary className="flex cursor-pointer list-none items-start justify-between gap-4">
                   <dt className="text-base font-bold text-neutral-900 sm:text-lg">
                     {qa.q}
