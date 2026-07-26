@@ -15,15 +15,16 @@
  * Idempotente. Si la DB se cae el job loguea y sigue.
  */
 
-import { Coupon } from '@/models'
+import { Coupon, Merchant, Subscription } from '@/models'
 
 const TICK_MS = 10 * 60 * 1000
 
 let timer: ReturnType<typeof setInterval> | null = null
 
-export async function runExpirySweep(): Promise<{ couponsExpired: number }> {
+export async function runExpirySweep(): Promise<{ couponsExpired: number; merchantsSuspended: number }> {
   const now = new Date()
   let couponsExpired = 0
+  let merchantsSuspended = 0
 
   try {
     const c = await Coupon.updateMany(
@@ -35,11 +36,45 @@ export async function runExpirySweep(): Promise<{ couponsExpired: number }> {
     console.error('[expiry] cupones falló:', err)
   }
 
+  // Reconciliación suscripción → acceso del comercio. [cazabug S11-01]
+  // Un comercio cuya suscripción pasó a cancelled/paused/rejected Y cuyo período
+  // pagado (nextBillingAt) YA venció debe dejar de operar. Sin esto seguía 'activo'
+  // —creando cupones, viendo PII de clientes y visible en el catálogo— para siempre,
+  // porque el webhook solo hacía la transición pending_payment→activo, nunca la
+  // inversa. Conservador: NO tocamos a los que están en free-trial (freeTrialUntil
+  // futuro) ni a los que siguen dentro del período pagado (nextBillingAt futuro),
+  // y solo bajamos a los que hoy están 'activo' (idempotente).
+  try {
+    const lapsed = await Subscription.find({
+      status: { $in: ['cancelled', 'paused', 'rejected'] },
+      nextBillingAt: { $lt: now },
+    })
+      .select('merchantId')
+      .lean()
+    if (lapsed.length > 0) {
+      const ids = lapsed.map((s) => s.merchantId)
+      const res = await Merchant.updateMany(
+        {
+          _id: { $in: ids },
+          estado: 'activo',
+          $or: [{ freeTrialUntil: { $exists: false } }, { freeTrialUntil: null }, { freeTrialUntil: { $lt: now } }],
+        },
+        { estado: 'suspendido' },
+      )
+      merchantsSuspended = res.modifiedCount ?? 0
+    }
+  } catch (err) {
+    console.error('[expiry] reconciliación de suscripciones falló:', err)
+  }
+
   if (couponsExpired > 0) {
     console.log(`[expiry] sweep: ${couponsExpired} cupones vencidos`)
   }
+  if (merchantsSuspended > 0) {
+    console.log(`[expiry] sweep: ${merchantsSuspended} comercios suspendidos por suscripción vencida`)
+  }
 
-  return { couponsExpired }
+  return { couponsExpired, merchantsSuspended }
 }
 
 export function startExpiryLoop(): void {
