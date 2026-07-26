@@ -37,12 +37,12 @@ export function Features() {
   const { config } = useTenant()
   const FEATURES = buildFeatures(config)
   return (
-    <section id="funciones" className="scroll-mt-20 bg-neutral-50/60 px-6 py-20 sm:py-28">
+    <section id="funciones" className="scroll-mt-20 bg-neutral-50/60 px-6 py-16 sm:py-20">
       <AnimatedSection className="mx-auto max-w-3xl text-center">
         <span className="text-xs font-bold uppercase tracking-widest text-accent-700">
           Todo lo que necesitás
         </span>
-        <h2 className="mt-3 text-balance text-4xl font-bold leading-[1.1] tracking-tight text-neutral-900 sm:text-5xl">
+        <h2 className="mt-3 text-balance text-[length:var(--text-h2-soporte)] font-bold leading-[1.15] tracking-tight text-neutral-900">
           Con tu celular alcanza.
           <br className="hidden sm:inline" />
           {' '}No instalás nada.
@@ -60,7 +60,7 @@ export function Features() {
             <span className="inline-grid h-11 w-11 place-items-center rounded-xl bg-accent-50 text-accent-700 transition-all group-hover:bg-accent-100 group-hover:scale-110">
               <f.icon size={18} />
             </span>
-            <h3 className="mt-5 font-bold text-neutral-900">{f.title}</h3>
+            <h3 className="mt-5 text-[length:var(--text-card)] font-bold leading-snug text-neutral-900">{f.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-neutral-600">{f.body}</p>
           </AnimatedSection>
         ))}

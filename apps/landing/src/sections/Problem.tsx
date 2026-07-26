@@ -25,12 +25,12 @@ const PAINS = [
 
 export function Problem() {
   return (
-    <section className="px-6 py-20 sm:py-28">
+    <section className="px-6 py-16 sm:py-20">
       <AnimatedSection className="mx-auto max-w-3xl text-center">
         <span className="text-xs font-bold uppercase tracking-widest text-danger">
           El problema
         </span>
-        <h2 className="mt-3 text-balance text-4xl font-bold leading-[1.1] tracking-tight text-neutral-900 sm:text-5xl">
+        <h2 className="mt-3 text-balance text-[length:var(--text-h2-soporte)] font-bold leading-[1.15] tracking-tight text-neutral-900">
           Tus clientes vienen,
           <br className="hidden sm:inline" />
           {' '}compran y se olvidan que existís
@@ -43,18 +43,26 @@ export function Problem() {
         </p>
       </AnimatedSection>
 
-      <div className="mx-auto mt-16 grid max-w-6xl gap-5 sm:grid-cols-3">
+      {/* FORMATO EDITORIAL, no tarjetas (/design-review 26/07): SocialProof, Problema,
+          Solución y Funciones usaban las CUATRO el mismo layout de grilla + ícono en
+          caja de color + título + 2 líneas — el anti-patrón AI más reconocible, cuatro
+          veces seguidas. El problema se lee mejor como una lista de dolores separados
+          por una regla: es una enumeración, no un catálogo de features. */}
+      <div className="mx-auto mt-12 max-w-3xl divide-y divide-neutral-200">
         {PAINS.map((p, i) => (
           <AnimatedSection
             key={p.title}
-            delay={60 + i * 40}
-            className="group rounded-2xl bg-white p-6 ring-1 ring-neutral-200 transition-all hover:-translate-y-1 hover:shadow-lg"
+            delay={60 + i * 60}
+            as="article"
+            className="flex items-start gap-4 py-6 first:pt-0 last:pb-0"
           >
-            <span className="inline-grid h-10 w-10 place-items-center rounded-xl bg-danger-bg text-danger transition-transform group-hover:scale-110">
-              <p.icon size={18} />
-            </span>
-            <h3 className="mt-5 font-bold text-neutral-900">{p.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-neutral-600">{p.body}</p>
+            <p.icon size={20} className="mt-0.5 shrink-0 text-danger" aria-hidden />
+            <div>
+              <h3 className="text-[length:var(--text-card)] font-bold leading-snug text-neutral-900">
+                {p.title}
+              </h3>
+              <p className="mt-1.5 text-pretty leading-relaxed text-neutral-600">{p.body}</p>
+            </div>
           </AnimatedSection>
         ))}
       </div>

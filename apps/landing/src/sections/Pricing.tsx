@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Sparkles } from 'lucide-react'
+import { ArrowRight, Check, Sparkles, Lock } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
 import { useTenant, priceLabel, isArgentina, pagoLabel, cupos, cityName } from '@/lib/tenant'
@@ -18,7 +18,7 @@ export function Pricing() {
   ]
 
   return (
-    <section id="precios" className="scroll-mt-20 bg-neutral-50/60 px-6 py-20 sm:py-28">
+    <section id="precios" className="scroll-mt-20 bg-neutral-50/60 px-6 py-24 sm:py-32">
       <AnimatedSection className="mx-auto max-w-3xl text-center">
         <span className="text-xs font-bold uppercase tracking-widest text-accent-700">
           Precios
@@ -97,7 +97,7 @@ export function Pricing() {
                   <span className="text-neutral-500">/mes</span>
                 </p>
                 <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-accent-700">
-                  <span aria-hidden>🔒</span> Congelado de por vida
+                  <Lock size={12} aria-hidden /> Congelado de por vida
                   {isArgentina(config) ? ' · sin IVA (factura C)' : ''}
                 </p>
               </div>

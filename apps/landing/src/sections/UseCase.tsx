@@ -8,13 +8,13 @@ export function UseCase() {
   const { config } = useTenant()
 
   return (
-    <section id="casos-de-uso" className="scroll-mt-20 px-6 py-20 sm:py-28">
+    <section id="casos-de-uso" className="scroll-mt-20 px-6 py-16 sm:py-20">
       <div className="mx-auto max-w-5xl">
         <AnimatedSection className="text-center">
           <span className="text-xs font-bold uppercase tracking-widest text-accent-700">
             Demo del producto
           </span>
-          <h2 className="mt-3 text-balance text-4xl font-bold leading-[1.1] tracking-tight text-neutral-900 sm:text-5xl">
+          <h2 className="mt-3 text-balance text-[length:var(--text-h2-soporte)] font-bold leading-[1.15] tracking-tight text-neutral-900">
             Así se vería tu primer descuento
           </h2>
         </AnimatedSection>

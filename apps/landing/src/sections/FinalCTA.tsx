@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Hourglass } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
 import { AnimatedSection } from '@/components/AnimatedSection'
 import { useTenant, cityName, cupos } from '@/lib/tenant'
@@ -16,9 +16,10 @@ export function FinalCTA() {
 
         <div className="relative">
           <p className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white ring-1 ring-white/30 backdrop-blur">
+            <Hourglass size={11} aria-hidden />
             {config?.slug === 'sanpedro'
-              ? `⏳ Quedan ${restantes} de ${total} lugares`
-              : '⏳ Programa de lanzamiento'}
+              ? `Quedan ${restantes} de ${total} lugares`
+              : 'Programa de lanzamiento'}
           </p>
 
           <h2 className="mt-6 text-balance text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.05] tracking-tight">

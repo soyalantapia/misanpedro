@@ -43,6 +43,16 @@
 
   /* Typography */
   --font-sans: 'Satoshi', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Escala tipográfica — 3 niveles de jerarquía.
+     /design-review 26/07 midió la escala real y encontró el escalón faltante:
+     H1 80px → H2 48px → H3 **16px**. Un título de tarjeta pesaba lo mismo que el
+     body, así que la grilla de tarjetas se leía como un bloque gris uniforme.
+     `--text-h2-soporte` y `--text-card` son los escalones que faltaban. */
+  --text-display: clamp(2.5rem, 7vw, 5rem);      /* hero */
+  --text-h2-momento: clamp(2.25rem, 5vw, 3.5rem); /* solución, precio, CTA final */
+  --text-h2-soporte: clamp(1.75rem, 3vw, 2.25rem); /* problema, funciones, ejemplo, FAQ */
+  --text-card: 1.125rem;                          /* título de tarjeta (era 16px) */
 }
 
 @layer base {

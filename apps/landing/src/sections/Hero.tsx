@@ -177,7 +177,7 @@ function HeroMockup({ domain }: { domain: string }) {
               { label: 'Ahorro entregado', value: '$4.100' },
             ].map((kpi) => (
               <div key={kpi.label} className="rounded-xl bg-white p-3 ring-1 ring-neutral-200">
-                <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                   {kpi.label}
                 </p>
                 <p className="mt-1 text-xl font-bold tabular-nums text-neutral-900">{kpi.value}</p>
@@ -221,12 +221,12 @@ function HeroMockup({ domain }: { domain: string }) {
                 className="flex items-center justify-between rounded-lg bg-white px-3 py-2 ring-1 ring-neutral-200"
               >
                 <div className="flex items-center gap-2">
-                  <span className="grid h-6 w-6 place-items-center rounded-full bg-neutral-100 text-[9px] font-bold text-neutral-600">
+                  <span className="grid h-6 w-6 place-items-center rounded-full bg-neutral-100 text-[10px] font-bold text-neutral-600">
                     {r.name.slice(0, 1)}
                   </span>
                   <div>
                     <p className="text-[11px] font-semibold text-neutral-900">{r.name}</p>
-                    <p className="text-[9px] text-neutral-500">{r.time}</p>
+                    <p className="text-[10px] text-neutral-500">{r.time}</p>
                   </div>
                 </div>
                 <p className="text-[11px] font-bold tabular-nums text-neutral-700">{r.amount}</p>

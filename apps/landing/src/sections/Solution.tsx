@@ -7,7 +7,7 @@ export function Solution() {
   const { config } = useTenant()
 
   return (
-    <section id="como-funciona" className="scroll-mt-20 px-6 py-20 sm:py-28">
+    <section id="como-funciona" className="scroll-mt-20 px-6 py-24 sm:py-32">
       <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1.05fr_1fr] lg:items-center">
         <AnimatedSection>
           <span className="text-xs font-bold uppercase tracking-widest text-accent-700">
