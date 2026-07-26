@@ -881,7 +881,15 @@ const supportSessionLimiter = rateLimit({ prefix: 'owner-support', max: 30, wind
  * (decisión de producto). El rastro queda en OwnerAuditLog. NO emite el token acá:
  * el token se mintea recién al canjear el código, en el host de la ciudad.
  */
-ownerRoutes.post('/merchants/:id/support-session', requireOwnerAuth, supportSessionLimiter, async (c) => {
+ownerRoutes.post(
+  '/merchants/:id/support-session',
+  requireOwnerAuth,
+  // Impersonar un comercio es ESCRITURA sobre `comercios` (matriz rbac.ts:28):
+  // solo super/admin/soporte. Sin este gate, un viewer/finanzas (read-only) podía
+  // mintear una sesión de soporte con escritura total sobre el comercio. [cazabug S2-01/S3-01/S4-02]
+  requireOwnerRole('super', 'admin', 'soporte'),
+  supportSessionLimiter,
+  async (c) => {
   const auth = c.get('auth')
   // El owner debe seguir HABILITADO: el access token vive 1h, así que si lo
   // desactivaron del equipo no puede seguir generando sesiones de soporte (alto
@@ -928,11 +936,16 @@ ownerRoutes.post('/merchants/:id/support-session', requireOwnerAuth, supportSess
 
   const panelUrl = `${tenantFrontUrl(app)}/#/admin/soporte?code=${code}`
   return c.json({ ok: true, panelUrl, merchant: { id: String(merchant._id), nombre: merchant.nombre } })
-})
+  },
+)
 
 /** Revoca TODAS las sesiones de soporte activas de un comercio (no toca la sesión
  *  real del propietario). La sesión muere en el próximo /refresh (≤1h). */
-ownerRoutes.post('/merchants/:id/revoke-support', requireOwnerAuth, async (c) => {
+ownerRoutes.post(
+  '/merchants/:id/revoke-support',
+  requireOwnerAuth,
+  requireOwnerRole('super', 'admin', 'soporte'),
+  async (c) => {
   const auth = c.get('auth')
   // Mismo gate que support-session: un owner deshabilitado del equipo no puede
   // seguir operando el surface de soporte durante la ventana del access (≤1h).
@@ -963,7 +976,8 @@ ownerRoutes.post('/merchants/:id/revoke-support', requireOwnerAuth, async (c) =>
     String(merchant._id),
   )
   return c.json({ ok: true, revoked: res.modifiedCount ?? 0 })
-})
+  },
+)
 
 /**
  * Listado de vecinos cross-app con filtros.

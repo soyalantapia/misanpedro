@@ -6,7 +6,7 @@ import {
   merchantOtpRequestSchema,
   merchantOtpVerifySchema,
 } from '@misanpedro/shared'
-import { Merchant, MerchantUser, Otp, Referral, SupportCode } from '@/models'
+import { Merchant, MerchantUser, Otp, Owner, Referral, SupportCode } from '@/models'
 import { generateReferralCode } from '@/routes/referrals'
 import {
   issueRefreshToken,
@@ -386,6 +386,19 @@ merchantAuthRoutes.post('/refresh', async (c) => {
     return c.json({ ok: false, error: `cuenta ${merchant.estado}`, estado: merchant.estado }, 403)
   }
 
+  // Sesión de SOPORTE: revalidamos al owner en CADA refresh. Si lo deshabilitaron,
+  // eliminaron, o le bajaron el rol por debajo de super/admin/soporte, la sesión de
+  // soporte muere en el próximo refresh (≤1h de vida del access). Sin esto, una
+  // sesión de impersonación sobrevivía para siempre con escritura total aunque el
+  // owner ya no tuviera permiso para impersonar. [cazabug S2-02/S4-01/S3-04]
+  if (consumed.impersonatedBy) {
+    const owner = await Owner.findById(consumed.impersonatedBy).select('enabled rol').lean()
+    if (!owner || !owner.enabled || !['super', 'admin', 'soporte'].includes(owner.rol)) {
+      await revokeRefreshToken(refreshToken).catch(() => {})
+      return c.json({ ok: false, error: 'sesión de soporte revocada' }, 401)
+    }
+  }
+
   const accessToken = signAccessToken({
     sub: user._id.toString(),
     type: 'merchant_user',
@@ -436,6 +449,9 @@ merchantAuthRoutes.post('/support-exchange', supportExchangeLimiter, async (c) =
     subjectId: user._id.toString(),
     userAgent: c.req.header('user-agent'),
     impersonatedBy: ownerId,
+    // La sesión REAL del comercio no expira, pero una sesión de SOPORTE sí debe:
+    // acota la ventana a 30 días aunque el owner siga habilitado. [cazabug S2-02]
+    neverExpires: false,
   })
 
   return c.json({

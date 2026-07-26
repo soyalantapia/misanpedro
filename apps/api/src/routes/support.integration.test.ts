@@ -25,6 +25,20 @@ function ownerAuth() {
   return 'Bearer ' + signAccessToken({ sub: ownerId.toString(), type: 'owner', rol: 'super' })
 }
 
+// Token de owner con un rol arbitrario (para probar el gate de la matriz).
+function roleAuth(rol: string) {
+  return 'Bearer ' + signAccessToken({ sub: ownerId.toString(), type: 'owner', rol })
+}
+
+async function refresh(refreshToken: string, slug = 'ciudada') {
+  const res = await merchantApp.request('/merchant/auth/refresh', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-tenant-slug': slug },
+    body: JSON.stringify({ refreshToken }),
+  })
+  return { status: res.status, body: (await res.json()) as Record<string, any> }
+}
+
 async function startSupport(merchantId: string, auth = ownerAuth()) {
   const res = await ownerApp.request(`/owner/merchants/${merchantId}/support-session`, {
     method: 'POST',
@@ -146,5 +160,61 @@ describe('modo soporte — owner impersona al comercio (integración Mongo real)
     const s = await startSupport(merchant._id.toString())
     const code = codeFromUrl(s.body.panelUrl)
     expect((await exchange(code, 'ciudadb')).status).toBe(401) // appId no matchea
+  })
+
+  // [cazabug S2-01/S3-01/S4-02 · P0] Impersonar es ESCRITURA sobre comercios:
+  // solo super/admin/soporte. viewer/finanzas (read-only) NO pueden.
+  it('viewer NO puede generar sesión de soporte (403) — antes del fix daba 200', async () => {
+    const s = await startSupport(merchant._id.toString(), roleAuth('viewer'))
+    expect(s.status).toBe(403)
+    expect(s.body.error).toBe('forbidden')
+  })
+
+  it('finanzas NO puede generar sesión de soporte (403)', async () => {
+    expect((await startSupport(merchant._id.toString(), roleAuth('finanzas'))).status).toBe(403)
+  })
+
+  it('soporte SÍ puede generar sesión de soporte (200)', async () => {
+    // El rol 'soporte' del owner-doc debe existir y estar habilitado para pasar el gate `enabled`.
+    await Owner.updateOne({ _id: ownerId }, { rol: 'soporte' })
+    const s = await startSupport(merchant._id.toString(), roleAuth('soporte'))
+    expect(s.status).toBe(200)
+    await Owner.updateOne({ _id: ownerId }, { rol: 'super' }) // restaurar
+  })
+
+  it('viewer NO puede revocar sesiones de soporte (403)', async () => {
+    const res = await ownerApp.request(`/owner/merchants/${merchant._id}/revoke-support`, {
+      method: 'POST',
+      headers: { authorization: roleAuth('viewer') },
+    })
+    expect(res.status).toBe(403)
+  })
+
+  // [cazabug S2-02/S4-01/S3-04 · P1] La sesión de soporte se revalida en cada
+  // refresh: deshabilitar al owner la corta (≤1h). Antes vivía para siempre.
+  it('sesión de soporte viva: deshabilitar al owner la corta en el próximo refresh', async () => {
+    const s = await startSupport(merchant._id.toString())
+    const x = await exchange(codeFromUrl(s.body.panelUrl))
+    expect(x.status).toBe(200)
+    const rt = x.body.refreshToken as string
+
+    // Con el owner habilitado + super, el refresh de soporte funciona.
+    expect((await refresh(rt)).status).toBe(200)
+
+    // Lo deshabilitan del equipo → el refresh de soporte muere.
+    await Owner.updateOne({ _id: ownerId }, { enabled: false })
+    const dead = await refresh(rt)
+    expect(dead.status).toBe(401)
+    expect(dead.body.error).toBe('sesión de soporte revocada')
+    await Owner.updateOne({ _id: ownerId }, { enabled: true }) // restaurar
+  })
+
+  it('sesión de soporte viva: bajarle el rol al owner por debajo de soporte la corta', async () => {
+    const s = await startSupport(merchant._id.toString())
+    const rt = (await exchange(codeFromUrl(s.body.panelUrl))).body.refreshToken as string
+    expect((await refresh(rt)).status).toBe(200)
+    await Owner.updateOne({ _id: ownerId }, { rol: 'viewer' })
+    expect((await refresh(rt)).status).toBe(401)
+    await Owner.updateOne({ _id: ownerId }, { rol: 'super' }) // restaurar
   })
 })
