@@ -236,7 +236,12 @@ merchantAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
     expiresAt: new Date(Date.now() + OTP_TTL_MS),
   })
 
-  console.log(`[otp/merchant] ${email} (app ${appId}) → ${code}`)
+  // El código OTP es bearer-equivalente (5 min). NUNCA lo escribimos en los logs
+  // de prod/staging: en prod el ÚNICO canal es el email. Solo lo logueamos en
+  // desarrollo local como conveniencia de testeo. [cazabug S1-04]
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[otp/merchant] ${email} (app ${appId}) → ${code}`)
+  }
   // Branding tenant-aware del email: nombre + color de la ciudad + URL de SU panel.
   const tenant = c.get('tenant') as
     | { nombre?: string; subdomain?: string; brand?: { primaryColor?: string; logoUrl?: string } }

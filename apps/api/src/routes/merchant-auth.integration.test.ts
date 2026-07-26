@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
 import { Hono } from 'hono'
 import mongoose, { Types } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
@@ -57,6 +57,32 @@ describe('merchant /request-otp — flag registered (integración Mongo real)', 
     expect(body.registered).toBe(false)
     expect(body._debugCode).toBeUndefined()
     expect(await Otp.countDocuments({ email: 'nuevo@comercio.com' })).toBe(0)
+  })
+
+  // [cazabug S1-04 · P1] El código OTP es bearer-equivalente (5 min): jamás debe
+  // aparecer en los logs fuera de desarrollo local. En env 'test' no se loguea.
+  it('NO escribe el código OTP en los logs (solo en development)', async () => {
+    await MerchantUser.create({
+      appId,
+      merchantId: new Types.ObjectId(),
+      email: 'log@comercio.com',
+      nombre: 'Log Test',
+    })
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    try {
+      const { body } = await requestOtp('testcity', 'log@comercio.com')
+      const code = body._debugCode as string
+      expect(code).toBeTruthy()
+      // La línea de log del OTP ([otp/merchant] … → code) solo debe emitirse en
+      // development. En 'test' (y en prod) no aparece. Antes del fix se logueaba
+      // sin gate en TODOS los entornos.
+      const otpLineLogged = spy.mock.calls.some(
+        (args) => typeof args[0] === 'string' && args[0].startsWith('[otp/merchant]'),
+      )
+      expect(otpLineLogged).toBe(false)
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('email CON comercio → { ok:true, registered:true } y crea el OTP', async () => {

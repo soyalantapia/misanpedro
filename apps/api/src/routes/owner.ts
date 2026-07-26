@@ -113,7 +113,11 @@ ownerRoutes.post('/auth/request-otp', otpRequestLimiter, async (c) => {
     codeHash: sha256(code),
     expiresAt: new Date(Date.now() + OTP_TTL_MS),
   })
-  console.log(`[otp/owner] ${email} → ${code}`)
+  // El código OTP es bearer-equivalente (5 min). NUNCA en logs de prod/staging:
+  // en prod el ÚNICO canal es el email. Solo en desarrollo local. [cazabug S3-02]
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[otp/owner] ${email} → ${code}`)
+  }
 
   // URL del panel de gestión para el magic-link de "un toque" del email (entra
   // con el código ya cargado). Normalizamos a la ruta /login del front owner.
