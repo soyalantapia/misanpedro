@@ -793,7 +793,11 @@ Parte 3/8."
   - `POST /auth/refresh` → `200 { ok:true, accessToken, refreshToken }`
   - `POST /auth/logout` → `200 { ok:true }`
   - `POST /auth/logout-all` → `200 { ok:true, revoked:number }` (requiere auth)
-  - `GET /auth/sessions` → `200 { ok:true, sessions: [{ id, dispositivo, ultimaVez, actual }] }` (requiere auth)
+  - `GET /auth/sessions` → `200 { ok:true, sessions: [{ id, dispositivo, ultimaVez }] }` (requiere auth)
+    · Sin campo `actual`: el access token no guarda referencia al refresh que lo emitió, así que
+      marcar "este dispositivo" pediría plomería extra. No hace falta — "cerrar sesión en todos
+      lados" cierra TODAS incluida la actual, que es justo lo que el vecino quiere cuando perdió
+      el celular. Si más adelante se quiere distinguir, ahí se agrega.
 
 - [ ] **Step 1: Escribir el test que falla**
 
