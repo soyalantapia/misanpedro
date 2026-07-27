@@ -269,10 +269,11 @@ export type ApiMerchantSession = {
 export type ApiUserSession = {
   id: string
   nombre: string
+  /** Identidad del vecino: con esto recupera su cuenta en otro celular. */
+  email: string
   telefono: string
-  // ─── Legacy / opcionales (cuentas viejas; las nuevas solo traen nombre+telefono) ───
+  // ─── Legacy / opcionales (cuentas viejas) ───
   dni?: string
-  email?: string
   whatsapp?: string
   fechaNacimiento?: string
 }
@@ -435,21 +436,60 @@ export const subscription = {
 
 export const userApi = {
   /**
-   * Captura LIVIANA al primer canje: nombre + teléfono (SIN OTP ni email).
-   * Guarda un token permanente (sin refresh — la identidad es el teléfono).
-   * Si el teléfono ya existía, el backend RECUPERA la cuenta (y su ahorro).
+   * Alta en el mostrador. Si el email es NUEVO, el backend devuelve la sesión y
+   * el vecino entra al instante. Si el email YA existe, NO devuelve sesión:
+   * devuelve `needsCode` y manda un código al mail (es el caso "me cambié de
+   * celular"). El llamador tiene que contemplar los dos desenlaces.
    */
-  async claim(payload: { nombre: string; telefono: string; acceptedTc: true }) {
+  async claim(payload: { nombre: string; email: string; telefono: string; acceptedTc: true }) {
+    const data = await request<{
+      ok: boolean
+      created: boolean
+      needsCode?: boolean
+      accessToken?: string
+      refreshToken?: string
+      user?: ApiUserSession
+      _debugCode?: string
+    }>('/auth/claim', json(payload))
+    if (data.accessToken) tokens.set('user', data.accessToken, data.refreshToken)
+    return data
+  },
+  /** Pide el código para entrar a una cuenta que ya existe. */
+  async requestOtp(email: string) {
+    return request<{ ok: boolean; registered: boolean; _debugCode?: string }>(
+      '/auth/request-otp',
+      json({ email }),
+    )
+  },
+  /** Canjea el código por la sesión. */
+  async verifyOtp(email: string, code: string) {
     const data = await request<{
       ok: boolean
       accessToken: string
+      refreshToken: string
       user: ApiUserSession
-    }>('/auth/claim', json(payload))
-    tokens.set('user', data.accessToken)
+    }>('/auth/verify-otp', json({ email, code }))
+    tokens.set('user', data.accessToken, data.refreshToken)
     return data
   },
   async me() {
     return request<{ ok: boolean; user: ApiUserSession }>('/auth/me', { subject: 'user' })
+  },
+  /** Dispositivos con sesión abierta (pantalla de Perfil). */
+  async sessions() {
+    return request<{
+      ok: boolean
+      sessions: { id: string; dispositivo: string; ultimaVez: string }[]
+    }>('/auth/sessions', { subject: 'user' })
+  },
+  /** Cierra la sesión en TODOS los dispositivos y limpia este. */
+  async logoutAll() {
+    const data = await request<{ ok: boolean }>('/auth/logout-all', {
+      ...json({}),
+      subject: 'user',
+    })
+    tokens.clear('user')
+    return data
   },
 }
 
