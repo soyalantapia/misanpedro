@@ -484,10 +484,19 @@ export const userApi = {
   },
   /** Cierra la sesión en TODOS los dispositivos y limpia este. */
   async logoutAll() {
-    const data = await request<{ ok: boolean }>('/auth/logout-all', {
-      ...json({}),
-      subject: 'user',
-    })
+    let data: { ok: boolean; revoked: number }
+    try {
+      data = await request<{ ok: boolean; revoked: number }>('/auth/logout-all', {
+        ...json({}),
+        subject: 'user',
+      })
+    } catch (error) {
+      // Si falla la petición, limpiamos tokens igual porque el vecino pidió
+      // salir de todos lados. Dejarle la sesión local viva por un error de red
+      // es peor que perder credenciales en una desconexión transitoria.
+      tokens.clear('user')
+      throw error
+    }
     tokens.clear('user')
     return data
   },
