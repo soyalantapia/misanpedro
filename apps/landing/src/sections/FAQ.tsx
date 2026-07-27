@@ -83,8 +83,11 @@ export function FAQ() {
           as="div"
         >
           <dl>
-            {FAQS.map((qa, i) => (
-              <details key={qa.q} className="faq-item group py-6 pr-2" open={i === 0}>
+            {/* Todas arrancan cerradas: el lector barre las 10 preguntas de un
+                vistazo y abre la suya. Antes la primera venía abierta y empujaba
+                al resto fuera de pantalla. */}
+            {FAQS.map((qa) => (
+              <details key={qa.q} className="faq-item group py-6 pr-2">
                 <summary className="flex cursor-pointer list-none items-start justify-between gap-4">
                   <dt className="text-base font-bold text-neutral-900 sm:text-lg">
                     {qa.q}

@@ -1,10 +1,10 @@
 import { ArrowRight, Ticket, ShieldCheck, Store } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
-import { useTenant, cityName, appName, priceLabel, cupos } from '@/lib/tenant'
+import { useTenant, cityName, appName, cupos } from '@/lib/tenant'
 
 export function Hero() {
   const { config } = useTenant()
-  const { adheridos, total, restantes } = cupos(config)
+  const { adheridos, total } = cupos(config)
   const ciudad = cityName(config)
   const marca = appName(config)
   const headlineOverride = config?.brand?.heroHeadline
@@ -103,26 +103,11 @@ export function Hero() {
             </a>
           </div>
 
-          {/* Expectativa: qué le vamos a pedir. Verificado contra el alta real
-              (AdminSignupPage: comercio/categoría/dirección · teléfono/horarios ·
-              nombre/email — sin tarjeta, sin CUIT, sin contraseña). */}
-          <p
-            className="animate-fade-up mt-4 max-w-md text-pretty text-xs leading-relaxed text-neutral-500"
-            style={{ animationDelay: '230ms' }}
-          >
-            Son 3 pantallas y 2 minutos: el nombre y el rubro de tu comercio, la dirección y los
-            horarios, tu teléfono y tu mail. <strong className="font-semibold text-neutral-600">No
-            te pedimos tarjeta, ni CUIT, ni contraseña.</strong>
-          </p>
-
-          <p
-            className="animate-fade-up mt-3 text-xs text-neutral-500"
-            style={{ animationDelay: '250ms' }}
-          >
-            {config?.slug === 'sanpedro'
-              ? `Gratis hasta los primeros ${total} comercios · quedan ${restantes} lugares · después ${priceLabel(config)}/mes congelado de por vida`
-              : `Gratis hasta los primeros ${total} comercios · después ${priceLabel(config)}/mes congelado de por vida`}
-          </p>
+          {/* Acá vivían dos párrafos de letra chica (qué te pedimos en el alta y la
+              línea de gratis/precio). Se sacaron a pedido: el Hero cerraba con dos
+              bloques grises de 12px que nadie lee. Los datos NO se pierden: la
+              escasez sigue en el eyebrow, el "sin tarjeta ni CUIT" está en el FAQ
+              y en Precios, y el precio congelado en Precios. */}
         </div>
 
         {/* Hero visual — mockup compuesto */}
