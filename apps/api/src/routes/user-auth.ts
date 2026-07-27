@@ -198,8 +198,16 @@ userAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
     return c.json({ ok: false, error: 'demasiados intentos' }, 429)
   }
   if (sha256(code) !== otp.codeHash) {
-    otp.attempts += 1
-    await otp.save()
+    // Incremento ATÓMICO: con `otp.attempts += 1; save()` (leer-modificar-escribir),
+    // 5 requests concurrentes con el código equivocado dejaban el contador muy por
+    // debajo de 5 (lost update, verificado empíricamente en 1 de mongodb-memory-server)
+    // y el atacante conseguía muchos más intentos reales por código sin nunca
+    // disparar el corte. $inc es atómico en Mongo: ninguna escritura se pisa, así
+    // que el contador persistido siempre refleja la cantidad real de fallos, sin
+    // importar cuántos requests lleguen en simultáneo. El corte en sí lo sigue
+    // decidiendo el chequeo de arriba (línea 197) en el PRÓXIMO request — no
+    // tocamos ese contrato para no romper el test secuencial existente.
+    await Otp.findOneAndUpdate({ _id: otp._id }, { $inc: { attempts: 1 } })
     return c.json({ ok: false, error: 'código inválido' }, 401)
   }
 

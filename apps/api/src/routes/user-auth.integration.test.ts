@@ -184,4 +184,17 @@ describe('recuperar la cuenta con el código', () => {
     const code = (await post('/request-otp', { email: 'maria@mail.com' })).body._debugCode
     expect((await post('/verify-otp', { email: 'maria@mail.com', code }, 'ciudadc')).status).toBe(401)
   })
+
+  it('los intentos fallidos CONCURRENTES también cuentan (no se puede evadir el corte)', async () => {
+    await crearMaria()
+    await post('/request-otp', { email: 'maria@mail.com' })
+    // Cinco intentos equivocados a la vez: el contador tiene que registrarlos todos.
+    await Promise.all(
+      Array.from({ length: 5 }, () => post('/verify-otp', { email: 'maria@mail.com', code: '000000' })),
+    )
+    const otp = await Otp.findOne({ appId, email: 'maria@mail.com', purpose: 'user' })
+    expect(otp!.attempts).toBe(5)
+    // Y el siguiente intento ya está cortado.
+    expect((await post('/verify-otp', { email: 'maria@mail.com', code: '000000' })).status).toBe(429)
+  })
 })
