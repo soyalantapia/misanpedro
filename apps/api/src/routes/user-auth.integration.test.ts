@@ -197,4 +197,29 @@ describe('recuperar la cuenta con el código', () => {
     // Y el siguiente intento ya está cortado.
     expect((await post('/verify-otp', { email: 'maria@mail.com', code: '000000' })).status).toBe(429)
   })
+
+  it('una RÁFAGA de intentos no puede superar el límite (gate atómico)', async () => {
+    await crearMaria()
+    await post('/request-otp', { email: 'maria@mail.com' })
+    // 20 intentos equivocados a la vez: sólo 5 pueden llegar a comparar el código.
+    await Promise.all(
+      Array.from({ length: 20 }, () => post('/verify-otp', { email: 'maria@mail.com', code: '000000' })),
+    )
+    const otp = await Otp.findOne({ appId, email: 'maria@mail.com', purpose: 'user' })
+    expect(otp!.attempts).toBe(5)
+  })
+
+  it('el código correcto NO entra si llega después de agotarse los intentos', async () => {
+    await crearMaria()
+    const code = (await post('/request-otp', { email: 'maria@mail.com' })).body._debugCode as string
+    // Ráfaga: 20 requests, mezclando equivocados y copias del código correcto.
+    const respuestas = await Promise.all(
+      Array.from({ length: 20 }, (_, i) =>
+        post('/verify-otp', { email: 'maria@mail.com', code: i % 2 === 0 ? '000000' : code }),
+      ),
+    )
+    // A lo sumo UNA puede haber entrado (la que ganó el consumo atómico del código).
+    const conSesion = respuestas.filter((r) => r.body.accessToken)
+    expect(conSesion.length).toBeLessThanOrEqual(1)
+  })
 })

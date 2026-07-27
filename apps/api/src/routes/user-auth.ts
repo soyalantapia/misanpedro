@@ -194,20 +194,21 @@ userAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
   if (otp.expiresAt.getTime() < Date.now()) {
     return c.json({ ok: false, error: 'código expirado' }, 401)
   }
-  if (otp.attempts >= OTP_MAX_ATTEMPTS) {
-    return c.json({ ok: false, error: 'demasiados intentos' }, 429)
-  }
-  if (sha256(code) !== otp.codeHash) {
-    // Incremento ATÓMICO: con `otp.attempts += 1; save()` (leer-modificar-escribir),
-    // 5 requests concurrentes con el código equivocado dejaban el contador muy por
-    // debajo de 5 (lost update, verificado empíricamente en 1 de mongodb-memory-server)
-    // y el atacante conseguía muchos más intentos reales por código sin nunca
-    // disparar el corte. $inc es atómico en Mongo: ninguna escritura se pisa, así
-    // que el contador persistido siempre refleja la cantidad real de fallos, sin
-    // importar cuántos requests lleguen en simultáneo. El corte en sí lo sigue
-    // decidiendo el chequeo de arriba (línea 197) en el PRÓXIMO request — no
-    // tocamos ese contrato para no romper el test secuencial existente.
-    await Otp.findOneAndUpdate({ _id: otp._id }, { $inc: { attempts: 1 } })
+  // Gate ATÓMICO contra fuerza bruta: chequear `attempts` con un read y recién
+  // después incrementar (incluso con $inc atómico) deja una ventana (TOCTOU) —
+  // una ráfaga concurrente lee el mismo valor viejo, pasa el gate y evalúa la
+  // adivinanza igual. Medido: 20 requests en paralelo daban 8-10 adivinanzas
+  // reales en vez de 5, y hasta permitían loguearse con el código correcto
+  // fuera de turno. Con el filtro `attempts: { $lt: MAX }` dentro del propio
+  // update, Mongo serializa los findOneAndUpdate sobre el mismo documento y el
+  // que llega tarde no matchea → 429 sin ventana.
+  const gated = await Otp.findOneAndUpdate(
+    { _id: otp._id, attempts: { $lt: OTP_MAX_ATTEMPTS } },
+    { $inc: { attempts: 1 } },
+    { new: true },
+  )
+  if (!gated) return c.json({ ok: false, error: 'demasiados intentos' }, 429)
+  if (sha256(code) !== gated.codeHash) {
     return c.json({ ok: false, error: 'código inválido' }, 401)
   }
 
