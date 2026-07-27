@@ -117,3 +117,71 @@ describe('POST /auth/claim — alta sin fricción', () => {
     expect(r.body.created).toBe(true)
   })
 })
+
+describe('recuperar la cuenta con el código', () => {
+  async function crearMaria() {
+    const r = await post('/claim', alta())
+    return r.body.user.id as string
+  }
+
+  it('con el código correcto entra y CONSERVA su cuenta (mismo id)', async () => {
+    const idOriginal = await crearMaria()
+
+    const pedido = await post('/request-otp', { email: 'maria@mail.com' })
+    expect(pedido.status).toBe(200)
+    expect(pedido.body.registered).toBe(true)
+    const code = pedido.body._debugCode as string
+    expect(code).toMatch(/^\d{6}$/)
+
+    const entrada = await post('/verify-otp', { email: 'maria@mail.com', code })
+    expect(entrada.status).toBe(200)
+    expect(entrada.body.accessToken).toBeTruthy()
+    expect(entrada.body.refreshToken).toBeTruthy()
+    // Es la MISMA cuenta: su historial sigue colgando de este id.
+    expect(entrada.body.user.id).toBe(idOriginal)
+  })
+
+  it('el código sirve UNA sola vez (anti-replay)', async () => {
+    await crearMaria()
+    const code = (await post('/request-otp', { email: 'maria@mail.com' })).body._debugCode
+    expect((await post('/verify-otp', { email: 'maria@mail.com', code })).status).toBe(200)
+    expect((await post('/verify-otp', { email: 'maria@mail.com', code })).status).toBe(401)
+  })
+
+  it('código vencido → 401', async () => {
+    await crearMaria()
+    const code = (await post('/request-otp', { email: 'maria@mail.com' })).body._debugCode
+    await Otp.updateMany({}, { expiresAt: new Date(Date.now() - 1000) })
+    expect((await post('/verify-otp', { email: 'maria@mail.com', code })).status).toBe(401)
+  })
+
+  it('código equivocado → 401, y a los 5 intentos corta', async () => {
+    await crearMaria()
+    await post('/request-otp', { email: 'maria@mail.com' })
+    for (let i = 0; i < 5; i++) {
+      expect((await post('/verify-otp', { email: 'maria@mail.com', code: '000000' })).status).toBe(401)
+    }
+    expect((await post('/verify-otp', { email: 'maria@mail.com', code: '000000' })).status).toBe(429)
+  })
+
+  it('email sin cuenta → registered:false y NO manda código', async () => {
+    const r = await post('/request-otp', { email: 'nadie@mail.com' })
+    expect(r.status).toBe(200)
+    expect(r.body.registered).toBe(false)
+    expect(await Otp.countDocuments({})).toBe(0)
+  })
+
+  it('un código de la ciudad A no sirve en la ciudad B', async () => {
+    await App.create({
+      _id: new Types.ObjectId(),
+      slug: 'ciudadc',
+      subdomain: 'ciudadc',
+      nombre: 'C',
+      ciudad: 'C',
+      status: 'active',
+    })
+    await crearMaria()
+    const code = (await post('/request-otp', { email: 'maria@mail.com' })).body._debugCode
+    expect((await post('/verify-otp', { email: 'maria@mail.com', code }, 'ciudadc')).status).toBe(401)
+  })
+})

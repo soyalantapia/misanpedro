@@ -157,6 +157,73 @@ userAuthRoutes.post('/claim', claimLimiter, async (c) => {
   return c.json({ ok: true, created: true, accessToken, refreshToken, user: serializeUser(user) }, 201)
 })
 
+/**
+ * POST /auth/request-otp — "Entrar desde mi cuenta" (Perfil). Manda el código al
+ * mail del vecino que ya tiene cuenta.
+ *
+ * Devolvemos `registered` explícito para que el front sepa si mandarlo al alta.
+ * Es el mismo trade-off de enumeración que ya acepta el login del comercio: saber
+ * que un mail está registrado en la app es información de bajo valor.
+ */
+userAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
+  const appId = getAppId(c)
+  const parsed = userOtpRequestSchema.safeParse(await c.req.json().catch(() => ({})))
+  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
+  const { email } = parsed.data
+
+  const user = await User.findOne({ appId, email })
+  if (!user) return c.json({ ok: true, registered: false })
+
+  const code = await issueUserOtp(c, appId, email)
+  return c.json({
+    ok: true,
+    registered: true,
+    ...(otpDisclosureAllowed() ? { _debugCode: code } : {}),
+  })
+})
+
+/** POST /auth/verify-otp — canjea el código por una sesión. */
+userAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
+  const appId = getAppId(c)
+  const parsed = userOtpVerifySchema.safeParse(await c.req.json().catch(() => ({})))
+  if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
+  const { email, code } = parsed.data
+
+  const otp = await Otp.findOne({ appId, email, purpose: 'user' })
+  if (!otp || otp.consumedAt) return c.json({ ok: false, error: 'código inválido' }, 401)
+  if (otp.expiresAt.getTime() < Date.now()) {
+    return c.json({ ok: false, error: 'código expirado' }, 401)
+  }
+  if (otp.attempts >= OTP_MAX_ATTEMPTS) {
+    return c.json({ ok: false, error: 'demasiados intentos' }, 429)
+  }
+  if (sha256(code) !== otp.codeHash) {
+    otp.attempts += 1
+    await otp.save()
+    return c.json({ ok: false, error: 'código inválido' }, 401)
+  }
+
+  // Consumo ATÓMICO: si dos requests traen el mismo código a la vez, sólo una
+  // gana el findOneAndUpdate sobre consumedAt:null. Anti-replay y anti-carrera.
+  const consumed = await Otp.findOneAndUpdate(
+    { _id: otp._id, consumedAt: null },
+    { consumedAt: new Date() },
+    { new: true },
+  )
+  if (!consumed) return c.json({ ok: false, error: 'código inválido' }, 401)
+
+  // Buscamos al vecino DESPUÉS de validar el código, pero si no existe el código
+  // ya quedó consumido — es lo correcto: un código gastado no debe poder reusarse.
+  const user = await User.findOne({ appId, email })
+  if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
+
+  user.lastLoginAt = new Date()
+  await user.save()
+
+  const { accessToken, refreshToken } = await issueSession(c, user, appId)
+  return c.json({ ok: true, accessToken, refreshToken, user: serializeUser(user) })
+})
+
 userAuthRoutes.get('/me', requireUserAuth, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')
