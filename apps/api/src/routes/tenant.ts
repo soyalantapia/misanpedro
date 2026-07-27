@@ -1,6 +1,37 @@
 import { Hono } from 'hono'
-import { App, Merchant } from '@/models'
+import type { Types } from 'mongoose'
+import { App, Coupon, Merchant } from '@/models'
 import { toAsciiLabel } from '@/middleware/tenant'
+
+/**
+ * Comercios que cuentan para el contador de lanzamiento de la landing.
+ *
+ * La vara NO es "se dio de alta": es **más de un cupón cargado**. Un comercio que
+ * se registró y nunca publicó nada no es un comercio adherido para el vecino —
+ * abre la app y no tiene qué canjear. Contarlo infla el número, que es justo lo
+ * que la landing promete no hacer.
+ *
+ * Se cuentan los cupones sin mirar `estado`: que uno haya vencido no borra que el
+ * comercio se puso en marcha, y así el contador nunca retrocede (un contador de
+ * lanzamiento que baja solo confunde).
+ *
+ * Ambas queries van scopeadas por `appId`: el conteo de una ciudad nunca puede
+ * incluir comercios de otra.
+ */
+export async function contarComerciosAdheridos(appId: Types.ObjectId): Promise<number> {
+  const conVariosCupones = await Coupon.aggregate<{ _id: Types.ObjectId }>([
+    { $match: { appId } },
+    { $group: { _id: '$merchantId', n: { $sum: 1 } } },
+    { $match: { n: { $gt: 1 } } },
+    { $project: { _id: 1 } },
+  ])
+  if (conVariosCupones.length === 0) return 0
+  return Merchant.countDocuments({
+    _id: { $in: conVariosCupones.map((r) => r._id) },
+    appId,
+    estado: 'activo',
+  })
+}
 
 export const tenantRoutes = new Hono()
 
@@ -30,9 +61,10 @@ tenantRoutes.get('/:slug/config', async (c) => {
     return c.json({ ok: false, error: 'tenant suspended' }, 403)
   }
 
-  // Conteo REAL de comercios adheridos (estado activo) — la landing lo usa para el
-  // contador de lanzamiento ("Ya van N de 20"), que antes era una constante fija.
-  const merchantsActivos = await Merchant.countDocuments({ appId: app._id, estado: 'activo' })
+  // Conteo REAL para el contador de lanzamiento de la landing ("Ya van N de 50").
+  // Antes contaba toda alta con estado activo, incluidas las que nunca publicaron
+  // un cupón; ahora exige más de un cupón cargado (ver contarComerciosAdheridos).
+  const merchantsActivos = await contarComerciosAdheridos(app._id)
 
   return c.json({
     ok: true,
