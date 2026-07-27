@@ -14,8 +14,21 @@ type LogoProps = {
 }
 
 /**
- * Logo de Mi San Pedro — isotipo de cupón (sello redondo) + wordmark "MiSanPedro"
- * (siempre junto, "Mi" en naranja). El degradé del sello sigue el knob
+ * Parte el nombre de marca en las dos piezas del wordmark: el "Mi" que va
+ * coloreado y el resto en tinta. Acepta la marca escrita junta ("MiSanPedro") y
+ * también con espacios ("Mi Nariño"), que es como la puede cargar el owner.
+ * Si el nombre no empieza con "Mi", devuelve todo como primera pieza.
+ */
+export function splitWordmark(name: string): [string, string] {
+  const conEspacios = name.trim().split(/\s+/)
+  if (conEspacios.length > 1) return [conEspacios[0], conEspacios.slice(1).join('')]
+  const junto = /^(Mi)(.+)$/.exec(name.trim())
+  return junto ? [junto[1], junto[2]] : [name.trim(), '']
+}
+
+/**
+ * Logo de la ciudad: isotipo de cupón (sello redondo) + wordmark de dos tonos
+ * ("Mi" en naranja + el resto en tinta). El degradé del sello sigue el knob
  * `--color-brand` vía la escala accent-*, así queda coherente con la marca.
  */
 export function Logo({
@@ -28,10 +41,13 @@ export function Logo({
   const gradId = 'msp-logo-' + useId().replace(/:/g, '')
 
   const { config } = useTenant()
-  // Nombre de marca dinámico por ciudad ("Mi San Pedro" → "Mi" coloreado + resto).
+  // Wordmark de dos tonos: "Mi" coloreado + el resto en tinta. El nombre viene del
+  // tenant y puede llegar de dos formas, así que partimos por las dos:
+  //   "MiSanPedro"  (junto, como se escribe la marca)   → Mi | SanPedro
+  //   "Mi Nariño"   (con espacios, otras ciudades)      → Mi | Nariño
+  // Sin el caso "junto", el logo pintaba TODA la palabra de naranja.
   const name = appName(config)
-  const [first, ...rest] = name.split(/\s+/)
-  const restWord = rest.join('')
+  const [first, restWord] = splitWordmark(name)
 
   const mark = (
     <svg width={markSize} height={markSize} viewBox="0 0 64 64" aria-hidden="true" className="shrink-0">

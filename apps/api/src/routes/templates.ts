@@ -197,7 +197,9 @@ const TEMPLATES: Record<string, CouponTemplate[]> = {
     {
       titulo: '25% en dermocosmética con la app',
       descripcion:
-        'Línea de dermocosmética con 25% mostrando la app. Exclusivo de Mi San Pedro: le das al vecino la razón para bajar la app y volver.',
+        // Sin nombre de ciudad: estas plantillas las consumen TODAS las ciudades y
+        // un comercio de Nariño leía "Exclusivo de Mi San Pedro".
+        'Línea de dermocosmética con 25% mostrando la app. Exclusivo de la app: le das al vecino la razón para bajarla y volver.',
       condiciones: 'Solo presentando la app. No incluye medicamentos.',
       porcentaje: 25,
       tipoOferta: 'porcentaje',

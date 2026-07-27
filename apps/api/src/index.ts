@@ -216,7 +216,12 @@ if (isProd) {
       const safeHost = escapeHtml(h)
       const esc = (v: unknown) => escapeHtml(String(v))
       let out = html
-      if (t.nombre) out = out.replaceAll('Mi San Pedro', esc(t.nombre))
+      // ⚠️ 'MiSanPedro' (junto, sin espacios) es el TOKEN que llevan los index.html
+      // estáticos de las landings. Si lo cambiás acá, cambialo también allá o toda
+      // ciudad que no sea San Pedro queda con la marca equivocada en el <title>/OG.
+      // Va ANTES del reemplazo de ciudad y sin espacios a propósito: así el
+      // 'San Pedro' de la línea siguiente no lo parte por dentro.
+      if (t.nombre) out = out.replaceAll('MiSanPedro', esc(t.nombre))
       if (t.ciudad) out = out.replaceAll('San Pedro', esc(t.ciudad))
       // Geo del JSON-LD (provincia/país) — si no, en Nariño quedaba el sinsentido
       // "Nariño, Buenos Aires, Argentina". Solo aparecen en el bloque JSON-LD.

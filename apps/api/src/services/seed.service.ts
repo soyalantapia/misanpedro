@@ -265,7 +265,9 @@ async function ensureSanpedroApp() {
   if (existing) return existing
   return await App.create({
     slug: 'sanpedro',
-    nombre: 'Mi San Pedro',
+    // La marca va JUNTA: "MiSanPedro", no "Mi San Pedro". La ciudad sí lleva
+    // espacio ("San Pedro") — es el nombre real del lugar, no el de la app.
+    nombre: 'MiSanPedro',
     ciudad: 'San Pedro',
     provincia: 'Buenos Aires',
     pais: 'Argentina',
