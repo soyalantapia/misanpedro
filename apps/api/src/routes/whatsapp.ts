@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
+import { toWhatsappDigits } from '@misanpedro/shared'
 import { requireMerchantAuth, requireMerchantActive } from '@/middleware/auth'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { resolveSseMerchant, signSseTicket } from '@/services/jwt.service'
@@ -140,11 +141,19 @@ whatsappRoutes.post('/send', requireMerchantAuth, requireMerchantActive, async (
   const parsed = sendSchema.safeParse(body)
   if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
 
-  const result = await wa.sendMessage(auth.merchantId, parsed.data.to, parsed.data.text)
+  // El destino se guarda en forma canónica LOCAL; WhatsApp exige el internacional
+  // completo. Sin reponer el país, el envío falla siempre. [cazabug S9-07]
+  const tenant = c.get('tenant') as { phonePrefix?: string } | undefined
+  const to = toWhatsappDigits(parsed.data.to, tenant?.phonePrefix)
+  if (!to) {
+    return c.json({ ok: false, error: 'número inválido: no pudimos armar el WhatsApp' }, 400)
+  }
+
+  const result = await wa.sendMessage(auth.merchantId, to, parsed.data.text)
   await WaSend.create({
     appId,
     merchantId: auth.merchantId,
-    to: parsed.data.to,
+    to,
     text: parsed.data.text,
     ok: result.ok,
     error: result.error,
@@ -184,18 +193,40 @@ whatsappRoutes.post('/campaign', requireMerchantAuth, requireMerchantActive, asy
   const campaignId = `c-${randomBytes(8).toString('hex')}`
   const merchantId = auth.merchantId
 
+  // Los teléfonos de los vecinos están en forma canónica LOCAL (sin país): hay que
+  // reponer el prefijo del tenant o WhatsApp rechaza TODOS los envíos. Los que no
+  // se pueden normalizar se informan como OMITIDOS — nunca como enviados.
+  // [cazabug S9-07]
+  const tenant = c.get('tenant') as { phonePrefix?: string } | undefined
+  const recipients: { to: string; nombre?: string }[] = []
+  let skippedCount = 0
+  for (const r of parsed.data.recipients) {
+    const to = toWhatsappDigits(r.to, tenant?.phonePrefix)
+    if (!to) {
+      skippedCount++
+      continue
+    }
+    recipients.push({ to, nombre: r.nombre })
+  }
+  if (recipients.length === 0) {
+    return c.json(
+      { ok: false, error: 'ningún número de la lista es válido para WhatsApp', skippedCount },
+      400,
+    )
+  }
+
   let result: { sentCount: number; failedCount: number }
   try {
     result = await wa.sendCampaign(
       merchantId,
       campaignId,
-      parsed.data.recipients,
+      recipients,
       parsed.data.text,
       async (i, ok, error) => {
         await WaSend.create({
           appId,
           merchantId,
-          to: parsed.data.recipients[i].to,
+          to: recipients[i].to,
           text: parsed.data.text,
           ok,
           error,
@@ -215,7 +246,14 @@ whatsappRoutes.post('/campaign', requireMerchantAuth, requireMerchantActive, asy
 
   return c.json({
     ok: true,
-    campaign: { id: campaignId, sentCount: result.sentCount, failedCount: result.failedCount },
+    campaign: {
+      id: campaignId,
+      sentCount: result.sentCount,
+      failedCount: result.failedCount,
+      // Números que no pudimos normalizar a E.164: no se enviaron. Se informan
+      // aparte para no inflar sentCount con envíos que nunca ocurrieron.
+      skippedCount,
+    },
     quota: {
       used: used + 1,
       max: MAX_CAMPAIGNS_PER_MONTH,

@@ -1,4 +1,5 @@
 export * from './types'
 export * from './schemas'
+export * from './phone'
 export * from './valor'
 export * from './usageLimit'

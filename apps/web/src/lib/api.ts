@@ -676,7 +676,9 @@ export const whatsapp = {
   async campaign(recipients: { to: string; nombre?: string }[], text: string) {
     return request<{
       ok: boolean
-      campaign: { id: string; sentCount: number; failedCount: number }
+      // skippedCount: números que el backend no pudo normalizar a E.164 y por
+      // lo tanto NO se enviaron (no se cuentan como enviados).
+      campaign: { id: string; sentCount: number; failedCount: number; skippedCount?: number }
       quota: { used: number; max: number; remaining: number }
     }>('/wa/campaign', { ...json({ recipients, text }), subject: 'merchant' })
   },
