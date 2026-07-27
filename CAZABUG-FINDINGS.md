@@ -12,8 +12,14 @@ Distribución: **P0:2 · P1:14 · P2:51 · P3:102**
 | 71b5edf | S14-02 | el boot local no muta la base de prod |
 | 6053db5 | S10-01 | historial de notificaciones aislado por comercio |
 | fcfc011 | S11-01 | suscripción vencida → suspende al comercio |
+| ca1573f | S9-07 | WhatsApp: reponer el país (todos los envíos fallaban) |
+| 17fd654 | S9-01 | campaña async 202 + SSE (no bloquea el HTTP) |
+| ac62958 | S1-02 | identidad: normalizar según el país del tenant |
+| 3d9794b | S2-03 | revelar el OTP deja de depender de NODE_ENV |
 
-Gate: API 145 tests · Web 143 · check:tenant · typecheck 6/6 — todo verde.
+Gate: API 169 tests · Web 143 · check:tenant ✓ · typecheck 6/6 — todo verde.
+
+**Estado: los 14 P1 y 1 de los 2 P0 están cerrados.** Queda abierto S1-01 (P0, requiere una decisión de producto sobre el login del vecino), 51 P2 y 102 P3.
 
 ---
 
@@ -34,7 +40,7 @@ Gate: API 145 tests · Web 143 · check:tenant · typecheck 6/6 — todo verde.
 
 # P1 (14)
 
-### [S1-02] ⬜ pendiente — normalizeTelefono está hardcodeado a reglas de Argentina y rompe la identidad (recuperar el ahorro en otro celular) para las ciudades no-argentinas del pivote Mi Ciudad
+### [S1-02] ✅ FIXEADO — normalizeTelefono está hardcodeado a reglas de Argentina y rompe la identidad (recuperar el ahorro en otro celular) para las ciudades no-argentinas del pivote Mi Ciudad
 - **Sector:** S1 · lentes 7, 8, 2, 3
 - **Causa raíz:** Por qué fragmenta: normalizeTelefono asume convención AR. → Por qué importa: Mi San Pedro pivoteó a Mi[Ciudad] multi-país (TenantConfig.pais/moneda/locale, país Colombia en memoria). → Por qué no se adaptó: la función vive en packages/shared sin conocer el tenant/país del request. → Causa terminal: una regla de normalización específica de un país se aplica a un modelo multi-país, y como el teléfono ES la clave de identidad, cualquier discrepancia parte o fusiona cuentas.
 - **Evidencia:** `packages/shared/src/schemas.ts:96`, `apps/api/src/models/User.ts:30`, `apps/web/src/lib/tenant.ts:87`
@@ -50,7 +56,7 @@ Gate: API 145 tests · Web 143 · check:tenant · typecheck 6/6 — todo verde.
 - **Causa raíz:** ¿Por qué persiste el acceso? Porque el refresh de impersonation no revalida al owner. ¿Por qué? Porque el handler de /refresh se escribió para la sesión REAL del comercio (chequea estado del comercio) y el caso soporte se agregó como bypass del gate, sin sumar la contraparte (revalidar al impersonador). ¿Por qué no se copió el patrón del owner? Porque el sub del token es el MerchantUser, no el Owner, y 'quién soy' quedó desacoplado de 'quién me autoriza'. ¿Por qué el token no vence y fuerza rech
 - **Evidencia:** `/Users/alannaimtapia/dev/misanpedro/apps/api/src/routes/merchant-auth.ts:381`, `/Users/alannaimtapia/dev/misanpedro/apps/api/src/routes/merchant-auth.ts:377`, `/Users/alannaimtapia/dev/misanpedro/apps/api/src/services/jwt.service.ts:109`, `/Users/alannaimtapia/dev/misanpedro/apps/api/src/routes/owner.ts:219`
 
-### [S2-03] ⬜ pendiente — request-otp filtra el código OTP en la respuesta HTTP (_debugCode) en todo entorno que no sea NODE_ENV='production'; el guard tiene default inseguro ('development') sobre la MISMA DB de prod → toma de cuenta de cualquier comercio
+### [S2-03] ✅ FIXEADO — request-otp filtra el código OTP en la respuesta HTTP (_debugCode) en todo entorno que no sea NODE_ENV='production'; el guard tiene default inseguro ('development') sobre la MISMA DB de prod → toma de cuenta de cualquier comercio
 - **Sector:** S2 · lentes 1, 12
 - **Causa raíz:** ¿Por qué se expone el OTP? Porque la rama de debug se gatilla en todo lo no-'production'. ¿Por qué eso es riesgoso? Porque NODE_ENV tiene default 'development' (env.ts) y nada obliga a setearlo en prod. ¿Por qué llega a la DB real? Porque connection.ts hardcodea dbName:'misanpedro', el mismo de prod, y el .env local apunta al mismo cluster. ¿Por qué convive un canal de debug con datos reales? Porque la costura demo/dev vs prod se decide por una sola variable con default inseguro, sin fail-safe. 
 - **Evidencia:** `/Users/alannaimtapia/dev/misanpedro/apps/api/src/routes/merchant-auth.ts:279`, `/Users/alannaimtapia/dev/misanpedro/apps/api/src/routes/merchant-auth.ts:254`, `/Users/alannaimtapia/dev/misanpedro/apps/api/src/env.ts:4`, `/Users/alannaimtapia/dev/misanpedro/apps/api/src/db/connection.ts:16`
@@ -81,13 +87,13 @@ Gate: API 145 tests · Web 143 · check:tenant · typecheck 6/6 — todo verde.
 - **Causa raíz:** ¿Por qué un viewer puede escribir? Porque support-session no tiene requireOwnerRole. ¿Por qué no lo tiene? Por la decisión de producto 'cualquier owner puede' documentada en el código. ¿Por qué es escalada? Porque esa decisión no se reconcilió con la matriz de roles donde viewer=solo lectura y finanzas no opera comercios. ¿Causa terminal? La impersonación se gateó solo por autenticación (requireOwnerAuth), no por autorización, pese a otorgar la credencial más poderosa del sistema (write full sob
 - **Evidencia:** `apps/api/src/routes/owner.ts:884`, `apps/api/src/routes/owner.ts:858`, `apps/owner/src/pages/MerchantsPage.tsx:220`
 
-### [S9-01] ⬜ pendiente — POST /wa/campaign bloquea el HTTP durante TODA la campaña (hasta ~29 min) → timeout, error falso en UI mientras el server sigue, y reintento = doble envío + doble cupo
+### [S9-01] ✅ FIXEADO — POST /wa/campaign bloquea el HTTP durante TODA la campaña (hasta ~29 min) → timeout, error falso en UI mientras el server sigue, y reintento = doble envío + doble cupo
 - **Sector:** S9 · lentes 6,9,10
 - **Causa raíz:** sendCampaign() itera secuencialmente con sleep(2000+rand*3000) y el handler hace `await wa.sendCampaign(...)` antes de responder → el tiempo de respuesta HTTP == duración total del envío. Por qué: se ató la respuesta a la finalización. Por qué: se reusó el patrón request/response en vez de disparar async y reportar sólo por SSE. Por qué: el SSE (que ya existe para progreso/done) no se usó como canal terminal; el POST se quedó como fuente de verdad. Causa terminal: acoplamiento respuesta-HTTP↔tra
 - **Evidencia:** `apps/api/src/routes/whatsapp.ts:189`, `apps/api/src/services/whatsapp.service.ts:341`, `apps/web/src/pages/admin/AdminWhatsappPage.tsx:453`, `apps/web/src/lib/api.ts:145`
 - **Fix sugerido:** Convertir /campaign en 202-async: crear el campaignId, responder de inmediato con {campaignId, total} y reportar progreso/fin SOLO por SSE (campaign.progress/done). El front debe cerrar la fase con el evento campaign.done, no con el resolve del POST. Agregar idempotency-key para bloquear reintentos del mismo lote.
 
-### [S9-07] ⬜ pendiente — toChatId no normaliza a formato internacional (E.164): números guardados en formato local fallan todos los envíos
+### [S9-07] ✅ FIXEADO — toChatId no normaliza a formato internacional (E.164): números guardados en formato local fallan todos los envíos
 - **Sector:** S9 · lentes 8
 - **Causa raíz:** Se asumió que el número almacenado ya viene en formato WA. Por qué: el onboarding valida sólo min(10) dígitos (shared schema) sin normalizar país. Causa terminal: no hay una capa única de normalización E.164 entre el dato de contacto y toChatId.
 - **Evidencia:** `apps/api/src/services/whatsapp.service.ts:234`, `apps/web/src/pages/admin/AdminWhatsappPage.tsx:441`, `packages/shared/src/schemas.ts:70`
