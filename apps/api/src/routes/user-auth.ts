@@ -19,6 +19,7 @@ import { rateLimit } from '@/middleware/security'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { sendOtpCode } from '@/services/email.service'
 import { otpDisclosureAllowed } from '@/lib/envSafety'
+import { consumeOtpAttempt } from '@/lib/otpGate'
 
 export const userAuthRoutes = new Hono()
 
@@ -194,19 +195,8 @@ userAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
   if (otp.expiresAt.getTime() < Date.now()) {
     return c.json({ ok: false, error: 'código expirado' }, 401)
   }
-  // Gate ATÓMICO contra fuerza bruta: chequear `attempts` con un read y recién
-  // después incrementar (incluso con $inc atómico) deja una ventana (TOCTOU) —
-  // una ráfaga concurrente lee el mismo valor viejo, pasa el gate y evalúa la
-  // adivinanza igual. Medido: 20 requests en paralelo daban 8-10 adivinanzas
-  // reales en vez de 5, y hasta permitían loguearse con el código correcto
-  // fuera de turno. Con el filtro `attempts: { $lt: MAX }` dentro del propio
-  // update, Mongo serializa los findOneAndUpdate sobre el mismo documento y el
-  // que llega tarde no matchea → 429 sin ventana.
-  const gated = await Otp.findOneAndUpdate(
-    { _id: otp._id, attempts: { $lt: OTP_MAX_ATTEMPTS } },
-    { $inc: { attempts: 1 } },
-    { new: true },
-  )
+  // Gate ATÓMICO contra fuerza bruta (detalle del porqué en el helper).
+  const gated = await consumeOtpAttempt(otp._id, OTP_MAX_ATTEMPTS)
   if (!gated) return c.json({ ok: false, error: 'demasiados intentos' }, 429)
   if (sha256(code) !== gated.codeHash) {
     return c.json({ ok: false, error: 'código inválido' }, 401)

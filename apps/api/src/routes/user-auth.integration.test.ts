@@ -16,10 +16,15 @@ const appId = new Types.ObjectId()
 const api = new Hono()
 api.route('/auth', userAuthRoutes)
 
-async function post(path: string, body: unknown, slug = 'ciudada') {
+async function post(
+  path: string,
+  body: unknown,
+  slug = 'ciudada',
+  extraHeaders: Record<string, string> = {},
+) {
   const res = await api.request(`/auth${path}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-tenant-slug': slug },
+    headers: { 'content-type': 'application/json', 'x-tenant-slug': slug, ...extraHeaders },
     body: JSON.stringify(body),
   })
   return { status: res.status, body: (await res.json()) as Record<string, any> }
@@ -209,17 +214,39 @@ describe('recuperar la cuenta con el código', () => {
     expect(otp!.attempts).toBe(5)
   })
 
+  // NOTA: la versión anterior de este test mezclaba código correcto + equivocado
+  // en la MISMA ráfaga y sólo afirmaba `conSesion.length <= 1` — una garantía que
+  // ya daba el consumo atómico por `consumedAt:null` (anti-replay) aunque el gate
+  // de `attempts` tuviera el bug TOCTOU. Pasaba igual contra la versión vulnerable:
+  // no probaba nada sobre el gate. Reescrito para agotar el cupo PRIMERO y recién
+  // DESPUÉS mandar el código correcto — así si el gate no corta, se ve un 200 con
+  // accessToken en vez de un 429.
   it('el código correcto NO entra si llega después de agotarse los intentos', async () => {
     await crearMaria()
     const code = (await post('/request-otp', { email: 'maria@mail.com' })).body._debugCode as string
-    // Ráfaga: 20 requests, mezclando equivocados y copias del código correcto.
-    const respuestas = await Promise.all(
+
+    // Agotamos el cupo PRIMERO: ráfaga de 20 códigos equivocados, cada uno con un
+    // User-Agent distinto — el rate-limiter externo (10/min) clave por UA, así que
+    // sin esto tapa al gate del OTP que queremos probar (mismo truco usado al
+    // verificar el fix del TOCTOU).
+    await Promise.all(
       Array.from({ length: 20 }, (_, i) =>
-        post('/verify-otp', { email: 'maria@mail.com', code: i % 2 === 0 ? '000000' : code }),
+        post('/verify-otp', { email: 'maria@mail.com', code: '000000' }, 'ciudada', {
+          'user-agent': `burst-agotar-${i}`,
+        }),
       ),
     )
-    // A lo sumo UNA puede haber entrado (la que ganó el consumo atómico del código).
-    const conSesion = respuestas.filter((r) => r.body.accessToken)
-    expect(conSesion.length).toBeLessThanOrEqual(1)
+    const otpAgotado = await Otp.findOne({ appId, email: 'maria@mail.com', purpose: 'user' })
+    expect(otpAgotado!.attempts).toBe(5)
+
+    // RECIÉN DESPUÉS llega el código CORRECTO, con su propio UA (bucket fresco del
+    // rate-limiter externo, para que el único motivo de un eventual corte sea el
+    // gate del OTP). El cupo ya está agotado → tiene que cortar con 429 SIN llegar
+    // a comparar el hash, y jamás devolver sesión.
+    const tardio = await post('/verify-otp', { email: 'maria@mail.com', code }, 'ciudada', {
+      'user-agent': 'codigo-correcto-tardio',
+    })
+    expect(tardio.status).toBe(429)
+    expect(tardio.body.accessToken).toBeUndefined()
   })
 })

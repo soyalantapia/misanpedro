@@ -31,6 +31,20 @@ async function requestOtp(slug: string, email: string) {
   return { status: res.status, body: (await res.json()) as Record<string, unknown> }
 }
 
+async function verifyOtp(
+  slug: string,
+  email: string,
+  code: string,
+  extraHeaders: Record<string, string> = {},
+) {
+  const res = await app.request('/verify-otp', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-tenant-slug': slug, ...extraHeaders },
+    body: JSON.stringify({ email, code }),
+  })
+  return { status: res.status, body: (await res.json()) as Record<string, any> }
+}
+
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create()
   await mongoose.connect(mongod.getUri())
@@ -146,5 +160,50 @@ describe('merchant /request-otp — flag registered (integración Mongo real)', 
     const { status, body } = await requestOtp('testcity', '  CASE@COMERCIO.COM  ')
     expect(status).toBe(200)
     expect(body.registered).toBe(true)
+  })
+})
+
+// [cazabug] Regresión del gate atómico anti-fuerza-bruta de `verify-otp`. Antes
+// del fix (commit 951f7c3) este flujo — YA EN PRODUCCIÓN — no tenía NINGÚN test
+// que tocara `attempts`/429, ni siquiera en secuencia: un cambio futuro podía
+// reintroducir el TOCTOU acá sin que la suite se enterara. Mismo par de casos que
+// ya cubre user-auth.integration.test.ts, adaptado al comercio.
+describe('merchant /verify-otp — gate anti-fuerza-bruta (regresión TOCTOU)', () => {
+  async function crearComercio(email = 'gate@comercio.com') {
+    await MerchantUser.create({
+      appId,
+      merchantId: new Types.ObjectId(),
+      email,
+      nombre: 'Gate Test',
+    })
+  }
+
+  it('código equivocado → 401, y al 6to intento corta con 429', async () => {
+    await crearComercio()
+    await requestOtp('testcity', 'gate@comercio.com')
+    for (let i = 0; i < 5; i++) {
+      const r = await verifyOtp('testcity', 'gate@comercio.com', '000000')
+      expect(r.status).toBe(401)
+    }
+    const sexto = await verifyOtp('testcity', 'gate@comercio.com', '000000')
+    expect(sexto.status).toBe(429)
+  })
+
+  it('una RÁFAGA concurrente no puede superar el límite (gate atómico)', async () => {
+    await crearComercio()
+    await requestOtp('testcity', 'gate@comercio.com')
+    // 20 intentos equivocados a la vez, cada uno con un User-Agent distinto: el
+    // rate-limiter externo (10/min) clave por UA, así que sin esto tapa al gate
+    // del OTP que queremos probar (mismo truco usado al verificar el fix).
+    await Promise.all(
+      Array.from({ length: 20 }, (_, i) =>
+        verifyOtp('testcity', 'gate@comercio.com', '000000', {
+          'user-agent': `burst-merchant-${i}`,
+        }),
+      ),
+    )
+    const otp = await Otp.findOne({ appId, email: 'gate@comercio.com', purpose: 'merchant' })
+    // Nunca por encima del máximo, sin importar cuántas llegaron a la vez.
+    expect(otp!.attempts).toBe(5)
   })
 })
