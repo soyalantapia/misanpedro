@@ -17,9 +17,12 @@ function buildFeatures(_config: LandingTenant | null) {
     body: 'Subí descuento, vigencia y condiciones. Listo para canjear.',
   },
   {
+    // El título viejo ("Código de 6 dígitos") nombraba el MECANISMO, no lo que le
+    // pasa al comerciante, y dejaba sin contestar la duda real del mostrador:
+    // ¿tengo que comprar algo, quién me da el código, cuánto tarda.
     icon: Hash,
-    title: 'Código de 6 dígitos',
-    body: 'Tu cajero lo valida desde su celular. Sin ningún aparato especial.',
+    title: 'El canje es escribir un número',
+    body: 'El vecino te muestra el código que le dio la app, tu cajero lo escribe en su celular y listo. No comprás ningún lector.',
   },
   {
     icon: Users,
