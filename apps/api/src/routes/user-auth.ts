@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { userClaimSchema } from '@misanpedro/shared'
+import { userClaimSchema, normalizeTelefono } from '@misanpedro/shared'
 import { User } from '@/models'
 import { signAccessToken } from '@/services/jwt.service'
 import { requireUserAuth } from '@/middleware/auth'
@@ -39,8 +39,15 @@ userAuthRoutes.post('/claim', claimLimiter, async (c) => {
   if (!parsed.success) {
     return c.json({ ok: false, error: 'invalid input', issues: parsed.error.format() }, 400)
   }
-  // `telefono` ya viene normalizado (solo dígitos canónicos) por el schema.
-  const { nombre, telefono } = parsed.data
+  // Normalizamos con el país del TENANT (el schema ya no puede: no lo conoce).
+  // La identidad del vecino es (appId, telefono canónico), así que una regla de
+  // otro país partiría o fusionaría cuentas. [cazabug S1-02]
+  const tenant = c.get('tenant') as { phonePrefix?: string } | undefined
+  const { nombre } = parsed.data
+  const telefono = normalizeTelefono(parsed.data.telefono, tenant?.phonePrefix)
+  if (!/^\d{8,13}$/.test(telefono)) {
+    return c.json({ ok: false, error: 'Poné tu celular con código de área' }, 400)
+  }
 
   let user = await User.findOne({ appId, telefono })
   if (!user) {

@@ -88,14 +88,31 @@ export const otpVerifySchema = z.object({
 
 // ─── Onboarding sin fricción (vecino): claim por teléfono ───────────────
 
-/** Normaliza un teléfono argentino a su forma canónica (solo dígitos, sin
- *  código de país 54, sin prefijo móvil 9, sin trunk 0) para que el match sea
- *  consistente entre dispositivos: "+54 9 3329 555444" y "3329 555444" caen
- *  al mismo valor. El teléfono ES la identidad del vecino. */
-export function normalizeTelefono(raw: string): string {
+/** Normaliza un teléfono a su forma canónica (solo dígitos, sin código de país,
+ *  sin trunk 0) para que el match sea consistente entre dispositivos:
+ *  "+54 9 3329 555444" y "3329 555444" caen al mismo valor. El teléfono ES la
+ *  identidad del vecino.
+ *
+ *  Multi-país (pivote Mi[Ciudad]): `phonePrefix` es el del tenant (`App.phonePrefix`,
+ *  ej. "+57"). Sin él asumimos Argentina. Ojo: el prefijo móvil "9" que se saca es
+ *  una particularidad ARGENTINA — en Chile los celulares EMPIEZAN con 9, así que
+ *  sacarlo ahí corrompía el número. [cazabug S1-02] */
+export function normalizeTelefono(raw: string, phonePrefix?: string): string {
+  const cc = (phonePrefix ?? '').replace(/\D/g, '') || '54'
   let d = (raw || '').replace(/\D/g, '')
-  if (d.startsWith('54')) d = d.slice(2) // país
-  if (d.startsWith('9')) d = d.slice(1) // móvil
+
+  if (cc === '54') {
+    // Camino ARGENTINO: idéntico al histórico. NO tocar — es la forma en la que
+    // ya está guardada la identidad de los vecinos existentes.
+    if (d.startsWith('54')) d = d.slice(2) // país
+    if (d.startsWith('9')) d = d.slice(1) // móvil
+    if (d.startsWith('0')) d = d.slice(1) // trunk
+    return d
+  }
+
+  if (d.startsWith('00')) d = d.slice(2) // prefijo internacional 00…
+  // Sacamos el código de país sólo si queda un número nacional plausible detrás.
+  if (d.startsWith(cc) && d.length > cc.length + 6) d = d.slice(cc.length)
   if (d.startsWith('0')) d = d.slice(1) // trunk
   return d
 }
@@ -104,10 +121,15 @@ export function normalizeTelefono(raw: string): string {
  *  La verificación la hace el cajero en persona (compra presencial). */
 export const userClaimSchema = z.object({
   nombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80, 'Máximo 80 caracteres'),
+  // Se valida en CRUDO (cantidad de dígitos) y la normalización canónica la hace
+  // el backend, que es el único que conoce el país del tenant. Antes el schema
+  // normalizaba acá con reglas argentinas fijas. [cazabug S1-02]
   telefono: z
     .string()
-    .transform((s) => normalizeTelefono(s))
-    .pipe(z.string().regex(/^\d{8,13}$/, 'Poné tu celular con código de área')),
+    .refine((s) => {
+      const d = s.replace(/\D/g, '')
+      return d.length >= 8 && d.length <= 15
+    }, 'Poné tu celular con código de área'),
   acceptedTc: z.literal(true, { error: 'Necesitamos que aceptes los términos' }),
 })
 
