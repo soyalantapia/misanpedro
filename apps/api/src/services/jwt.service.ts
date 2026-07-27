@@ -193,11 +193,44 @@ export async function revokeRefreshToken(token: string): Promise<void> {
   await RefreshToken.updateOne({ tokenHash }, { revokedAt: new Date() })
 }
 
-export async function revokeAllForSubject(subjectId: string): Promise<void> {
-  await RefreshToken.updateMany(
-    { subjectId, revokedAt: { $exists: false } },
+/**
+ * Revoca TODOS los refresh vigentes de un subject (logout-all / deshabilitar
+ * cuenta). `subjectType` es explícito y OBLIGATORIO: hoy es inofensivo mezclar
+ * subjects sin filtrarlo (los ObjectId no colisionan entre colecciones), pero
+ * la intención de "sólo ESTE tipo de subject" quedaba apoyada en un supuesto en
+ * vez de escrita — este helper lo usan user-auth, merchant-auth Y owner, así
+ * que conviene que cada uno diga explícitamente de quién está cerrando sesiones.
+ *
+ * Devuelve `modifiedCount`: lo pide el contrato de `POST /auth/logout-all` del
+ * vecino (`{ ok: true, revoked }`), y es más prolijo extender el helper que
+ * duplicar el `updateMany` en la ruta.
+ */
+export async function revokeAllForSubject(
+  subjectType: Subject,
+  subjectId: string,
+): Promise<number> {
+  const result = await RefreshToken.updateMany(
+    { subjectType, subjectId, revokedAt: { $exists: false } },
     { revokedAt: new Date() },
   )
+  return result.modifiedCount
+}
+
+/**
+ * Marca el refresh como USADO (a diferencia de `consumeRefreshToken`, que es
+ * lectura pura y no escribe nada). Sólo la llama `/auth/refresh` del vecino:
+ * es la única sesión con pantalla de "dispositivos" (`/auth/sessions`), así
+ * que es la única que necesita saber CUÁNDO se usó de verdad y no sólo cuándo
+ * se creó. Comercio/owner no tienen esa pantalla y no pagan esta escritura.
+ *
+ * Es un `updateOne` extra por cada `/refresh` — a razón de ~1 por hora por
+ * vecino activo (el front renueva el access antes de que venza), a esta escala
+ * no pesa. Si el volumen crece mucho convendría hacerlo best-effort/batched en
+ * vez de bloquear la respuesta.
+ */
+export async function touchRefreshTokenUsage(token: string): Promise<void> {
+  const tokenHash = sha256(token)
+  await RefreshToken.updateOne({ tokenHash }, { lastUsedAt: new Date() })
 }
 
 function sha256(input: string): string {

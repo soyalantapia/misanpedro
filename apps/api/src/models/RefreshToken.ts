@@ -10,6 +10,11 @@ const refreshTokenSchema = new Schema(
     revokedAt: { type: Date },
     userAgent: { type: String },
     ip: { type: String },
+    /** Última vez que este refresh se CANJEÓ en `/auth/refresh` (no cuándo se creó).
+     *  Sin esto, `/auth/sessions` mostraba siempre la fecha de alta aunque el
+     *  vecino usara la app todos los días — inútil para reconocer un dispositivo
+     *  viejo/sospechoso, que es el propósito de esa pantalla. [cazabug] */
+    lastUsedAt: { type: Date },
     /** Sesión de SOPORTE (owner impersonando al comercio): id del owner que
      *  entró. El access que se mintea en cada /refresh lo re-incluye, y permite
      *  revocar SOLO las sesiones de soporte de un comercio. */

@@ -494,7 +494,7 @@ merchantAuthRoutes.post('/logout', async (c) => {
 
 merchantAuthRoutes.post('/logout-all', requireMerchantAuth, async (c) => {
   const auth = c.get('auth')
-  await revokeAllForSubject(auth.sub)
+  await revokeAllForSubject('merchant_user', auth.sub)
   return c.json({ ok: true })
 })
 

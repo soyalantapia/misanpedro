@@ -5,6 +5,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import { userAuthRoutes } from '@/routes/user-auth'
 import { App, User, Otp } from '@/models'
 import { _resetRateLimits } from '@/middleware/security'
+import { issueRefreshToken } from '@/services/jwt.service'
 
 // [cazabug S1-01 · P0] EL TEST QUE JUSTIFICA TODO EL TRABAJO:
 // antes, sabiendo un dato público del vecino se entraba a su cuenta. Ahora, con
@@ -309,5 +310,69 @@ describe('sesión persistente pero revocable', () => {
 
   it('un refresh inventado → 401', async () => {
     expect((await post('/refresh', { refreshToken: 'no-existe' })).status).toBe(401)
+  })
+
+  // [cazabug review] el código YA rechaza esto (`consumed.subjectType !== 'user'`
+  // en /refresh), pero nada lo blindaba: un refactor podía sacar el chequeo sin
+  // que ningún test se enterara. Verificado a mano que ESTE test sí detecta la
+  // regresión: comentando el chequeo en user-auth.ts el test pasa de 401 a 200
+  // (restaurado después de verificar, no se commitea esa reversión).
+  //
+  // Ojo con el falso positivo: si el refresh de comercio llevara un subjectId
+  // AL AZAR, el test "pasaría" igual sin el chequeo, porque el `User.findOne`
+  // de más abajo no encontraría ningún vecino con ese id y devolvería 401 por
+  // otra razón ("user not found"). Por eso acá usamos el `subjectId` de un
+  // vecino REAL: así, si el chequeo de `subjectType` faltara, el `User.findOne`
+  // SÍ lo encontraría y el endpoint devolvería 200 igual — el test sólo prueba
+  // lo que dice probar si puede fallar por el motivo correcto.
+  it('el refresh de OTRO sujeto (comercio) no sirve para /auth/refresh del vecino', async () => {
+    const alta1 = await post('/claim', alta())
+    const userId = alta1.body.user.id as string
+
+    const { token } = await issueRefreshToken({
+      subjectType: 'merchant_user',
+      subjectId: userId,
+    })
+    const r = await post('/refresh', { refreshToken: token })
+    expect(r.status).toBe(401)
+  })
+
+  it('logout cierra SÓLO ese dispositivo — el otro sigue pudiendo refrescar', async () => {
+    const celular1 = await sesionNueva()
+    // Segundo dispositivo del MISMO vecino, vía código (mismo patrón que el test
+    // de logout-all de arriba).
+    const code = (await post('/request-otp', { email: 'maria@mail.com' })).body._debugCode
+    const entrada2 = await post('/verify-otp', { email: 'maria@mail.com', code })
+    const celular2 = { refresh: entrada2.body.refreshToken as string }
+
+    expect((await post('/logout', { refreshToken: celular1.refresh })).status).toBe(200)
+
+    // El dispositivo cerrado quedó afuera...
+    expect((await post('/refresh', { refreshToken: celular1.refresh })).status).toBe(401)
+    // ...pero el otro sigue con sesión viva: logout NO es logout-all.
+    const r2 = await post('/refresh', { refreshToken: celular2.refresh })
+    expect(r2.status).toBe(200)
+    expect(r2.body.accessToken).toBeTruthy()
+  })
+
+  it('/auth/sessions de un vecino no muestra las sesiones de otro', async () => {
+    const maria = await sesionNueva()
+    const codeJuan = (
+      await post('/claim', alta({ nombre: 'Juan Pérez', email: 'juan@mail.com' }))
+    ).body
+    const juan = { access: codeJuan.accessToken as string }
+
+    const rMaria = await get('/sessions', maria.access)
+    const rJuan = await get('/sessions', juan.access)
+
+    expect(rMaria.status).toBe(200)
+    expect(rJuan.status).toBe(200)
+    expect(rMaria.body.sessions.length).toBeGreaterThanOrEqual(1)
+    expect(rJuan.body.sessions.length).toBeGreaterThanOrEqual(1)
+    // Ningún id de sesión de Juan aparece en la lista de María.
+    const idsMaria = new Set(rMaria.body.sessions.map((s: any) => s.id))
+    for (const s of rJuan.body.sessions) {
+      expect(idsMaria.has(s.id)).toBe(false)
+    }
   })
 })

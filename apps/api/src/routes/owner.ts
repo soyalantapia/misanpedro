@@ -360,7 +360,7 @@ ownerRoutes.patch('/admins/:id', requireOwnerAuth, requireOwnerRole('super'), as
   await target.save()
   // Si se deshabilita o cambia el rol, cortamos sus sesiones (el access muere en ≤1h).
   if (enabled === false || rolCambia) {
-    await revokeAllForSubject(String(target._id)).catch(() => {})
+    await revokeAllForSubject('owner', String(target._id)).catch(() => {})
   }
   const ip = c.req.header('x-forwarded-for') || ''
   await logOwnerAction(
@@ -395,7 +395,7 @@ ownerRoutes.delete('/admins/:id', requireOwnerAuth, requireOwnerRole('super'), a
   }
   target.enabled = false
   await target.save()
-  await revokeAllForSubject(String(target._id)).catch(() => {})
+  await revokeAllForSubject('owner', String(target._id)).catch(() => {})
   const ip = c.req.header('x-forwarded-for') || ''
   await logOwnerAction(String(auth.sub), 'admin.disable', ip, `${target.email} (eliminado)`)
   return c.json({ ok: true })

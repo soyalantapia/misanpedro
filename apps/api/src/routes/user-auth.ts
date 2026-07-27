@@ -13,6 +13,7 @@ import {
   consumeRefreshToken,
   revokeRefreshToken,
   revokeAllForSubject,
+  touchRefreshTokenUsage,
 } from '@/services/jwt.service'
 import { requireUserAuth } from '@/middleware/auth'
 import { rateLimit } from '@/middleware/security'
@@ -241,6 +242,11 @@ userAuthRoutes.post('/refresh', async (c) => {
   const user = await User.findOne({ _id: consumed.subjectId, appId })
   if (!user) return c.json({ ok: false, error: 'user not found' }, 401)
 
+  // Marcamos el refresh como USADO (no sólo creado): es lo que hace que
+  // `/auth/sessions` muestre la fecha de uso real y no la de alta. Best-effort:
+  // si esta escritura falla no tiene que tirar abajo el refresh en sí.
+  await touchRefreshTokenUsage(refreshToken).catch(() => {})
+
   const accessToken = signAccessToken({
     sub: user._id.toString(),
     type: 'user',
@@ -263,8 +269,11 @@ userAuthRoutes.post('/logout', async (c) => {
  */
 userAuthRoutes.post('/logout-all', requireUserAuth, async (c) => {
   const auth = c.get('auth')
-  await revokeAllForSubject(auth.sub)
-  return c.json({ ok: true })
+  // El contrato pide cuántas sesiones se cerraron (el front lo muestra como
+  // confirmación: "cerramos N sesiones"). `revokeAllForSubject` ya devuelve el
+  // `modifiedCount` del updateMany, así que no hace falta duplicar la query acá.
+  const revoked = await revokeAllForSubject('user', auth.sub)
+  return c.json({ ok: true, revoked })
 })
 
 /** GET /auth/sessions — dispositivos con sesión abierta (pantalla de Perfil). */
@@ -286,7 +295,11 @@ userAuthRoutes.get('/sessions', requireUserAuth, async (c) => {
       id: String(d._id),
       // El user-agent crudo es ilegible para el vecino; mostramos algo humano.
       dispositivo: describirDispositivo(d.userAgent),
-      ultimaVez: d.updatedAt ?? d.createdAt,
+      // `lastUsedAt` es la fecha del último `/refresh` (uso real). Si todavía no
+      // se refrescó ni una vez (sesión recién creada), caemos a `createdAt`. Antes
+      // usaba `updatedAt`, que nunca cambiaba porque `consumeRefreshToken` no
+      // escribe nada — la pantalla mostraba siempre la fecha de alta. [cazabug]
+      ultimaVez: d.lastUsedAt ?? d.createdAt,
     })),
   })
 })
@@ -371,8 +384,11 @@ userAuthRoutes.delete('/me', requireUserAuth, async (c) => {
   await Activation.deleteMany({ appId, userId: auth.sub })
 
   // Por si existieran refresh tokens legacy de este vecino (el claim ya no emite).
+  // `subjectType` explícito: hoy es inofensivo omitirlo (los ObjectId no
+  // colisionan entre colecciones), pero así la intención de "sólo ESTE vecino"
+  // queda escrita y no apoyada en un supuesto.
   await RefreshToken.updateMany(
-    { subjectId: auth.sub, revokedAt: { $exists: false } },
+    { subjectId: auth.sub, subjectType: 'user', revokedAt: { $exists: false } },
     { revokedAt: new Date() },
   )
 
