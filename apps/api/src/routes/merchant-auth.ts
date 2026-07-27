@@ -20,6 +20,7 @@ import { rateLimit } from '@/middleware/security'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { sendMerchantWelcome, sendMerchantOtpCode } from '@/services/email.service'
 import { tenantFrontUrl } from '@/lib/urls'
+import { otpDisclosureAllowed } from '@/lib/envSafety'
 
 export const merchantAuthRoutes = new Hono()
 
@@ -239,7 +240,7 @@ merchantAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
   // El código OTP es bearer-equivalente (5 min). NUNCA lo escribimos en los logs
   // de prod/staging: en prod el ÚNICO canal es el email. Solo lo logueamos en
   // desarrollo local como conveniencia de testeo. [cazabug S1-04]
-  if (process.env.NODE_ENV === 'development') {
+  if (otpDisclosureAllowed()) {
     console.log(`[otp/merchant] ${email} (app ${appId}) → ${code}`)
   }
   // Branding tenant-aware del email: nombre + color de la ciudad + URL de SU panel.
@@ -281,7 +282,10 @@ merchantAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
   sendMerchantOtpCode(email, code, tenantNombreOtp, brandColor, loginUrl, logoUrl).catch((err) =>
     console.error('[merchant-otp-email]', err),
   )
-  return c.json({ ok: true, registered: true, _debugCode: code })
+  // El código sólo viaja en la respuesta en una máquina de desarrollo REAL (base
+  // local). Si la DB es remota, no lo revelamos aunque NODE_ENV diga 'development':
+  // un deploy sin NODE_ENV seteado sería un takeover de una request. [cazabug S2-03]
+  return c.json({ ok: true, registered: true, ...(otpDisclosureAllowed() ? { _debugCode: code } : {}) })
 })
 
 merchantAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {

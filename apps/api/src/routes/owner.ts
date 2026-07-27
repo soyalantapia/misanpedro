@@ -19,6 +19,7 @@ import {
   RefreshToken,
 } from '@/models'
 import { tenantFrontUrl } from '@/lib/urls'
+import { otpDisclosureAllowed } from '@/lib/envSafety'
 import { OWNER_ROLES } from '@/models/Owner'
 import { computeOwnerStats } from '@/services/ownerStats.service'
 import { toAsciiLabel } from '@/middleware/tenant'
@@ -115,7 +116,7 @@ ownerRoutes.post('/auth/request-otp', otpRequestLimiter, async (c) => {
   })
   // El código OTP es bearer-equivalente (5 min). NUNCA en logs de prod/staging:
   // en prod el ÚNICO canal es el email. Solo en desarrollo local. [cazabug S3-02]
-  if (process.env.NODE_ENV === 'development') {
+  if (otpDisclosureAllowed()) {
     console.log(`[otp/owner] ${email} → ${code}`)
   }
 
@@ -146,7 +147,8 @@ ownerRoutes.post('/auth/request-otp', otpRequestLimiter, async (c) => {
   sendOwnerOtpCode(email, code, ownerLoginUrl).catch((err) =>
     console.error('[owner-otp-email]', err),
   )
-  return c.json({ ok: true, _debugCode: code })
+  // Ídem comercio: sólo en desarrollo real (base local). [cazabug S2-03]
+  return c.json({ ok: true, ...(otpDisclosureAllowed() ? { _debugCode: code } : {}) })
 })
 
 ownerRoutes.post('/auth/verify-otp', otpVerifyLimiter, async (c) => {

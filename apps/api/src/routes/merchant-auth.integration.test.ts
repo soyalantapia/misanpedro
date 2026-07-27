@@ -4,6 +4,7 @@ import mongoose, { Types } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { merchantAuthRoutes } from '@/routes/merchant-auth'
 import { App, MerchantUser, Otp } from '@/models'
+import { _resetRateLimits } from '@/middleware/security'
 
 // Regresión del onboarding (login del comercio): POST /request-otp expone el flag
 // `registered` para que el front sepa si mandar al alta (email SIN comercio) o al
@@ -47,6 +48,10 @@ afterAll(async () => {
 beforeEach(async () => {
   await MerchantUser.deleteMany({})
   await Otp.deleteMany({})
+  // El limiter de /request-otp es 5/h por cliente y en tests todas las requests
+  // comparten IP: sin este reset, agregar un caso hace fallar por 429 a otro que
+  // no tiene nada que ver (acoplamiento entre tests).
+  _resetRateLimits()
 })
 
 describe('merchant /request-otp — flag registered (integración Mongo real)', () => {
@@ -59,30 +64,46 @@ describe('merchant /request-otp — flag registered (integración Mongo real)', 
     expect(await Otp.countDocuments({ email: 'nuevo@comercio.com' })).toBe(0)
   })
 
-  // [cazabug S1-04 · P1] El código OTP es bearer-equivalente (5 min): jamás debe
-  // aparecer en los logs fuera de desarrollo local. En env 'test' no se loguea.
-  it('NO escribe el código OTP en los logs (solo en development)', async () => {
+  // [cazabug S1-04 + S2-03 · P1] El código OTP es bearer-equivalente (5 min). El
+  // invariante que importa NO es el nombre del entorno sino a qué base apunta el
+  // server: si la Mongo es REMOTA, esto no es una máquina de desarrollo y el
+  // código no puede salir ni por log ni por HTTP —aunque NODE_ENV diga otra cosa,
+  // que es exactamente lo que pasa en un deploy que se olvidó la variable.
+  it('con base REMOTA no revela el OTP ni por log ni en la respuesta', async () => {
     await MerchantUser.create({
       appId,
       merchantId: new Types.ObjectId(),
       email: 'log@comercio.com',
       nombre: 'Log Test',
     })
+    const original = process.env.MONGODB_URI
+    process.env.MONGODB_URI = 'mongodb+srv://user:pass@cluster0.l1lvvlb.mongodb.net/'
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
     try {
       const { body } = await requestOtp('testcity', 'log@comercio.com')
-      const code = body._debugCode as string
-      expect(code).toBeTruthy()
-      // La línea de log del OTP ([otp/merchant] … → code) solo debe emitirse en
-      // development. En 'test' (y en prod) no aparece. Antes del fix se logueaba
-      // sin gate en TODOS los entornos.
+      expect(body.ok).toBe(true)
+      // Ni en la respuesta…
+      expect(body._debugCode).toBeUndefined()
+      // …ni en los logs.
       const otpLineLogged = spy.mock.calls.some(
         (args) => typeof args[0] === 'string' && args[0].startsWith('[otp/merchant]'),
       )
       expect(otpLineLogged).toBe(false)
     } finally {
       spy.mockRestore()
+      process.env.MONGODB_URI = original
     }
+  })
+
+  it('con base LOCAL (desarrollo real) sí devuelve el código para poder testear', async () => {
+    await MerchantUser.create({
+      appId,
+      merchantId: new Types.ObjectId(),
+      email: 'local@comercio.com',
+      nombre: 'Local Test',
+    })
+    const { body } = await requestOtp('testcity', 'local@comercio.com')
+    expect(body._debugCode).toMatch(/^\d{6}$/)
   })
 
   it('email CON comercio → { ok:true, registered:true } y crea el OTP', async () => {
