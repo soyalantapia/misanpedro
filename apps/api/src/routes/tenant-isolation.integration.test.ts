@@ -69,9 +69,21 @@ beforeAll(async () => {
   merchB = await mkMerchant(appB, 'Comercio de CiudadB', 'local-b')
   coupA = await mkCoupon(appA, merchA._id, 'Cupón de CiudadA')
   coupB = await mkCoupon(appB, merchB._id, 'Cupón de CiudadB')
-  // mismo vecino-teléfono en ambas ciudades: deben ser usuarios DISTINTOS (scoped).
-  await User.create({ appId: appA, nombre: 'Vecino A', telefono: '+5491155550001' })
-  await User.create({ appId: appB, nombre: 'Vecino B', telefono: '+5491155550001' })
+  // mismo vecino (mismo email Y teléfono) en ambas ciudades: deben ser usuarios
+  // DISTINTOS (scoped por appId). La identidad es (appId, email); el índice
+  // único no colisiona entre tenants. [cazabug S1-01]
+  await User.create({
+    appId: appA,
+    nombre: 'Vecino A',
+    email: 'vecino@example.com',
+    telefono: '+5491155550001',
+  })
+  await User.create({
+    appId: appB,
+    nombre: 'Vecino B',
+    email: 'vecino@example.com',
+    telefono: '+5491155550001',
+  })
 }, 120_000)
 
 afterAll(async () => {

@@ -117,13 +117,14 @@ export function normalizeTelefono(raw: string, phonePrefix?: string): string {
   return d
 }
 
-/** Captura LIVIANA al primer canje: nombre + teléfono + T&C. SIN OTP ni email.
- *  La verificación la hace el cajero en persona (compra presencial). */
+/** Alta del vecino: nombre + email + teléfono. NO pide código: crear la cuenta
+ *  propia no ataca a nadie. El código aparece sólo si el email YA existe (ver
+ *  POST /auth/claim). [cazabug S1-01] */
 export const userClaimSchema = z.object({
   nombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80, 'Máximo 80 caracteres'),
-  // Se valida en CRUDO (cantidad de dígitos) y la normalización canónica la hace
-  // el backend, que es el único que conoce el país del tenant. Antes el schema
-  // normalizaba acá con reglas argentinas fijas. [cazabug S1-02]
+  email: z.string().trim().toLowerCase().email('Poné un email válido'),
+  // Se valida en CRUDO y la normalización canónica la hace el backend, que es el
+  // único que conoce el país del tenant. [cazabug S1-02]
   telefono: z
     .string()
     .refine((s) => {
@@ -131,6 +132,17 @@ export const userClaimSchema = z.object({
       return d.length >= 8 && d.length <= 15
     }, 'Poné tu celular con código de área'),
   acceptedTc: z.literal(true, { error: 'Necesitamos que aceptes los términos' }),
+})
+
+/** Pedir el código para entrar a una cuenta que YA existe. */
+export const userOtpRequestSchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+})
+
+/** Canjear el código por una sesión. */
+export const userOtpVerifySchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+  code: z.string().regex(/^\d{6}$/, 'Código de 6 dígitos'),
 })
 
 // ─── Auth comercio ────────────────────────────────────────────────────

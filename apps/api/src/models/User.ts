@@ -5,15 +5,17 @@ const userSchema = new Schema(
     /** Tenant: cada vecino vive dentro de UNA App (ciudad). */
     appId: { type: Types.ObjectId, ref: 'App', required: true, index: true },
 
-    /** Onboarding sin fricción: la identidad del vecino es NOMBRE + TELÉFONO. */
+    /** Onboarding sin fricción: la identidad del vecino es NOMBRE + EMAIL. */
     nombre: { type: String, required: true },
-    /** El TELÉFONO es la identidad (normalizado, solo dígitos). Mismo teléfono
-     *  en otro dispositivo → recupera la cuenta y el ahorro. */
+    /** La identidad del vecino es el EMAIL: es lo único que puede probar que la
+     *  cuenta es suya (le llega un código). El teléfono NO sirve como identidad
+     *  porque es público y adivinable. [cazabug S1-01] */
+    email: { type: String, required: true, lowercase: true, trim: true },
+    /** Dato de CONTACTO (campañas de WhatsApp del comercio), ya no identidad. */
     telefono: { type: String, required: true },
 
     // ─── Campos legacy / opcionales (ya NO se piden en el alta sin fricción) ───
     dni: { type: String },
-    email: { type: String, lowercase: true },
     whatsapp: { type: String },
     fechaNacimiento: { type: String }, // YYYY-MM-DD
     acceptedTcAt: { type: Date, default: Date.now },
@@ -22,15 +24,12 @@ const userSchema = new Schema(
   { timestamps: true },
 )
 
-// Identidad = (tenant, teléfono), único. PARCIAL: solo indexa docs cuyo telefono
-// es string, así convive con cuentas viejas sin teléfono (null) sin romper el
-// build del índice. Sacamos los unique de dni/email/whatsapp (ahora opcionales).
-// Pre-lanzamiento: correr `scripts/sync-user-indexes.ts` para limpiar los índices
-// viejos en dev. (No hace falta migrar datos.)
-userSchema.index(
-  { appId: 1, telefono: 1 },
-  { unique: true, partialFilterExpression: { telefono: { $type: 'string' } } },
-)
+// Identidad = (ciudad, email), único. El mismo email puede ser vecino en dos
+// ciudades distintas sin colisionar.
+userSchema.index({ appId: 1, email: 1 }, { unique: true })
+// El teléfono se busca (destinatarios de campañas) pero NO es único: una familia
+// puede compartir un celular. Antes era el índice de identidad. [cazabug S1-01]
+userSchema.index({ appId: 1, telefono: 1 })
 
 export type UserDoc = InferSchemaType<typeof userSchema> & { _id: string }
 export const User = model('User', userSchema)

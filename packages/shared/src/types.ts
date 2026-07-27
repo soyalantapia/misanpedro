@@ -165,11 +165,12 @@ export type MerchantSession = {
 export type User = {
   id: string
   nombre: string
-  /** El teléfono ES la identidad del vecino (onboarding sin fricción). */
+  /** El EMAIL es la identidad del vecino: es lo que puede verificar. */
+  email: string
+  /** Dato de contacto para las campañas de WhatsApp del comercio. */
   telefono: string
-  // ─── Legacy / opcionales (ya no se piden en el alta) ───
+  // ─── Legacy / opcionales (cuentas viejas) ───
   dni?: string
-  email?: string
   whatsapp?: string
   fechaNacimiento?: string
   acceptedTcAt?: string

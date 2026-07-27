@@ -76,8 +76,17 @@ function mkMerchant(tenantId = appId) {
 
 let phoneSeq = 1
 function mkUser(tenantId = appId) {
-  // teléfono único: el modelo User tiene índice único {appId, telefono}.
-  return User.create({ appId: tenantId, nombre: 'Vecino Test', telefono: `+54911${String(phoneSeq++).padStart(8, '0')}` })
+  // email único: el modelo User tiene índice único {appId, email} (la identidad
+  // pasó del teléfono al email). El teléfono queda como dato de contacto y ya
+  // no necesita ser único, pero lo seguimos variando para no ocultar bugs.
+  // [cazabug S1-01]
+  const n = phoneSeq++
+  return User.create({
+    appId: tenantId,
+    nombre: 'Vecino Test',
+    email: `vecino-test-${n}@example.com`,
+    telefono: `+54911${String(n).padStart(8, '0')}`,
+  })
 }
 
 function mkCoupon(merchantId: Types.ObjectId, extra: Record<string, unknown> = {}, tenantId = appId) {
