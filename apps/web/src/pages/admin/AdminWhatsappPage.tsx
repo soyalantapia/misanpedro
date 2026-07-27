@@ -441,32 +441,28 @@ function ComposerScreen({
       .map((r) => ({ to: r.telefono.replace(/\D/g, ''), nombre: r.nombre }))
       .filter((r) => r.to.length >= 8)
 
-    // POST /wa/campaign: el backend procesa con rate-limit anti-ban (delay
-    // random 2-5s entre cada mensaje) y publica progreso vía SSE.
-    // El hook useWhatsappStream() en este componente recibe los eventos
-    // 'campaign.progress' y actualiza el progress bar en tiempo real
-    // (ver el useEffect inferior que escucha wa.campaign).
+    // POST /wa/campaign: el backend ACEPTA la campaña (202) y la envía en
+    // background con rate-limit anti-ban (2-5s entre mensajes; hasta ~29 min con
+    // 500 vecinos). NO esperamos acá el resultado: el progreso llega por SSE
+    // ('campaign.progress') y el cierre por 'campaign.done' — ver los dos
+    // useEffect de abajo. Antes esperábamos el POST y a los pocos minutos el
+    // browser cortaba por timeout, mostrando un error falso mientras el server
+    // seguía enviando (y el reintento duplicaba envíos y cupo). [cazabug S9-01]
     try {
       // Mandamos la plantilla con {{nombre}} SIN resolver: el backend la
       // personaliza por destinatario. (Nunca el `rendered` del preview, que
       // tiene el nombre fijo del primer cliente.)
       const data = await api.whatsapp.campaign(recipientPayload, messageTemplate)
-      setPhase({
-        kind: 'done',
-        sentCount: data.campaign.sentCount,
-        deliveredCount: data.campaign.sentCount,
-        // readCount NO se mide hoy. Cuando se integre la WhatsApp Business API
-        // oficial de Meta, vamos a recibir read receipts vía webhook. Hasta
-        // entonces NO inventamos un número — mejor mostrar "—" que mentir.
-        readCount: null,
-      })
-      toast.success(
-        'Campaña enviada',
-        `${data.campaign.sentCount} entregados${data.campaign.failedCount ? ` · ${data.campaign.failedCount} fallaron` : ''}.`,
-      )
-      // Refrescamos quota e historial desde el backend (fuente de verdad).
-      apiStatus.refetch()
-      apiCampaigns.refetch()
+      // Ajustamos el total a los que el backend realmente va a enviar (descuenta
+      // los números que no pudo normalizar) y esperamos el 'done' por SSE.
+      const aEnviar = data.campaign.total ?? total
+      setPhase({ kind: 'sending', progress: 0, total: aEnviar, sentSoFar: 0 })
+      if (data.campaign.skippedCount) {
+        toast.info(
+          'Algunos números quedaron afuera',
+          `${data.campaign.skippedCount} contacto(s) sin un WhatsApp válido: no se les envía.`,
+        )
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 429) {
         toast.error('Cupo agotado', err.message ?? 'Llegaste al límite mensual.')
@@ -505,6 +501,32 @@ function ComposerScreen({
       }
     })
   }, [wa.campaign])
+
+  // Cierre de la campaña: llega por SSE ('campaign.done'), no por el POST — que
+  // ahora responde 202 apenas la acepta. Esta es la única fuente de verdad del
+  // resultado final. [cazabug S9-01]
+  useEffect(() => {
+    if (!wa.campaign?.done) return
+    const { sent, failed } = wa.campaign
+    setPhase((prev) => {
+      if (prev.kind !== 'sending') return prev
+      return {
+        kind: 'done',
+        sentCount: sent,
+        deliveredCount: sent,
+        // readCount NO se mide hoy. Cuando se integre la WhatsApp Business API
+        // oficial de Meta, vamos a recibir read receipts vía webhook. Hasta
+        // entonces NO inventamos un número — mejor mostrar "—" que mentir.
+        readCount: null,
+      }
+    })
+    toast.success('Campaña enviada', `${sent} entregados${failed ? ` · ${failed} fallaron` : ''}.`)
+    // Refrescamos quota e historial desde el backend (fuente de verdad).
+    apiStatus.refetch()
+    apiCampaigns.refetch()
+    wa.resetCampaign()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wa.campaign?.done])
 
   async function handleDisconnect() {
     setConfirmDisconnect(false)

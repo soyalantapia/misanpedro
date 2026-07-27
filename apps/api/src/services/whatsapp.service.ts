@@ -111,6 +111,19 @@ export async function getStatus(merchantId: string): Promise<SessionState> {
   return sessions.get(merchantId) ?? { status: 'disconnected' }
 }
 
+/**
+ * ¿Este comercio puede enviar AHORA? Espeja la decisión que toma `sendCampaign`
+ * al arrancar (sesión lista, o stub de dev/QA). Permite validar ANTES de aceptar
+ * una campaña async: si no se puede enviar, respondemos el error de una en vez de
+ * un "202 aceptada" que nunca envía. [cazabug S9-01]
+ */
+export function isSendable(merchantId: string): boolean {
+  const s = sessions.get(merchantId)
+  if (s && s.status === 'ready' && s.client) return true
+  // Stub SOLO en dev/QA (sin whatsapp-web.js). En prod NUNCA fingimos éxito.
+  return !WAClient && process.env.NODE_ENV !== 'production'
+}
+
 export async function startSession(merchantId: string): Promise<SessionState> {
   await loadWA()
   const existing = sessions.get(merchantId)

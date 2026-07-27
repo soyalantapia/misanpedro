@@ -16,6 +16,19 @@ export const whatsappRoutes = new Hono()
 
 const MAX_CAMPAIGNS_PER_MONTH = 4
 
+/**
+ * Campañas corriendo en background, por comercio. El envío es async (202) porque
+ * dura minutos; acá guardamos la promesa para (a) rechazar un segundo envío del
+ * mismo comercio y (b) poder esperarla desde tests o un shutdown ordenado.
+ * [cazabug S9-01]
+ */
+const campaignsInFlight = new Map<string, Promise<void>>()
+
+/** Espera a que termine la campaña en curso de un comercio (tests / shutdown). */
+export function awaitCampaign(merchantId: string): Promise<void> {
+  return campaignsInFlight.get(merchantId) ?? Promise.resolve()
+}
+
 function startOfMonth(d = new Date()): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1)
 }
@@ -215,51 +228,69 @@ whatsappRoutes.post('/campaign', requireMerchantAuth, requireMerchantActive, asy
     )
   }
 
-  let result: { sentCount: number; failedCount: number }
-  try {
-    result = await wa.sendCampaign(
-      merchantId,
-      campaignId,
-      recipients,
-      parsed.data.text,
-      async (i, ok, error) => {
-        await WaSend.create({
-          appId,
-          merchantId,
-          to: recipients[i].to,
-          text: parsed.data.text,
-          ok,
-          error,
-          campaignId,
-        })
-      },
-    )
-  } catch (err: any) {
-    return c.json(
-      {
-        ok: false,
-        error: err?.message ?? 'no pudimos enviar la campaña',
-      },
-      503,
-    )
+  // Una campaña por comercio a la vez: si el comercio vuelve a apretar "enviar",
+  // no arrancamos un segundo lote sobre los mismos vecinos. [cazabug S9-01]
+  if (campaignsInFlight.has(merchantId)) {
+    return c.json({ ok: false, error: 'ya hay una campaña en curso' }, 409)
+  }
+  // Validamos ANTES de aceptar: un 202 que nunca envía sería peor que el error.
+  if (!wa.isSendable(merchantId)) {
+    return c.json({ ok: false, error: 'la sesión de WhatsApp no está conectada' }, 503)
   }
 
-  return c.json({
-    ok: true,
-    campaign: {
-      id: campaignId,
-      sentCount: result.sentCount,
-      failedCount: result.failedCount,
-      // Números que no pudimos normalizar a E.164: no se enviaron. Se informan
-      // aparte para no inflar sentCount con envíos que nunca ocurrieron.
-      skippedCount,
+  // 202 ASYNC: el envío lleva 2-5s por mensaje (hasta ~29 min con 500 vecinos).
+  // Antes el handler hacía `await sendCampaign(...)` y el HTTP quedaba colgado toda
+  // la campaña: el browser/proxy cortaba por timeout, la UI mostraba un error falso
+  // mientras el server seguía enviando, y el reintento duplicaba envíos y cupo.
+  // Ahora respondemos de una y el progreso/cierre viaja por SSE
+  // (campaign.progress / campaign.done), que el front ya escucha. [cazabug S9-01]
+  const run = (async () => {
+    try {
+      await wa.sendCampaign(
+        merchantId,
+        campaignId,
+        recipients,
+        parsed.data.text,
+        async (i, ok, error) => {
+          await WaSend.create({
+            appId,
+            merchantId,
+            to: recipients[i].to,
+            text: parsed.data.text,
+            ok,
+            error,
+            campaignId,
+          })
+        },
+      )
+    } catch (err: any) {
+      // El front se entera por SSE (no hay HTTP al que responderle).
+      console.error('[wa-campaign]', campaignId, err?.message ?? err)
+    } finally {
+      campaignsInFlight.delete(merchantId)
+    }
+  })()
+  campaignsInFlight.set(merchantId, run)
+
+  return c.json(
+    {
+      ok: true,
+      campaign: {
+        id: campaignId,
+        // La campaña ARRANCÓ: el resultado final llega por SSE campaign.done.
+        total: recipients.length,
+        // Números que no pudimos normalizar a E.164: no se enviaron. Se informan
+        // aparte para no inflar el total con envíos que nunca van a ocurrir.
+        skippedCount,
+      },
+      quota: {
+        used: used + 1,
+        max: MAX_CAMPAIGNS_PER_MONTH,
+        remaining: Math.max(0, MAX_CAMPAIGNS_PER_MONTH - used - 1),
+      },
     },
-    quota: {
-      used: used + 1,
-      max: MAX_CAMPAIGNS_PER_MONTH,
-      remaining: Math.max(0, MAX_CAMPAIGNS_PER_MONTH - used - 1),
-    },
-  })
+    202,
+  )
 })
 
 whatsappRoutes.get('/campaigns', requireMerchantAuth, async (c) => {
