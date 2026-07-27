@@ -1837,6 +1837,17 @@ Parte 8/8. Con esto el P0 S1-01 queda cerrado."
 
 ---
 
+## 🔴 Orden de deploy (no invertir)
+
+El índice `{appId, email}` es único **sin** filtro parcial: asume que todo vecino tiene email. En
+producción hay 4 cuentas sin email, y `User.syncIndexes()` corre **al bootear el API en producción**.
+
+Si se deploya esta rama ANTES de correr la migración, el build del índice falla por claves nulas
+duplicadas y queda a medio aplicar.
+
+**El orden es:** primero `migrate-vecinos-email.ts --apply` (Task 8), después el deploy.
+Ninguna tarea intermedia de este plan debe deployarse suelta a producción.
+
 ## Notas para quien ejecute
 
 - **El paso que importa** es el Step 2 de la Task 2: ver el test del agujero en ROJO. Guardá esa salida — es la prueba de que el bug era real y de que el fix lo cierra.
