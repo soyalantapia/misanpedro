@@ -64,11 +64,13 @@ export function ApiSync() {
               !localUser ||
               localUser.id !== me.user.id ||
               localUser.nombre !== me.user.nombre ||
-              localUser.telefono !== me.user.telefono
+              localUser.telefono !== me.user.telefono ||
+              localUser.email !== me.user.email
             ) {
               const apiUser: User = {
                 id: me.user.id,
                 nombre: me.user.nombre,
+                email: me.user.email,
                 telefono: me.user.telefono,
               }
               userActions.replace(apiUser)
