@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, Menu, X } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
+import { Logo } from '@/components/Logo'
 import { useTenant, appName } from '@/lib/tenant'
 
 const NAV_LINKS = [
@@ -77,10 +78,7 @@ export function Nav() {
           aria-label={`${appName(config)} · inicio`}
           className="flex shrink-0 items-center gap-2 font-bold tracking-tight"
         >
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 text-on-brand shadow-sm">
-            <span className="text-xs font-black">M</span>
-          </span>
-          <span className="text-base text-neutral-900">{appName(config)}</span>
+          <Logo markSize={28} textClass="text-base" />
         </a>
 
         <nav aria-label="Principal" className="hidden gap-6 text-sm font-medium text-neutral-600 lg:flex">
