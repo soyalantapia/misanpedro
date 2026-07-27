@@ -73,7 +73,7 @@ export function SocialProof() {
         <div className="mt-8 flex flex-col items-center gap-2 text-center">
           <p className="text-xs text-neutral-500">
             {config?.slug === 'sanpedro'
-              ? `Ya van ${cupos(config).adheridos} de ${TOTAL_CUPOS} comercios — quedan ${cupos(config).restantes} lugares gratis. Cuando se completen, arranca el precio mensual.`
+              ? `Ya van ${cupos(config).adheridos} de ${TOTAL_CUPOS} comercios. Quedan ${cupos(config).restantes} lugares gratis: cuando se completen, arranca el precio mensual.`
               : 'Sumate ahora: cuando se completen los cupos, cierra la oferta de lanzamiento.'}
           </p>
           <a

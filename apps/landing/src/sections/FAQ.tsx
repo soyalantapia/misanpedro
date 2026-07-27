@@ -19,8 +19,8 @@ function buildFaqs(config: LandingTenant | null) {
     // frente y sin inflar. Auditoría PM 25/07: no estaba en ningún lado.
     q: `¿Cuánta gente de ${ciudad} está usando la app hoy?`,
     a: sp
-      ? `Te contesto de frente: estamos arrancando. No te vamos a mentir con un número inflado. Hoy hay ${adheridos} comercios adentro y los vecinos se van sumando a medida que hay descuentos para usar — por eso los primeros ${TOTAL_CUPOS} entran gratis: estamos construyendo esto juntos. El que entra ahora no paga nada mientras se llena; el que espera a que esté lleno arranca pagando ${precio}/mes.`
-      : `Estamos arrancando en ${ciudad} y no te vamos a mentir con un número inflado: los vecinos se suman a medida que hay descuentos para usar. Por eso los primeros ${TOTAL_CUPOS} comercios entran gratis — estamos construyendo esto juntos.`,
+      ? `Te contesto de frente: estamos arrancando. No te vamos a mentir con un número inflado. Hoy hay ${adheridos} comercios adentro y los vecinos se van sumando a medida que hay descuentos para usar. Por eso los primeros ${TOTAL_CUPOS} entran gratis: estamos construyendo esto juntos. El que entra ahora no paga nada mientras se llena; el que espera a que esté lleno arranca pagando ${precio}/mes.`
+      : `Estamos arrancando en ${ciudad} y no te vamos a mentir con un número inflado: los vecinos se suman a medida que hay descuentos para usar. Por eso los primeros ${TOTAL_CUPOS} comercios entran gratis. Estamos construyendo esto juntos.`,
   },
   {
     q: '¿Qué me van a pedir para registrarme?',

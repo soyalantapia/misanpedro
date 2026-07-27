@@ -396,7 +396,7 @@ function errorCopy(reason: string): { title: string; hint: string } {
     case 'offline':
       return {
         title: 'Sin conexión · Reintentá',
-        hint: 'No pudimos verificar el código por un corte de señal. El código puede ser válido — probá de nuevo en unos segundos.',
+        hint: 'No pudimos verificar el código por un corte de señal. El código puede ser válido: probá de nuevo en unos segundos.',
       }
     case 'not-found':
     default:

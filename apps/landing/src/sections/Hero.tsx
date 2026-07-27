@@ -65,7 +65,7 @@ export function Hero() {
             style={{ animationDelay: '140ms' }}
           >
             Vos publicás un descuento para tu día flojo y entran vecinos. Cada uno queda como
-            cliente tuyo —con nombre y teléfono— para que vuelva.
+            cliente tuyo, con nombre y teléfono, para que vuelva.
           </p>
 
           {/* Los 2 argumentos que más destraban, arriba (estaban enterrados en Solución) */}

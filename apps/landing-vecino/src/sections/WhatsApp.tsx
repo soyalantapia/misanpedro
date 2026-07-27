@@ -27,7 +27,7 @@ export function WhatsApp() {
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-lg leading-relaxed text-neutral-600">
             Cada semana cargamos descuentos nuevos en los comercios de {city}. Sumate y te avisamos los de
-            tu barrio — sin spam, solo los descuentos.
+            tu barrio. Sin spam, solo los descuentos.
           </p>
           <a
             href={WHATSAPP_URL}

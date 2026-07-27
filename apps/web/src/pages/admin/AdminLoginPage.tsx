@@ -317,7 +317,7 @@ export function AdminLoginPage() {
                   disabled={cooldown > 0 || submitting}
                   className="text-center text-xs font-semibold text-ink-soft hover:text-brand-strong disabled:opacity-50"
                 >
-                  {cooldown > 0 ? `Reenviar código en ${cooldown}s` : 'No me llegó — reenviar código'}
+                  {cooldown > 0 ? `Reenviar código en ${cooldown}s` : 'No me llegó, reenviar código'}
                 </button>
               </form>
             )}

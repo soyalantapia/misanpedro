@@ -373,7 +373,7 @@ function ExpiryHint({
   if (isActive && (!expiresAt || ms <= 0)) {
     return (
       <p className="max-w-xs text-center text-[11px] text-fin-faint">
-        Sin tiempo límite — el código vale hasta que lo uses.
+        Sin tiempo límite: el código vale hasta que lo uses.
       </p>
     )
   }

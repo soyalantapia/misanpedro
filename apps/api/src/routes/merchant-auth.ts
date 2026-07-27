@@ -316,7 +316,7 @@ merchantAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
   const merchant = await Merchant.findOne({ appId, _id: user.merchantId })
   if (!merchant) return c.json({ ok: false, error: 'comercio no encontrado' }, 404)
   if (merchant.estado === 'suspendido') {
-    return c.json({ ok: false, error: 'cuenta suspendida — contactá soporte', estado: 'suspendido' }, 403)
+    return c.json({ ok: false, error: 'cuenta suspendida, contactá soporte', estado: 'suspendido' }, 403)
   }
   if (merchant.estado === 'cancelado') {
     return c.json({ ok: false, error: 'cuenta cancelada', estado: 'cancelado' }, 403)
