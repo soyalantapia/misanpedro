@@ -1792,15 +1792,29 @@ Esperado: typecheck 6/6, ambas suites verdes, `check:tenant` ✓ y el build sin 
 
 - [ ] **Step 4: Verificación adversarial del agujero**
 
-Con el API corriendo en local contra una Mongo LOCAL (no la de producción), reproducir el ataque original:
+🔴 **NO levantes el API con el `.env` del repo para esto.** Ese `.env` apunta a la Mongo de
+PRODUCCIÓN: un `POST /auth/claim` contra ese servidor crearía un vecino real en la base de los
+clientes. La verificación va contra una base efímera.
+
+El ataque original ya está reproducido end-to-end en `user-auth.integration.test.ts`, contra un
+Mongo real (in-memory, no un mock) y atravesando la ruta Hono de verdad. Correlo aislado y leé la
+salida:
 
 ```bash
-curl -s -X POST http://localhost:3002/api/v1/auth/claim \
-  -H 'content-type: application/json' -H 'x-tenant-slug: sanpedro' \
-  -d '{"nombre":"Atacante","email":"<email de una cuenta existente>","telefono":"3329421234","acceptedTc":true}'
+cd /Users/alannaimtapia/dev/misanpedro-cazabug && export PATH="/opt/homebrew/opt/node@22/bin:$PATH" && pnpm --filter @misanpedro/api exec vitest run src/routes/user-auth.integration.test.ts -t "EL AGUJERO" --reporter=verbose
 ```
 
-Esperado: `{"ok":true,"created":false,"needsCode":true}` **sin `accessToken`**. Antes esto devolvía una sesión con acceso a la PII de la víctima. Si aparece un `accessToken`, el agujero sigue abierto: pará y revisá.
+Esperado: pasa el caso `🔴 EL AGUJERO: con el email de otro NO se entra — pide código`, que afirma
+`accessToken === undefined`. Ese assert es la prueba: antes del fix devolvía una sesión con acceso a
+la PII de la víctima (verificado en rojo en la Task 2).
+
+Si además querés pegarle por HTTP a mano, levantá el API apuntándolo a una base descartable:
+
+```bash
+cd /Users/alannaimtapia/dev/misanpedro-cazabug/apps/api && export PATH="/opt/homebrew/opt/node@22/bin:$PATH" && MONGODB_URI="mongodb://127.0.0.1:27017/misanpedro-scratch" JWT_SECRET="dev-secret-32-chars-minimum-padding-pad" JWT_REFRESH_SECRET="dev-refresh-32-chars-minimum-padding-pad" PORT=3002 NODE_ENV=development node --import tsx src/index.ts
+```
+
+(requiere un mongod local escuchando en 27017; si no lo tenés, alcanza con el test de arriba).
 
 - [ ] **Step 5: Marcar el hallazgo como cerrado**
 
