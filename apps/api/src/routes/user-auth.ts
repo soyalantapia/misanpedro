@@ -223,6 +223,84 @@ userAuthRoutes.post('/verify-otp', otpVerifyLimiter, async (c) => {
   return c.json({ ok: true, accessToken, refreshToken, user: serializeUser(user) })
 })
 
+/**
+ * POST /auth/refresh — renueva el access. NO rota el refresh: la sesión del
+ * vecino es persistente y rotar arriesga desloguearlo si se pierde una respuesta
+ * de red (mismo criterio que el comercio).
+ */
+userAuthRoutes.post('/refresh', async (c) => {
+  const appId = getAppId(c)
+  const { refreshToken } = await c.req.json().catch(() => ({}))
+  if (!refreshToken || typeof refreshToken !== 'string') {
+    return c.json({ ok: false, error: 'refresh token required' }, 400)
+  }
+  const consumed = await consumeRefreshToken(refreshToken)
+  if (!consumed || consumed.subjectType !== 'user') {
+    return c.json({ ok: false, error: 'invalid refresh token' }, 401)
+  }
+  const user = await User.findOne({ _id: consumed.subjectId, appId })
+  if (!user) return c.json({ ok: false, error: 'user not found' }, 401)
+
+  const accessToken = signAccessToken({
+    sub: user._id.toString(),
+    type: 'user',
+    appId: String(appId),
+  })
+  return c.json({ ok: true, accessToken, refreshToken })
+})
+
+/** POST /auth/logout — cierra la sesión de ESTE dispositivo. */
+userAuthRoutes.post('/logout', async (c) => {
+  const { refreshToken } = await c.req.json().catch(() => ({}))
+  if (refreshToken) await revokeRefreshToken(refreshToken)
+  return c.json({ ok: true })
+})
+
+/**
+ * POST /auth/logout-all — cierra la sesión en TODOS los dispositivos. Es lo que
+ * el vecino usa cuando pierde el celular: hasta ahora era imposible, porque el
+ * token de 10 años no se podía revocar. [cazabug S1-01]
+ */
+userAuthRoutes.post('/logout-all', requireUserAuth, async (c) => {
+  const auth = c.get('auth')
+  await revokeAllForSubject(auth.sub)
+  return c.json({ ok: true })
+})
+
+/** GET /auth/sessions — dispositivos con sesión abierta (pantalla de Perfil). */
+userAuthRoutes.get('/sessions', requireUserAuth, async (c) => {
+  const { RefreshToken } = await import('@/models')
+  const auth = c.get('auth')
+  const docs = await RefreshToken.find({
+    subjectId: auth.sub,
+    subjectType: 'user',
+    revokedAt: { $exists: false },
+  })
+    .sort({ updatedAt: -1 })
+    .limit(20)
+    .lean()
+
+  return c.json({
+    ok: true,
+    sessions: docs.map((d: any) => ({
+      id: String(d._id),
+      // El user-agent crudo es ilegible para el vecino; mostramos algo humano.
+      dispositivo: describirDispositivo(d.userAgent),
+      ultimaVez: d.updatedAt ?? d.createdAt,
+    })),
+  })
+})
+
+/** Traduce el user-agent a algo que un vecino entienda. */
+function describirDispositivo(ua?: string): string {
+  if (!ua) return 'Un dispositivo'
+  if (/iPhone|iPad/i.test(ua)) return 'iPhone o iPad'
+  if (/Android/i.test(ua)) return 'Android'
+  if (/Windows/i.test(ua)) return 'Una computadora Windows'
+  if (/Mac OS/i.test(ua)) return 'Una Mac'
+  return 'Un dispositivo'
+}
+
 userAuthRoutes.get('/me', requireUserAuth, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')

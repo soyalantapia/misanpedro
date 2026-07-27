@@ -250,3 +250,64 @@ describe('recuperar la cuenta con el código', () => {
     expect(tardio.body.accessToken).toBeUndefined()
   })
 })
+
+describe('sesión persistente pero revocable', () => {
+  async function sesionNueva() {
+    const r = await post('/claim', alta())
+    return { access: r.body.accessToken as string, refresh: r.body.refreshToken as string }
+  }
+
+  async function get(path: string, access: string) {
+    const res = await api.request(`/auth${path}`, {
+      headers: { 'x-tenant-slug': 'ciudada', authorization: `Bearer ${access}` },
+    })
+    return { status: res.status, body: (await res.json()) as Record<string, any> }
+  }
+
+  it('el refresh devuelve un access nuevo (la sesión se renovó sola)', async () => {
+    const s = await sesionNueva()
+    const r = await post('/refresh', { refreshToken: s.refresh })
+    expect(r.status).toBe(200)
+    expect(r.body.accessToken).toBeTruthy()
+  })
+
+  it('cerrar sesión en todos lados deja afuera al otro dispositivo DE VERDAD', async () => {
+    const celularViejo = await sesionNueva()
+    // El vecino entra en un celular nuevo con su código.
+    const code = (await post('/request-otp', { email: 'maria@mail.com' })).body._debugCode
+    const celularNuevo = await post('/verify-otp', { email: 'maria@mail.com', code })
+
+    // Desde el celular nuevo, echa a todos.
+    const res = await api.request('/auth/logout-all', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-tenant-slug': 'ciudada',
+        authorization: `Bearer ${celularNuevo.body.accessToken}`,
+      },
+      body: '{}',
+    })
+    expect(res.status).toBe(200)
+
+    // El celular perdido ya no puede renovar: quedó afuera.
+    expect((await post('/refresh', { refreshToken: celularViejo.refresh })).status).toBe(401)
+  })
+
+  it('logout revoca sólo ese dispositivo', async () => {
+    const s = await sesionNueva()
+    expect((await post('/logout', { refreshToken: s.refresh })).status).toBe(200)
+    expect((await post('/refresh', { refreshToken: s.refresh })).status).toBe(401)
+  })
+
+  it('lista las sesiones abiertas para mostrarlas en Perfil', async () => {
+    const s = await sesionNueva()
+    const r = await get('/sessions', s.access)
+    expect(r.status).toBe(200)
+    expect(r.body.sessions.length).toBeGreaterThanOrEqual(1)
+    expect(r.body.sessions[0]).toHaveProperty('ultimaVez')
+  })
+
+  it('un refresh inventado → 401', async () => {
+    expect((await post('/refresh', { refreshToken: 'no-existe' })).status).toBe(401)
+  })
+})
