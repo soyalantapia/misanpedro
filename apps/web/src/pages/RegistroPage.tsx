@@ -76,28 +76,38 @@ export function RegistroPage() {
       return
     }
 
-    // Si veníamos de tocar "Canjear", activamos el cupón y vamos al código.
-    const activarMatch = next.match(/^\/cupon\/([^/]+)\/activar$/)
-    if (activarMatch) {
-      try {
-        const act = await api.activations.create(activarMatch[1])
-        activationActions.activate(activarMatch[1], {
-          id: act.activation.id,
-          codigoNumerico: act.activation.codigoNumerico,
-          qrPayload: act.activation.qrPayload,
-        })
-        navigate(`/activacion/${act.activation.id}`, { replace: true })
-      } catch (err) {
-        toast.error(
-          'No pudimos activar tu cupón',
-          err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
-        )
-        navigate(`/cupon/${activarMatch[1]}`, { replace: true })
-      }
-    } else {
-      navigate(next, { replace: true })
-    }
+    await irADondeIba()
     setSubmitting(false)
+  }
+
+  /**
+   * A dónde va el vecino después de entrar. Lo comparten las DOS fases (alta
+   * directa y recuperación con código): si llegó acá desde el botón "Canjear",
+   * su intención era activar ESE cupón, no ver el home. Cuando esto vivía sólo
+   * en el alta, el vecino que ya tenía cuenta ponía el código y aterrizaba en
+   * el home con el cupón sin activar, sin ningún aviso — parado en el mostrador.
+   */
+  async function irADondeIba() {
+    const activarMatch = next.match(/^\/cupon\/([^/]+)\/activar$/)
+    if (!activarMatch) {
+      navigate(next, { replace: true })
+      return
+    }
+    try {
+      const act = await api.activations.create(activarMatch[1])
+      activationActions.activate(activarMatch[1], {
+        id: act.activation.id,
+        codigoNumerico: act.activation.codigoNumerico,
+        qrPayload: act.activation.qrPayload,
+      })
+      navigate(`/activacion/${act.activation.id}`, { replace: true })
+    } catch (err) {
+      toast.error(
+        'No pudimos activar tu cupón',
+        err instanceof ApiError ? err.message : 'Revisá tu conexión y reintentá.',
+      )
+      navigate(`/cupon/${activarMatch[1]}`, { replace: true })
+    }
   }
 
   async function handleCodigo(e: React.FormEvent) {
@@ -112,9 +122,17 @@ export function RegistroPage() {
         email: data.user.email,
         telefono: data.user.telefono,
       })
-      navigate('/')
-    } catch {
-      setErrors({ email: 'Ese código no es correcto o ya venció. Pedí uno nuevo.' })
+      // Mismo destino que el alta directa: respeta el "Canjear" que lo trajo acá.
+      await irADondeIba()
+    } catch (err) {
+      // Distinguimos el código equivocado de un problema de conexión: culpar al
+      // código cuando se cortó internet manda al vecino a pedir uno nuevo al pedo.
+      setErrors({
+        email:
+          err instanceof ApiError
+            ? 'Ese código no es correcto o ya venció. Pedí uno nuevo.'
+            : 'No pudimos conectarnos. Revisá tu conexión y reintentá.',
+      })
     } finally {
       setSubmitting(false)
     }
@@ -278,9 +296,17 @@ export function RegistroPage() {
               autoComplete="one-time-code"
               maxLength={6}
               value={codigo}
-              onChange={(ev) => setCodigo(ev.target.value.replace(/\D/g, '').slice(0, 6))}
+              autoFocus
+              onChange={(ev) => {
+                setCodigo(ev.target.value.replace(/\D/g, '').slice(0, 6))
+                // Igual que el resto de los campos: al escribir uno nuevo, el
+                // error viejo se va. Si no, le queda pegado mientras tipea.
+                setErrors((x) => ({ ...x, email: undefined }))
+              }}
               placeholder="000000"
-              className="w-full bg-transparent text-center text-2xl font-bold tracking-[0.4em] text-fin-ink outline-none placeholder:text-fin-faint"
+              // Misma caja que los demás campos (fondo + ring), pero centrado y
+              // espaciado: son 6 dígitos que el vecino copia de un mail.
+              className={`${iconInputCls} text-center text-2xl font-bold tracking-[0.4em]`}
             />
           </Field>
           <button
