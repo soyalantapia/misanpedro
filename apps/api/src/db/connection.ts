@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import { env } from '@/env'
 import { App, User, Owner, PushSubscription } from '@/models'
+import { captureException } from '@/services/sentry.service'
 
 let connectingPromise: Promise<typeof mongoose> | null = null
 
@@ -49,6 +50,19 @@ export async function connectDB(): Promise<typeof mongoose> {
         if (dropped.length) console.log('[db] User indexes reconciliados, dropeados:', dropped)
       } catch (err) {
         console.error('[db] User.syncIndexes (no fatal):', (err as Error)?.message)
+        // NO fatal a propósito (no queremos que el API no arranque), pero acá se
+        // juega la unicidad de identidad del vecino: si este índice único
+        // {appId,email} no queda creado (ej. por duplicados existentes), el API
+        // arranca SIN esa garantía y el handler de carrera de /claim (err.code
+        // === 11000) nunca dispara — se pueden crear DOS cuentas con el mismo
+        // email. Antes esto sólo quedaba en un console.error que nadie mira en
+        // Railway; lo mandamos también a Sentry para que sea imposible de
+        // ignorar. [cazabug]
+        captureException(err, {
+          phase: 'boot',
+          index: 'User.syncIndexes',
+          impacto: 'unicidad {appId,email} del vecino puede haber quedado SIN garantizar',
+        })
       }
       // Garantizamos el índice unique de Owner.email ANTES del bootstrap, para que
       // la creación del owner no pueda dejar duplicados si el índice aún no existía
