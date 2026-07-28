@@ -24,6 +24,25 @@ export function formatRedeemedDate(iso: string): string {
 }
 
 /**
+ * "Hace cuánto" en español, para la lista de dispositivos con sesión abierta
+ * en Perfil (`ultimaVez`). Cerca de una semana pasamos a fecha corta en vez de
+ * "hace 9 días" — a esa distancia el vecino ubica mejor un día del calendario
+ * que un conteo relativo.
+ */
+export function fmtRelative(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  const diffMin = Math.floor((Date.now() - d.getTime()) / 60000)
+  if (diffMin < 1) return 'Recién'
+  if (diffMin < 60) return `Hace ${pluralize(diffMin, 'minuto')}`
+  const diffHoras = Math.floor(diffMin / 60)
+  if (diffHoras < 24) return `Hace ${pluralize(diffHoras, 'hora')}`
+  const diffDias = Math.floor(diffHoras / 24)
+  if (diffDias < 7) return `Hace ${pluralize(diffDias, 'día')}`
+  return `El ${d.getDate()} de ${monthsShort[d.getMonth()]}`
+}
+
+/**
  * Locale/moneda activos para el formateo de plata. Por defecto es-AR/ARS
  * (compatibilidad con el deploy histórico de Mi Ciudad). El tenant activo
  * lo sobrescribe vía setMoneyLocale() al cargar su config (ver lib/tenant.ts),
