@@ -318,7 +318,7 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
 
 type SendingPhase =
   | { kind: 'idle' }
-  | { kind: 'sending'; progress: number; total: number; sentSoFar: number }
+  | { kind: 'sending'; progress: number; total: number; sentSoFar: number; campaignId: string }
   | {
       kind: 'done'
       sentCount: number
@@ -432,7 +432,10 @@ function ComposerScreen({
     }
     setConfirmSend(false)
     const total = recipients.length
-    setPhase({ kind: 'sending', progress: 0, total, sentSoFar: 0 })
+    setPhase({ kind: 'sending', progress: 0, total, sentSoFar: 0, campaignId: '' })
+    // Reiniciamos el reloj del respaldo: recién arranca la campaña, así que
+    // "sin novedades" se cuenta desde ahora (ver el useEffect de más abajo).
+    lastProgressAtRef.current = Date.now()
 
     const recipientPayload = recipients
       // El contacto del vecino viene normalizado en `telefono` (whatsapp del
@@ -456,7 +459,7 @@ function ComposerScreen({
       // Ajustamos el total a los que el backend realmente va a enviar (descuenta
       // los números que no pudo normalizar) y esperamos el 'done' por SSE.
       const aEnviar = data.campaign.total ?? total
-      setPhase({ kind: 'sending', progress: 0, total: aEnviar, sentSoFar: 0 })
+      setPhase({ kind: 'sending', progress: 0, total: aEnviar, sentSoFar: 0, campaignId: data.campaign.id })
       if (data.campaign.skippedCount) {
         toast.info(
           'Algunos números quedaron afuera',
@@ -488,8 +491,13 @@ function ComposerScreen({
   // Escucha el stream SSE: cuando llega un evento `campaign.progress`,
   // actualizamos el progress bar con los conteos reales.
   const wa = useWhatsappStream()
+  // "Hace cuánto no tenemos novedades del progreso" — lo usa el respaldo de más
+  // abajo para detectar un SSE perdido (reconexión justo cuando se emite un
+  // evento, sin buffer ni replay del lado del backend). [cazabug]
+  const lastProgressAtRef = useRef(Date.now())
   useEffect(() => {
     if (!wa.campaign || wa.campaign.done) return
+    lastProgressAtRef.current = Date.now()
     const sentSoFar = wa.campaign.sent + wa.campaign.failed
     setPhase((prev) => {
       if (prev.kind !== 'sending') return prev
@@ -498,13 +506,15 @@ function ComposerScreen({
         total: wa.campaign!.total,
         sentSoFar,
         progress: wa.campaign!.total === 0 ? 0 : sentSoFar / wa.campaign!.total,
+        campaignId: prev.campaignId,
       }
     })
   }, [wa.campaign])
 
   // Cierre de la campaña: llega por SSE ('campaign.done'), no por el POST — que
-  // ahora responde 202 apenas la acepta. Esta es la única fuente de verdad del
-  // resultado final. [cazabug S9-01]
+  // ahora responde 202 apenas la acepta. Esta es la fuente de verdad PRINCIPAL
+  // del resultado final; el respaldo de abajo sólo actúa si este evento se
+  // pierde. [cazabug S9-01]
   useEffect(() => {
     if (!wa.campaign?.done) return
     const { sent, failed } = wa.campaign
@@ -527,6 +537,64 @@ function ComposerScreen({
     wa.resetCampaign()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wa.campaign?.done])
+
+  // RESPALDO: el pub/sub del backend (`whatsapp.service.ts`) es en vivo, sin
+  // buffer ni replay — si el EventSource se reconecta justo cuando se emite un
+  // evento (algo esperable en una campaña de ~29 min sobre 4G), ese evento se
+  // pierde para siempre y la barra queda clavada en "Enviando…" sin que llegue
+  // ni el progreso ni el `campaign.done`. Elegimos el respaldo más simple que
+  // NO mienta: si pasaron TIMEOUT_SIN_NOVEDADES_MS sin un evento de progreso,
+  // refetcheamos el historial real (`GET /wa/campaigns`, agregado desde Mongo)
+  // y dejamos que el efecto de abajo decida con esos números — nunca inventamos
+  // un conteo acá. [cazabug]
+  const TIMEOUT_SIN_NOVEDADES_MS = 2 * 60_000
+  useEffect(() => {
+    if (phase.kind !== 'sending') return
+    const id = window.setInterval(() => {
+      if (Date.now() - lastProgressAtRef.current > TIMEOUT_SIN_NOVEDADES_MS) {
+        apiCampaigns.refetch()
+        // Esperamos otro período completo antes de reintentar: si el historial
+        // todavía no refleja la campaña completa, no tiene sentido machacar el
+        // endpoint cada minuto.
+        lastProgressAtRef.current = Date.now()
+      }
+    }, 60_000)
+    return () => window.clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase.kind])
+
+  // Cuando el respaldo de arriba refetchea el historial, si ESTA campaña ya
+  // figura ahí la usamos como fuente de verdad: (a) si ya están contabilizados
+  // todos los destinatarios, cerramos la fase como si hubiera llegado el
+  // `campaign.done` que se perdió; (b) si no, igual reflejamos el avance real
+  // en la barra — nunca un número inventado, siempre lo que el backend ya
+  // confirmó que mandó.
+  useEffect(() => {
+    if (phase.kind !== 'sending' || !phase.campaignId) return
+    const entry = apiCampaigns.data?.campaigns.find((c) => c.id === phase.campaignId)
+    if (!entry) return
+    const acumulado = entry.sentCount + entry.failedCount
+    if (acumulado >= phase.total) {
+      setPhase({ kind: 'done', sentCount: entry.sentCount, deliveredCount: entry.sentCount, readCount: null })
+      toast.success(
+        'Campaña enviada',
+        `${entry.sentCount} entregados${entry.failedCount ? ` · ${entry.failedCount} fallaron` : ''}.`,
+      )
+      apiStatus.refetch()
+      wa.resetCampaign()
+      return
+    }
+    setPhase((prev) =>
+      prev.kind === 'sending'
+        ? {
+            ...prev,
+            sentSoFar: acumulado,
+            progress: prev.total === 0 ? 0 : acumulado / prev.total,
+          }
+        : prev,
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiCampaigns.data])
 
   async function handleDisconnect() {
     setConfirmDisconnect(false)
