@@ -196,8 +196,8 @@ export function PerfilPage() {
               <h1 className="text-2xl font-bold tracking-tight text-fin-ink">Tu perfil</h1>
               <p className="text-sm text-fin-soft">
                 Tu perfil se arma solo. Cuando canjeés tu primer cupón te pedimos solo{' '}
-                <span className="font-bold text-fin-ink">nombre, email y teléfono</span> — nada de DNI,
-                contraseñas ni códigos.
+                <span className="font-bold text-fin-ink">nombre, email y teléfono</span>. Nada de DNI
+                ni contraseñas.
               </p>
               <Link
                 to="/"

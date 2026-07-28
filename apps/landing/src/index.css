@@ -53,6 +53,9 @@
   --text-h2-momento: clamp(2.25rem, 5vw, 3.5rem); /* solución, precio, CTA final */
   --text-h2-soporte: clamp(1.75rem, 3vw, 2.25rem); /* problema, funciones, ejemplo, FAQ */
   --text-card: 1.125rem;                          /* título de tarjeta (era 16px) */
+
+  /* Curva del sistema de motion (ver @layer utilities). */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer base {
@@ -82,19 +85,74 @@
 }
 
 @layer utilities {
-  /* Entry animation — la página y los componentes con useInView lo activan */
-  .animate-fade-up {
-    animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* ── SISTEMA DE MOTION ────────────────────────────────────────────────
+     /design-review 26/07 midió 37 elementos animados con UNA sola animación
+     de 0.7s — desde un eyebrow de 11px hasta un billboard de 1.400px. Cuando
+     todo entra igual, el movimiento deja de comunicar jerarquía y se vuelve
+     ruido de fondo. Tres variantes con intención + stagger real:
+
+       .enter-lead  → títulos y bloques de texto: recorrido largo, más lento.
+       .enter-card  → tarjetas de grilla: corto y con un toque de escala,
+                      tienen que aterrizar como un mazo de cartas, no desfilar.
+       .enter-media → mockups e imágenes: el recorrido más largo, son el "peso".
+
+     El stagger sale de --i (índice del hijo) y está CAPEADO con min(): con 8
+     tarjetas el último no puede esperar 8×70ms, o el usuario ya scrolleó.
+     Todo animado sólo con transform+opacity (GPU, cero layout thrash).
+     OJO: `--ease-out-expo` vive en @theme, NO acá — una custom property suelta
+     dentro de @layer sin selector es inválida, y al quedar la var indefinida el
+     shorthand `animation` se descarta entero (se compilaba `animation-duration: ;`
+     y ninguna animación corría). */
+
+  .enter-lead {
+    animation: enter-lead 520ms var(--ease-out-expo) both;
+    animation-delay: calc(min(var(--i, 0), 4) * 80ms);
+  }
+  .enter-card {
+    animation: enter-card 420ms var(--ease-out-expo) both;
+    animation-delay: calc(min(var(--i, 0), 5) * 70ms);
+  }
+  .enter-media {
+    animation: enter-media 640ms var(--ease-out-expo) both;
+    animation-delay: calc(min(var(--i, 0), 3) * 90ms);
   }
 
-  @keyframes fade-up {
-    from {
-      opacity: 0;
-      transform: translate3d(0, 24px, 0);
+  @keyframes enter-lead {
+    from { opacity: 0; transform: translate3d(0, 16px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @keyframes enter-card {
+    from { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.985); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  }
+  @keyframes enter-media {
+    from { opacity: 0; transform: translate3d(0, 28px, 0) scale(0.98); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  }
+
+  /* Alias legacy: las secciones que todavía usan .animate-fade-up siguen
+     andando (mapea a la variante de texto). No romper lo que ya funciona. */
+  .animate-fade-up {
+    animation: enter-lead 520ms var(--ease-out-expo) both;
+  }
+
+  /* Acordeón del FAQ: es la ÚNICA interacción real de la página y hasta ahora
+     abría de golpe. `interpolate-size` permite animar de 0 a `auto` sin JS ni
+     medir alturas. Navegadores sin soporte (Safari <18) simplemente abren de
+     golpe, como hoy: degradación limpia, cero JS. */
+  @supports (interpolate-size: allow-keywords) {
+    html {
+      interpolate-size: allow-keywords;
     }
-    to {
-      opacity: 1;
-      transform: translate3d(0, 0, 0);
+    details.faq-item::details-content {
+      block-size: 0;
+      overflow: clip;
+      transition:
+        block-size 260ms var(--ease-out-expo),
+        content-visibility 260ms allow-discrete;
+    }
+    details.faq-item[open]::details-content {
+      block-size: auto;
     }
   }
 
@@ -123,11 +181,18 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    animation-delay: 0ms !important; /* el stagger también se apaga, no sólo la duración */
   }
   html {
     scroll-behavior: auto;
   }
-  .animate-fade-up {
+  /* Las 4 variantes del sistema de motion, explícitas: sin animación y
+     visibles ya. No alcanza con acortar la duración — hay que garantizar
+     opacity:1, porque el estado inicial de useInView es `opacity-0`. */
+  .animate-fade-up,
+  .enter-lead,
+  .enter-card,
+  .enter-media {
     animation: none;
     opacity: 1;
     transform: none;

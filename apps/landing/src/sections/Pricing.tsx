@@ -130,7 +130,7 @@ export function Pricing() {
                 El período gratis y el precio congelado valen para los primeros{' '}
                 {TOTAL_CUPOS} comercios.
               </strong>{' '}
-              Ya van {adheridos} — quedan {restantes} lugares. Después, el
+              Ya van {adheridos} y quedan {restantes} lugares. Después, el
               precio sube para nuevos comercios.
             </>
           ) : (

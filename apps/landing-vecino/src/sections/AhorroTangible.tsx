@@ -30,7 +30,7 @@ export function AhorroTangible() {
           </h2>
           <p className="mt-6 text-pretty text-lg leading-relaxed text-neutral-600">
             La docena de facturas del domingo. El asado del finde. Los remedios del mes. La verdura de la
-            semana. En todo eso pagás menos — y a fin de mes se nota en el bolsillo.
+            semana. En todo eso pagás menos, y a fin de mes se nota en el bolsillo.
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-x-7 gap-y-4">
             <div>

@@ -4,6 +4,7 @@ import {
   UserX,
 } from 'lucide-react'
 import { AnimatedSection } from '@/components/AnimatedSection'
+import { Stagger } from '@/components/Stagger'
 
 const PAINS = [
   {
@@ -48,12 +49,10 @@ export function Problem() {
           caja de color + título + 2 líneas — el anti-patrón AI más reconocible, cuatro
           veces seguidas. El problema se lee mejor como una lista de dolores separados
           por una regla: es una enumeración, no un catálogo de features. */}
-      <div className="mx-auto mt-12 max-w-3xl divide-y divide-neutral-200">
-        {PAINS.map((p, i) => (
-          <AnimatedSection
+      <Stagger variant="lead" className="mx-auto mt-12 max-w-3xl divide-y divide-neutral-200">
+        {PAINS.map((p) => (
+          <article
             key={p.title}
-            delay={60 + i * 60}
-            as="article"
             className="flex items-start gap-4 py-6 first:pt-0 last:pb-0"
           >
             <p.icon size={20} className="mt-0.5 shrink-0 text-danger" aria-hidden />
@@ -63,9 +62,9 @@ export function Problem() {
               </h3>
               <p className="mt-1.5 text-pretty leading-relaxed text-neutral-600">{p.body}</p>
             </div>
-          </AnimatedSection>
+          </article>
         ))}
-      </div>
+      </Stagger>
     </section>
   )
 }

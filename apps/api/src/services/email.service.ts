@@ -270,7 +270,7 @@ export async function sendOwnerTeamInvite(input: { to: string; nombre: string; r
       `Hola ${input.nombre} 👋`,
       `
         <p>Te sumaron al equipo de gestión de <strong>Mi Ciudad</strong> con el rol <strong>${input.rol}</strong>.</p>
-        <p>Entrás con tu email <strong>${input.to}</strong> y un código que te llega al mail — no hace falta contraseña.</p>
+        <p>Entrás con tu email <strong>${input.to}</strong> y un código que te llega al mail. No hace falta contraseña.</p>
         ${cta}
         <p style="font-size:13px;color:#8b8589">Si no esperabas esto, ignorá el email.</p>
       `,
@@ -390,7 +390,7 @@ export function renderOtpEmail(input: {
             <a href="${escapeHtml(ctaUrl)}" style="display:block;padding:15px 22px;font:600 16px ${EMAIL_FONT};color:#ffffff;text-decoration:none;border-radius:12px">${escapeHtml(copy.cta)} →</a>
           </td>
         </tr></table>
-        ${magic ? `<p style="margin:10px 0 0;font:400 12px/1.5 ${EMAIL_FONT};color:#a2a6ad">Un toque y entrás directo — el código ya va cargado.</p>` : ''}
+        ${magic ? `<p style="margin:10px 0 0;font:400 12px/1.5 ${EMAIL_FONT};color:#a2a6ad">Un toque y entrás directo: el código ya va cargado.</p>` : ''}
       </td></tr>`
     : ''
 
@@ -424,7 +424,7 @@ export function renderOtpEmail(input: {
         <p style="margin:10px 0 0;text-align:center;font:400 13px/1.5 ${EMAIL_FONT};color:#8b8f98">Copialo y pegalo en la pantalla de acceso · <b style="color:#6b7079;font-weight:600">vence en 5 minutos</b></p>
       </td></tr>${ctaBlock}
       <tr><td style="padding:24px 40px 0">
-        <p style="margin:0;font:400 13px/1.6 ${EMAIL_FONT};color:#8b8f98">¿No pediste este código? Ignorá este email — tu cuenta sigue segura y nadie entró.</p>
+        <p style="margin:0;font:400 13px/1.6 ${EMAIL_FONT};color:#8b8f98">¿No pediste este código? Ignorá este email. Tu cuenta sigue segura y nadie entró.</p>
       </td></tr>
       <tr><td style="padding:22px 40px 32px">
         <div style="border-top:1px solid #eef0f2;height:1px;line-height:1px;font-size:1px">&nbsp;</div>
@@ -574,7 +574,7 @@ export async function sendPasswordResetLink(input: {
   return sendEmail({
     to: input.to,
     fromName: appNombre,
-    subject: `Resetear tu contraseña — ${appNombre}`,
+    subject: `Resetear tu contraseña · ${appNombre}`,
     html: wrap(
       'Resetear tu contraseña',
       `
@@ -586,7 +586,7 @@ export async function sendPasswordResetLink(input: {
           </a>
         </p>
         <p style="font-size:13px;color:#8b8589;margin-top:16px">
-          El link vence en 30 minutos. Si no fuiste vos, ignorá este email — tu
+          El link vence en 30 minutos. Si no fuiste vos, ignorá este email: tu
           contraseña actual sigue intacta.
         </p>
       `,

@@ -7,6 +7,13 @@ type Props = HTMLAttributes<HTMLDivElement> & {
   delay?: number
   /** Tag — por defecto `div`. Usá `section` cuando reemplace el contenedor de la sección. */
   as?: 'div' | 'section' | 'article' | 'header' | 'footer'
+  /**
+   * Variante de entrada (sistema de motion, ver index.css):
+   *   lead  → títulos y texto (recorrido largo, 520ms) — default
+   *   card  → tarjetas de grilla (corto + escala, 420ms)
+   *   media → mockups e imágenes (el más largo, 640ms)
+   */
+  variant?: 'lead' | 'card' | 'media'
 }
 
 /**
@@ -20,6 +27,7 @@ export function AnimatedSection({
   children,
   delay = 0,
   as = 'div',
+  variant = 'lead',
   className = '',
   style,
   ...rest
@@ -27,7 +35,7 @@ export function AnimatedSection({
   const { ref, inView } = useInView<HTMLDivElement>()
 
   const combinedClass = [
-    inView ? 'animate-fade-up' : 'opacity-0',
+    inView ? `enter-${variant}` : 'opacity-0',
     className,
   ]
     .filter(Boolean)

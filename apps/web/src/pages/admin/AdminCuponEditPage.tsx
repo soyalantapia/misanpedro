@@ -812,7 +812,7 @@ function Asesor({
           </div>
           {costoMayorQuePrecio && (
             <p className="text-[11px] font-semibold text-status-error-fg">
-              Tu costo tiene que ser menor al precio normal — revisá los números.
+              Tu costo tiene que ser menor al precio normal. Revisá los números.
             </p>
           )}
 
@@ -878,8 +878,8 @@ function Asesor({
                 </div>
                 <p className="text-[11px] text-ink-faint">
                   {form.alcance === 'categoria'
-                    ? 'El "precio normal" es el PROMEDIO de la categoría — el vecino ve el ahorro como orientativo (~).'
-                    : 'El "precio normal" es el de ese producto — el vecino ve el ahorro exacto.'}
+                    ? 'El "precio normal" es el PROMEDIO de la categoría: el vecino ve el ahorro como orientativo (~).'
+                    : 'El "precio normal" es el de ese producto: el vecino ve el ahorro exacto.'}
                 </p>
               </div>
             </>
@@ -1036,7 +1036,7 @@ function Asesor({
               />
               <span className="text-[11px] text-ink-faint">
                 {Number(form.stockMaximo) > 0
-                  ? `${form.stockMaximo} canjes en total — al agotarse deja de mostrarse.`
+                  ? `${form.stockMaximo} canjes en total. Al agotarse deja de mostrarse.`
                   : 'Vacío = sin límite de cantidad.'}
               </span>
             </div>
@@ -1147,7 +1147,7 @@ function JugadaResumen({ jugada }: { jugada: Jugada }) {
       : 'Todos los días',
   )
   if (jugada.franjaDesde && jugada.franjaHasta) {
-    chips.push(`${jugada.franjaDesde}–${jugada.franjaHasta} hs`)
+    chips.push(`de ${jugada.franjaDesde} a ${jugada.franjaHasta} hs`)
   }
   if (jugada.exclusiva) chips.push('Exclusivo de la app')
   return (

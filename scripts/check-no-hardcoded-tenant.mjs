@@ -37,6 +37,14 @@ const BANNED = [
     re: /Mi\s+San\s+Pedro/i,
     hint: 'nombre de ciudad hardcodeado. Usá useTenant()/appName(); el fallback genérico es "Mi Ciudad".',
   },
+  {
+    // La marca pasó a escribirse JUNTA ("MiSanPedro"), y así el patrón de arriba
+    // dejaba de verla. Éste es case-SENSITIVE a propósito: la forma CamelCase es
+    // branding visible, mientras que el identificador todo-minúscula "misanpedro"
+    // (storage keys, hosts, @misanpedro/shared) es funcional y sigue permitido.
+    re: /MiSanPedro/,
+    hint: 'marca de ciudad hardcodeada. Usá useTenant()/appName(); el fallback genérico es "Mi Ciudad".',
+  },
 ]
 
 function walk(dir, acc) {

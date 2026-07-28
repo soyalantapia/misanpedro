@@ -61,7 +61,7 @@ export function Problema() {
         </div>
 
         <p className="mt-7 text-center text-base font-semibold text-neutral-700">
-          El mismo mandado — pero con {brand}{' '}
+          El mismo mandado, pero con {brand}{' '}
           <span className="font-extrabold text-accent-700">pagás menos</span>.
         </p>
       </AnimatedSection>

@@ -5,6 +5,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<!--
+  CARÁTULA (og:image) de la landing del comercio — 1200×630.
+  Es lo PRIMERO que se ve cuando se comparte el link por WhatsApp, así que todo lo
+  que dice pesa más que el mismo texto adentro de la página.
+
+  Reglas que esta carátula tiene que cumplir:
+   1. El titular es el MISMO del Hero. Si el Hero cambia, cambia acá.
+   2. La oferta es la real: gratis hasta los primeros 50 comercios, después el
+      precio mensual. Nada de "3 meses gratis", que ya no existe.
+   3. La URL es la que FUNCIONA: sanpedro.micuidad.com/comercios.
+      misanpedro.com/comercios redirige y se come el /comercios/.
+   4. CERO números inventados. El teléfono muestra los mismos números de
+      ILUSTRACIÓN que el mockup del Hero (3 canjes, 2 clientes nuevos) y lleva el
+      cartel "Ejemplo" arriba. Nada acá puede leerse como un resultado prometido.
+
+  Para regenerar el PNG:  node scripts/generar-og-image.mjs
+-->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root { --o-400:#fb8a3c; --o-500:#f97316; --o-600:#ea580c; --o-700:#c2410c; --green:#059669; --ink:#1c1917; --soft:#57534e; }
@@ -23,59 +40,58 @@
     background-image: linear-gradient(rgba(28,25,23,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(28,25,23,.035) 1px, transparent 1px);
     background-size: 40px 40px; mask-image: radial-gradient(800px 600px at 30% 40%, #000, transparent 75%);
   }
-  .left { flex: 1.12; padding: 62px 0 62px 70px; display: flex; flex-direction: column; justify-content: center; gap: 24px; z-index: 2; }
+  .left { flex: 1.22; padding: 56px 0 56px 68px; display: flex; flex-direction: column; justify-content: center; gap: 18px; z-index: 2; }
   .brand { display: flex; align-items: center; gap: 12px; }
   .brand .word { font-weight: 900; font-size: 30px; letter-spacing: -.03em; color: var(--ink); }
   .brand .word .mi { color: var(--o-600); }
   .eyebrow { display: inline-flex; align-items: center; gap: 9px; align-self: flex-start; background: #fff;
-    border: 1px solid rgba(234,88,12,.18); border-radius: 999px; padding: 9px 16px; font-weight: 700; font-size: 17px;
+    border: 1px solid rgba(234,88,12,.18); border-radius: 999px; padding: 8px 15px; font-weight: 700; font-size: 16px;
     color: var(--o-700); box-shadow: 0 6px 20px -8px rgba(234,88,12,.35); }
   .eyebrow .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--o-500); }
-  h1 { font-weight: 900; font-size: 80px; line-height: .98; letter-spacing: -.035em; color: var(--ink); }
+  h1 { font-weight: 900; font-size: 52px; line-height: 1; letter-spacing: -.035em; color: var(--ink); }
   h1 .hl { color: var(--o-600); }
-  .sub { font-weight: 500; font-size: 24px; line-height: 1.35; color: var(--soft); max-width: 560px; }
-  .chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
-  .chip { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #f1e7dd; border-radius: 999px;
-    padding: 9px 15px; font-weight: 600; font-size: 16px; color: var(--soft); }
-  .chip svg { color: var(--o-600); }
-  .url { display: inline-flex; align-items: center; gap: 10px; align-self: flex-start; margin-top: 4px;
-    background: linear-gradient(135deg, var(--o-500), var(--o-700)); color: #fff; border-radius: 999px; padding: 14px 24px;
-    font-weight: 800; font-size: 21px; letter-spacing: -.01em; box-shadow: 0 16px 40px -12px rgba(234,88,12,.6); }
+  .sub { font-weight: 500; font-size: 21px; line-height: 1.35; color: var(--soft); max-width: 555px; }
+  .chips { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 2px; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; background: #fff; border: 1px solid #f1e7dd; border-radius: 999px;
+    padding: 8px 14px; font-weight: 600; font-size: 15px; color: var(--soft); }
+  .chip svg { color: var(--o-600); flex: none; }
+  .url { display: inline-flex; align-items: center; gap: 10px; align-self: flex-start; margin-top: 2px;
+    background: linear-gradient(135deg, var(--o-500), var(--o-700)); color: #fff; border-radius: 999px; padding: 13px 22px;
+    font-weight: 800; font-size: 20px; letter-spacing: -.01em; box-shadow: 0 16px 40px -12px rgba(234,88,12,.6); }
 
-  /* phone con PANEL del comercio */
+  /* Teléfono con el panel del comercio. Rótulo "Ejemplo" y números de ilustración. */
   .right { flex: .95; position: relative; z-index: 2; }
   .phone { position: absolute; top: 50%; left: 47%; transform: translate(-50%,-50%) rotate(2.5deg);
-    width: 352px; height: 720px; background: #0c0a09; border-radius: 52px; padding: 12px;
+    width: 340px; height: 700px; background: #0c0a09; border-radius: 52px; padding: 12px;
     box-shadow: 0 50px 90px -30px rgba(124,45,18,.55), 0 0 0 2px rgba(255,255,255,.06) inset; }
   .screen { width: 100%; height: 100%; background: #fff7ed; border-radius: 42px; overflow: hidden; position: relative; }
   .notch { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 116px; height: 26px; background: #0c0a09; border-radius: 999px; z-index: 5; }
-  .app-top { padding: 38px 20px 10px; display: flex; align-items: center; gap: 9px; }
-  .app-top .w { font-weight: 900; font-size: 20px; letter-spacing: -.03em; color: var(--ink); }
+  .app-top { padding: 38px 18px 10px; display: flex; align-items: center; gap: 9px; }
+  .app-top .w { font-weight: 900; font-size: 19px; letter-spacing: -.03em; color: var(--ink); }
   .app-top .w .mi { color: var(--o-600); }
   .app-top .tag { margin-left: auto; background: #ffedd5; color: var(--o-700); font-weight: 800; font-size: 12px; border-radius: 999px; padding: 5px 11px; }
-  .hello { padding: 8px 20px 2px; font-weight: 700; font-size: 15px; color: var(--soft); }
+  .hello { padding: 8px 18px 2px; font-weight: 700; font-size: 15px; color: var(--soft); }
 
-  .kpi-hero { margin: 8px 18px 12px; border-radius: 22px; padding: 18px 20px; color: #fff;
+  .kpi-hero { margin: 8px 16px 12px; border-radius: 22px; padding: 17px 19px; color: #fff;
     background: linear-gradient(135deg, var(--o-500), var(--o-600)); box-shadow: 0 18px 34px -14px rgba(234,88,12,.65); }
   .kpi-hero .lbl { font-weight: 600; font-size: 14px; opacity: .92; }
-  .kpi-hero .row { display: flex; align-items: flex-end; gap: 10px; margin-top: 2px; }
-  .kpi-hero .big { font-weight: 900; font-size: 44px; letter-spacing: -.03em; line-height: 1; }
-  .kpi-hero .trend { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,.22);
-    border-radius: 999px; padding: 4px 10px; font-weight: 800; font-size: 14px; margin-bottom: 6px; }
+  .kpi-hero .big { font-weight: 900; font-size: 40px; letter-spacing: -.03em; line-height: 1.1; }
+  .kpi-hero .prod { font-weight: 600; font-size: 15px; opacity: .95; margin-top: 2px; }
 
-  .mini { display: flex; gap: 11px; padding: 0 18px 12px; }
+  .mini { display: flex; gap: 10px; padding: 0 16px 12px; }
   .mini .c { flex: 1; background: #fff; border: 1px solid #f1e7dd; border-radius: 18px; padding: 13px 14px; box-shadow: 0 10px 22px -16px rgba(28,25,23,.3); }
-  .mini .c .l { font-weight: 700; font-size: 12px; color: #a8a29e; text-transform: uppercase; letter-spacing: .04em; }
+  .mini .c .l { font-weight: 700; font-size: 11px; color: #a8a29e; text-transform: uppercase; letter-spacing: .04em; }
   .mini .c .v { font-weight: 900; font-size: 26px; letter-spacing: -.02em; color: var(--ink); margin-top: 2px; }
 
-  .coupon { margin: 0 18px; background: #fff; border: 1px solid #f1e7dd; border-radius: 20px; padding: 14px 15px;
-    display: flex; align-items: center; gap: 13px; box-shadow: 0 12px 26px -16px rgba(28,25,23,.35); }
-  .coupon .ic { width: 46px; height: 46px; border-radius: 14px; background: #fff1e6; display: grid; place-items: center; font-size: 24px; flex: none; }
-  .coupon .b { flex: 1; min-width: 0; }
-  .coupon .n { font-weight: 800; font-size: 16px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .coupon .s { display: inline-flex; align-items: center; gap: 5px; font-weight: 800; font-size: 13px; color: var(--green); margin-top: 2px; }
-  .coupon .s .d { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
-  .coupon .badge { flex: none; background: linear-gradient(135deg, var(--o-500), var(--o-600)); color: #fff; font-weight: 900; font-size: 14px; border-radius: 11px; padding: 7px 10px; white-space: nowrap; }
+  .canje { margin: 0 16px; background: #fff; border: 1px solid #f1e7dd; border-radius: 20px; padding: 13px 14px;
+    display: flex; align-items: center; gap: 12px; box-shadow: 0 12px 26px -16px rgba(28,25,23,.35); }
+  .canje .av { width: 40px; height: 40px; border-radius: 50%; background: #fff1e6; display: grid; place-items: center;
+    font-weight: 900; font-size: 16px; color: var(--o-700); flex: none; }
+  .canje .b { flex: 1; min-width: 0; }
+  .canje .n { font-weight: 800; font-size: 15px; color: var(--ink); }
+  .canje .s { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: 12px; color: var(--green); margin-top: 1px; }
+  .canje .s .d { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .canje .m { flex: none; font-weight: 900; font-size: 15px; color: var(--ink); }
 </style>
 </head>
 <body>
@@ -92,17 +108,17 @@
 
     <span class="eyebrow"><span class="dot"></span> Para los comercios de San Pedro</span>
 
-    <h1>Tus clientes<br><span class="hl">vuelven solos</span></h1>
+    <h1>Esos días que no<br>vendés nada&hellip;<br><span class="hl">empezá a llenarlos.</span></h1>
 
-    <p class="sub">Cupones, estadísticas y WhatsApp para llenar tu comercio los días flojos. Sin imprimir un volante más.</p>
+    <p class="sub">Publicás un descuento para tu día flojo y entran vecinos. Cada uno queda como cliente tuyo, con nombre y teléfono.</p>
 
     <div class="chips">
-      <span class="chip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 3 meses gratis</span>
-      <span class="chip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Sin tarjeta</span>
-      <span class="chip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Hecho en San Pedro</span>
+      <span class="chip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Gratis los primeros 50 comercios</span>
+      <span class="chip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Sin tarjeta</span>
+      <span class="chip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 0% de comisión</span>
     </div>
 
-    <span class="url">misanpedro.com/comercios</span>
+    <span class="url">sanpedro.micuidad.com/comercios</span>
   </div>
 
   <div class="right">
@@ -117,27 +133,31 @@
             <text x="32" y="42.5" font-family="Poppins,system-ui,sans-serif" font-weight="800" font-size="27" fill="#fff" text-anchor="middle">%</text>
           </svg>
           <span class="w"><span class="mi">Mi</span>SanPedro</span>
-          <span class="tag">Panel</span>
+          <span class="tag">Ejemplo</span>
         </div>
-        <div class="hello">Tu comercio esta semana</div>
+        <div class="hello">Así se ve tu panel</div>
 
         <div class="kpi-hero">
-          <div class="lbl">Clientes que trajo la app</div>
-          <div class="row">
-            <span class="big">+24</span>
-            <span class="trend">↑ 18%</span>
-          </div>
+          <div class="lbl">Tu descuento activo</div>
+          <div class="big">25% OFF</div>
+          <div class="prod">Pizza grande con bebida</div>
         </div>
 
         <div class="mini">
-          <div class="c"><div class="l">Canjes</div><div class="v">86</div></div>
-          <div class="c"><div class="l">Ventas</div><div class="v">$148k</div></div>
+          <div class="c"><div class="l">Canjes hoy</div><div class="v">3</div></div>
+          <div class="c"><div class="l">Clientes nuevos</div><div class="v">2</div></div>
         </div>
 
-        <div class="coupon">
-          <div class="ic">🍕</div>
-          <div class="b"><div class="n">Combo pizza</div><div class="s"><span class="d"></span> Activo · 42 usos</div></div>
-          <div class="badge">30% OFF</div>
+        <div class="canje">
+          <div class="av">C</div>
+          <div class="b"><div class="n">Carolina P.</div><div class="s"><span class="d"></span> Canjeó hace 4 min</div></div>
+          <div class="m">$5.000</div>
+        </div>
+
+        <div class="canje" style="margin-top:10px">
+          <div class="av">M</div>
+          <div class="b"><div class="n">Mario L.</div><div class="s"><span class="d"></span> Canjeó hace 18 min</div></div>
+          <div class="m">$3.200</div>
         </div>
       </div>
     </div>

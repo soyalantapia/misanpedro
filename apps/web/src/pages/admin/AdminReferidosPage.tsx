@@ -153,7 +153,7 @@ export function AdminReferidosPage() {
               <ShieldCheck size={18} />
             </span>
             <p className="text-xs leading-relaxed text-status-success-fg">
-              <strong>Recomendá tranquilo.</strong> Tu colega entra gratis —como vos— hasta que se
+              <strong>Recomendá tranquilo.</strong> Tu colega entra gratis, igual que vos, hasta que se
               completen los primeros {TOTAL_CUPOS} comercios, sin tarjeta ni compromiso: si no le
               sirve, no paga nada. Vos no arriesgás nada y sumás semanas.
             </p>

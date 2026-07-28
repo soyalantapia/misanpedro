@@ -1,5 +1,6 @@
 import { legalUrl, SUPPORT_EMAIL } from '@/lib/cn'
-import { useTenant, appName, cityName } from '@/lib/tenant'
+import { Logo } from '@/components/Logo'
+import { useTenant, cityName } from '@/lib/tenant'
 
 export function Footer() {
   const { config } = useTenant()
@@ -8,11 +9,8 @@ export function Footer() {
     <footer className="border-t border-neutral-200 bg-white px-6 py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-between">
         {/* Brand minimal */}
-        <div className="flex items-center gap-2 font-bold tracking-tight">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 text-on-brand">
-            <span className="text-xs font-black">M</span>
-          </span>
-          <span className="text-sm text-neutral-900">{appName(config)}</span>
+        <div className="flex items-center gap-2 tracking-tight">
+          <Logo markSize={24} textClass="text-sm" />
           <span className="ml-2 text-xs text-neutral-500">
             © {year} · Hecho en {cityName(config)}
           </span>

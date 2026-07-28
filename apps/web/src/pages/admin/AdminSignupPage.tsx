@@ -313,7 +313,7 @@ export function AdminSignupPage() {
             </h1>
             <p className="mt-1 text-sm text-ink-soft">
               {step !== 'listo' && '2 minutos · Sin tarjeta · Sin trámites'}
-              {step === 'listo' && 'Ya estás dentro — sumale tu perfil'}
+              {step === 'listo' && 'Ya estás dentro: sumale tu perfil'}
             </p>
           </div>
         </div>
@@ -507,7 +507,7 @@ export function AdminSignupPage() {
                       className={inputCls}
                     />
                   }
-                  help="Opcional — lo podés cargar o ajustar después desde el panel."
+                  help="Opcional. Lo podés cargar o ajustar después desde el panel."
                 />
                 <p className="text-[11px] text-ink-soft">
                   <Clock size={10} className="mr-1 inline" />
@@ -802,7 +802,7 @@ function ListoStep({ form, onGoTo }: { form: Form; onGoTo: (to: string) => void 
         onClick={() => onGoTo('/admin')}
         className="text-center text-xs font-semibold text-ink-soft hover:text-ink"
       >
-        Después lo hago — ir al panel
+        Después lo hago, ir al panel
       </button>
     </div>
   )

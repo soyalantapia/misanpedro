@@ -2,7 +2,7 @@ import { useId } from 'react'
 import { useTenant, appName } from '@/lib/tenant'
 
 type LogoProps = {
-  /** 'lockup' = isotipo + "MiSanPedro" · 'mark' = solo el isotipo de cupón */
+  /** 'lockup' = isotipo + wordmark · 'mark' = solo el isotipo de cupón */
   variant?: 'lockup' | 'mark'
   className?: string
   /** tamaño del isotipo en px */
@@ -27,9 +27,13 @@ export function splitWordmark(name: string): [string, string] {
 }
 
 /**
- * Logo de la ciudad: isotipo de cupón (sello redondo) + wordmark de dos tonos
- * ("Mi" en naranja + el resto en tinta). El degradé del sello sigue el knob
- * `--color-brand` vía la escala accent-*, así queda coherente con la marca.
+ * Logo de la ciudad: isotipo de cupón (sello redondo con el %) + wordmark de dos
+ * tonos, "Mi" en naranja y el resto en tinta. Es el mismo lockup que ya usaban la
+ * landing del vecino y la carátula que se ve al compartir el link por WhatsApp;
+ * acá la barra y el pie tenían en su lugar un cuadradito con una "M" suelta.
+ *
+ * El degradé del sello sale de la escala accent-*, derivada del knob
+ * `--color-brand`, así que cada ciudad lo re-tematiza sola.
  */
 export function Logo({
   variant = 'lockup',
@@ -38,19 +42,21 @@ export function Logo({
   textClass = 'text-base',
   onDark = false,
 }: LogoProps) {
+  // useId() por instancia: dos logos en la misma página (barra + pie) no pueden
+  // compartir el id del gradiente o el segundo hereda el degradé del primero.
   const gradId = 'msp-logo-' + useId().replace(/:/g, '')
 
   const { config } = useTenant()
-  // Wordmark de dos tonos: "Mi" coloreado + el resto en tinta. El nombre viene del
-  // tenant y puede llegar de dos formas, así que partimos por las dos:
-  //   "MiSanPedro"  (junto, como se escribe la marca)   → Mi | SanPedro
-  //   "Mi Nariño"   (con espacios, otras ciudades)      → Mi | Nariño
-  // Sin el caso "junto", el logo pintaba TODA la palabra de naranja.
-  const name = appName(config)
-  const [first, restWord] = splitWordmark(name)
+  const [first, restWord] = splitWordmark(appName(config))
 
   const mark = (
-    <svg width={markSize} height={markSize} viewBox="0 0 64 64" aria-hidden="true" className="shrink-0">
+    <svg
+      width={markSize}
+      height={markSize}
+      viewBox="0 0 64 64"
+      aria-hidden="true"
+      className="shrink-0"
+    >
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="var(--color-accent-400)" />
@@ -92,10 +98,13 @@ export function Logo({
         className={`font-black leading-none tracking-tight ${textClass} ${onDark ? 'text-white' : 'text-neutral-900'}`}
         style={{ letterSpacing: '-0.03em' }}
       >
-        {/* accent-500 = el color de marca crudo (#ea580c en San Pedro), el mismo
-            naranja del "Mi" en la carátula de WhatsApp. accent-700 quedaba dos
-            tonos más oscuro. WCAG exime al texto que es parte de un logotipo. */}
-        <span className={onDark ? 'text-accent-300' : 'text-accent-500'}>{first}</span>{restWord}
+        {/* accent-500 ES el color de marca crudo (#ea580c en San Pedro): el mismo
+            naranja del "Mi" en la carátula que se ve al compartir el link. Con
+            accent-700 quedaba dos tonos más oscuro y no cerraba con la carátula.
+            El contraste bajo contra blanco no es un problema de accesibilidad:
+            WCAG exime explícitamente al texto que es parte de un logotipo. */}
+        <span className={onDark ? 'text-accent-300' : 'text-accent-500'}>{first}</span>
+        {restWord}
       </span>
     </span>
   )

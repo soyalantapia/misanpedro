@@ -464,7 +464,7 @@ function EditingView({
     <>
       <div className="flex flex-col gap-2">
         <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
-          <Eye size={11} /> Vista previa — así te ven los vecinos
+          <Eye size={11} /> Vista previa: así te ven los vecinos
         </p>
         <MicrositePreview
           data={{

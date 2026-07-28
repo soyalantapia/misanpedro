@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, Menu, X } from 'lucide-react'
 import { signupUrl } from '@/lib/cn'
+import { Logo } from '@/components/Logo'
 import { useTenant, appName } from '@/lib/tenant'
 
 const NAV_LINKS = [
@@ -15,6 +16,7 @@ export function Nav() {
   const { config } = useTenant()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [activeId, setActiveId] = useState<string | null>(null)
 
   // Scroll listener throttled con rAF para evitar re-renders excesivos
   useEffect(() => {
@@ -30,6 +32,25 @@ export function Nav() {
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Scroll-spy: marca en qué sección está el lector. UN observer para las 5
+  // secciones, con una banda estrecha en el medio del viewport (rootMargin
+  // -45%/-50%) para que nunca titile entre dos secciones adyacentes.
+  useEffect(() => {
+    const targets = NAV_LINKS.map((l) => document.getElementById(l.href.slice(1))).filter(
+      (el): el is HTMLElement => !!el,
+    )
+    if (!targets.length) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.find((e) => e.isIntersecting)
+        if (visible?.target.id) setActiveId(visible.target.id)
+      },
+      { rootMargin: '-45% 0px -50% 0px', threshold: 0 },
+    )
+    targets.forEach((t) => observer.observe(t))
+    return () => observer.disconnect()
   }, [])
 
   // Cerrar mobile menu con Escape
@@ -57,10 +78,7 @@ export function Nav() {
           aria-label={`${appName(config)} · inicio`}
           className="flex shrink-0 items-center gap-2 font-bold tracking-tight"
         >
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 text-on-brand shadow-sm">
-            <span className="text-xs font-black">M</span>
-          </span>
-          <span className="text-base text-neutral-900">{appName(config)}</span>
+          <Logo markSize={28} textClass="text-base" />
         </a>
 
         <nav aria-label="Principal" className="hidden gap-6 text-sm font-medium text-neutral-600 lg:flex">
@@ -68,7 +86,12 @@ export function Nav() {
             <a
               key={l.href}
               href={l.href}
-              className="transition-colors hover:text-neutral-900"
+              aria-current={activeId === l.href.slice(1) ? 'true' : undefined}
+              className={`relative py-1 transition-colors after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:rounded-full after:bg-accent-600 after:transition-transform after:duration-200 hover:text-neutral-900 ${
+                activeId === l.href.slice(1)
+                  ? 'text-neutral-900 after:scale-x-100'
+                  : 'after:scale-x-0'
+              }`}
             >
               {l.label}
             </a>

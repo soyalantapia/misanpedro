@@ -35,6 +35,17 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        // 🔴 SIN ESTO LA LANDING ES INVISIBLE PARA QUIEN TENGA LA APP.
+        // En prod la PWA se sirve en la RAÍZ del host (VITE_BASE=/), así que su
+        // service worker queda con scope '/' y su NavigationRoute atiende TODAS
+        // las navegaciones del dominio — incluidas /comercios/ y /vecino/, que
+        // son apps distintas servidas por el mismo host. Resultado real (bug
+        // reportado 27/07): quien ya había abierto la app del vecino abría el
+        // link de la landing comercial y veía la app; quien nunca la había
+        // abierto veía la landing. Dos personas, el mismo link, pantallas
+        // distintas.
+        // La denylist saca esas rutas del fallback y las manda a la red.
+        navigateFallbackDenylist: [/^\/comercios\//, /^\/vecino\//, /^\/api\//],
         // Carga los handlers de Web Push (push / notificationclick) dentro del
         // service worker generado por Workbox. push-sw.js vive en public/.
         importScripts: ['push-sw.js'],

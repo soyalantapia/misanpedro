@@ -29,7 +29,7 @@ import { startSnapshotLoop, stopSnapshotLoop } from '@/services/ownerSnapshot.se
 import { initWebPush } from '@/services/push.service'
 import { initSentry, captureException, flushSentry } from '@/services/sentry.service'
 import { httpsRedirect, requestId, securityHeaders } from '@/middleware/security'
-import { findTenantByKey, toAsciiLabel } from '@/middleware/tenant'
+import { findTenantByKey, findTenantByCustomDomain, toAsciiLabel } from '@/middleware/tenant'
 import { auditImpersonation } from '@/middleware/auditImpersonation'
 
 const app = new Hono()
@@ -196,10 +196,17 @@ if (isProd) {
     try {
       const h = (host ?? '').toLowerCase().split(':')[0]
       const parts = h.split('.')
-      if (parts.length < 3) return html
-      const sub = toAsciiLabel(parts[0])
-      if (RESERVED_SUB.has(sub)) return html
-      const tenant = await findTenantByKey(sub)
+      let tenant = null
+      // Subdominio de la plataforma: sanpedro.micuidad.com → 'sanpedro'.
+      if (parts.length >= 3) {
+        const sub = toAsciiLabel(parts[0])
+        if (!RESERVED_SUB.has(sub)) tenant = await findTenantByKey(sub)
+      }
+      // Dominio propio del tenant (misanpedro.com): no hay subdominio que mirar,
+      // así que se resuelve por customDomain. Sin esto, un dominio propio se
+      // servía con el <title>/OG del token estático — o sea, con la marca de
+      // San Pedro para cualquier ciudad que tuviera dominio propio.
+      if (!tenant && h) tenant = await findTenantByCustomDomain(h)
       if (!tenant) return html
       const t = tenant as {
         nombre?: string; ciudad?: string; provincia?: string; pais?: string
@@ -216,7 +223,12 @@ if (isProd) {
       const safeHost = escapeHtml(h)
       const esc = (v: unknown) => escapeHtml(String(v))
       let out = html
-      if (t.nombre) out = out.replaceAll('Mi San Pedro', esc(t.nombre))
+      // ⚠️ 'MiSanPedro' (junto, sin espacios) es el TOKEN que llevan los index.html
+      // estáticos de las landings. Si lo cambiás acá, cambialo también allá o toda
+      // ciudad que no sea San Pedro queda con la marca equivocada en el <title>/OG.
+      // Va ANTES del reemplazo de ciudad y sin espacios a propósito: así el
+      // 'San Pedro' de la línea siguiente no lo parte por dentro.
+      if (t.nombre) out = out.replaceAll('MiSanPedro', esc(t.nombre))
       if (t.ciudad) out = out.replaceAll('San Pedro', esc(t.ciudad))
       // Geo del JSON-LD (provincia/país) — si no, en Nariño quedaba el sinsentido
       // "Nariño, Buenos Aires, Argentina". Solo aparecen en el bloque JSON-LD.

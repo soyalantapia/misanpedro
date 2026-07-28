@@ -23,6 +23,17 @@ export async function findTenantByKey(key: string): Promise<AppDoc | null> {
   return (await App.findOne({ $or: [{ slug: k }, { subdomain: k }] })) as AppDoc | null
 }
 
+/**
+ * Resuelve el tenant por su DOMINIO PROPIO (`customDomain`), ej. misanpedro.com.
+ * Es el único camino cuando el host no tiene subdominio que mirar, así que lo
+ * usan tanto `tenantContext` como la inyección de metas del landing.
+ */
+export async function findTenantByCustomDomain(host: string): Promise<AppDoc | null> {
+  const h = host.trim().toLowerCase().split(':')[0]
+  if (!h) return null
+  return (await App.findOne({ customDomain: h })) as AppDoc | null
+}
+
 declare module 'hono' {
   interface ContextVariableMap {
     tenant: AppDoc
@@ -48,22 +59,32 @@ declare module 'hono' {
  * NO usan este middleware.
  */
 export const tenantContext: MiddlewareHandler = async (c, next) => {
-  const slug = resolveTenantSlug(c)
-  if (!slug) {
-    return c.json(
-      { ok: false, error: 'missing tenant', hint: 'set X-Tenant-Slug header or use subdomain' },
-      400,
-    )
-  }
-
-  // Primero intentamos custom domain (más específico) o slug
   const host = c.req.header('host')?.toLowerCase().split(':')[0] || ''
   let tenant: AppDoc | null = null
 
-  if (host) {
-    tenant = (await App.findOne({ customDomain: host })) as AppDoc | null
+  // 1) Header explícito: sigue teniendo la máxima prioridad (contrato del cliente).
+  const hdr = (c.req.header('X-Tenant-Slug') || c.req.header('x-tenant-slug'))?.toLowerCase()
+  if (hdr) tenant = await findTenantByKey(hdr)
+
+  // 2) Dominio propio del tenant (misanpedro.com).
+  //    🔴 ESTO ANTES ERA CÓDIGO MUERTO. El lookup vivía DESPUÉS del guard de
+  //    `slug`, y resolveTenantSlug devuelve null para un dominio sin subdominio
+  //    (misanpedro.com tiene 2 labels y no termina en .micuidad.com), así que el
+  //    request moría con 400 antes de llegar hasta acá. El customDomain estaba
+  //    documentado arriba y no funcionaba en ningún caso.
+  if (!tenant && host) {
+    tenant = await findTenantByCustomDomain(host)
   }
+
+  // 3) Subdominio de un dominio de la plataforma, o ?tenant= para debug.
   if (!tenant) {
+    const slug = resolveTenantSlug(c)
+    if (!slug) {
+      return c.json(
+        { ok: false, error: 'missing tenant', hint: 'set X-Tenant-Slug header or use subdomain' },
+        400,
+      )
+    }
     tenant = await findTenantByKey(slug)
   }
 
