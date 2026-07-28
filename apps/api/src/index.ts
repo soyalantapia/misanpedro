@@ -29,7 +29,7 @@ import { startSnapshotLoop, stopSnapshotLoop } from '@/services/ownerSnapshot.se
 import { initWebPush } from '@/services/push.service'
 import { initSentry, captureException, flushSentry } from '@/services/sentry.service'
 import { httpsRedirect, requestId, securityHeaders } from '@/middleware/security'
-import { findTenantByKey, toAsciiLabel } from '@/middleware/tenant'
+import { findTenantByKey, findTenantByCustomDomain, toAsciiLabel } from '@/middleware/tenant'
 import { auditImpersonation } from '@/middleware/auditImpersonation'
 
 const app = new Hono()
@@ -196,10 +196,17 @@ if (isProd) {
     try {
       const h = (host ?? '').toLowerCase().split(':')[0]
       const parts = h.split('.')
-      if (parts.length < 3) return html
-      const sub = toAsciiLabel(parts[0])
-      if (RESERVED_SUB.has(sub)) return html
-      const tenant = await findTenantByKey(sub)
+      let tenant = null
+      // Subdominio de la plataforma: sanpedro.micuidad.com → 'sanpedro'.
+      if (parts.length >= 3) {
+        const sub = toAsciiLabel(parts[0])
+        if (!RESERVED_SUB.has(sub)) tenant = await findTenantByKey(sub)
+      }
+      // Dominio propio del tenant (misanpedro.com): no hay subdominio que mirar,
+      // así que se resuelve por customDomain. Sin esto, un dominio propio se
+      // servía con el <title>/OG del token estático — o sea, con la marca de
+      // San Pedro para cualquier ciudad que tuviera dominio propio.
+      if (!tenant && h) tenant = await findTenantByCustomDomain(h)
       if (!tenant) return html
       const t = tenant as {
         nombre?: string; ciudad?: string; provincia?: string; pais?: string
