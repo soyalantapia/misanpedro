@@ -14,6 +14,7 @@
 
 import nodemailer, { type Transporter } from 'nodemailer'
 import { env, isProd } from '@/env'
+import { otpDisclosureAllowed } from '@/lib/envSafety'
 
 type EmailPayload = {
   to: string | string[]
@@ -28,6 +29,13 @@ type EmailPayload = {
    *  nombre de la ciudad (ej. "Mi Nariño") manteniendo la dirección verificada
    *  del dominio. Si no se pasa, se usa env.EMAIL_FROM tal cual. */
   fromName?: string
+  /** Etiqueta SEGURA para logs (ej. 'otp/vecino', 'otp/comercio', 'otp/owner').
+   *  El `subject` de los mails de OTP trae el código en texto plano (ej. "Tu
+   *  código Mi Ciudad: 483920"), así que NUNCA hay que loguear `subject` tal
+   *  cual — acá es donde se filtraba el OTP a los logs de prod por una vía que
+   *  no pasaba por `otpDisclosureAllowed()`. Los senders de OTP siempre mandan
+   *  este campo; si falta (mails no sensibles), logueamos algo genérico. */
+  logLabel?: string
 }
 
 /** Construye el header From: si hay fromName, antepone ese display name a la
@@ -115,17 +123,35 @@ export async function sendEmail(payload: EmailPayload): Promise<{ ok: boolean; i
   // devolver "ok" acá dejaría a todos afuera SIN error visible. Fallamos ruidoso
   // para que la ruta pueda surfacear un 503 real.
   if (isProd) {
+    // NUNCA `payload.subject`: los mails de OTP lo arman como "Tu código X: 123456"
+    // (código en claro). Este log vive fuera de `otpDisclosureAllowed()` — es el
+    // camino de "no hay transporte", no el de debug — así que el fix anterior que
+    // sacó el OTP de los logs de prod [cazabug S1-04] no lo cubría. Logueamos SOLO
+    // el `logLabel` seguro que manda cada sender de OTP; si no vino (mails no
+    // sensibles), un genérico + a quién iba, nunca el asunto.
     console.error(
       '[email] sin transporte configurado (SMTP_HOST o RESEND_API_KEY) en producción — email NO enviado:',
-      payload.subject,
+      payload.logLabel ?? 'email/generico',
+      '→ to:',
+      Array.isArray(payload.to) ? payload.to.join(',') : payload.to,
     )
     return { ok: false, error: 'email not configured' }
   }
   // En dev sin transporte: stub + log de links accionables (reset, OTP, etc.).
-  console.log('[email/stub]', payload.subject, '→', payload.to)
-  const links = (payload.text ?? '').match(/https?:\/\/\S+/g) ?? []
-  if (links.length > 0) {
-    links.forEach((l) => console.log('[email/stub]  link:', l))
+  // Mismo criterio que arriba: el `subject`/`text` puede traer un código o un link
+  // con token en claro, así que sólo los mostramos si `otpDisclosureAllowed()` dice
+  // que esto es de verdad una máquina de desarrollo (gate ya usado por las rutas
+  // para decidir si revelan `_debugCode`). El .env local de este repo apunta al
+  // MISMO Atlas que prod, así que sin ese gate este stub filtraría el OTP en
+  // cualquier deploy que corra sin NODE_ENV=production seteado. [cazabug]
+  if (otpDisclosureAllowed()) {
+    console.log('[email/stub]', payload.subject, '→', payload.to)
+    const links = (payload.text ?? '').match(/https?:\/\/\S+/g) ?? []
+    if (links.length > 0) {
+      links.forEach((l) => console.log('[email/stub]  link:', l))
+    }
+  } else {
+    console.log('[email/stub]', payload.logLabel ?? 'email/generico', '→', payload.to)
   }
   return { ok: true, id: 'stub' }
 }
@@ -198,6 +224,7 @@ export async function sendOtpCode(
     to,
     fromName: appNombre,
     subject: `Tu código ${appNombre}: ${code}`,
+    logLabel: 'otp/vecino',
     html: renderOtpEmail({
       code,
       brandName: appNombre,
@@ -217,6 +244,7 @@ export async function sendOwnerOtpCode(to: string, code: string, loginUrl?: stri
     to,
     fromName: 'Mi Ciudad · Gestión',
     subject: `Tu código de acceso al panel: ${code}`,
+    logLabel: 'otp/owner',
     html: renderOtpEmail({
       code,
       brandName: 'Mi Ciudad',
@@ -439,6 +467,7 @@ export async function sendMerchantOtpCode(
     to,
     fromName: appNombre,
     subject: `Tu código para el panel: ${code}`,
+    logLabel: 'otp/comercio',
     html: renderOtpEmail({
       code,
       brandName: appNombre,

@@ -73,9 +73,24 @@ async function issueSession(c: any, user: any, appId: unknown) {
   return { accessToken, refreshToken }
 }
 
-/** Genera y manda el código de 6 dígitos. Devuelve el código en claro para el
- *  `_debugCode` de desarrollo. */
-async function issueUserOtp(c: any, appId: unknown, email: string): Promise<string> {
+/**
+ * Genera y manda el código de 6 dígitos.
+ *
+ * En PRODUCCIÓN esperamos el envío (igual que ya hacen comercio y owner): si el
+ * mail no sale, `sent:false` — así el caller puede devolver un 503 humano en vez
+ * de dejar al vecino parado en el mostrador con un "te mandamos un código" que
+ * nunca llegó y que nadie (ni él, ni el cajero) puede explicar. Antes esto era
+ * fire-and-forget (`.catch` que sólo logueaba) en los TRES casos; comercio y
+ * owner ya se habían arreglado, el vecino quedó afuera. [cazabug]
+ *
+ * Fuera de producción seguimos siendo fire-and-forget: no vale la pena frenar
+ * el desarrollo por la latencia del mail (y en local ni hay transporte real).
+ */
+async function issueUserOtp(
+  c: any,
+  appId: unknown,
+  email: string,
+): Promise<{ code: string; sent: boolean }> {
   await Otp.deleteMany({ appId, email, purpose: 'user' })
   const code = generateOtp()
   await Otp.create({
@@ -91,13 +106,56 @@ async function issueUserOtp(c: any, appId: unknown, email: string): Promise<stri
   const tenant = c.get('tenant') as
     | { nombre?: string; subdomain?: string; brand?: { primaryColor?: string; logoUrl?: string } }
     | undefined
-  sendOtpCode(email, code, tenant?.nombre ?? 'Mi Ciudad', {
-    brandColor: tenant?.brand?.primaryColor,
-    logoUrl: tenant?.brand?.logoUrl,
-    loginUrl: tenant?.subdomain ? `https://${tenant.subdomain}.micuidad.com/#/perfil` : undefined,
-  }).catch((err) => console.error('[user-otp-email]', err))
+  const send = () =>
+    sendOtpCode(email, code, tenant?.nombre ?? 'Mi Ciudad', {
+      brandColor: tenant?.brand?.primaryColor,
+      logoUrl: tenant?.brand?.logoUrl,
+      loginUrl: tenant?.subdomain ? `https://${tenant.subdomain}.micuidad.com/#/perfil` : undefined,
+    })
 
-  return code
+  if (process.env.NODE_ENV === 'production') {
+    const result = await send().catch((err) => {
+      console.error('[user-otp-email]', err)
+      return { ok: false as const }
+    })
+    return { code, sent: result.ok }
+  }
+
+  send().catch((err) => console.error('[user-otp-email]', err))
+  return { code, sent: true }
+}
+
+/**
+ * Corre la rama "hay que mandar un código de recuperación" de /claim (email que
+ * YA existe, o chocó por una alta simultánea) bajo el MISMO límite que
+ * /request-otp (`otpRequestLimiter`, 5/h) en vez de `claimLimiter` (30/h).
+ *
+ * Por qué: `claimLimiter` es alto a propósito porque el alta nueva NO manda mail
+ * y varios comercios comparten la IP del mostrador. Pero esta rama SÍ manda un
+ * mail real — si corriera bajo el límite del alta, conociendo el email de una
+ * víctima se le podían disparar hasta 30 mails por hora, evadiendo de paso el
+ * cap de 5 pensado justo para esto. Invocamos el middleware `otpRequestLimiter`
+ * a mano (en vez de montarlo en la ruta) porque sólo esta rama de /claim
+ * necesita el límite bajo — la de alta nueva sigue sólo bajo `claimLimiter`.
+ * [cazabug]
+ */
+async function issueRecoveryCode(c: any, appId: unknown, email: string): Promise<Response> {
+  let branchResponse!: Response
+  const limited = await otpRequestLimiter(c, async () => {
+    const { code, sent } = await issueUserOtp(c, appId, email)
+    branchResponse = sent
+      ? c.json({
+          ok: true,
+          created: false,
+          needsCode: true,
+          ...(otpDisclosureAllowed() ? { _debugCode: code } : {}),
+        })
+      : c.json(
+          { ok: false, error: 'No pudimos enviar el código. Probá de nuevo en unos minutos.' },
+          503,
+        )
+  })
+  return limited ?? branchResponse
 }
 
 /**
@@ -128,13 +186,7 @@ userAuthRoutes.post('/claim', claimLimiter, async (c) => {
   const existing = await User.findOne({ appId, email })
   if (existing) {
     // Cuenta ajena (o propia en otro celular): hay que probar la casilla.
-    const code = await issueUserOtp(c, appId, email)
-    return c.json({
-      ok: true,
-      created: false,
-      needsCode: true,
-      ...(otpDisclosureAllowed() ? { _debugCode: code } : {}),
-    })
+    return issueRecoveryCode(c, appId, email)
   }
 
   let user
@@ -144,13 +196,7 @@ userAuthRoutes.post('/claim', claimLimiter, async (c) => {
     // Carrera: dos altas simultáneas con el mismo email → el índice único rechaza
     // la segunda. Tratamos ese caso igual que "ya existe": mandamos código.
     if ((err as { code?: number })?.code === 11000) {
-      const code = await issueUserOtp(c, appId, email)
-      return c.json({
-        ok: true,
-        created: false,
-        needsCode: true,
-        ...(otpDisclosureAllowed() ? { _debugCode: code } : {}),
-      })
+      return issueRecoveryCode(c, appId, email)
     }
     throw err
   }
@@ -176,7 +222,13 @@ userAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
   const user = await User.findOne({ appId, email })
   if (!user) return c.json({ ok: true, registered: false })
 
-  const code = await issueUserOtp(c, appId, email)
+  const { code, sent } = await issueUserOtp(c, appId, email)
+  if (!sent) {
+    return c.json(
+      { ok: false, error: 'No pudimos enviar el código. Probá de nuevo en unos minutos.' },
+      503,
+    )
+  }
   return c.json({
     ok: true,
     registered: true,
