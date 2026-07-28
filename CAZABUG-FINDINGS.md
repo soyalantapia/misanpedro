@@ -16,17 +16,18 @@ Distribución: **P0:2 · P1:14 · P2:51 · P3:102**
 | 17fd654 | S9-01 | campaña async 202 + SSE (no bloquea el HTTP) |
 | ac62958 | S1-02 | identidad: normalizar según el país del tenant |
 | 3d9794b | S2-03 | revelar el OTP deja de depender de NODE_ENV |
+| (este plan) | S1-01(P0) | login del vecino por email — se cierra el account takeover |
 
 Gate: API 169 tests · Web 143 · check:tenant ✓ · typecheck 6/6 — todo verde.
 
-**Estado: los 14 P1 y 1 de los 2 P0 están cerrados.** Queda abierto S1-01 (P0, requiere una decisión de producto sobre el login del vecino), 51 P2 y 102 P3.
+**Estado: los 14 P1 y los 2 P0 están cerrados.** Quedan 51 P2 y 102 P3.
 
 ---
 
 
 # P0 (2)
 
-### [S1-01] ⬜ pendiente — Account takeover total del vecino vía POST /auth/claim: cualquiera con el número de teléfono obtiene un bearer de 10 años, PII y borrado de la cuenta ajena
+### [S1-01] ✅ FIXEADO — Account takeover total del vecino vía POST /auth/claim: cualquiera con el número de teléfono obtiene un bearer de 10 años, PII y borrado de la cuenta ajena
 - **Sector:** S1 · lentes 2, 4, 9, 14
 - **Causa raíz:** Por qué toma la cuenta: findOne({appId,telefono}) recupera la cuenta y firma un token para ella. → Por qué sin verificar: el diseño 'sin fricción' delega la verificación al cajero presencial ('el cajero confirma en persona', user-auth.ts:15-16). → Por qué eso no protege: el endpoint es una API pública que mintea un bearer server-side ANTES de cualquier acto presencial; el control humano nunca toca la API. → Por qué es grave: la identidad del vecino es ÚNICAMENTE el teléfono (User.ts:10-12) y no 
 - **Evidencia:** `apps/api/src/routes/user-auth.ts:45`, `apps/api/src/routes/user-auth.ts:64`, `apps/api/src/routes/user-auth.ts:20`, `apps/api/src/routes/user-auth.ts:100`
