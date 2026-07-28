@@ -39,7 +39,19 @@ Contexto y flujos: [`../PROJECT.MD`](../PROJECT.MD) §7. Modelo de datos: [`DATA
 
 | Método | Path | Auth | Qué hace |
 |---|---|---|---|
-| POST | `/claim` | público · 30/h | Crea/recupera vecino por teléfono → token |
+La identidad del vecino es el **email**. El alta de una cuenta nueva NO pide código (sería fricción en
+el mostrador y crear la cuenta propia no ataca a nadie); el código de 6 dígitos aparece sólo cuando el
+email **ya existe**, que es el caso "me cambié de celular" — y es donde estaba el agujero (S1-01).
+
+| Método | Path | Auth | Qué hace |
+|---|---|---|---|
+| POST | `/claim` | público · 30/h (+5/h si manda mail) | Email nuevo → crea y devuelve sesión. Email existente → **NO** da sesión: manda código y responde `needsCode` |
+| POST | `/request-otp` | público · 5/h | Manda el código al vecino que ya tiene cuenta ("Entrar desde mi cuenta") |
+| POST | `/verify-otp` | público · 10/min | Canjea el código por sesión (access + refresh) |
+| POST | `/refresh` | refresh token | Renueva el access. No rota el refresh (a propósito) |
+| POST | `/logout` | refresh token | Cierra la sesión de ese dispositivo |
+| POST | `/logout-all` | requireUserAuth | Cierra la sesión en TODOS los dispositivos → `{revoked}` |
+| GET | `/sessions` | requireUserAuth | Dispositivos con sesión abierta (pantalla de Perfil) |
 | GET | `/me` | requireUserAuth | Info del vecino |
 | GET | `/me/data-export` | requireUserAuth | Exporta los datos personales del vecino |
 | DELETE | `/me` | requireUserAuth | Borra la cuenta del vecino (anonimiza) |

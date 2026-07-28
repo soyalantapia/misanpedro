@@ -86,12 +86,16 @@ export const otpVerifySchema = z.object({
   code: z.string().regex(/^\d{6}$/, 'Código de 6 dígitos'),
 })
 
-// ─── Onboarding sin fricción (vecino): claim por teléfono ───────────────
+// ─── Onboarding sin fricción del vecino (identidad = email) ─────────────
 
 /** Normaliza un teléfono a su forma canónica (solo dígitos, sin código de país,
- *  sin trunk 0) para que el match sea consistente entre dispositivos:
- *  "+54 9 3329 555444" y "3329 555444" caen al mismo valor. El teléfono ES la
- *  identidad del vecino.
+ *  sin trunk 0) para que el mismo número escrito de distintas formas caiga
+ *  siempre en el mismo valor: "+54 9 3329 555444" y "3329 555444" son el mismo.
+ *
+ *  OJO: el teléfono YA NO es la identidad del vecino (lo es el email, ver
+ *  cazabug S1-01) — es dato de contacto para las campañas de WhatsApp del
+ *  comercio, y puede repetirse entre vecinos. Se normaliza igual para que las
+ *  búsquedas y los envíos no dependan de cómo lo tipeó cada uno.
  *
  *  Multi-país (pivote Mi[Ciudad]): `phonePrefix` es el del tenant (`App.phonePrefix`,
  *  ej. "+57"). Sin él asumimos Argentina. Ojo: el prefijo móvil "9" que se saca es

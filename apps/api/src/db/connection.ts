@@ -40,11 +40,15 @@ export async function connectDB(): Promise<typeof mongoose> {
         )
         return m
       }
-      // Reconciliación de índices de User (idempotente, NO fatal): el onboarding
-      // sin fricción cambió la identidad a `telefono`. Dropea los unique viejos
-      // (dni/email) que rompen el alta por dup-key en null, y crea el parcial
-      // {appId,telefono}. Cuando ya está alineado es no-op. Corre dentro de
-      // Railway, donde el Mongo interno sí resuelve (no se puede desde local).
+      // Reconciliación de índices de User (idempotente, NO fatal): la identidad
+      // del vecino es el EMAIL, así que dropea el unique viejo {appId,telefono}
+      // y crea el unique {appId,email}. Cuando ya está alineado es no-op.
+      //
+      // 🔴 ORDEN DE DEPLOY: el unique de email NO tiene filtro parcial, o sea que
+      // asume que todo vecino tiene uno. Si quedan cuentas sin email, la creación
+      // falla por claves nulas duplicadas y el server arranca SIN esa unicidad
+      // (por eso el error también va a Sentry: es silencioso pero grave). Hay que
+      // correr scripts/migrate-vecinos-email.ts ANTES del deploy. Ver RUNBOOK.md.
       try {
         const dropped = await User.syncIndexes()
         if (dropped.length) console.log('[db] User indexes reconciliados, dropeados:', dropped)

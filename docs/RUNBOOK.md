@@ -85,6 +85,37 @@ curl -s -o /dev/null -w "%{http_code}" https://sanpedro.micuidad.com   # ¿sirve
 - **Dar soporte a un comercio:** panel owner → Merchants → "Soporte" (entra como el propietario, auditado).
 - **Cambiar datos de prod sin owner:** `SEED_CITY_JSON`/`SEED_CITY_UPDATE` por env + `railway up` (idempotente), después borrar la var.
 
+## 🔴 Deploy del login por email del vecino — el orden importa
+
+**Sólo aplica al deploy que estrena la identidad por email** (rama `cazabug/loop1-iso`). Una vez hecho,
+este bloque se puede borrar.
+
+El índice `{appId, email}` del vecino es **único y sin filtro parcial**: asume que todo vecino tiene
+email. `User.syncIndexes()` corre al **bootear el API en producción**, y primero DROPEA los índices
+viejos y después crea los nuevos.
+
+Si se deploya antes de migrar, y quedó más de una cuenta sin email, la creación del único falla por
+claves nulas duplicadas, el error se traga como "no fatal" y **el API arranca sin la unicidad de
+identidad** — se pueden crear dos cuentas con el mismo email. (Desde este deploy ese error también
+va a Sentry, pero el daño ya está hecho.)
+
+**El orden es:**
+```bash
+# 1) Simulación: NO borra nada, lista las cuentas sin email y frena si alguna tiene canjes reales.
+node --env-file=.env --import tsx apps/api/scripts/migrate-vecinos-email.ts
+
+# 2) Recién si la simulación se ve bien:
+node --env-file=.env --import tsx apps/api/scripts/migrate-vecinos-email.ts --apply
+
+# 3) Ahora sí, deployar.
+```
+
+**Después del deploy, verificar que el índice EXISTE** (si no está, la unicidad no está garantizada):
+```bash
+# en la Mongo de prod
+db.users.getIndexes()   # tiene que aparecer appId_1_email_1 con unique: true
+```
+
 ## Verificación post-deploy (smoke)
 ```bash
 curl -s https://api.micuidad.com/api/v1/health                  # ok + db connected

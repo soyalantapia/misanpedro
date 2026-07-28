@@ -58,7 +58,7 @@ erDiagram
 | Merchant | `(appId, slug)` | slug de comercio único **por ciudad** |
 | Merchant | `(appId, referralCode)` (sparse) | código de referido único por ciudad |
 | MerchantUser | `(appId, email)` | un login de comercio por email **por ciudad** |
-| User | `(appId, telefono)` (partial) | un vecino por teléfono por ciudad |
+| User | `(appId, email)` | **la identidad del vecino**: un vecino por email por ciudad |
 | Activation | `(appId, codigoNumerico)` | código de canje único por ciudad |
 | Activation | `(appId, couponId, userId)` where `status='activo'` (partial) | **un vecino, un solo cupón activo a la vez** (anti doble-tap) |
 | Redemption | `(activationId)` | **anti doble-canje** (una activación se canjea una sola vez) |
@@ -101,7 +101,13 @@ publicar el primer cupón confirma un **Referral** pendiente y acredita semanas 
 `appId`→App, `merchantId`→Merchant, `email` (unique por app), `nombre`, `rol` (admin/cajero), `lastLoginAt`.
 
 ### `User` — el vecino · `users` · scoped `appId`
-`appId`→App, `nombre`, `telefono` (unique por app = identidad), `acceptedTcAt`, `lastLoginAt`. (email/dni/whatsapp = legacy).
+`appId`→App, `nombre`, **`email` (unique por app = IDENTIDAD)**, `telefono` (contacto, indexado NO único),
+`acceptedTcAt`, `lastLoginAt`. (dni/whatsapp/fechaNacimiento = legacy).
+
+> El teléfono **dejó de ser la identidad** (cazabug S1-01): era un dato público y adivinable, así que
+> alcanzaba con conocerlo para entrar a la cuenta de otro vecino. Hoy la identidad es el email, que es
+> lo único que el vecino puede probar (le llega un código). El teléfono queda como dato de contacto
+> para las campañas de WhatsApp del comercio, y **puede repetirse** (una familia comparte un celular).
 
 ### `Coupon` — el descuento · `coupons` · scoped `appId`
 `appId`→App, `merchantId`→Merchant, `titulo`, `descripcion`, `condiciones`, `porcentaje` (1-100),

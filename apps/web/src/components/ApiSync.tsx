@@ -76,9 +76,10 @@ export function ApiSync() {
               userActions.replace(apiUser)
             }
           } catch (err: any) {
-            // Token largo: un 401 es raro (token inválido). Lo tratamos como
-            // "volver a pedir el claim": limpiamos la sesión local y el próximo
-            // canje re-clama por teléfono (recupera la cuenta + el ahorro).
+            // Un 401 acá significa que la sesión murió (refresh revocado, por
+            // ejemplo desde "cerrar sesión en todos lados"). Limpiamos lo local:
+            // el próximo canje lo manda al alta, y como su email YA existe le
+            // van a pedir el código para recuperar la cuenta con todo su ahorro.
             if (err?.status === 401) {
               tokens.clear('user')
               userActions.signOut()
