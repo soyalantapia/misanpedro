@@ -5,6 +5,7 @@ import { getUserSnapshot, userActions } from '@/lib/stores'
 import { merchantAuth } from '@/lib/merchantStore'
 import type { User } from '@/lib/types'
 import { syncMyActivations } from '@/lib/syncActivations'
+import { useToast } from '@/components/Toast'
 
 /**
  * Componente invisible que se monta en el shell y sincroniza el estado local
@@ -23,6 +24,7 @@ import { syncMyActivations } from '@/lib/syncActivations'
  */
 export function ApiSync() {
   const navigate = useNavigate()
+  const toast = useToast()
 
   // Manejo GLOBAL de expiración de sesión del comercio. El cliente HTTP dispara
   // `msp:session-expired` cuando el refresh falla. Antes el listener vivía sólo en
@@ -43,6 +45,26 @@ export function ApiSync() {
     window.addEventListener('msp:session-expired', onMerchantExpired)
     return () => window.removeEventListener('msp:session-expired', onMerchantExpired)
   }, [navigate])
+
+  // La otra mitad del mismo evento: la del VECINO. Nunca se había implementado
+  // (el comentario de api.ts prometía las dos), así que cuando le revocaban la
+  // sesión se le borraban los tokens pero el store seguía con su `user` cargado.
+  // La app le seguía diciendo "hola, María" y al tocar Canjear tomaba el camino
+  // de demo. Ahora el store y los tokens se caen JUNTOS, y se lo avisamos con
+  // palabras, no con un código que el cajero no va a poder validar.
+  // [cazabug loop2 · P0]
+  useEffect(() => {
+    let handled = false
+    const onUserExpired = (e: Event) => {
+      const detail = (e as CustomEvent<{ subject?: string }>).detail
+      if (detail?.subject !== 'user' || handled) return
+      handled = true
+      userActions.signOut()
+      toast.info('Cerramos tu sesión', 'Volvé a entrar con tu email para seguir usando tus cupones.')
+    }
+    window.addEventListener('msp:session-expired', onUserExpired)
+    return () => window.removeEventListener('msp:session-expired', onUserExpired)
+  }, [toast])
 
   useEffect(() => {
     async function sync() {

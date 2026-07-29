@@ -15,6 +15,7 @@ import { CardImage } from '@/components/CardImage'
 import { useCoupon } from '@/lib/couponsStore'
 import { useMerchant } from '@/lib/merchantsStore'
 import { CATEGORIAS, type Categoria, type Coupon, type Merchant } from '@/lib/types'
+import { decidirActivacion } from '@/lib/activarDecision'
 import { activationActions, useActivationByCoupon, useUser } from '@/lib/stores'
 import { formatHorariosSemana, formatVigencia, formatMoney } from '@/lib/format'
 import { valorCupon, franjaTexto } from '@/lib/cuponValor'
@@ -106,9 +107,21 @@ export function CuponDetailPage() {
     }
 
     setSubmitting(true)
-    const userToken = tokens.get('user').access
-    const looksLikeMongoId = /^[0-9a-f]{24}$/i.test(coupon.id)
-    if (!userToken || !looksLikeMongoId) {
+    // Quién decide qué camino tomar: ver lib/activarDecision.ts. Lo importante es
+    // que "no hay token" NO significa "modo demo" — significa que la sesión se
+    // murió, y en ese caso hay que mandarlo a entrar, nunca fabricarle un código
+    // que el comercio no va a poder validar. [cazabug loop2]
+    const decision = decidirActivacion({
+      hayUser: true,
+      hayToken: Boolean(tokens.get('user').access),
+      couponId: coupon.id,
+    })
+    if (decision.tipo === 'pedir-datos') {
+      setSubmitting(false)
+      navigate(`/datos?next=${encodeURIComponent(`/cupon/${coupon.id}/activar`)}`)
+      return
+    }
+    if (decision.tipo === 'local') {
       const a = activationActions.activate(coupon.id)
       navigate(`/activacion/${a.id}`)
       return
