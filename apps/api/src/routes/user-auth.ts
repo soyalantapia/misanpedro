@@ -446,15 +446,31 @@ userAuthRoutes.get('/me/data-export', requireUserAuth, async (c) => {
 })
 
 userAuthRoutes.delete('/me', requireUserAuth, async (c) => {
-  const { Activation, RefreshToken, Redemption } = await import('@/models')
+  const { Activation, RefreshToken, Redemption, CustomerNote, PushSubscription } = await import(
+    '@/models'
+  )
   const appId = getAppId(c)
   const auth = c.get('auth')
   const user = await User.findOne({ _id: auth.sub, appId })
   if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
 
-  // Anonimizar redemptions del MISMO tenant (otros tenants no se tocan).
+  // Anonimizar redemptions del MISMO tenant (otros tenants no se tocan). El canje
+  // se anonimiza en vez de borrarse porque es el registro de VENTA del comercio:
+  // sin userId deja de ser un dato personal, pero él conserva su facturación.
   await Redemption.updateMany({ appId, userId: auth.sub }, { $unset: { userId: 1 } })
   await Activation.deleteMany({ appId, userId: auth.sub })
+
+  // Las notas privadas que el comercio escribió sobre él SÍ se borran. Es texto
+  // libre (hasta 1000 caracteres) que puede tener datos de salud o de consumo
+  // — "celíaca", "viene con los hijos" — y a diferencia del canje no se puede
+  // anonimizar sacándole el id: el texto sigue siendo sobre esa persona.
+  // Quedaban vivas después de que le dijéramos "eliminamos tus datos
+  // personales". [cazabug loop2]
+  await CustomerNote.deleteMany({ appId, userId: auth.sub })
+
+  // Y su suscripción push: si no, el celular sigue siendo notificable por una
+  // cuenta que ya no existe.
+  await PushSubscription.deleteMany({ appId, userId: auth.sub })
 
   // Por si existieran refresh tokens legacy de este vecino (el claim ya no emite).
   // `subjectType` explícito: hoy es inofensivo omitirlo (los ObjectId no
