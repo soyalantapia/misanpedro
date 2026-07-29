@@ -70,11 +70,32 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000).unref?.()
 
+/**
+ * IP real del cliente a partir del X-Forwarded-For.
+ *
+ * 🔴 Es la ÚLTIMA entrada, no la primera. El proxy de borde (Railway) APPENDEA la
+ * IP que él ve al final de lo que ya venía en el header, así que el principio de
+ * la cadena es texto que manda el cliente y puede inventar. Tomando el primero,
+ * un atacante rotaba `X-Forwarded-For: 1.2.3.N` y cada request caía en un bucket
+ * distinto: los 13 rate-limits de la plataforma quedaban anulados de una, incluidos
+ * los tres de OTP (bombardeo de códigos a la casilla de cualquier vecino, comercio
+ * u owner, y quema de la reputación del remitente SMTP). [cazabug loop2]
+ *
+ * Confiamos en UN proxy, así que la última entrada es la única no falsificable.
+ * Se lee de process.env para poder testearlo sin reimportar el módulo de env.
+ */
+export function realClientIp(xff: string | undefined): string {
+  const partes = (xff ?? '')
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
+  return partes.length > 0 ? partes[partes.length - 1] : 'unknown'
+}
+
 function clientKey(c: Context, prefix: string): string {
-  if (env.TRUST_PROXY) {
-    const xff = c.req.header('x-forwarded-for')
-    const ip = xff?.split(',')[0]?.trim() ?? 'unknown'
-    return `${prefix}:${ip}`
+  const trustProxy = process.env.TRUST_PROXY === 'true' || env.TRUST_PROXY
+  if (trustProxy) {
+    return `${prefix}:${realClientIp(c.req.header('x-forwarded-for'))}`
   }
   // En dev sin proxy, usar User-Agent (mejor que nada)
   const ua = c.req.header('user-agent') ?? 'noua'
@@ -116,6 +137,33 @@ export function rateLimit(opts: RateLimitOptions): MiddlewareHandler {
     buckets.set(key, { tokens: tokens - 1, updatedAt: now })
     await next()
   }
+}
+
+/**
+ * Freno por RECURSO en vez de por origen. Devuelve `true` si hay que cortar.
+ *
+ * El límite por IP protege al servidor, pero no a la víctima: quien tenga varias
+ * IPs (un botnet, o simplemente una red móvil) igual le llena la casilla de códigos
+ * a un vecino y nos quema la reputación del remitente SMTP. Este segundo candado
+ * se cierra sobre el email destino, que es el recurso que queremos proteger y que
+ * el atacante no puede rotar. [cazabug loop2]
+ *
+ * No es un middleware porque la clave (el email) recién se conoce después de
+ * parsear el body.
+ */
+export function tooManyForKey(key: string, max: number, windowMs: number): boolean {
+  const refillPerMs = max / windowMs
+  const bucketKey = `bykey:${key}`
+  const now = Date.now()
+  const existing = buckets.get(bucketKey)
+  let tokens = max
+  if (existing) {
+    const elapsed = now - existing.updatedAt
+    tokens = Math.min(max, existing.tokens + elapsed * refillPerMs)
+  }
+  if (tokens < 1) return true
+  buckets.set(bucketKey, { tokens: tokens - 1, updatedAt: now })
+  return false
 }
 
 /** Limpia los buckets — usado en tests o reset manual. */

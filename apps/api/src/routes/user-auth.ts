@@ -16,7 +16,7 @@ import {
   touchRefreshTokenUsage,
 } from '@/services/jwt.service'
 import { requireUserAuth } from '@/middleware/auth'
-import { rateLimit } from '@/middleware/security'
+import { rateLimit, tooManyForKey } from '@/middleware/security'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { sendOtpCode } from '@/services/email.service'
 import { otpDisclosureAllowed } from '@/lib/envSafety'
@@ -90,7 +90,15 @@ async function issueUserOtp(
   c: any,
   appId: unknown,
   email: string,
-): Promise<{ code: string; sent: boolean }> {
+): Promise<{ code: string; sent: boolean; limited?: boolean }> {
+  // Segundo candado, por CASILLA. El límite por IP protege al servidor pero no a
+  // la víctima: con varias IPs se le llena el mail de códigos que nunca pidió y se
+  // nos quema la reputación del remitente. El email no se puede rotar. Va acá
+  // adentro para cubrir los dos caminos que mandan código (la recuperación desde
+  // /claim y /request-otp) sin depender de que cada uno se acuerde. [cazabug loop2]
+  if (tooManyForKey(`otp-user:${email}`, 5, 60 * 60_000)) {
+    return { code: '', sent: false, limited: true }
+  }
   await Otp.deleteMany({ appId, email, purpose: 'user' })
   const code = generateOtp()
   await Otp.create({
@@ -142,7 +150,14 @@ async function issueUserOtp(
 async function issueRecoveryCode(c: any, appId: unknown, email: string): Promise<Response> {
   let branchResponse!: Response
   const limited = await otpRequestLimiter(c, async () => {
-    const { code, sent } = await issueUserOtp(c, appId, email)
+    const { code, sent, limited: porCasilla } = await issueUserOtp(c, appId, email)
+    if (porCasilla) {
+      branchResponse = c.json(
+        { ok: false, error: 'Ya pedimos varios códigos para ese email. Esperá un rato.' },
+        429,
+      )
+      return
+    }
     branchResponse = sent
       ? c.json({
           ok: true,
@@ -222,7 +237,13 @@ userAuthRoutes.post('/request-otp', otpRequestLimiter, async (c) => {
   const user = await User.findOne({ appId, email })
   if (!user) return c.json({ ok: true, registered: false })
 
-  const { code, sent } = await issueUserOtp(c, appId, email)
+  const { code, sent, limited } = await issueUserOtp(c, appId, email)
+  if (limited) {
+    return c.json(
+      { ok: false, error: 'Ya pedimos varios códigos para ese email. Esperá un rato.' },
+      429,
+    )
+  }
   if (!sent) {
     return c.json(
       { ok: false, error: 'No pudimos enviar el código. Probá de nuevo en unos minutos.' },
