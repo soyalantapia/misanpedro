@@ -25,8 +25,14 @@ function ownerAuth() {
   return 'Bearer ' + signAccessToken({ sub: ownerId.toString(), type: 'owner', rol: 'super' })
 }
 
-// Token de owner con un rol arbitrario (para probar el gate de la matriz).
-function roleAuth(rol: string) {
+// Pone al owner en ese rol EN LA BASE y devuelve su token.
+//
+// Desde [cazabug loop2] el rol lo manda la base, no el token: requireOwnerAuth
+// revalida en cada request. Firmar un token que diga 'viewer' ya no alcanza para
+// probar el gate — si en la base sigue siendo super, es super (y está bien: es
+// justo lo que evita que un degradado siga operando con el token viejo).
+async function roleAuth(rol: string) {
+  await Owner.updateOne({ _id: ownerId }, { rol, enabled: true })
   return 'Bearer ' + signAccessToken({ sub: ownerId.toString(), type: 'owner', rol })
 }
 
@@ -76,6 +82,9 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await Promise.all([Merchant.deleteMany({}), MerchantUser.deleteMany({}), SupportCode.deleteMany({})])
+  // El owner vuelve a super+habilitado: ahora el rol vive en la BASE, así que un
+  // test que lo degrada se lo dejaba puesto al siguiente.
+  await Owner.updateOne({ _id: ownerId }, { rol: 'super', enabled: true })
   seq++
   merchant = await Merchant.create({
     appId,
@@ -165,19 +174,17 @@ describe('modo soporte — owner impersona al comercio (integración Mongo real)
   // [cazabug S2-01/S3-01/S4-02 · P0] Impersonar es ESCRITURA sobre comercios:
   // solo super/admin/soporte. viewer/finanzas (read-only) NO pueden.
   it('viewer NO puede generar sesión de soporte (403) — antes del fix daba 200', async () => {
-    const s = await startSupport(merchant._id.toString(), roleAuth('viewer'))
+    const s = await startSupport(merchant._id.toString(), await roleAuth('viewer'))
     expect(s.status).toBe(403)
     expect(s.body.error).toBe('forbidden')
   })
 
   it('finanzas NO puede generar sesión de soporte (403)', async () => {
-    expect((await startSupport(merchant._id.toString(), roleAuth('finanzas'))).status).toBe(403)
+    expect((await startSupport(merchant._id.toString(), await roleAuth('finanzas'))).status).toBe(403)
   })
 
   it('soporte SÍ puede generar sesión de soporte (200)', async () => {
-    // El rol 'soporte' del owner-doc debe existir y estar habilitado para pasar el gate `enabled`.
-    await Owner.updateOne({ _id: ownerId }, { rol: 'soporte' })
-    const s = await startSupport(merchant._id.toString(), roleAuth('soporte'))
+    const s = await startSupport(merchant._id.toString(), await roleAuth('soporte'))
     expect(s.status).toBe(200)
     await Owner.updateOne({ _id: ownerId }, { rol: 'super' }) // restaurar
   })
@@ -185,7 +192,7 @@ describe('modo soporte — owner impersona al comercio (integración Mongo real)
   it('viewer NO puede revocar sesiones de soporte (403)', async () => {
     const res = await ownerApp.request(`/owner/merchants/${merchant._id}/revoke-support`, {
       method: 'POST',
-      headers: { authorization: roleAuth('viewer') },
+      headers: { authorization: await roleAuth('viewer') },
     })
     expect(res.status).toBe(403)
   })

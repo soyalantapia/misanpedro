@@ -901,10 +901,10 @@ ownerRoutes.post(
   // El owner debe seguir HABILITADO: el access token vive 1h, así que si lo
   // desactivaron del equipo no puede seguir generando sesiones de soporte (alto
   // poder). Mismo gate que /owner/auth/refresh.
-  const ownerDoc = await Owner.findById(auth.sub).select('email enabled').lean()
-  if (!ownerDoc || !ownerDoc.enabled) {
-    return c.json({ ok: false, error: 'owner deshabilitado' }, 403)
-  }
+  // Sólo necesitamos el email para dejarlo en el rastro de auditoría: que siga
+  // habilitado ya lo garantiza requireOwnerAuth, que revalida contra la base en
+  // cada request. [cazabug loop2]
+  const ownerDoc = await Owner.findById(auth.sub).select('email').lean()
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
 
@@ -954,12 +954,6 @@ ownerRoutes.post(
   requireOwnerRole('super', 'admin', 'soporte'),
   async (c) => {
   const auth = c.get('auth')
-  // Mismo gate que support-session: un owner deshabilitado del equipo no puede
-  // seguir operando el surface de soporte durante la ventana del access (≤1h).
-  const ownerDoc = await Owner.findById(auth.sub).select('enabled').lean()
-  if (!ownerDoc || !ownerDoc.enabled) {
-    return c.json({ ok: false, error: 'owner deshabilitado' }, 403)
-  }
   const id = c.req.param('id')
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
   const merchant = await Merchant.findById(id)

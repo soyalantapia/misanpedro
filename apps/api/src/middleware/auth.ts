@@ -1,6 +1,6 @@
 import type { Context, MiddlewareHandler } from 'hono'
 import { verifyAccessToken, type AccessPayload } from '@/services/jwt.service'
-import { Merchant } from '@/models'
+import { Merchant, Owner } from '@/models'
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -66,30 +66,54 @@ export const requireUserAuth: MiddlewareHandler = async (c, next) => {
 
 /**
  * Auth para super-admin del SaaS. Cross-tenant (NO requiere tenantContext).
- * El token se emite cuando el owner pasa email + password + código TOTP.
+ *
+ * Revalida contra la BASE en cada request: que siga habilitado, y con qué rol.
+ * No alcanza con los claims del token. [cazabug loop2 · P0]
+ *
+ * Antes la autorización se resolvía 100% con el JWT y el access vive 1h, así que
+ * echar a alguien del equipo NO le cortaba el acceso: durante esa hora seguía
+ * creando ciudades, suspendiendo comercios y —lo grave— invitándose a sí mismo
+ * con otro email y rol super, quedándose con una cuenta nueva y limpia. Revocar
+ * el refresh no ayuda: no invalida un access ya emitido.
+ *
+ * En el barrido anterior esto se parchó SÓLO en support-session, por considerarlo
+ * "el de alto poder". Crear un super es estrictamente más peligroso que impersonar
+ * un comercio: el criterio no podía aplicarse endpoint por endpoint. Va acá, en la
+ * superficie entera.
+ *
+ * Costo: una query indexada por request en un panel de baja concurrencia.
  */
 export const requireOwnerAuth: MiddlewareHandler = async (c, next) => {
   const token = readToken(c)
   if (!token) return c.json({ ok: false, error: 'unauthorized' }, 401)
+  let payload
   try {
-    const payload = verifyAccessToken(token)
-    if (payload.type !== 'owner') {
-      return c.json({ ok: false, error: 'forbidden' }, 403)
-    }
-    c.set('auth', payload)
+    payload = verifyAccessToken(token)
   } catch {
     return c.json({ ok: false, error: 'invalid token' }, 401)
   }
+  if (payload.type !== 'owner') {
+    return c.json({ ok: false, error: 'forbidden' }, 403)
+  }
+
+  const owner = await Owner.findById(payload.sub).select('enabled rol').lean()
+  if (!owner || !owner.enabled) {
+    return c.json({ ok: false, error: 'forbidden' }, 403)
+  }
+
+  // El rol lo manda la BASE, no el token: si lo degradaron hace un minuto, el
+  // token todavía dice el rol viejo y no queremos creerle.
+  c.set('auth', { ...payload, rol: owner.rol })
   await next()
 }
 
 /**
- * RBAC del owner: exige que el rol del token esté en `roles`. Asume que
- * `requireOwnerAuth` corrió antes (lee c.get('auth').rol). El BACK es la fuente
- * de verdad de los permisos — el front sólo oculta lo que no se puede.
+ * RBAC del owner: exige que el rol esté en `roles`. Asume que `requireOwnerAuth`
+ * corrió antes, que es quien deja en `c.get('auth').rol` el rol LEÍDO DE LA BASE
+ * (no el del token). El BACK es la fuente de verdad de los permisos — el front
+ * sólo oculta lo que no se puede.
  * Roles: super | admin | finanzas | soporte | viewer (ver la matriz en
- * routes/owner.ts). El access token vive ≤1h y el refresh re-lee el rol de DB,
- * así que un cambio de rol propaga en ≤1h sin pegarle a la DB en cada request.
+ * routes/owner.ts). Un cambio de rol o una baja del equipo cortan en el acto.
  */
 export const requireOwnerRole =
   (...roles: string[]): MiddlewareHandler =>
