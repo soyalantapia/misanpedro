@@ -8,7 +8,14 @@ import { Schema, model, Types, type InferSchemaType } from 'mongoose'
  */
 const ownerAuditLogSchema = new Schema(
   {
-    ownerId: { type: Types.ObjectId, ref: 'Owner', required: true, index: true },
+    /**
+     * Qué admin la hizo. VACÍO cuando la acción la hizo el SISTEMA y no una
+     * persona — por ejemplo el sweep que suspende comercios con la suscripción
+     * vencida. Esas acciones también tienen que quedar registradas: antes el
+     * owner veía "Reactivó comercio" y después nada, y no encontraba quién lo
+     * había suspendido porque no había sido nadie. [cazabug loop2]
+     */
+    ownerId: { type: Types.ObjectId, ref: 'Owner', index: true },
     ownerEmail: { type: String }, // desnormalizado (sobrevive si el owner se borra)
     action: { type: String, required: true, index: true }, // 'app.create', 'merchant.suspend', 'admin.invite', 'auth.login', …
     recurso: { type: String }, // 'app' | 'merchant' | 'subscription' | 'admin' | 'auth'

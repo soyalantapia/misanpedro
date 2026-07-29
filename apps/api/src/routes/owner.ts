@@ -868,7 +868,14 @@ ownerRoutes.patch('/merchants/:id', requireOwnerAuth, requireOwnerRole('super', 
   if (!Types.ObjectId.isValid(id)) return c.json({ ok: false, error: 'not found' }, 404)
   const parsed = merchantActionSchema.safeParse(await c.req.json().catch(() => ({})))
   if (!parsed.success) return c.json({ ok: false, error: 'invalid input' }, 400)
-  const merchant = await Merchant.findByIdAndUpdate(id, { estado: parsed.data.estado }, { new: true })
+  // Marcamos que esto lo decidió una PERSONA: el reconciliador automático de
+  // suscripciones vencidas no vuelve a pisarlo. Antes, reactivar un comercio se
+  // deshacía solo a los 10 minutos y el owner ni se enteraba. [cazabug loop2]
+  const merchant = await Merchant.findByIdAndUpdate(
+    id,
+    { estado: parsed.data.estado, estadoManualAt: new Date(), estadoManualPor: auth.sub },
+    { new: true },
+  )
   if (!merchant) return c.json({ ok: false, error: 'not found' }, 404)
   await logOwnerAction(
     auth.sub,

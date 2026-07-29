@@ -16,6 +16,11 @@ const ACTION_META: Record<string, { label: string; color: string }> = {
   'app.update': { label: 'Editó ciudad', color: 'bg-accent-50 text-accent-700' },
   'merchant.suspend': { label: 'Suspendió comercio', color: 'bg-warning-bg text-warning' },
   'merchant.reactivate': { label: 'Reactivó comercio', color: 'bg-success-bg/60 text-success' },
+  // La hace el sweep, no una persona: el admin aparece como "sistema".
+  'system.merchant.suspend': {
+    label: 'Suspendido por falta de pago',
+    color: 'bg-warning-bg text-warning',
+  },
   'admin.invite': { label: 'Invitó admin', color: 'bg-accent-50 text-accent-700' },
   'admin.role-change': { label: 'Cambió rol', color: 'bg-accent-50 text-accent-700' },
   'admin.disable': { label: 'Deshabilitó admin', color: 'bg-danger-bg text-danger' },

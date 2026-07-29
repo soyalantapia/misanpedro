@@ -101,6 +101,19 @@ const merchantSchema = new Schema(
       enum: ['pending_payment', 'activo', 'suspendido', 'cancelado'],
       default: 'activo',
     },
+    /**
+     * Cuándo un HUMANO (el owner) fijó el estado a mano. Mientras esté seteado,
+     * el reconciliador automático de suscripciones no lo toca.
+     *
+     * Existe porque el estado tiene dos escritores: el owner desde el panel y el
+     * sweep de expiración. Sin distinguirlos, el owner reactivaba un comercio
+     * —porque pagó por transferencia, por ejemplo— y diez minutos después el
+     * sweep lo volvía a suspender en silencio. Cuando una persona decide, la
+     * automatización no la pisa. [cazabug loop2]
+     */
+    estadoManualAt: { type: Date },
+    /** Qué owner lo decidió (para poder preguntarle). */
+    estadoManualPor: { type: Types.ObjectId, ref: 'Owner' },
     // ─── Datos fiscales (para facturar la suscripción) ──────────────────
     razonSocial: { type: String },
     cuit: { type: String, index: true },

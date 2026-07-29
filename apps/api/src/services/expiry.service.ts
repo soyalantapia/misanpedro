@@ -15,7 +15,7 @@
  * Idempotente. Si la DB se cae el job loguea y sigue.
  */
 
-import { Coupon, Merchant, Subscription } from '@/models'
+import { Coupon, Merchant, Subscription, OwnerAuditLog } from '@/models'
 
 const TICK_MS = 10 * 60 * 1000
 
@@ -53,15 +53,45 @@ export async function runExpirySweep(): Promise<{ couponsExpired: number; mercha
       .lean()
     if (lapsed.length > 0) {
       const ids = lapsed.map((s) => s.merchantId)
-      const res = await Merchant.updateMany(
-        {
-          _id: { $in: ids },
-          estado: 'activo',
-          $or: [{ freeTrialUntil: { $exists: false } }, { freeTrialUntil: null }, { freeTrialUntil: { $lt: now } }],
-        },
-        { estado: 'suspendido' },
-      )
+      const filtro = {
+        _id: { $in: ids },
+        estado: 'activo',
+        $and: [
+          {
+            $or: [
+              { freeTrialUntil: { $exists: false } },
+              { freeTrialUntil: null },
+              { freeTrialUntil: { $lt: now } },
+            ],
+          },
+          // Si un HUMANO fijó el estado a mano, no lo pisamos. El owner reactiva
+          // un comercio (pagó por transferencia, hubo un error, lo que sea) y diez
+          // minutos después esto lo volvía a suspender en silencio: el comercio
+          // llamaba de nuevo y el panel seguía mostrando "Activo". Cuando una
+          // persona decide, la automatización se corre. [cazabug loop2]
+          { $or: [{ estadoManualAt: { $exists: false } }, { estadoManualAt: null }] },
+        ],
+      }
+
+      // Los buscamos ANTES de bajarlos para poder dejar rastro de cada uno: la
+      // Auditoría mostraba "Reactivó comercio" y después nada, así que el owner
+      // no encontraba quién lo había suspendido — porque no había sido nadie.
+      const aSuspender = await Merchant.find(filtro).select('nombre').lean()
+      const res = await Merchant.updateMany(filtro, { estado: 'suspendido' })
       merchantsSuspended = res.modifiedCount ?? 0
+
+      if (aSuspender.length > 0) {
+        await OwnerAuditLog.insertMany(
+          aSuspender.map((m: any) => ({
+            action: 'system.merchant.suspend',
+            recurso: 'merchant',
+            recursoId: String(m._id),
+            ownerEmail: 'sistema',
+            detail: `${m.nombre} — suscripción vencida (automático)`,
+            at: new Date(),
+          })),
+        ).catch((err) => console.error('[expiry] no pude auditar la suspensión:', err))
+      }
     }
   } catch (err) {
     console.error('[expiry] reconciliación de suscripciones falló:', err)
