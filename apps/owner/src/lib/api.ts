@@ -77,7 +77,41 @@ export async function api<T = unknown>(path: string, opts: ApiOpts = {}): Promis
   }
 }
 
-async function tryRefresh(): Promise<boolean> {
+/**
+ * Candado de refresh en vuelo.
+ *
+ * Sin esto, el panel se deslogueaba solo ~1h después de cada login: el Dashboard
+ * hace `Promise.all([metrics(), listApps()])`, al vencer el access las DOS dan
+ * 401 y las DOS refrescan con el MISMO token. La primera rota bien; la segunda
+ * llega con un token ya revocado y el backend —correctamente— lo lee como robo
+ * y revoca TODA la familia, incluido el token nuevo recién emitido.
+ *
+ * Es el mismo arreglo que ya vivía en el cliente de la PWA
+ * (`refreshInFlight` en apps/web/src/lib/api.ts) y que nunca se había portado
+ * acá. [cazabug loop2]
+ */
+let refreshInFlight: Promise<boolean> | null = null
+
+/** Sólo para tests: limpia el candado entre casos. */
+export function _resetRefreshInFlight() {
+  refreshInFlight = null
+}
+/** Sólo para tests: expone el refresh deduplicado. */
+export function _tryRefreshParaTests() {
+  return tryRefresh()
+}
+
+function tryRefresh(): Promise<boolean> {
+  if (refreshInFlight) return refreshInFlight
+  refreshInFlight = hacerRefresh().finally(() => {
+    // Se suelta apenas termina (con éxito o no) para no bloquear refreshes
+    // legítimos posteriores.
+    refreshInFlight = null
+  })
+  return refreshInFlight
+}
+
+async function hacerRefresh(): Promise<boolean> {
   const auth = getAuthSnapshot()
   if (!auth.refresh) return false
   try {
