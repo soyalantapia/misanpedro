@@ -28,16 +28,23 @@ const requireSuperAdmin: MiddlewareHandler = async (c, next) => {
 
 // Métricas globales — dashboard del dueño
 adminRoutes.get('/metrics', requireSuperAdmin, async (c) => {
-  const [merchants, activeMerchants, users, redemptions, activeSubs] = await Promise.all([
+  const [merchants, activeMerchants, users, redemptions, activeSubs, mrrAggregate] = await Promise.all([
     Merchant.countDocuments(),
     Merchant.countDocuments({ estado: 'activo' }),
     User.countDocuments(),
     Redemption.countDocuments(),
     Subscription.countDocuments({ status: 'authorized' }),
+    // MRR = suma de lo que CADA suscripción cobra realmente. Antes era
+    // `activos × PLAN_AMOUNT_ARS`, o sea que le aplicaba el default global a
+    // todas las ciudades: con San Pedro a 30.000 el panel reportaba 50.000 por
+    // comercio, un 67% de más. `amountARS` es el monto que se le mandó a MP.
+    Subscription.aggregate([
+      { $match: { status: 'authorized' } },
+      { $group: { _id: null, total: { $sum: '$amountARS' } } },
+    ]),
   ])
 
-  // MRR estimado (todos los activos pagando el plan estándar)
-  const mrrARS = activeSubs * Number(env.PLAN_AMOUNT_ARS ?? 50_000)
+  const mrrARS = mrrAggregate[0]?.total ?? 0
 
   // Total ahorro generado a los vecinos
   const ahorroAggregate = await Redemption.aggregate([

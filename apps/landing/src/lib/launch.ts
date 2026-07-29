@@ -14,7 +14,21 @@
 /** Cupos del programa de lanzamiento: gratis hasta los primeros N comercios. */
 export const TOTAL_CUPOS = 50
 
-/** Precio mensual FALLBACK (si el tenant no trae precioMensual). El real sale del
- *  tenant (priceLabel lo formatea con la moneda de la ciudad). */
+/**
+ * Precio de la landing PARAGUAS (micuidad.com sin ciudad) — NO es el precio de
+ * ninguna ciudad concreta.
+ *
+ * Cada ciudad tiene el suyo y el backend ya lo resuelve: `GET /tenant/:slug/config`
+ * devuelve `precioMensual` SIEMPRE con un número, calculado con la misma función
+ * que usa el cobro (api `lib/precioPlan.ts`). Así que en cualquier ciudad real
+ * este valor no se usa; sólo aparece cuando no hay ciudad que resolver.
+ *
+ * Antes era un fallback de verdad: si la ciudad no tenía `precioMensual` cargado
+ * —y es un campo OPCIONAL en la API— la landing prometía estos 30.000 y el débito
+ * salía por el default del backend, 50.000. El comercio leía un precio y le
+ * cobraban otro.
+ *
+ * ⚠️ Si tocás este número, no hay nada que lo sincronice con el backend. No lo
+ * uses como "el precio del producto": el precio del producto vive en el tenant.
+ */
 export const PRECIO_MENSUAL = 30000
-export const PRECIO_MENSUAL_LABEL = '$30.000'

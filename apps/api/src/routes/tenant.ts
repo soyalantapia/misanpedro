@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Types } from 'mongoose'
 import { App, Coupon, Merchant } from '@/models'
 import { toAsciiLabel } from '@/middleware/tenant'
+import { precioPlanEfectivo } from '@/lib/precioPlan'
 
 /**
  * Comercios que cuentan para el contador de lanzamiento de la landing.
@@ -82,7 +83,11 @@ tenantRoutes.get('/:slug/config', async (c) => {
       moneda: app.moneda ?? 'ARS',
       locale: app.locale ?? 'es-AR',
       phonePrefix: app.phonePrefix,
-      precioMensual: app.precioMensual,
+      // Precio EFECTIVO, resuelto con la misma función que usa el cobro. Antes
+      // viajaba crudo (undefined si la ciudad no lo tenía cargado) y cada
+      // consumidor se inventaba su propio fallback: la landing prometía 30.000
+      // mientras el débito salía 50.000. Ver lib/precioPlan.ts.
+      precioMensual: precioPlanEfectivo(app),
       subdomain: app.subdomain,
       customDomain: app.customDomain,
       brand: app.brand,

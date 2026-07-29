@@ -31,6 +31,7 @@ import { initSentry, captureException, flushSentry } from '@/services/sentry.ser
 import { httpsRedirect, requestId, securityHeaders } from '@/middleware/security'
 import { findTenantByKey, findTenantByCustomDomain, toAsciiLabel } from '@/middleware/tenant'
 import { auditImpersonation } from '@/middleware/auditImpersonation'
+import { precioPlanEfectivo } from '@/lib/precioPlan'
 
 const app = new Hono()
 
@@ -240,9 +241,14 @@ if (isProd) {
           .replaceAll('es-AR', esc(t.locale))
           .replaceAll('es_AR', esc(String(t.locale).replace('-', '_')))
       }
-      // Precio/moneda del JSON-LD Offer — antes anunciaba 50000 ARS a TODA ciudad
-      // (Google lo ingiere para rich results). Solo están en el JSON-LD del comercio.
-      if (t.precioMensual) out = out.replaceAll('"50000"', `"${esc(t.precioMensual)}"`)
+      // Precio/moneda del JSON-LD Offer — Google lo ingiere para rich results.
+      // Se reemplaza por PATRÓN (`"price": "<numero>"`), no por el literal del
+      // monto: la versión anterior buscaba '"50000"' y quedó muerta el día que
+      // alguien editó el index.html estático a 30000, así que TODA ciudad volvió
+      // a publicar el mismo precio —el de San Pedro— en su moneda local. El
+      // patrón no se puede desincronizar con el valor que haya en el HTML.
+      const precio = precioPlanEfectivo(t)
+      out = out.replace(/("price":\s*)"[0-9.]+"/g, `$1"${esc(precio)}"`)
       if (t.moneda) out = out.replaceAll('"ARS"', `"${esc(t.moneda)}"`)
       // Color de marca: theme-color + un <style> que setea --color-brand en el HTML
       // servido, para que el PRIMER paint ya use el color de la ciudad (sin el FOUC

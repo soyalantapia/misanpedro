@@ -1385,7 +1385,19 @@ function SubscriptionCard({
       </p>
 
       <div className="mt-2 flex flex-col gap-1 text-sm">
-        <Row label="Plan" value={`Estándar · ${formatMoney(tenant.config?.precioMensual ?? 50000)} / mes`} />
+        {/* El precio SIEMPRE sale del tenant: el backend lo resuelve con la misma
+            función que usa el cobro (api lib/precioPlan.ts). Antes había un
+            `?? 50000` hardcodeado acá que contradecía el 30.000 de la landing si
+            la config todavía no había cargado. Un número inventado en la pantalla
+            del plan es peor que no mostrarlo: el comercio lo lee como su precio. */}
+        <Row
+          label="Plan"
+          value={
+            tenant.config?.precioMensual
+              ? `Estándar · ${formatMoney(tenant.config.precioMensual)} / mes`
+              : 'Estándar'
+          }
+        />
         <Row
           label="Estado"
           value={

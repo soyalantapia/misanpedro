@@ -9,10 +9,9 @@ import { createPreapproval, getPreapproval, cancelPreapproval } from '@/services
 import { sendSubscriptionReceipt } from '@/services/email.service'
 import { verifyMpSignature, mapMpStatus } from '@/services/mp-signature'
 import { tenantFrontUrl } from '@/lib/urls'
+import { precioPlanEfectivo } from '@/lib/precioPlan'
 
 export const billingRoutes = new Hono()
-
-const PLAN_AMOUNT_ARS = Number(env.PLAN_AMOUNT_ARS ?? 50_000)
 
 /**
  * B1: precio FINAL al comercio. Primera etapa = monotributo personal del
@@ -161,8 +160,9 @@ billingRoutes.post('/preapproval', requireMerchantAuth, async (c) => {
 
   // El tenant slug en el externalReference ayuda al webhook a debug.
   const tenant = c.get('tenant')
-  // Precio por ciudad (en la moneda del tenant). 0 no es válido → fallback.
-  const amount = (tenant.precioMensual && tenant.precioMensual > 0) ? tenant.precioMensual : PLAN_AMOUNT_ARS
+  // Precio por ciudad (en la moneda del tenant). Misma función que usa el
+  // endpoint público, para que lo que se anuncia sea lo que se debita.
+  const amount = precioPlanEfectivo(tenant)
   const externalReference = `cup-${tenant.slug}-${merchant._id.toString()}-${randomBytes(6).toString('hex')}`
   const sub = await Subscription.create({
     appId,
