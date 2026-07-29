@@ -145,6 +145,25 @@ const preapprovalCreateSchema = z.object({
   plan: z.enum(['standard']).default('standard'),
 })
 
+/**
+ * La request que perdió la carrera espera a que la ganadora termine de hablar
+ * con Mercado Pago y le pide prestado su link. Sin esta espera devolvería una
+ * suscripción sin `initPoint` y el comercio se quedaba mirando un botón que no
+ * lo lleva a ningún lado.
+ */
+async function esperarSuscripcionViva(appId: unknown, merchantId: unknown) {
+  for (let intento = 0; intento < 20; intento++) {
+    const viva = await Subscription.findOne({
+      appId,
+      merchantId,
+      status: { $in: ['pending', 'authorized'] },
+    }).sort({ createdAt: -1 })
+    if (viva && (viva.status === 'authorized' || viva.initPoint)) return viva
+    await new Promise((r) => setTimeout(r, 150))
+  }
+  return null
+}
+
 billingRoutes.post('/preapproval', requireMerchantAuth, async (c) => {
   const appId = getAppId(c)
   const auth = c.get('auth')
@@ -158,21 +177,70 @@ billingRoutes.post('/preapproval', requireMerchantAuth, async (c) => {
   const user = await MerchantUser.findOne({ _id: auth.sub, appId })
   if (!user) return c.json({ ok: false, error: 'user not found' }, 404)
 
+  // Idempotencia: si el comercio ya tiene una suscripción VIVA, se le devuelve
+  // esa. Antes cada llamada acuñaba un preapproval nuevo en Mercado Pago, así
+  // que abandonar el checkout y reintentar dejaba links de pago vivos apilados;
+  // completando dos, el comercio terminaba con dos débitos mensuales. Ver el
+  // índice parcial único en models/Subscription.ts. [cazabug loop2]
+  const viva = await Subscription.findOne({
+    appId,
+    merchantId: merchant._id,
+    status: { $in: ['pending', 'authorized'] },
+  }).sort({ createdAt: -1 })
+
+  // Autorizada: ya está pagando, no hay a dónde mandarlo.
+  // Pendiente con link: es el MISMO checkout que dejó a medias, lo retoma.
+  // Pendiente SIN link (un intento anterior murió antes de que MP contestara):
+  // no sirve para nada, se descarta y se acuña uno nuevo abajo.
+  if (viva && (viva.status === 'authorized' || viva.initPoint)) {
+    return c.json({
+      ok: true,
+      subscription: {
+        id: viva._id.toString(),
+        externalReference: viva.externalReference,
+        preapprovalId: viva.preapprovalId,
+        initPoint: viva.initPoint,
+        status: viva.status,
+      },
+    })
+  }
+  if (viva) await Subscription.deleteOne({ _id: viva._id, status: 'pending', initPoint: null })
+
   // El tenant slug en el externalReference ayuda al webhook a debug.
   const tenant = c.get('tenant')
   // Precio por ciudad (en la moneda del tenant). Misma función que usa el
   // endpoint público, para que lo que se anuncia sea lo que se debita.
   const amount = precioPlanEfectivo(tenant)
   const externalReference = `cup-${tenant.slug}-${merchant._id.toString()}-${randomBytes(6).toString('hex')}`
-  const sub = await Subscription.create({
-    appId,
-    merchantId: merchant._id,
-    externalReference,
-    plan: parsed.data.plan,
-    amountARS: amount,
-    currency: tenant.moneda ?? 'ARS',
-    status: 'pending',
-  })
+  let sub
+  try {
+    sub = await Subscription.create({
+      appId,
+      merchantId: merchant._id,
+      externalReference,
+      plan: parsed.data.plan,
+      amountARS: amount,
+      currency: tenant.moneda ?? 'ARS',
+      status: 'pending',
+    })
+  } catch (err) {
+    // Dos pestañas apretaron "Activar pago" al mismo tiempo y las dos pasaron el
+    // chequeo de arriba. El índice único deja entrar sólo a una; la que perdió
+    // espera el link de la que ganó en vez de acuñar un segundo preapproval.
+    if ((err as { code?: number })?.code !== 11000) throw err
+    const ganadora = await esperarSuscripcionViva(appId, merchant._id)
+    if (!ganadora) return c.json({ ok: false, error: 'no se pudo crear suscripción' }, 502)
+    return c.json({
+      ok: true,
+      subscription: {
+        id: ganadora._id.toString(),
+        externalReference: ganadora.externalReference,
+        preapprovalId: ganadora.preapprovalId,
+        initPoint: ganadora.initPoint,
+        status: ganadora.status,
+      },
+    })
+  }
 
   const preapproval = await createPreapproval({
     reason: `${tenant.nombre} · ${merchant.nombre}`,
@@ -238,6 +306,17 @@ billingRoutes.post('/cancel', requireMerchantAuth, async (c) => {
   })
   if (!sub) return c.json({ ok: false, error: 'no hay suscripción activa' }, 404)
 
+  // Cancelar significa dejar de pagar, no "dejar de pagar la última". Si el
+  // comercio arrastra suscripciones vivas de antes de que el endpoint fuera
+  // idempotente, cancelar sólo la más nueva lo dejaba pagando por las viejas sin
+  // forma de verlas (el panel también muestra sólo la última). [cazabug loop2]
+  const otrasVivas = await Subscription.find({
+    appId,
+    merchantId: auth.merchantId,
+    _id: { $ne: sub._id },
+    status: { $in: ['pending', 'authorized'] },
+  })
+
   const merchant = await Merchant.findOne({ _id: auth.merchantId, appId })
   if (!merchant) return c.json({ ok: false, error: 'merchant not found' }, 404)
 
@@ -265,6 +344,24 @@ billingRoutes.post('/cancel', requireMerchantAuth, async (c) => {
         503,
       )
     }
+  }
+
+  // Las arrastradas se cancelan también, y con el mismo criterio: si MP no puede
+  // cancelar una, no le decimos al comercio que quedó todo cancelado.
+  for (const otra of otrasVivas) {
+    if (otra.preapprovalId && !(await cancelPreapproval(otra.preapprovalId))) {
+      return c.json(
+        {
+          ok: false,
+          error:
+            'No pudimos cancelar todos tus cobros en Mercado Pago. No te cancelamos la suscripción para no dejarte pagando sin saberlo: probá de nuevo en unos minutos o escribinos.',
+        },
+        503,
+      )
+    }
+    otra.status = 'cancelled'
+    otra.rawLast = { cancelledAt: ahora.toISOString(), arrepentimiento: dentroDe10Dias }
+    await otra.save()
   }
 
   sub.status = 'cancelled'

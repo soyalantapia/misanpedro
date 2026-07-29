@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 import { env } from '@/env'
-import { App, User, Owner, PushSubscription } from '@/models'
+import { App, User, Owner, PushSubscription, Subscription } from '@/models'
 import { captureException } from '@/services/sentry.service'
 
 let connectingPromise: Promise<typeof mongoose> | null = null
@@ -84,6 +84,26 @@ export async function connectDB(): Promise<typeof mongoose> {
         if (dropped.length) console.log('[db] PushSubscription indexes reconciliados, dropeados:', dropped)
       } catch (err) {
         console.error('[db] PushSubscription.syncIndexes (no fatal):', (err as Error)?.message)
+      }
+      // Unicidad de suscripción viva por comercio: {appId,merchantId} filtrado a
+      // status pending|authorized. Es la red que impide dos preapprovals vivos en
+      // Mercado Pago —o sea, dos débitos mensuales— cuando dos requests corren la
+      // carrera. El guard principal está en la ruta; este índice cubre el empate.
+      //
+      // 🔴 Si en la base YA hay un comercio con dos suscripciones vivas, la
+      // creación falla y el API arranca SIN la garantía: el handler de carrera
+      // (err.code === 11000) nunca dispara. Por eso va a Sentry — un error que
+      // sólo queda en los logs de Railway no lo mira nadie. Se resuelve dejando
+      // una sola viva por comercio y redeployando.
+      try {
+        await Subscription.syncIndexes()
+      } catch (err) {
+        console.error('[db] Subscription.syncIndexes (no fatal):', (err as Error)?.message)
+        captureException(err, {
+          phase: 'boot',
+          index: 'Subscription.syncIndexes',
+          impacto: 'un comercio puede terminar con DOS suscripciones vivas = doble débito',
+        })
       }
       // Bootstrap one-time del Owner (super-admin). Corre DENTRO de Railway, donde
       // el Mongo interno sí resuelve (no se puede crear desde local). Idempotente.

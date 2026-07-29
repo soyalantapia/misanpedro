@@ -60,5 +60,11 @@ describe('connectDB — User.syncIndexes() fallando no puede quedar silencioso',
 
     // No fatal: connectDB() tiene que resolver igual (el server arranca).
     consoleErrorSpy.mockRestore()
-  })
+    // Timeout explícito: connectDB() corre la secuencia de arranque COMPLETA
+    // contra un mongod recién levantado, y cada syncIndexes cuesta 1,5–4s con la
+    // base fría (medido: Owner 4,1s · Push 1,4s · Subscription 1,7s). Con el
+    // default de 5s el test venía raspando el límite y se cayó al sumarse el
+    // cuarto índice. No es lentitud del código: contra un Atlas caliente y ya
+    // alineado son no-ops.
+  }, 60_000)
 })
