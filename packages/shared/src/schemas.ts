@@ -353,8 +353,40 @@ function franjaConsistente(
   }
 }
 
+/**
+ * Saca los `.default()` de un shape para poder usarlo en un PATCH.
+ *
+ * En zod v4, `.partial()` hace el campo opcional pero NO desactiva su default:
+ * si el campo no viene en el body, el parseo lo devuelve igual con el valor por
+ * defecto. En un alta eso está bien; en una edición parcial es un pisotón
+ * silencioso — el backend no puede distinguir "no lo mandó" de "lo mandó vacío".
+ *
+ * Lo que rompía: el botón "Pausar" manda exactamente `{estado:'pausado'}`, y el
+ * parseo devolvía además condiciones:'', usoMaxPorPersona:1 y usoVentana:'devida'.
+ * El comercio pausaba un descuento y perdía sus condiciones y su límite de usos
+ * sin haber tocado nada. [cazabug loop2]
+ *
+ * Se hace recorriendo el shape en vez de redefinir los campos a mano para que el
+ * día que alguien agregue otro campo con default no vuelva a pasar.
+ */
+type SinDefault<T> = T extends z.ZodDefault<infer Inner> ? Inner : T
+type SinDefaultsDe<T extends z.ZodRawShape> = { [K in keyof T]: SinDefault<T[K]> }
+
+function sinDefaults<T extends z.ZodRawShape>(shape: T): SinDefaultsDe<T> {
+  const salida: Record<string, unknown> = {}
+  for (const [clave, campo] of Object.entries(shape)) {
+    // `def` es interno de zod y no está en sus tipos públicos.
+    const def = (campo as unknown as { def?: { type?: string; innerType?: unknown } })?.def
+    salida[clave] = def?.type === 'default' && def.innerType ? def.innerType : campo
+  }
+  return salida as SinDefaultsDe<T>
+}
+
 export const couponCreateSchema = couponShape.superRefine(franjaConsistente)
-export const couponUpdateSchema = couponShape.partial().superRefine(franjaConsistente)
+export const couponUpdateSchema = z
+  .object(sinDefaults(couponShape.shape))
+  .partial()
+  .superRefine(franjaConsistente)
 
 // ─── Activación / canje ───────────────────────────────────────────────
 
