@@ -162,4 +162,24 @@ describe('POST /wa/campaign — envío asíncrono (202)', () => {
     // Solo se envió el primer lote, no el doble.
     expect(await WaSend.countDocuments({})).toBe(20)
   })
+
+  // [cazabug loop2] Un cliente con el teléfono mal cargado NO puede hacer caer la
+  // campaña entera. Antes, el schema exigía to:min(8) por destinatario, así que un
+  // solo número corto daba 400 "invalid input" y NADIE recibía nada — y el conteo
+  // honesto de omitidos (skippedCount), que existe justamente para esto, nunca
+  // llegaba a correr. El comercio se quedaba sin mandar y sin entender por qué.
+  it('un número basura no tumba la campaña: manda a los válidos y reporta los omitidos', async () => {
+    const r = await campaignAndDrain([
+      { to: '3329421234', nombre: 'Ana' },
+      { to: '123' },
+      { to: 'abc' },
+      { to: '99' },
+    ])
+    expect(r.status).toBe(202)
+    expect(r.body.campaign.total).toBe(1)
+    expect(r.body.campaign.skippedCount).toBe(3)
+    // Y al válido le llegó de verdad.
+    const sends = await WaSend.find({ campaignId: r.body.campaign.id }).lean()
+    expect(sends.map((s) => s.to)).toEqual(['5493329421234'])
+  })
 })

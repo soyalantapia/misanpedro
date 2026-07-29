@@ -177,8 +177,15 @@ whatsappRoutes.post('/send', requireMerchantAuth, requireMerchantActive, async (
 
 const campaignSchema = z.object({
   // Cada destinatario lleva su nombre para personalizar {{nombre}} en el backend.
+  //
+  // `to` se acepta como string NO vacío y nada más: quién es enviable lo decide
+  // toWhatsappDigits más abajo, que sabe de códigos de país. Antes acá se exigía
+  // min(8) por destinatario, y como Zod valida el array entero, un solo cliente
+  // con el teléfono mal cargado tiraba TODA la campaña con un "invalid input"
+  // incomprensible — sin mandarle a nadie y sin que el skippedCount (que existe
+  // justamente para reportar esos casos) llegara a correr. [cazabug loop2]
   recipients: z
-    .array(z.object({ to: z.string().min(8), nombre: z.string().max(80).optional() }))
+    .array(z.object({ to: z.string().trim().min(1), nombre: z.string().max(80).optional() }))
     .min(1)
     .max(500),
   text: z.string().min(1).max(2000),

@@ -441,8 +441,14 @@ function ComposerScreen({
       // El contacto del vecino viene normalizado en `telefono` (whatsapp del
       // backend con fallback al teléfono de onboarding). Mandamos el nombre
       // junto al número para que el backend personalice {{nombre}} por destinatario.
-      .map((r) => ({ to: r.telefono.replace(/\D/g, ''), nombre: r.nombre }))
-      .filter((r) => r.to.length >= 8)
+      //
+      // NO filtramos los números cortos acá: el backend es el que sabe de códigos
+      // de país, y nos devuelve cuántos quedaron afuera (skippedCount) para
+      // decírselo al comercio. Cuando los descartábamos en silencio, mandaba
+      // "a todos mis clientes", algunos no recibían nada, y él nunca se enteraba.
+      // [cazabug loop2]
+      .map((r) => ({ to: (r.telefono ?? '').trim(), nombre: r.nombre }))
+      .filter((r) => r.to.length > 0)
 
     // POST /wa/campaign: el backend ACEPTA la campaña (202) y la envía en
     // background con rate-limit anti-ban (2-5s entre mensajes; hasta ~29 min con
