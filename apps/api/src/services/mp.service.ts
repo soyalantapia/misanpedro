@@ -90,3 +90,39 @@ export async function getPreapproval(id: string): Promise<any | null> {
   if (!res.ok) return null
   return res.json()
 }
+
+/**
+ * Cancela la suscripción EN MERCADO PAGO. Sin esto, marcarla cancelada en nuestra
+ * base no frena nada: MP le sigue debitando al comercio todos los meses y el
+ * próximo webhook la revive a 'authorized'. [cazabug loop2]
+ *
+ * Devuelve `true` sólo si MP confirmó la cancelación — el llamador NO debe decirle
+ * al comercio que canceló si esto dio false.
+ *
+ * En modo mock (sin MP_ACCESS_TOKEN) devolvemos true: no hay nada que cancelar
+ * allá porque tampoco hubo cobro real. Mismo criterio que createPreapproval.
+ */
+export async function cancelPreapproval(id: string): Promise<boolean> {
+  if (!env.MP_ACCESS_TOKEN) {
+    console.warn('[mp] MP_ACCESS_TOKEN no configurado — cancelación simulada')
+    return true
+  }
+  try {
+    const res = await fetch(`${MP_BASE}/preapproval/${id}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${env.MP_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status: 'cancelled' }),
+    })
+    if (!res.ok) {
+      console.error('[mp] cancelPreapproval falló', id, res.status, await res.text().catch(() => ''))
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('[mp] cancelPreapproval error de red', id, err)
+    return false
+  }
+}

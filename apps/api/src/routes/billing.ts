@@ -5,7 +5,7 @@ import { env } from '@/env'
 import { App, Merchant, MerchantUser, Subscription } from '@/models'
 import { requireMerchantAuth } from '@/middleware/auth'
 import { tenantContext, getAppId } from '@/middleware/tenant'
-import { createPreapproval, getPreapproval } from '@/services/mp.service'
+import { createPreapproval, getPreapproval, cancelPreapproval } from '@/services/mp.service'
 import { sendSubscriptionReceipt } from '@/services/email.service'
 import { verifyMpSignature, mapMpStatus } from '@/services/mp-signature'
 import { tenantFrontUrl } from '@/lib/urls'
@@ -101,6 +101,16 @@ billingRoutes.post('/webhook', async (c) => {
         if (sub && !sub.preapprovalId) sub.preapprovalId = String(dataId)
       }
       if (sub) {
+        // Una cancelación pedida por el comercio es terminal: no la revivimos con
+        // un webhook que llegue tarde (o con un evento viejo de MP). Sin esto, el
+        // comercio cancelaba y el siguiente webhook lo devolvía a 'authorized' —
+        // y de paso lo reactivaba. [cazabug loop2]
+        const canceloElComercio =
+          sub.status === 'cancelled' && (sub.rawLast as any)?.cancelledAt != null
+        if (canceloElComercio && mapMpStatus(detail.status) === 'authorized') {
+          console.warn('[mp-webhook] ignoro authorized sobre una cancelación del comercio', String(sub._id))
+          return c.json({ ok: true })
+        }
         sub.status = mapMpStatus(detail.status)
         sub.rawLast = detail
         if (detail.next_payment_date) sub.nextBillingAt = new Date(detail.next_payment_date)
@@ -239,6 +249,23 @@ billingRoutes.post('/cancel', requireMerchantAuth, async (c) => {
   // correctamente para todos los casos válidos post-feature.
   const expiraArrepentimientoEn = merchant.arrepentimientoExpiraEn ?? new Date(0)
   const dentroDe10Dias = ahora.getTime() <= expiraArrepentimientoEn.getTime()
+
+  // Cancelar EN MERCADO PAGO primero. Antes esto sólo marcaba el estado local: le
+  // decíamos al comercio "listo, cancelaste" y MP le seguía debitando todos los
+  // meses. Si MP falla, NO mentimos — que reintente. [cazabug loop2]
+  if (sub.preapprovalId) {
+    const canceladoEnMp = await cancelPreapproval(sub.preapprovalId)
+    if (!canceladoEnMp) {
+      return c.json(
+        {
+          ok: false,
+          error:
+            'No pudimos cancelar el cobro en Mercado Pago. No te cancelamos la suscripción para no dejarte pagando sin saberlo: probá de nuevo en unos minutos o escribinos.',
+        },
+        503,
+      )
+    }
+  }
 
   sub.status = 'cancelled'
   sub.rawLast = { cancelledAt: ahora.toISOString(), arrepentimiento: dentroDe10Dias }
