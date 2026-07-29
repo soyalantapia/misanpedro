@@ -350,12 +350,14 @@ function ComposerScreen({
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
 
   // Normalizamos los clientes del API (campos planos) a la audiencia.
-  // El backend expone `whatsapp`; caemos a `telefono` por compatibilidad.
+  // `telefono` PRIMERO: es el campo que llena el alta actual. `whatsapp` es el
+  // legacy de vecinos viejos y queda de respaldo. Al revés, los vecinos nuevos
+  // quedaban con teléfono vacío y la campaña no le llegaba a nadie. [cazabug loop2]
   const clients: Audience[] = useMemo(
     () =>
       (apiClientes.data ?? []).map((c: any) => ({
         nombre: c.nombre ?? 'vecin@',
-        telefono: c.whatsapp ?? c.telefono ?? '',
+        telefono: c.telefono ?? c.whatsapp ?? '',
         count: c.canjes ?? 0,
         firstRedeemedAt: c.primerCanjeAt ?? '',
       })),
@@ -449,6 +451,18 @@ function ComposerScreen({
       // [cazabug loop2]
       .map((r) => ({ to: (r.telefono ?? '').trim(), nombre: r.nombre }))
       .filter((r) => r.to.length > 0)
+
+    // Si tiene clientes pero ninguno con teléfono, se lo decimos con palabras en
+    // vez de mandar una lista vacía y que el backend conteste "invalid input",
+    // que al comercio no le dice absolutamente nada. [cazabug loop2]
+    if (recipientPayload.length === 0) {
+      setPhase({ kind: 'idle' })
+      toast.error(
+        'Ninguno de tus clientes tiene teléfono cargado',
+        'Las campañas se mandan al celular que el vecino dejó al canjear. Todavía no tenés ninguno con ese dato.',
+      )
+      return
+    }
 
     // POST /wa/campaign: el backend ACEPTA la campaña (202) y la envía en
     // background con rate-limit anti-ban (2-5s entre mensajes; hasta ~29 min con

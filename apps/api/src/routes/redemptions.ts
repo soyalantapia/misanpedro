@@ -432,6 +432,12 @@ redemptionsRoutes.get('/clientes', requireMerchantAuth, async (c) => {
       nombre: u?.nombre,
       dni: u?.dni,
       email: u?.email,
+      // `telefono` es el campo que llena el alta ACTUAL; `whatsapp` quedó como
+      // legacy de vecinos viejos. Faltaba mandar telefono, así que el comercio
+      // armaba su campaña con la lista de destinatarios vacía y recibía un
+      // "invalid input" sin explicación. En prod no se notaba probando a mano
+      // porque los vecinos viejos sí tienen whatsapp. [cazabug loop2]
+      telefono: u?.telefono,
       whatsapp: u?.whatsapp,
       fechaNacimiento: u?.fechaNacimiento,
     }

@@ -44,7 +44,8 @@ export function AdminClientesPage() {
           nombre: c.nombre ?? 'Vecino',
           dni: c.dni ?? '',
           email: c.email ?? '',
-          whatsapp: c.whatsapp ?? '',
+          // telefono primero: es el campo del alta actual. [cazabug loop2]
+          whatsapp: c.telefono ?? c.whatsapp ?? '',
         },
         count: c.canjes,
         totalAhorro: c.ahorroTotal,
