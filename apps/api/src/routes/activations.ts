@@ -137,6 +137,13 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
   // significa que una request concurrente ya creó la activación — la devolvemos.
   let activation: any = null
   let lastErr: any = null
+  // Snapshot del cupón/comercio DESDE QUE NACE la activación, no recién al canjear.
+  // Si el comercio borra el cupón, el vecino se queda con un código que ya no
+  // resuelve contra nada: la billetera le mostraba un esqueleto gris latiendo para
+  // siempre y al tocarlo lo expulsaba al inicio sin explicación. El mecanismo para
+  // sobrevivir a eso ya existía (estos mismos campos), sólo se escribía tarde.
+  // [cazabug loop2]
+  const merchantSnap = await Merchant.findOne({ _id: coupon.merchantId, appId })
   for (let attempt = 0; attempt < 3 && !activation; attempt++) {
     try {
       const codigoNumerico = await generateUniqueCode(appId)
@@ -148,6 +155,10 @@ activationsRoutes.post('/', requireUserAuth, async (c) => {
         codigoNumerico,
         qrPayload,
         activatedAt: new Date(),
+        couponTituloSnapshot: coupon.titulo,
+        couponPorcentajeSnapshot: coupon.porcentaje,
+        merchantNombreSnapshot: merchantSnap?.nombre,
+        merchantCategoriaSnapshot: merchantSnap?.categoria,
         // Sin TTL: el código vale mientras el cupón esté activo. Si el cupón
         // se pausa o vence (Coupon.estado/vigenciaHasta), la activación
         // tampoco se va a poder canjear (chequeo en redemptions/validate).

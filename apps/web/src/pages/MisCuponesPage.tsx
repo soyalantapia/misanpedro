@@ -8,6 +8,7 @@ import { activationActions, demoStoreActions, useActivations, useUser } from '@/
 import type { Activation } from '@/lib/types'
 import { getMerchant } from '@/data/mockData'
 import { useCoupons } from '@/lib/couponsStore'
+import { verActivacion } from '@/lib/activacionVista'
 import { api, ApiError } from '@/lib/api'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 import { syncMyActivations } from '@/lib/syncActivations'
@@ -211,12 +212,36 @@ export function MisCuponesPage() {
           {visible.map((a, i) => {
             const c = getCoupon(a.couponId)
             const m = c ? getMerchantBySlug(c.merchantId) : undefined
-            if (!c || !m) {
+            // El catálogo trae SOLO cupones activos y vigentes. Si el comercio borró
+            // o pausó el cupón, acá antes se devolvía un esqueleto `animate-pulse`
+            // que latía para siempre: el vecino veía una tarjeta gris eterna en su
+            // billetera. El snapshot de la activación resuelve el caso (mismo patrón
+            // que ya usaba CanjeadosPage). Ver lib/activacionVista.ts. [cazabug loop2]
+            const vista = verActivacion({
+              cupon: c,
+              comercio: m,
+              activacion: a,
+              catalogoCargando: apiCouponsRes.loading || apiMerchantsRes.loading,
+            })
+            if (vista.tipo === 'cargando') {
               return (
                 <div
                   key={a.id}
                   className="h-24 animate-pulse rounded-3xl bg-fin-surface ring-1 ring-fin-line"
                 />
+              )
+            }
+            if (vista.tipo === 'sin-datos') {
+              return (
+                <div
+                  key={a.id}
+                  className="rounded-3xl bg-fin-surface p-4 ring-1 ring-fin-line"
+                >
+                  <p className="text-sm font-bold text-fin-ink">Cupón ya no disponible</p>
+                  <p className="mt-0.5 text-xs text-fin-soft">
+                    El comercio lo dio de baja. Tu código {a.codigoNumerico} ya no se puede usar.
+                  </p>
+                </div>
               )
             }
 
@@ -229,17 +254,21 @@ export function MisCuponesPage() {
                 style={{ animationDelay: `${i * 60}ms` }}
                 className="animate-fade-up flex overflow-hidden rounded-3xl bg-fin-surface ring-1 ring-fin-line shadow-fin-card"
               >
-                <CardImage categoria={m.categoria} className="h-auto w-24 shrink-0" size="sm" />
+                <CardImage
+                  categoria={m?.categoria ?? a.merchantCategoria ?? 'otro'}
+                  className="h-auto w-24 shrink-0"
+                  size="sm"
+                />
                 <div className="flex flex-1 flex-col gap-1 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-widest text-fin-faint">
-                        {m.nombre}
+                        {vista.merchantNombre}
                       </p>
-                      <p className="text-sm font-bold leading-tight text-fin-ink">{c.titulo}</p>
+                      <p className="text-sm font-bold leading-tight text-fin-ink">{vista.titulo}</p>
                     </div>
                     <span className="shrink-0 font-bold text-fin-lime tabular-nums">
-                      {c.porcentaje}%
+                      {vista.porcentaje}%
                     </span>
                   </div>
 
@@ -253,7 +282,7 @@ export function MisCuponesPage() {
                       >
                         Ver QR <ArrowRight size={12} />
                       </Link>
-                    ) : (
+                    ) : vista.cuponVigente ? (
                       <button
                         type="button"
                         onClick={() => handleReactivate(a.id, a.couponId)}
@@ -263,13 +292,21 @@ export function MisCuponesPage() {
                         <RefreshCw size={12} className={reactivating === a.id ? 'animate-spin' : ''} />
                         {reactivating === a.id ? 'Activando…' : 'Reactivar'}
                       </button>
+                    ) : (
+                      // Sin cupón vigente, "Reactivar" siempre falla ("cupón no
+                      // disponible"): se lo decimos en vez de ofrecer un botón roto.
+                      <span className="text-xs font-semibold text-fin-faint">
+                        Ya no disponible
+                      </span>
                     )}
-                    <Link
-                      to={`/cupon/${c.id}`}
-                      className="text-xs font-semibold text-fin-soft hover:text-fin-ink"
-                    >
-                      Detalle
-                    </Link>
+                    {vista.cuponVigente && c ? (
+                      <Link
+                        to={`/cupon/${c.id}`}
+                        className="text-xs font-semibold text-fin-soft hover:text-fin-ink"
+                      >
+                        Detalle
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
               </div>

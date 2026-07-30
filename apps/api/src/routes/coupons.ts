@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { Types } from 'mongoose'
 import { couponCreateSchema, couponUpdateSchema } from '@misanpedro/shared'
-import { Coupon, Merchant, Referral } from '@/models'
+import { Activation, Coupon, Merchant, Referral } from '@/models'
 import { requireMerchantAuth, requireMerchantActive } from '@/middleware/auth'
 import { tenantContext, getAppId } from '@/middleware/tenant'
 import { sendCouponPush } from '@/services/push.service'
@@ -258,6 +258,20 @@ couponsRoutes.delete('/:id', requireMerchantAuth, requireMerchantActive, async (
   if (!coupon) return c.json({ ok: false, error: 'not found' }, 404)
   if (coupon.merchantId.toString() !== auth.merchantId) {
     return c.json({ ok: false, error: 'forbidden' }, 403)
+  }
+  // Antes de borrar, cerrar las activaciones VIVAS de este cupón. Sin esto quedaban
+  // en 'activo' apuntando a un cupón inexistente: el vecino tenía en la billetera un
+  // código que ya no se podía canjear y del que no se podía deshacer (el botón de
+  // cancelar está debajo del guard que lo expulsaba al inicio). Los canjes ya hechos
+  // NO se tocan: son historial y tienen su propio snapshot. [cazabug loop2]
+  const cerradas = await Activation.updateMany(
+    { appId, couponId: coupon._id, status: 'activo' },
+    { status: 'expirado' },
+  )
+  if (cerradas.modifiedCount > 0) {
+    console.log(
+      `[coupons] cupón ${coupon._id.toString()} borrado — ${cerradas.modifiedCount} activación(es) cerradas`,
+    )
   }
   await coupon.deleteOne()
   return c.json({ ok: true })

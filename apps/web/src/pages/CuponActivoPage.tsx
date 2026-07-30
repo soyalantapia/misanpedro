@@ -11,6 +11,7 @@ import { useCoupon } from '@/lib/couponsStore'
 import { useApiCoupons, useApiMerchants } from '@/lib/apiQueries'
 import { api, ApiError, tokens } from '@/lib/api'
 import { syncMyActivations } from '@/lib/syncActivations'
+import { verActivacion } from '@/lib/activacionVista'
 
 export function CuponActivoPage() {
   const { id } = useParams<{ id: string }>()
@@ -128,8 +129,21 @@ export function CuponActivoPage() {
   if (!activation) return <Navigate to="/" replace />
   const stillLoading = apiCouponsRes.loading || apiMerchantsRes.loading
   const apiError = apiCouponsRes.error || apiMerchantsRes.error
-  if (!coupon || !merchant) {
-    if (stillLoading) return null
+  // Qué se puede mostrar de esta activación. El catálogo trae SOLO cupones
+  // activos y vigentes: si el comercio borró o pausó el cupón, `coupon` queda
+  // undefined y acá antes se hacía `<Navigate to="/" replace />` — el vecino
+  // tocaba su propio cupón y salía disparado al inicio sin ningún mensaje, sin
+  // poder ni cancelarlo (el botón está más abajo, nunca llegaba). El snapshot de
+  // la activación resuelve el caso. Ver lib/activacionVista.ts. [cazabug loop2]
+  const vista = verActivacion({
+    cupon: coupon,
+    comercio: merchant,
+    activacion: activation,
+    catalogoCargando: stillLoading,
+  })
+
+  if (vista.tipo !== 'lista') {
+    if (vista.tipo === 'cargando') return null
     // El cupón vive en el backend (no en el store local) y la API falló:
     // mostramos "Sin conexión" con Reintentar en vez de mandar al inicio.
     if (apiError) {
@@ -155,7 +169,23 @@ export function CuponActivoPage() {
         </div>
       )
     }
-    return <Navigate to="/" replace />
+    return (
+      <div className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 pt-16 pb-8 sm:px-6">
+        <EmptyState
+          icon={X}
+          title="Este cupón ya no está disponible"
+          description={`El comercio lo dio de baja, así que el código ${activation.codigoNumerico} ya no se puede usar. Buscá otras ofertas en tu ciudad.`}
+          action={
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 rounded-2xl bg-fin-lime px-5 py-3 text-sm font-bold text-fin-bg transition-all hover:-translate-y-0.5"
+            >
+              Ver cupones
+            </Link>
+          }
+        />
+      </div>
+    )
   }
 
   const isExpired = activation.status !== 'activo'
@@ -195,11 +225,11 @@ export function CuponActivoPage() {
 
       <header className="flex flex-col items-center gap-1 text-center">
         <p className="text-[11px] font-bold uppercase tracking-widest text-fin-lime">
-          {merchant.nombre}
+          {vista.merchantNombre}
         </p>
-        <p className="text-5xl font-black text-fin-lime tabular-nums">{coupon.porcentaje}%</p>
+        <p className="text-5xl font-black text-fin-lime tabular-nums">{vista.porcentaje}%</p>
         <p className="text-xs font-extrabold tracking-widest text-fin-lime">OFF</p>
-        <h1 className="mt-1 text-lg font-bold leading-tight text-fin-ink">{coupon.titulo}</h1>
+        <h1 className="mt-1 text-lg font-bold leading-tight text-fin-ink">{vista.titulo}</h1>
       </header>
 
       <div className="flex flex-col items-center gap-4">
@@ -212,7 +242,7 @@ export function CuponActivoPage() {
           <CopyCodeButton code={activation.codigoNumerico} />
         </div>
         <p className="max-w-xs text-center text-xs text-fin-soft">
-          Mostrá este código en {merchant.nombre}. Se canjea una sola vez.
+          Mostrá este código en {vista.merchantNombre}. Se canjea una sola vez.
         </p>
         <ExpiryHint expiresAt={activation.expiresAt} nowMs={nowMs} isActive={!isExpired} />
       </div>
@@ -223,7 +253,7 @@ export function CuponActivoPage() {
             <Store size={16} className="mt-0.5 shrink-0 text-fin-lime" />
             <div className="flex flex-col gap-1">
               <p className="text-xs font-bold text-fin-ink">
-                Mostrale este código al encargado de {merchant.nombre}
+                Mostrale este código al encargado de {vista.merchantNombre}
               </p>
               <p className="text-[11px] leading-relaxed">
                 {livePollingActive && !pollExhausted
