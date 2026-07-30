@@ -7,7 +7,7 @@
 
 | Recurso | Dónde |
 |---|---|
-| Health del API | `https://api.micuidad.com/api/v1/health` (devuelve `{ok, uptime, db}`) |
+| Health del API | `https://api.micuidad.com/api/v1/health` (devuelve `{ok, uptime, db}`; **503 si Mongo no está conectada**) |
 | Logs / deploys / variables | Railway → proyecto `misanpedro-api` → servicio `api` |
 | DNS / SSL | Cloudflare → zona `micuidad.com` |
 | Buzón de correo (SMTP) | Hostinger → `soporte@micuidad.com` |
@@ -16,7 +16,7 @@
 
 ## Diagnóstico en 30 segundos
 ```bash
-curl -s https://api.micuidad.com/api/v1/health     # ¿responde? ¿db:"connected"? ¿uptime?
+curl -s -w " [%{http_code}]\n" https://api.micuidad.com/api/v1/health   # 200 = sano · 503 = Mongo caída
 curl -s -o /dev/null -w "%{http_code}" https://sanpedro.micuidad.com   # ¿sirve el front?
 ```
 - `db` ≠ `connected` → problema de Mongo (ver §"DB caída").
@@ -47,7 +47,11 @@ curl -s -o /dev/null -w "%{http_code}" https://sanpedro.micuidad.com   # ¿sirve
 
 ## Incidente: el deploy falla
 1. Railway **mantiene el deploy anterior** si el build o el healthcheck fallan → prod NO se rompe. Respirá.
-2. Mirá los **Build Logs** en Railway. Causas típicas:
+2. Si falla el **healthcheck** (no el build): el server arrancó pero no pudo conectar a Mongo. Mirá los
+   Deploy Logs y buscá `failed to connect DB; starting anyway`. Casi siempre es `MONGODB_URI` faltante o
+   equivocada en las variables del servicio. Antes de este chequeo el `/health` devolvía `ok:true` con la
+   base caída, así que un deploy así pasaba y entraba a servir con TODAS las rutas fallando.
+3. Mirá los **Build Logs** en Railway. Causas típicas:
    - El **guardrail** `check-no-hardcoded-tenant.mjs` encontró un nombre de ciudad hardcodeado → arreglalo (usá `appName()`/`useTenant()`).
    - Error de typecheck/test en el build.
 3. Reproducí local: `pnpm typecheck && pnpm turbo run test && pnpm check:tenant && pnpm build`.

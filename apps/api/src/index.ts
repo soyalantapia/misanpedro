@@ -32,6 +32,7 @@ import { httpsRedirect, requestId, securityHeaders } from '@/middleware/security
 import { findTenantByKey, findTenantByCustomDomain, toAsciiLabel } from '@/middleware/tenant'
 import { auditImpersonation } from '@/middleware/auditImpersonation'
 import { precioPlanEfectivo } from '@/lib/precioPlan'
+import { evaluarSalud } from '@/lib/salud'
 
 const app = new Hono()
 
@@ -94,12 +95,16 @@ app.get('/api', (c) => c.json({ name: 'Mi[Ciudad] API', version: '0.1.0' }))
 if (!isProd) app.get('/', (c) => c.json({ name: 'Mi[Ciudad] API', version: '0.1.0' }))
 
 app.get('/api/v1/health', (c) => {
-  const dbReady = mongoose.connection.readyState === 1
+  // Este es el path que mira railway.json para decidir si un deploy entra a
+  // servir. Antes devolvía `ok: true` con 200 SIEMPRE, aunque en el mismo body
+  // dijera `db: 'disconnected'`: un deploy con la MONGODB_URI equivocada pasaba
+  // el chequeo y se ponía a servir con todas las rutas fallando. Ver lib/salud.ts.
+  const salud = evaluarSalud(mongoose.connection.readyState)
   const mem = process.memoryUsage()
   return c.json({
-    ok: true,
+    ok: salud.ok,
     env: env.NODE_ENV,
-    db: dbReady ? 'connected' : 'disconnected',
+    db: salud.db,
     uptime: Math.round(process.uptime()),
     memoryMB: {
       rss: Math.round(mem.rss / 1024 / 1024),
@@ -108,14 +113,17 @@ app.get('/api/v1/health', (c) => {
     },
     timestamp: new Date().toISOString(),
     requestId: c.get('requestId'),
-  })
+  }, salud.status)
 })
 
-// Liveness/readiness separados (Kubernetes friendly)
+// Liveness/readiness separados (Kubernetes friendly).
+// `live` es puramente "el proceso responde": tiene que seguir dando 200 con la
+// base caída, si no un orquestador lo mataría justo cuando mongoose está
+// reintentando reconectar solo.
 app.get('/api/v1/health/live', (c) => c.json({ ok: true }))
 app.get('/api/v1/health/ready', (c) => {
-  const dbReady = mongoose.connection.readyState === 1
-  return c.json({ ok: dbReady }, dbReady ? 200 : 503)
+  const salud = evaluarSalud(mongoose.connection.readyState)
+  return c.json({ ok: salud.ok }, salud.status)
 })
 
 // Auditoría del MODO SOPORTE: envuelve todas las rutas /api/v1 y registra las
