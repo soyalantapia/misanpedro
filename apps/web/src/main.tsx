@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { getTenantSnapshot, loadTenantConfig } from '@/lib/tenant'
 
 // Bootstrap multi-tenant: si tenemos un slug detectado, intentamos cargar la
@@ -39,8 +40,14 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   })
 }
 
+// El ErrorBoundary envuelve TODO: sin él, cualquier throw en render dejaba la
+// pantalla en blanco, sin mensaje ni salida. El caso frecuente es deployar
+// mientras el vecino tiene la app abierta (rutas `lazy()` → chunk viejo que ya
+// no existe). Ver components/ErrorBoundary.tsx. [cazabug loop2]
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )
