@@ -51,6 +51,16 @@ export function subscribe(merchantId: string, listener: Listener): () => void {
   }
 }
 
+/**
+ * Cuántos listeners hay colgados de un comercio. Sólo para tests: es lo que
+ * permite ver la fuga sin adivinar. Espejo de `_listenersDe` en
+ * whatsapp.service.ts — las dos rutas de stream tenían el mismo bug.
+ * [cazabug loop2]
+ */
+export function _listenersDe(merchantId: string): number {
+  return listeners.get(merchantId)?.size ?? 0
+}
+
 export function publish(event: NotifEvent): void {
   const set = listeners.get(event.merchantId)
   if (!set) return

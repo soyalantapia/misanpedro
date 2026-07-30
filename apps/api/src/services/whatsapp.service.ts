@@ -106,6 +106,15 @@ export function subscribe(
   }
 }
 
+/**
+ * Cuántos listeners hay colgados de un comercio. Sólo para tests: es lo que
+ * permite ver la fuga sin adivinar (cada reconexión del EventSource sumaba uno
+ * que no se soltaba nunca). [cazabug loop2]
+ */
+export function _listenersDe(merchantId: string): number {
+  return listeners.get(merchantId)?.size ?? 0
+}
+
 export async function getStatus(merchantId: string): Promise<SessionState> {
   await loadWA()
   return sessions.get(merchantId) ?? { status: 'disconnected' }

@@ -47,12 +47,21 @@ notificationsRoutes.get('/stream', (c) => {
     }
     unsubscribe = subscribe(merchantId, onEvent)
 
+    // El cliente se fue. Es LA señal buena: el `catch { alive = false }` de arriba
+    // no sirve porque el `write` de Hono se traga todos los errores, así que el
+    // loop giraba para siempre y este unsubscribe no corría nunca. Con el
+    // EventSource reconectando solo, cada corte dejaba otro listener. [cazabug loop2]
+    stream.onAbort(() => {
+      alive = false
+      unsubscribe?.()
+    })
+
     // Heartbeat cada 25s para mantener vivo el conexion (proxies suelen
     // cortar después de 30s de inactividad).
     await stream.writeSSE({ event: 'connected', data: 'ok' })
-    while (alive) {
+    while (alive && !stream.aborted) {
       await stream.sleep(25_000)
-      if (!alive) break
+      if (!alive || stream.aborted) break
       try {
         await stream.writeSSE({ event: 'heartbeat', data: String(Date.now()) })
       } catch {

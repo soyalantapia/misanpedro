@@ -79,6 +79,16 @@ whatsappRoutes.get('/stream', (c) => {
     }
     const unsubscribe = wa.subscribe(merchantId, (e) => void send(e))
 
+    // El cliente se fue (cerró la pestaña, perdió señal, se durmió el celular).
+    // Es LA señal buena: el `catch { alive = false }` de abajo no sirve porque el
+    // `write` de Hono se traga todos los errores, así que el loop giraba para
+    // siempre y este unsubscribe no corría nunca. Con el EventSource reconectando
+    // solo, cada bajón de señal dejaba otro listener colgado. [cazabug loop2]
+    stream.onAbort(() => {
+      alive = false
+      unsubscribe()
+    })
+
     const initial = await wa.getStatus(merchantId)
     await send({
       type: 'status',
@@ -88,9 +98,9 @@ whatsappRoutes.get('/stream', (c) => {
     })
     if (initial.qr) await send({ type: 'qr', merchantId, qr: initial.qr })
 
-    while (alive) {
+    while (alive && !stream.aborted) {
       await stream.sleep(25_000)
-      if (!alive) break
+      if (!alive || stream.aborted) break
       try {
         await stream.writeSSE({ event: 'heartbeat', data: String(Date.now()) })
       } catch {
