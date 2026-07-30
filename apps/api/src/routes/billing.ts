@@ -10,6 +10,7 @@ import { sendSubscriptionReceipt } from '@/services/email.service'
 import { verifyMpSignature, mapMpStatus } from '@/services/mp-signature'
 import { tenantFrontUrl } from '@/lib/urls'
 import { precioPlanEfectivo } from '@/lib/precioPlan'
+import { captureException } from '@/services/sentry.service'
 
 export const billingRoutes = new Hono()
 
@@ -91,7 +92,21 @@ billingRoutes.post('/webhook', async (c) => {
 
   if ((type === 'preapproval' || type === 'subscription_preapproval') && dataId) {
     const detail = await getPreapproval(String(dataId))
-    if (detail) {
+    // Mercado Pago reintenta SÓLO si no le respondemos 2xx. Antes devolvíamos
+    // `{ok:true}` también acá, o sea que le confirmábamos la entrega de algo que
+    // no procesamos: MP no volvía nunca y el comercio que YA PAGÓ quedaba en
+    // 'pending_payment' para siempre, pagando una cuenta que nunca se activó. Y
+    // desde nuestro lado se veía un webhook exitoso, así que nadie se enteraba.
+    // [cazabug loop2]
+    if (!detail) {
+      console.error('[mp-webhook] no pudimos consultar el preapproval en MP', String(dataId))
+      captureException(new Error('mp-webhook: getPreapproval devolvió null'), {
+        dataId: String(dataId),
+        impacto: 'el comercio puede haber pagado y quedar sin activar',
+      })
+      return c.json({ ok: false, error: 'no pudimos consultar Mercado Pago' }, 503)
+    }
+    {
       let sub = await Subscription.findOne({ preapprovalId: String(dataId) })
       if (!sub && (externalReference || detail.external_reference)) {
         sub = await Subscription.findOne({
@@ -124,6 +139,18 @@ billingRoutes.post('/webhook', async (c) => {
         }
         await sub.save()
         if (wasActivated) void sendReceiptForSubscription(sub)
+      } else {
+        // No encontramos la suscripción. Pasa de verdad por carrera: la
+        // notificación de MP puede llegar ANTES de que terminemos de escribir el
+        // doc. Reintentar SÍ lo arregla, así que no confirmamos la entrega. Si
+        // el preapproval no fuera nuestro, MP deja de reintentar por su cuenta.
+        console.error('[mp-webhook] preapproval sin suscripción local', String(dataId))
+        captureException(new Error('mp-webhook: preapproval sin Subscription'), {
+          dataId: String(dataId),
+          externalReference: String(externalReference ?? detail.external_reference ?? ''),
+          impacto: 'un pago de MP no tiene a qué imputarse',
+        })
+        return c.json({ ok: false, error: 'suscripción no encontrada' }, 503)
       }
     }
   }

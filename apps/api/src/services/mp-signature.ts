@@ -45,8 +45,27 @@ export function verifyMpSignature(input: MpSignatureInput): boolean {
   const v1 = parts['v1']
   if (!ts || !v1) return false
 
-  const tsMs = parseInt(ts, 10)
-  if (!Number.isFinite(tsMs) || Math.abs(now - tsMs) > 5 * 60 * 1000) {
+  // El `ts` viene en dos unidades distintas según qué doc de MP mires:
+  //   · ARG  ts=1704908010     → 10/01/2024 leído como SEGUNDOS (como ms daría 1970)
+  //   · BR   ts=1742505638683  → 20/03/2025 leído como MILISEGUNDOS (como s, absurdo)
+  //
+  // Antes se asumía milisegundos y se comparaba contra Date.now() con ventana de
+  // 5 minutos. Con un ts en segundos la diferencia da ~1,78e12 ms: SIEMPRE fuera
+  // de la ventana → 401 a todo webhook, y ninguna suscripción se activaría nunca.
+  // El test tampoco lo veía: construía la firma con la misma suposición que el
+  // código. [cazabug loop2]
+  //
+  // No elegimos una: aceptamos las dos. La magnitud desambigua sin lugar a duda
+  // (1e11 segundos = año 5138; 1e11 ms = 1973) y no debilita el anti-replay,
+  // porque un ts viejo queda fuera de la ventana en cualquiera de las dos.
+  //
+  // ⚠️ Lo que firma MP es el STRING original del header, no el normalizado: el
+  // manifest de abajo tiene que seguir usando `ts`, nunca `tsMs`.
+  const tsCrudo = parseInt(ts, 10)
+  if (!Number.isFinite(tsCrudo)) return false
+  const UMBRAL_SEGUNDOS = 1e11
+  const tsMs = Math.abs(tsCrudo) < UMBRAL_SEGUNDOS ? tsCrudo * 1000 : tsCrudo
+  if (Math.abs(now - tsMs) > 5 * 60 * 1000) {
     return false
   }
 
