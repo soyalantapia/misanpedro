@@ -24,9 +24,18 @@ export type ValorDisplay = {
 /**
  * Ahorro registrado al CANJEAR, por tipo de oferta. DUPLICADO del canónico
  * packages/shared/src/valor.ts (el front no importa @misanpedro/shared, ver
- * usoLimite.ts). MANTENER EN SINCRONÍA: el preview del ahorro que ve el cajero
- * DEBE coincidir con lo que persiste el backend al confirmar. Lockeado por
- * cuponValor.test.ts con los mismos vectores que valor.test.ts.
+ * usoLimite.ts). El preview del ahorro que ve el cajero DEBE coincidir con lo que
+ * persiste el backend al confirmar: si no, se le promete al vecino un número en el
+ * mostrador y la billetera le muestra otro.
+ *
+ * La sincronía la GARANTIZA `apps/api/src/services/ahorroSinDerivas.test.ts`, que
+ * importa las dos implementaciones y las compara caso por caso. No hace falta
+ * acordarse: si divergen, se pone en rojo.
+ *
+ * (Antes este comentario decía estar lockeado por `valor.test.ts` — un archivo que
+ * nunca existió. `packages/shared` no tiene tests, así que el canónico, que es el
+ * que define plata real, no tenía ninguno y el candado apuntaba a la mitad
+ * equivocada. [cazabug loop2])
  */
 export function calcAhorroCanje(
   coupon: { tipoOferta?: string | null; porcentaje: number; precioFijo?: number | null },
