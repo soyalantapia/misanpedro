@@ -45,9 +45,19 @@ export function subscribe(merchantId: string, listener: Listener): () => void {
     listeners.set(merchantId, set)
   }
   set.add(listener)
+  const propio = set
   return () => {
-    set!.delete(listener)
-    if (set!.size === 0) listeners.delete(merchantId)
+    propio.delete(listener)
+    // Sólo se borra la entrada del mapa si TODAVÍA es la nuestra. Sin esa
+    // comprobación, un unsubscribe repetido de un stream ya muerto —que ve su Set
+    // vacío para siempre— borraba del mapa el Set del cliente que reconectó, y ese
+    // cliente quedaba con la conexión viva pero sin recibir un solo evento: al
+    // comercio no le aparecía el QR ni le cambiaba el estado, sin nada que fallara.
+    // Se volvió alcanzable al arreglar la fuga de SSE, donde unsubscribe corre en
+    // onAbort y otra vez al salir del loop del heartbeat. [cazabug loop2]
+    if (propio.size === 0 && listeners.get(merchantId) === propio) {
+      listeners.delete(merchantId)
+    }
   }
 }
 

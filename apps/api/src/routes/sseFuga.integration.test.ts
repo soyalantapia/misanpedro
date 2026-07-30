@@ -54,22 +54,50 @@ beforeEach(() => {
   expect(notif._listenersDe('merchant-fuga')).toBe(0)
 })
 
-/** Abre el stream y espera a que el handler haya llegado a suscribirse. */
-async function abrirStream() {
-  const res = await api.request('/wa/stream?ticket=lo-que-sea')
-  expect(res.status).toBe(200)
-  for (let i = 0; i < 50 && wa._listenersDe('merchant-fuga') === 0; i++) {
+/**
+ * Espera a que se cumpla una condición, con presupuesto generoso.
+ *
+ * El handler del stream corre en background (`streamSSE` no espera al callback),
+ * así que entre el request y el `subscribe()` hay un tick que no controlamos. Con
+ * la suite completa corriendo en paralelo ese tick se estira: una espera corta
+ * hace que el test falle solo a veces, que es peor que no tenerlo. El presupuesto
+ * es un techo, no una demora: en cuanto se cumple, sigue.
+ */
+async function esperarA(cond: () => boolean, queEsperaba: string) {
+  const limite = Date.now() + 10_000
+  while (!cond() && Date.now() < limite) {
     await new Promise((r) => setTimeout(r, 10))
   }
+  if (!cond()) throw new Error(`timeout esperando: ${queEsperaba}`)
+}
+
+/**
+ * Abre el stream y espera a que el handler se haya suscrito.
+ *
+ * ⚠️ Que `api.request()` resuelva NO garantiza que el `subscribe()` ya haya
+ * corrido: `streamSSE` lanza el callback con `run(stream, cb)` sin esperarlo, así
+ * que según el orden de microtasks la respuesta puede volver antes. Medido: a
+ * veces resuelve con 0 listeners. Por eso se espera un conteo ABSOLUTO en vez de
+ * un delta — con deltas, una suscripción que llega tarde corre la cuenta y el
+ * test falla solo a veces.
+ */
+async function abrirStream(esperado = 1) {
+  const res = await api.request('/wa/stream?ticket=lo-que-sea')
+  expect(res.status).toBe(200)
+  await esperarA(
+    () => wa._listenersDe('merchant-fuga') === esperado,
+    `${esperado} listener(s) tras abrir`,
+  )
   return res
 }
 
 /** El cliente se va: cerrar la pestaña, perder señal, dormir el celular. */
-async function cortarCliente(res: Response) {
+async function cortarCliente(res: Response, quedan = 0) {
   await res.body!.cancel()
-  for (let i = 0; i < 50 && wa._listenersDe('merchant-fuga') > 0; i++) {
-    await new Promise((r) => setTimeout(r, 10))
-  }
+  await esperarA(
+    () => wa._listenersDe('merchant-fuga') === quedan,
+    `que queden ${quedan} listeners`,
+  )
 }
 
 describe('los streams SSE se sueltan cuando el cliente se va', () => {
@@ -92,20 +120,17 @@ describe('los streams SSE se sueltan cuando el cliente se va', () => {
 
     // Antes acá quedaban 5. Con un panel abierto todo el día, decenas.
     expect(wa._listenersDe('merchant-fuga')).toBe(0)
-  })
+  }, 60_000)
 
   it('dos pestañas abiertas a la vez cuentan dos, y cada una se suelta sola', async () => {
-    const a = await api.request('/wa/stream?ticket=t1')
-    const b = await api.request('/wa/stream?ticket=t2')
-    for (let i = 0; i < 50 && wa._listenersDe('merchant-fuga') < 2; i++) {
-      await new Promise((r) => setTimeout(r, 10))
-    }
+    const a = await abrirStream(1)
+    const b = await abrirStream(2)
     expect(wa._listenersDe('merchant-fuga')).toBe(2)
 
-    await cortarCliente(a)
+    await cortarCliente(a, 1)
     expect(wa._listenersDe('merchant-fuga')).toBe(1)
 
-    await cortarCliente(b)
+    await cortarCliente(b, 0)
     expect(wa._listenersDe('merchant-fuga')).toBe(0)
   })
 
@@ -114,15 +139,9 @@ describe('los streams SSE se sueltan cuando el cliente se va', () => {
   it('🔴 /notifications/stream tiene la misma fuga y también se suelta', async () => {
     const res = await api.request('/notifications/stream?ticket=lo-que-sea')
     expect(res.status).toBe(200)
-    for (let i = 0; i < 50 && notif._listenersDe('merchant-fuga') === 0; i++) {
-      await new Promise((r) => setTimeout(r, 10))
-    }
-    expect(notif._listenersDe('merchant-fuga')).toBe(1)
+    await esperarA(() => notif._listenersDe('merchant-fuga') === 1, 'que el stream se suscriba')
 
     await res.body!.cancel()
-    for (let i = 0; i < 50 && notif._listenersDe('merchant-fuga') > 0; i++) {
-      await new Promise((r) => setTimeout(r, 10))
-    }
-    expect(notif._listenersDe('merchant-fuga')).toBe(0)
+    await esperarA(() => notif._listenersDe('merchant-fuga') === 0, 'que se suelte el listener')
   })
 })
