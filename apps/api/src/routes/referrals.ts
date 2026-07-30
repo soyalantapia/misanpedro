@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { Merchant, Referral } from '@/models'
 import { requireMerchantAuth } from '@/middleware/auth'
 import { tenantContext, getAppId } from '@/middleware/tenant'
-import { env } from '@/env'
+import { tenantFrontUrl } from '@/lib/urls'
 
 export const referralsRoutes = new Hono()
 referralsRoutes.use('*', tenantContext)
@@ -44,7 +44,14 @@ referralsRoutes.get('/me', requireMerchantAuth, async (c) => {
     ok: true,
     referral: {
       code: merchant.referralCode,
-      link: `${env.APP_URL_FRONT}/#/admin/registro?ref=${merchant.referralCode}`,
+      // El link tiene que llevar a la ciudad DEL COMERCIO. Antes se armaba con
+      // env.APP_URL_FRONT —la URL global— aunque acá el tenant está en contexto:
+      // un comercio de otra ciudad mandaba a sus conocidos a la ciudad ajena. Y el
+      // referido se perdía en silencio, porque el código es único POR CIUDAD y el
+      // alta lo busca con `{ appId, referralCode }`: el de la ciudad B no existe en
+      // la A. El alta se completaba igual, sin error, y el que refirió nunca
+      // recibía sus semanas gratis. Mismo helper que usa billing. [cazabug loop2]
+      link: `${tenantFrontUrl(c.get('tenant'))}/#/admin/registro?ref=${merchant.referralCode}`,
       pendientes,
       confirmados,
       weeksEarned: merchant.referralWeeksEarned ?? 0,
